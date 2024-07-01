@@ -89,7 +89,6 @@ target_link_libraries(
     rocshmem::rocshmem
     hip::host
     -fgpu-rdc
-	--hipcc-func-supp
 #   xnack allows address translation fault recovery
 #   required option for managed heap configs
 #    -mxnack
