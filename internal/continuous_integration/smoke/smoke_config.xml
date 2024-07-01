@@ -1,0 +1,85 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.40">
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+      <triggers>
+        <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger plugin="gerrit-trigger@2.33.0">
+          <spec></spec>
+          <gerritProjects>
+            <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.GerritProject>
+              <compareType>PLAIN</compareType>
+              <pattern>rsch/ec/shmem</pattern>
+              <branches>
+                <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.Branch>
+                  <compareType>PLAIN</compareType>
+                  <pattern>amd-master</pattern>
+                </com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.Branch>
+              </branches>
+              <disableStrictForbiddenFileVerification>false</disableStrictForbiddenFileVerification>
+            </com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.GerritProject>
+          </gerritProjects>
+          <dynamicGerritProjects class="empty-list"/>
+          <skipVote>
+            <onSuccessful>true</onSuccessful>
+            <onFailed>true</onFailed>
+            <onUnstable>true</onUnstable>
+            <onNotBuilt>true</onNotBuilt>
+            <onAborted>true</onAborted>
+          </skipVote>
+          <silentMode>false</silentMode>
+          <enableTopicAssociation>false</enableTopicAssociation>
+          <notificationLevel></notificationLevel>
+          <silentStartMode>false</silentStartMode>
+          <escapeQuotes>true</escapeQuotes>
+          <nameAndEmailParameterMode>PLAIN</nameAndEmailParameterMode>
+          <dependencyJobsNames></dependencyJobsNames>
+          <commitMessageParameterMode>BASE64</commitMessageParameterMode>
+          <changeSubjectParameterMode>PLAIN</changeSubjectParameterMode>
+          <commentTextParameterMode>BASE64</commentTextParameterMode>
+          <buildStartMessage></buildStartMessage>
+          <buildFailureMessage></buildFailureMessage>
+          <buildSuccessfulMessage></buildSuccessfulMessage>
+          <buildUnstableMessage></buildUnstableMessage>
+          <buildNotBuiltMessage></buildNotBuiltMessage>
+          <buildAbortedMessage></buildAbortedMessage>
+          <buildUnsuccessfulFilepath></buildUnsuccessfulFilepath>
+          <customUrl></customUrl>
+          <serverName>amd-gerrit</serverName>
+          <triggerOnEvents>
+            <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.events.PluginCommentAddedContainsEvent>
+              <commentAddedCommentContains>!SMOKE</commentAddedCommentContains>
+            </com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.events.PluginCommentAddedContainsEvent>
+          </triggerOnEvents>
+          <dynamicTriggerConfiguration>false</dynamicTriggerConfiguration>
+          <triggerConfigURL></triggerConfigURL>
+          <triggerInformationAction/>
+        </com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger>
+      </triggers>
+    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition" plugin="workflow-cps@2.90">
+    <scm class="hudson.plugins.git.GitSCM" plugin="git@4.7.1">
+      <configVersion>2</configVersion>
+      <userRemoteConfigs>
+        <hudson.plugins.git.UserRemoteConfig>
+          <url>ssh://gerritgit/rsch/ec/shmem</url>
+        </hudson.plugins.git.UserRemoteConfig>
+      </userRemoteConfigs>
+      <branches>
+        <hudson.plugins.git.BranchSpec>
+          <name>FETCH_HEAD</name>
+        </hudson.plugins.git.BranchSpec>
+      </branches>
+      <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+      <submoduleCfg class="empty-list"/>
+      <extensions/>
+    </scm>
+    <scriptPath>internal/continuous_integration/smoke/Jenkinsfile</scriptPath>
+    <lightweight>false</lightweight>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

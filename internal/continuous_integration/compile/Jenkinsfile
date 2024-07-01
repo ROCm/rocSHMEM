@@ -1,0 +1,118 @@
+pipeline {
+    agent { label 'sv-pdp-5' }
+    environment {
+        HSA_FORCE_FINE_GRAIN_PCIE = 1
+        MPI_HOME="/home/resperf/mpich-4.0.1/install/global"
+        PATH = "$MPI_HOME/bin:$PATH"
+        LD_LIBRARY_PATH = "$MPI_HOME/lib:$LD_LIBRARY_PATH"
+        build_dir = "builds/change-${GERRIT_CHANGE_NUMBER}-${GERRIT_PATCHSET_NUMBER}"
+        CMAKE_PREFIX_PATH = "/opt/rocm/lib/cmake"
+    }
+    stages {
+        stage('Synchronize Source Code') {
+            steps {
+                checkout changelog: false, poll: false, scm: [$class: 'GitSCM', branches: [[name: 'FETCH_HEAD']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'CloneOption', depth: 0, noTags: false, reference: '', shallow: false]], submoduleCfg: [], userRemoteConfigs: [[name: 'origin', refspec: '${GERRIT_REFSPEC}', url: 'ssh://gerritgit/rsch/ec/shmem']]]
+            }
+        }
+        stage('Make Build Directory') {
+            steps {
+                dir("library") {
+                    sh "mkdir -p ${build_dir}"
+                }
+            }
+        }
+        stage('Build Source Code') {
+            parallel {
+                stage('RC_SINGLE') {
+                    steps {
+                        //===================== LIBRARY =======================
+                        dir("library/${build_dir}/RC_SINGLE") {
+                            sh 'mkdir -p install'
+                            sh '../../../build_configs/rc_single install'
+                        }
+                        //===================== CLIENT ========================
+                        dir("clients/functional_tests/${build_dir}/RC_SINGLE") {
+                            sh '../../../build_configs/release ${WORKSPACE}/library/${build_dir}/RC_SINGLE/install'
+                        }
+                        //===================== SPTS ==========================
+                        dir("internal/clients/spts/${build_dir}/RC_SINGLE") {
+                            sh '../../../build_configs/analyze_single_rocshmem ${WORKSPACE}/library/${build_dir}/RC_SINGLE/install'
+                        }
+                    }
+                }
+
+                stage('RC_MULTI_WF_COAL') {
+                    steps {
+                        //===================== LIBRARY =======================
+                        dir("library/${build_dir}/RC_MULTI_WF_COAL") {
+                            sh 'mkdir -p install'
+                            sh '../../../build_configs/rc_multi_wf_coal install'
+                        }
+                        //===================== CLIENT ========================
+                        dir("clients/functional_tests/${build_dir}/RC_MULTI_WF_COAL") {
+                            sh '../../../build_configs/release ${WORKSPACE}/library/${build_dir}/RC_MULTI_WF_COAL/install'
+                        }
+                        //===================== SPTS ==========================
+                        dir("internal/clients/spts/${build_dir}/RC_MULTI_WF_COAL") {
+                            sh '../../../build_configs/analyze_single_rocshmem ${WORKSPACE}/library/${build_dir}/RC_MULTI_WF_COAL/install'
+                        }
+                    }
+                }
+
+                stage('RC_MULTI') {
+                    steps {
+                        //===================== LIBRARY =======================
+                        dir("library/${build_dir}/RC_MULTI") {
+                            sh 'mkdir -p install'
+                            sh '../../../build_configs/rc_multi install'
+                        }
+                        //===================== CLIENT ========================
+                        dir("clients/functional_tests/${build_dir}/RC_MULTI") {
+                            sh '../../../build_configs/release ${WORKSPACE}/library/${build_dir}/RC_MULTI/install'
+                        }
+                        //===================== SPTS ==========================
+                        dir("internal/clients/spts/${build_dir}/RC_MULTI") {
+                            sh '../../../build_configs/analyze_single_rocshmem ${WORKSPACE}/library/${build_dir}/RC_MULTI/install'
+                        }
+                    }
+                }
+
+                stage('DC_SINGLE') {
+                    steps {
+                        //===================== LIBRARY =======================
+                        dir("library/${build_dir}/DC_SINGLE") {
+                            sh 'mkdir -p install'
+                            sh '../../../build_configs/dc_single install'
+                        }
+                        //===================== CLIENT ========================
+                        dir("clients/functional_tests/${build_dir}/DC_SINGLE") {
+                            sh '../../../build_configs/release ${WORKSPACE}/library/${build_dir}/DC_SINGLE/install'
+                        }
+                        //===================== SPTS ==========================
+                        dir("internal/clients/spts/${build_dir}/DC_SINGLE") {
+                            sh '../../../build_configs/analyze_single_rocshmem ${WORKSPACE}/library/${build_dir}/DC_SINGLE/install'
+                        }
+                    }
+                }
+
+                stage('DC_MULTI') {
+                    steps {
+                        //===================== LIBRARY =======================
+                        dir("library/${build_dir}/DC_MULTI") {
+                            sh 'mkdir -p install'
+                            sh '../../../build_configs/dc_multi install'
+                        }
+                        //===================== CLIENT ========================
+                        dir("clients/functional_tests/${build_dir}/DC_MULTI") {
+                            sh '../../../build_configs/release ${WORKSPACE}/library/${build_dir}/DC_MULTI/install'
+                        }
+                        //===================== SPTS ==========================
+                        dir("internal/clients/spts/${build_dir}/DC_MULTI") {
+                            sh '../../../build_configs/analyze_single_rocshmem ${WORKSPACE}/library/${build_dir}/DC_MULTI/install'
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

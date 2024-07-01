@@ -1,0 +1,33 @@
+local help_message = [[
+
+ROC_SHMEM is an open-source GPU initiated networking library
+for High Performance Computing and Machine Learning workloads.
+
+Version @ROCSHMEM_FULL_VERSION@
+]]
+
+help(help_message,"\n")
+
+whatis("Name: rocshmem")
+whatis("Version: @ROCSHMEM_FULL_VERSION@")
+whatis("Keywords: GPU, PGAS, RMA, HPC")
+whatis("Description: tool for GPU initiated networking")
+whatis("URL: https://github.com/ROCm-Developer-Tools/ROC_SHMEM")
+
+-- Export environmental variables
+local topDir="@CMAKE_INSTALL_PREFIX@"
+local binDir="@CMAKE_INSTALL_FULL_BINDIR@"
+local shareDir="@CMAKE_INSTALL_FULL_DATADIR@"
+local pythonDeps="@PYTHON_DEPS@"
+
+setenv("ROCSHMEM_DIR",topDir)
+setenv("ROCSHMEM_BIN",binDir)
+setenv("ROCSHMEM_SHARE",shareDir)
+setenv("MPICH_GPU_SUPPORT_ENABLED",1)
+
+-- Update relevant PATH variables
+prepend_path("PATH",binDir)
+if ( pythonDeps  ~= "" ) then
+   prepend_path("PYTHONPATH",pythonDeps)
+end
+
