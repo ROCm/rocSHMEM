@@ -40,7 +40,7 @@ __global__ void AMOStandardTest(int loop, int skip, uint64_t *timer,
  *****************************************************************************/
 template <typename T>
 AMOStandardTester<T>::AMOStandardTester(TesterArguments args) : Tester(args) {
-  hipMalloc((void **)&_ret_val, args.max_msg_size * args.num_wgs);
+  CHECK_HIP(hipMalloc((void **)&_ret_val, args.max_msg_size * args.num_wgs));
   _r_buf = (char *)roc_shmem_malloc(args.max_msg_size);
   _s_buf = (T *)roc_shmem_malloc(args.max_msg_size * args.num_wgs);
 }
@@ -48,7 +48,7 @@ AMOStandardTester<T>::AMOStandardTester(TesterArguments args) : Tester(args) {
 template <typename T>
 AMOStandardTester<T>::~AMOStandardTester() {
   roc_shmem_free(_r_buf);
-  hipFree(_ret_val);
+  CHECK_HIP(hipFree(_ret_val));
 }
 
 template <typename T>

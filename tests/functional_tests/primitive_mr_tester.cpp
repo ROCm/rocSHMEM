@@ -87,7 +87,7 @@ void PrimitiveMRTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
   hipLaunchKernelGGL(PrimitiveMRTest, gridSize, blockSize, shared_bytes, stream,
                      loop, timer, s_buf, r_buf, size, _shmem_context);
 
-  hipDeviceSynchronize();
+  CHECK_HIP(hipDeviceSynchronize());
 
   num_msgs = (loop + args.skip) * gridSize.x;
   num_timed_msgs = loop * 64;

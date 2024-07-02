@@ -126,14 +126,14 @@ void TeamCtxInfraTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
 
   /* Copy array of teams to device */
   roc_shmem_team_t *teams_on_device;
-  hipMalloc(&teams_on_device, sizeof(roc_shmem_team_t) * NUM_TEAMS);
-  hipMemcpy(teams_on_device, team_world_dup,
-            sizeof(roc_shmem_team_t) * NUM_TEAMS, hipMemcpyHostToDevice);
+  CHECK_HIP(hipMalloc(&teams_on_device, sizeof(roc_shmem_team_t) * NUM_TEAMS));
+  CHECK_HIP(hipMemcpy(teams_on_device, team_world_dup,
+            sizeof(roc_shmem_team_t) * NUM_TEAMS, hipMemcpyHostToDevice));
 
   hipLaunchKernelGGL(TeamCtxInfraTest, gridSize, blockSize, shared_bytes,
-                     stream, _shmem_context, teams_on_device);
+		     stream, _shmem_context, teams_on_device);
 
-  hipFree(teams_on_device);
+  CHECK_HIP(hipFree(teams_on_device));
 }
 
 void TeamCtxInfraTester::postLaunchKernel() {

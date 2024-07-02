@@ -47,12 +47,12 @@ __global__ void ShmemPtrTest(char *r_buf, int *available) {
  * HOST TESTER CLASS METHODS
  *****************************************************************************/
 ShmemPtrTester::ShmemPtrTester(TesterArguments args) : Tester(args) {
-  hipMalloc((void **)&_available, sizeof(int));
+  CHECK_HIP(hipMalloc((void **)&_available, sizeof(int)));
   r_buf = (char *)roc_shmem_malloc(args.max_msg_size);
 }
 
 ShmemPtrTester::~ShmemPtrTester() {
-  hipFree(_available);
+  CHECK_HIP(hipFree(_available));
   roc_shmem_free(r_buf);
 }
 

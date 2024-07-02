@@ -135,9 +135,9 @@ RandomAccessTester::RandomAccessTester(TesterArguments args) : Tester(args) {
   r_buf = (int *)roc_shmem_malloc(max_size * wg_size * space);
   h_buf = (int *)malloc(max_size * wg_size * space);
   h_dev_buf = (int *)malloc(max_size * wg_size * space);
-  hipMalloc((void **)&_threads_bins, sizeof(uint32_t) * _num_waves * _num_bins);
-  hipMalloc((void **)&_off_bins, sizeof(uint32_t) * _num_waves * _num_bins);
-  hipMalloc((void **)&_PE_bins, sizeof(uint32_t) * _num_waves * _num_bins);
+  CHECK_HIP(hipMalloc((void **)&_threads_bins, sizeof(uint32_t) * _num_waves * _num_bins));
+  CHECK_HIP(hipMalloc((void **)&_off_bins, sizeof(uint32_t) * _num_waves * _num_bins));
+  CHECK_HIP(hipMalloc((void **)&_PE_bins, sizeof(uint32_t) * _num_waves * _num_bins));
   memset(_threads_bins, 0, sizeof(uint32_t) * _num_waves * _num_bins);
   memset(_off_bins, 0, sizeof(uint32_t) * _num_waves * _num_bins);
   memset(_PE_bins, 0, sizeof(uint32_t) * _num_waves * _num_bins);
@@ -148,9 +148,9 @@ RandomAccessTester::~RandomAccessTester() {
   roc_shmem_free(r_buf);
   free(h_buf);
   free(h_dev_buf);
-  hipFree(_threads_bins);
-  hipFree(_off_bins);
-  hipFree(_PE_bins);
+  CHECK_HIP(hipFree(_threads_bins));
+  CHECK_HIP(hipFree(_off_bins));
+  CHECK_HIP(hipFree(_PE_bins));
 }
 
 void RandomAccessTester::resetBuffers(uint64_t size) {
@@ -209,9 +209,9 @@ void RandomAccessTester::verifyResults(uint64_t size) {
     }
   }
 
-  hipMemcpy(h_dev_buf, r_buf, space * args.wg_size * size,
-            hipMemcpyDeviceToHost);
-  hipDeviceSynchronize();
+  CHECK_HIP(hipMemcpy(h_dev_buf, r_buf, space * args.wg_size * size,
+		      hipMemcpyDeviceToHost));
+  CHECK_HIP(hipDeviceSynchronize());
   for (i = 0; i < (space * args.wg_size * size / sizeof(int)); i++) {
     if (h_dev_buf[i] != h_buf[i]) {
       printf("PE %d  Got Data Validation: expecting %d got %d at  %d \n",

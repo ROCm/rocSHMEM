@@ -72,7 +72,7 @@ void GetSwarmTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
 
   hipLaunchKernelGGL(GetSwarmTest, gridSize, blockSize, shared_bytes, stream,
                      loop, args.skip, timer, s_buf, r_buf, size,
-                     _shmem_context);
+		     _shmem_context);
 
   num_msgs = (loop + args.skip) * gridSize.x * blockSize.x;
   num_timed_msgs = loop * gridSize.x * blockSize.x;

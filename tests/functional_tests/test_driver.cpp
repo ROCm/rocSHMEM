@@ -39,9 +39,9 @@ int main(int argc, char *argv[]) {
    */
   int rank = roc_shmem_my_pe();
   int ndevices, my_device = 0;
-  hipGetDeviceCount(&ndevices);
+  CHECK_HIP(hipGetDeviceCount(&ndevices));
   my_device = rank % ndevices;
-  hipSetDevice(my_device);
+  CHECK_HIP(hipSetDevice(my_device));
 
   /**
    * Must initialize rocshmem to access arguments needed by the tester.

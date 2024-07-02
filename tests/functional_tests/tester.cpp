@@ -56,17 +56,17 @@
 Tester::Tester(TesterArguments args) : args(args) {
   _type = (TestType)args.algorithm;
   _shmem_context = args.shmem_context;
-  hipStreamCreate(&stream);
-  hipEventCreate(&start_event);
-  hipEventCreate(&stop_event);
-  hipMalloc((void**)&timer, sizeof(uint64_t) * args.num_wgs);
+  CHECK_HIP(hipStreamCreate(&stream));
+  CHECK_HIP(hipEventCreate(&start_event));
+  CHECK_HIP(hipEventCreate(&stop_event));
+  CHECK_HIP(hipMalloc((void**)&timer, sizeof(uint64_t) * args.num_wgs));
 }
 
 Tester::~Tester() {
-  hipFree(timer);
-  hipEventDestroy(stop_event);
-  hipEventDestroy(start_event);
-  hipStreamDestroy(stream);
+  CHECK_HIP(hipFree(timer));
+  CHECK_HIP(hipEventDestroy(stop_event));
+  CHECK_HIP(hipEventDestroy(start_event));
+  CHECK_HIP(hipStreamDestroy(stream));
 }
 
 std::vector<Tester*> Tester::create(TesterArguments args) {
@@ -538,11 +538,11 @@ void Tester::execute() {
       const dim3 blockSize(args.wg_size, 1, 1);
       const dim3 gridSize(args.num_wgs, 1, 1);
 
-      hipEventRecord(start_event, stream);
+      CHECK_HIP(hipEventRecord(start_event, stream));
 
       launchKernel(gridSize, blockSize, num_loops, size);
 
-      hipEventRecord(stop_event, stream);
+      CHECK_HIP(hipEventRecord(stop_event, stream));
 
       hipError_t err = hipStreamSynchronize(stream);
       if (err != hipSuccess) {
@@ -601,7 +601,7 @@ void Tester::print(uint64_t size) {
   double avg_msg_rate = num_timed_msgs / (timer_avg / 1e6);
 
   float total_kern_time_ms;
-  hipEventElapsedTime(&total_kern_time_ms, start_event, stop_event);
+  CHECK_HIP(hipEventElapsedTime(&total_kern_time_ms, start_event, stop_event));
   float total_kern_time_s = total_kern_time_ms / 1000;
   double bandwidth_avg_gbs =
       num_msgs * size * bw_factor / total_kern_time_s / pow(2, 30);
@@ -624,9 +624,9 @@ void Tester::print(uint64_t size) {
 void flush_hdp() {
   int hip_dev_id{};
   unsigned int* hdp_flush_ptr_{nullptr};
-  hipGetDevice(&hip_dev_id);
-  hipDeviceGetAttribute(reinterpret_cast<int*>(&hdp_flush_ptr_),
-                        hipDeviceAttributeHdpMemFlushCntl, hip_dev_id);
+  CHECK_HIP(hipGetDevice(&hip_dev_id));
+  CHECK_HIP(hipDeviceGetAttribute(reinterpret_cast<int*>(&hdp_flush_ptr_),
+                        hipDeviceAttributeHdpMemFlushCntl, hip_dev_id));
   __atomic_store_n(hdp_flush_ptr_, 0x1, __ATOMIC_SEQ_CST);
 }
 
