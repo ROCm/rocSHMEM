@@ -22,417 +22,460 @@
 
 if [ $# -eq 0 ] ; then
     echo "This script must be run with at least 2 arguments."
-    echo 'Usage: ${0} argument1 argument2 [argument3] [argument4] [argument5]'
+    echo 'Usage: ${0} argument1 argument2 [argument3]'
     echo "  argument1 : path to the tester driver"
     echo "  argument2 : test type to run, e.g put"
     echo "  argument3 : directory to put the output logs"
-    echo "  argument4 : enable gdb debug"
-    echo "  argument5 : shmem context type"
     exit 1
 fi
 
-shm_ctx=4  # run tests with SHMEM_CONTEXT_WG_PRIVATE
-if [ $# -eq 5 ] ; then
-    shm_ctx=$5
-fi
-
-ENABLE_DBG=false
-if [ $# -ge 4 ] ; then
-    ENABLE_DBG=$4
-fi
-
-if [ "$ENABLE_DBG" = true ]
-then
-    gdb_cmd="xterm -e gdb -x gdbscript --args"
-else
-    gdb_cmd=""
-fi
-
-echo "Test Name ${2} (with shmem context: ${shm_ctx})"
+echo "Test Name ${2}"
 
 check() {
     if [ $? -ne 0 ]
     then
         echo "Failed $1" >&2
-        exit 1
     fi
 }
 
 case $2 in
-    *"single_thread")
-        echo "get"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 0 -x ${shm_ctx} > $3/get.log
-        check get
-        echo "get_th"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1024 -w 25 -s 32768 -a 0 -x ${shm_ctx} > $3/get_th.log
-        check get_th
-        echo "get_nbi"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 1 -x ${shm_ctx} > $3/get_nbi.log
-        check get_nbi
-        echo "get_nbi_th"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1024 -w 25 -s 32768 -a 1 -x ${shm_ctx} > $3/get_nbi_th.log
-        check get_nbi_th
-        echo "put"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 2 -x ${shm_ctx} > $3/put.log
-        check put
-        echo "put_th"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1024 -w 25 -s 32768 -a 2 -x ${shm_ctx} > $3/put_th.log
-        check put_th
-        echo "put_nbi"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 3 -x ${shm_ctx} > $3/put_nbi.log
-        check put_nbi
-        echo "put_nbi_th"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1024 -w 25 -s 32768 -a 3 -x ${shm_ctx} > $3/put_nbi_th.log
-        check put_nbi_th
-#        echo "team_ctx_infra"
-#        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 8 -a 42 -x ${shm_ctx} > $3/team_ctx_infra.log
-#        check team_ctx_infra
-        echo "team_ctx_put_nbi"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 41 -x ${shm_ctx} > $3/team_ctx_put_nbi.log
-        check team_ctx_put_nbi
-        echo "team_ctx_put_nbi_th"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1024 -w 25 -s 32768 -a 41 -x ${shm_ctx} > $3/team_ctx_put_nbi_th.log
-        check team_ctx_put_nbi_th
-        echo "team_ctx_get_nbi"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 39 -x ${shm_ctx} > $3/team_ctx_get_nbi.log
-        check team_ctx_get_nbi
-        echo "team_ctx_get_nbi_th"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1024 -w 25 -s 32768 -a 39 -x ${shm_ctx} > $3/team_ctx_get_nbi_th.log
-        check team_ctx_get_nbi_th
-        echo "reduction"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 512 -a 5 -x ${shm_ctx} > $3/reduction.log
-        check reduction
-        echo "amo_fadd"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 6 -x ${shm_ctx} > $3/amo_fadd.log
-        check amo_fadd
-        echo "amo_fadd_th"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1024 -w 25 -s 32768 -a 6 -x ${shm_ctx} > $3/amo_fadd_th.log
-        check amo_fadd_th
-        echo "amo_finc"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 7 -x ${shm_ctx} > $3/amo_finc.log
-        check amo_finc
-        echo "amo_finc_th"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1024 -w 25 -s 32768 -a 7 -x ${shm_ctx} > $3/amo_finc_th.log
-        check amo_finc_th
-        echo "amo_fetch"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 8 -x ${shm_ctx} > $3/amo_fetch.log
-        check amo_fetch
-        echo "amo_fetch_th"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1024 -w 25 -s 32768 -a 8 -x ${shm_ctx} > $3/amo_fetch_th.log
-        check amo_fetch_th
-        echo "amo_fcswap"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 9 -x ${shm_ctx} > $3/amo_fcswap.log
-        check amo_fcswap
-        echo "amo_fcswap_th"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1024 -w 25 -s 32768 -a 9 -x ${shm_ctx} > $3/amo_fcswap_th.log
-        check amo_fcswap_th
-        echo "amo_add"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 10 -x ${shm_ctx} > $3/amo_add.log
-        check amo_add
-        echo "amo_add_th"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1024 -w 25 -s 32768 -a 10 -x ${shm_ctx} > $3/amo_add_th.log
-        check amo_add_th
-        echo "amo_set"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 44 -x ${shm_ctx} > $3/amo_set.log
-        check amo_set
-        echo "amo_set_th"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1024 -w 25 -s 32768 -a 44 -x ${shm_ctx} > $3/amo_set_th.log
-        check amo_set_th
-        echo "amo_inc"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 11 -x ${shm_ctx} > $3/amo_inc.log
-        check amo_inc
-        echo "amo_inc_th"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1024 -w 25 -s 32768 -a 11 -x ${shm_ctx} > $3/amo_inc_th.log
-        check amo_inc_th
-        echo "init"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 13 -x ${shm_ctx} > $3/init.log
-        check init
-        echo "ping_pong"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 14 -x ${shm_ctx} > $3/ping_pong.log
-        check ping_pong
-        echo "ping_pong_th"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1024 -w 25 -s 32768 -a 14 -x ${shm_ctx} > $3/ping_pong_th.log
-        check ping_pong_th
-        echo "barrier_all"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 8 -a 17 -x ${shm_ctx} > $3/barrier_all.log
-        check barrier_all
-        echo "sync_all"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 8 -a 18 -x ${shm_ctx} > $3/sync_all.log
-        check sync_all
-        echo "sync"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 8 -a 19 -x ${shm_ctx} > $3/sync.log
-        check sync
-        echo "alltoall"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 512 -a 23 -x ${shm_ctx} > $3/alltoall.log
-        check alltoall
-        echo "fcollect"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 512 -a 22 -x ${shm_ctx} > $3/fcollect.log
-        check fcollect
+    ###########################################################################
+    ############################## SERIAL TESTS ###############################
+    ###########################################################################
+    *"serial")
+        echo "get_n2_w1_z1_1MB"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 0 > $3/get_n2_w1_z1_1MB.log
+        check get_n2_w1_z1_1MB
+        echo "getnbi_n2_w1_z1_1MB"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 1 > $3/getnbi_n2_w1_z1_1MB.log
+        check getnbi_n2_w1_z1_1MB
+        echo "put_n2_w1_z1_1MB"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 2 > $3/put_n2_w1_z1_1MB.log
+        check put_n2_w1_z1_1MB
+        echo "putnbi_n2_w1_z1_1MB"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 3 > $3/putnbi_n2_w1_z1_1MB.log
+        check putnbi_n2_w1_z1_1MB
+        echo "amofadd_n2_w1_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 6 > $3/amofadd_n2_w1_z1.log
+        check amofadd_n2_w1_z1
+        echo "amofinc_n2_w1_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 7 > $3/amofinc_n2_w1_z1.log
+        check amofinc_n2_w1_z1
+        echo "amofetch_n2_w1_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 8 > $3/amofetch_n2_w1_z1.log
+        check amofetch_n2_w1_z1
+        echo "amofcswap_n2_w1_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 9 > $3/amofcswap_n2_w1_z1.log
+        check amofcswap_n2_w1_z1
+        echo "amoadd_n2_w1_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 10 > $3/amoadd_n2_w1_z1.log
+        check amoadd_n2_w1_z1
+        echo "amoinc_n2_w1_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 11 > $3/amoinc_n2_w1_z1.log
+        check amoinc_n2_w1_z1
+        echo "pingpong_n2_w1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 14 > $3/pingpong_n2_w1.log
+        check pingpong_n2_w1
+        echo "amoset_n2_w1_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 44 > $3/amoset_n2_w1_z1.log
+        check amoset_n2_w1_z1
         ;;
-    *"multi_thread")
-        echo "get"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 0 -x ${shm_ctx} > $3/get.log
-        check get
-        echo "get_nbi"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 1 -x ${shm_ctx} > $3/get_nbi.log
-        check get_nbi
-        echo "put"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 2 -x ${shm_ctx} > $3/put.log
-        check put
-        echo "put_nbi"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 3 -x ${shm_ctx} > $3/put_nbi.log
-        check put_nbi
-#        echo "team_ctx_infra"
-#        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 8 -a 42 -x ${shm_ctx} > $3/team_ctx_infra.log
-#        check team_ctx_infra
-        echo "team_ctx_put_nbi"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 41 -x ${shm_ctx} > $3/team_ctx_put_nbi.log
-        check team_ctx_put_nbi
-        echo "team_ctx_get_nbi"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 39 -x ${shm_ctx} > $3/team_ctx_get_nbi.log
-        check team_ctx_get_nbi
-        echo "get_swarm"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 4 -x ${shm_ctx} > $3/get_swarm.log
-        check get_swarm
-        echo "reduction"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 512 -a 5 -x ${shm_ctx} > $3/reduction.log
-        check reduction
-        echo "amo_fadd"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 6 -x ${shm_ctx} > $3/amo_fadd.log
-        check amo_fadd
-        echo "amo_finc"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 7 -x ${shm_ctx} > $3/amo_finc.log
-        check amo_finc
-        echo "amo_fetch"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 8 -x ${shm_ctx} > $3/amo_fetch.log
-        check amo_fetch
-        echo "amo_fcswap"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 9 -x ${shm_ctx} > $3/amo_fcswap.log
-        check amo_fcswap
-        echo "amo_add"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 10 -x ${shm_ctx} > $3/amo_add.log
-        check amo_add
-        echo "amo_set"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 44 -x ${shm_ctx} > $3/amo_set.log
-        check amo_set
-        echo "amo_inc"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 11 -x ${shm_ctx} > $3/amo_inc.log
-        check amo_inc
-        echo "init"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 13 -x ${shm_ctx} > $3/init.log
-        check init
-        echo "ping_pong"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 14 -x ${shm_ctx} > $3/ping_pong.log
-        check ping_pong
-        echo "barrier_all"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 8 -a 17 -x ${shm_ctx} > $3/barrier_all.log
-        check barrier_all
-        echo "sync_all"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 8 -a 18 -x ${shm_ctx} > $3/sync_all.log
-        check sync_all
-        echo "sync"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 8 -a 19 -x ${shm_ctx} > $3/sync.log
-        check sync
-        echo "alltoall"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 512 -a 23 -x ${shm_ctx} > $3/alltoall.log
-        check alltoall
-        echo "fcollect"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 512 -a 22 -x ${shm_ctx} > $3/fcollect.log
-        check fcollect
+
+    ###########################################################################
+    ############################### SHORT TESTS ###############################
+    ###########################################################################
+    *"short")
+        echo "get_n2_w16_z128_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 0 > $3/get_n2_w16_z128_8B.log
+        check get_n2_w16_z128_8B
+        echo "getnbi_n2_w16_z128_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 1 > $3/getnbi_n2_w16_z128_8B.log
+        check getnbi_n2_w16_z128_8B
+        echo "put_n2_w16_z128_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 2 > $3/put_n2_w16_z128_8B.log
+        check put_n2_w16_z128_8B
+        echo "putnbi_n2_w16_z128_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 3 > $3/putnbi_n2_w16_z128_8B.log
+        check putnbi_n2_w16_z128_8B
+        echo "amofadd_n2_w8_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 6 > $3/amofadd_n2_w8_z1.log
+        check amofadd_n2_w8_z1
+        echo "amofinc_n2_w8_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 7 > $3/amofinc_n2_w8_z1.log
+        check amofinc_n2_w8_z1
+        echo "amofetch_n2_w8_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 8 > $3/amofetch_n2_w8_z1.log
+        check amofetch_n2_w8_z1
+        echo "amofcswap_n2_w8_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 9 > $3/amofcswap_n2_w8_z1.log
+        check amofcswap_n2_w8_z1
+        echo "amoadd_n2_w8_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 10 > $3/amoadd_n2_w8_z1.log
+        check amoadd_n2_w8_z1
+        echo "amoinc_n2_w8_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 11 > $3/amoinc_n2_w8_z1.log
+        check amoinc_n2_w8_z1
+        echo "pingpong_n2_w1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 14 > $3/pingpong_n2_w1.log
+        check pingpong_n2_w1
+        echo "amoset_n2_w8_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 44 > $3/amoset_n2_w8_z1.log
+        check amoset_n2_w8_z1
         ;;
-    *"ro")
-        echo "get"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 0 -x ${shm_ctx} > $3/get.log
-        check get
-        echo "get_nbi"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 1 -x ${shm_ctx} > $3/get_nbi.log
-        check get_nbi
-        echo "put"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 2 -x ${shm_ctx} > $3/put.log
-        check put
-        echo "put_nbi"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 3 -x ${shm_ctx} > $3/put_nbi.log
-        check put_nbi
-#        echo "team_ctx_infra"
-#        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 8 -a 42 -x ${shm_ctx} > $3/team_ctx_infra.log
-#        check team_ctx_infra
-        echo "team_ctx_put_nbi"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 41 -x ${shm_ctx} > $3/team_ctx_put_nbi.log
-        check team_ctx_put_nbi
-        echo "team_ctx_get_nbi"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 39 -x ${shm_ctx} > $3/team_ctx_get_nbi.log
-        check team_ctx_get_nbi
-#        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 4 -x ${shm_ctx} > $3/get_swarm.log
-#        check get_swarm
-        #mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 512 -a 5 -x ${shm_ctx} > $3/reduction.log
-        echo "amo_fadd"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 6 -x ${shm_ctx} > $3/amo_fadd.log
-        check amo_fadd
-        echo "amo_finc"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 7 -x ${shm_ctx} > $3/amo_finc.log
-        check amo_finc
-        echo "amo_fetch"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 8 -x ${shm_ctx} > $3/amo_fetch.log
-        check amo_fetch
-        echo "amo_fcswap"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 9 -x ${shm_ctx} > $3/amo_fcswap.log
-        check amo_fcswap
-        echo "amo_add"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 10 -x ${shm_ctx} > $3/amo_add.log
-        check amo_add
-        echo "amo_set"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 44 -x ${shm_ctx} > $3/amo_set.log
-        check amo_set
-        echo "amo_swap"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 45 -x ${shm_ctx} > $3/amo_swap.log
-        check amo_swap
-        echo "amo_fetch_and"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 46 -x ${shm_ctx} > $3/amo_fetch_and.log
-        check amo_fetch_and
-        echo "amo_and"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 49 -x ${shm_ctx} > $3/amo_and.log
-        check amo_and
-        echo "amo_fetch_or"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 47 -x ${shm_ctx} > $3/amo_fetch_or.log
-        check amo_fetch_or
-        echo "amo_or"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 50 -x ${shm_ctx} > $3/amo_or.log
-        check amo_or
-        echo "amo_fetch_xor"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 47 -x ${shm_ctx} > $3/amo_fetch_xor.log
-        check amo_fetch_xor
-        echo "amo_xor"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 50 -x ${shm_ctx} > $3/amo_xor.log
-        check amo_xor
-        echo "amo_inc"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 11 -x ${shm_ctx} > $3/amo_inc.log
-        check amo_inc
-        echo "init"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 13 -x ${shm_ctx} > $3/init.log
-        check init
-        echo "ping_pong"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 14 -x ${shm_ctx} > $3/ping_pong.log
-        check ping_pong
-        echo "barrier_all"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 8 -a 17 -x ${shm_ctx} > $3/barrier_all.log
-        check barrier_all
-        echo "sync_all"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 8 -a 18 -x ${shm_ctx} > $3/sync_all.log
-        check sync_all
-        echo "sync"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 8 -a 19 -x ${shm_ctx} > $3/sync.log
-        check sync
-        echo "alltoall"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 512 -a 23 -x ${shm_ctx} > $3/alltoall.log
-        check alltoall
-        echo "fcollect"
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 512 -a 22 -x ${shm_ctx} > $3/fcollect.log
-        check fcollect
+
+    ###########################################################################
+    ############################# EXHAUSTIVE TESTS ############################
+    ###########################################################################
+    *"exhaustive")
+        ############################### GET ###################################
+        echo "get_n2_w1_z1_1MB"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 0 > $3/get_n2_w1_z1_1MB.log
+        check get_n2_w1_z1_1MB
+        echo "get_n2_w1_z1024_512B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1024 -s 512 -a 0 > $3/get_n2_w1_z1024_512B.log
+        check get_n2_w1_z1024_512B
+        echo "get_n2_w8_z1_1MB"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -s 1048576 -a 0 > $3/get_n2_w8_z1_1MB.log
+        check get_n2_w8_z1_1MB
+        echo "get_n2_w16_z128_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 0 > $3/get_n2_w16_z128_8B.log
+        check get_n2_w16_z128_8B
+        echo "get_n2_w32_z256_512B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 256 -s 512 -a 0 > $3/get_n2_w32_z256_512B.log
+        check get_n2_w32_z256_512B
+        echo "get_n2_w64_z1024_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=64 mpirun -np 2 $1 -w 64 -z 1024 -s 8 -a 0 > $3/get_n2_w64_z1024_8B.log
+        check get_n2_w64_z1024_8B
+        ############################### GETNBI ################################
+        echo "getnbi_n2_w1_z1_1MB"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 1 > $3/getnbi_n2_w1_z1_1MB.log
+        check getnbi_n2_w1_z1_1MB
+        echo "getnbi_n2_w1_z1024_512B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1024 -s 512 -a 1 > $3/getnbi_n2_w1_z1024_512B.log
+        check getnbi_n2_w1_z1024_512B
+        echo "getnbi_n2_w8_z1_1MB"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -s 1048576 -a 1 > $3/getnbi_n2_w8_z1_1MB.log
+        check getnbi_n2_w8_z1_1MB
+        echo "getnbi_n2_w16_z128_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 1 > $3/getnbi_n2_w16_z128_8B.log
+        check getnbi_n2_w16_z128_8B
+        echo "getnbi_n2_w32_z256_512B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 256 -s 512 -a 1 > $3/getnbi_n2_w32_z256_512B.log
+        check getnbi_n2_w32_z256_512B
+        echo "getnbi_n2_w64_z1024_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=64 mpirun -np 2 $1 -w 64 -z 1024 -s 8 -a 1 > $3/getnbi_n2_w64_z1024_8B.log
+        check getnbi_n2_w64_z1024_8B
+        ############################### PUT ###################################
+        echo "put_n2_w1_z1_1MB"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 2 > $3/put_n2_w1_z1_1MB.log
+        check put_n2_w1_z1_1MB
+        echo "put_n2_w1_z1024_512B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1024 -s 512 -a 2 > $3/put_n2_w1_z1024_512B.log
+        check put_n2_w1_z1024_512B
+        echo "put_n2_w8_z1_1MB"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -s 1048576 -a 2 > $3/put_n2_w8_z1_1MB.log
+        check put_n2_w8_z1_1MB
+        echo "put_n2_w16_z128_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 2 > $3/put_n2_w16_z128_8B.log
+        check put_n2_w16_z128_8B
+        echo "put_n2_w32_z256_512B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 256 -s 512 -a 2 > $3/put_n2_w32_z256_512B.log
+        check put_n2_w32_z256_512B
+        echo "put_n2_w64_z1024_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=64 mpirun -np 2 $1 -w 64 -z 1024 -s 8 -a 2 > $3/put_n2_w64_z1024_8B.log
+        check put_n2_w64_z1024_8B
+        ############################### PUTNBI ################################
+        echo "putnbi_n2_w1_z1_1MB"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 3 > $3/putnbi_n2_w1_z1_1MB.log
+        check putnbi_n2_w1_z1_1MB
+        echo "putnbi_n2_w1_z1024_512B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1024 -s 512 -a 3 > $3/putnbi_n2_w1_z1024_512B.log
+        check putnbi_n2_w1_z1024_512B
+        echo "putnbi_n2_w8_z1_1MB"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -s 1048576 -a 3 > $3/putnbi_n2_w8_z1_1MB.log
+        check putnbi_n2_w8_z1_1MB
+        echo "putnbi_n2_w16_z128_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 3 > $3/putnbi_n2_w16_z128_8B.log
+        check putnbi_n2_w16_z128_8B
+        echo "putnbi_n2_w32_z256_512B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 256 -s 512 -a 3 > $3/putnbi_n2_w32_z256_512B.log
+        check putnbi_n2_w32_z256_512B
+        echo "putnbi_n2_w64_z1024_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=64 mpirun -np 2 $1 -w 64 -z 1024 -s 8 -a 3 > $3/putnbi_n2_w64_z1024_8B.log
+        check putnbi_n2_w64_z1024_8B
+        ############################# REDUCTION ##############################
+        echo "reduction_n2_w1_z1_32K"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -s 32768 -a 5 > $3/reduction_n2_w1_z1_32K.log
+        check reduction_n2_w1_z1_32K
+        echo "reduction_n2_w8_z1_32K"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -s 32768 -a 5 > $3/reduction_n2_w8_z1_32K.log
+        check reduction_n2_w8_z1_32K
+        echo "reduction_n2_w32_z1_32K"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 1 -s 32768 -a 5 > $3/reduction_n2_w32_z1_32K.log
+        check reduction_n2_w32_z1_32K
+        ############################## AMOFADD ###############################
+        echo "amofadd_n2_w1_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 6 > $3/amofadd_n2_w1_z1.log
+        check amofadd_n2_w1_z1
+        echo "amofadd_n2_w1_z1024"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1024 -a 6 > $3/amofadd_n2_w1_z1024.log
+        check amofadd_n2_w1_z1024
+        echo "amofadd_n2_w8_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 6 > $3/amofadd_n2_w8_z1.log
+        check amofadd_n2_w8_z1
+        echo "amofadd_n2_w32_z128"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 128 -a 6 > $3/amofadd_n2_w32_z128.log
+        check amofadd_n2_w32_z128
+        ############################## AMOFINC ###############################
+        echo "amofinc_n2_w1_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 7 > $3/amofinc_n2_w1_z1.log
+        check amofinc_n2_w1_z1
+        echo "amofinc_n2_w1_z1024"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1024 -a 7 > $3/amofinc_n2_w1_z1024.log
+        check amofinc_n2_w1_z1024
+        echo "amofinc_n2_w8_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 7 > $3/amofinc_n2_w8_z1.log
+        check amofinc_n2_w8_z1
+        echo "amofinc_n2_w32_z128"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 128 -a 7 > $3/amofinc_n2_w32_z128.log
+        check amofinc_n2_w32_z128
+        ############################ AMOFETCH ################################
+        echo "amofetch_n2_w1_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 8 > $3/amofetch_n2_w1_z1.log
+        check amofetch_n2_w1_z1
+        echo "amofetch_n2_w1_z1024"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1024 -a 8 > $3/amofetch_n2_w1_z1024.log
+        check amofetch_n2_w1_z1024
+        echo "amofetch_n2_w8_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 8 > $3/amofetch_n2_w8_z1.log
+        check amofetch_n2_w8_z1
+        echo "amofetch_n2_w32_z128"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 128 -a 8 > $3/amofetch_n2_w32_z128.log
+        check amofetch_n2_w32_z128
+        ########################### AMOFCSWAP ################################
+        echo "amofcswap_n2_w1_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 9 > $3/amofcswap_n2_w1_z1.log
+        check amofcswap_n2_w1_z1
+        echo "amofcswap_n2_w8_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 9 > $3/amofcswap_n2_w8_z1.log
+        check amofcswap_n2_w8_z1
+        echo "amofcswap_n2_w32_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 1 -a 9 > $3/amofcswap_n2_w32_z1.log
+        check amofcswap_n2_w32_z1
+        ############################# AMOADD ################################
+        echo "amoadd_n2_w1_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 10 > $3/amoadd_n2_w1_z1.log
+        check amoadd_n2_w1_z1
+        echo "amoadd_n2_w1_z1024"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1024 -a 10 > $3/amoadd_n2_w1_z1024.log
+        check amoadd_n2_w1_z1024
+        echo "amoadd_n2_w8_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 10 > $3/amoadd_n2_w8_z1.log
+        check amoadd_n2_w8_z1
+        echo "amoadd_n2_w32_z128"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 128 -a 10 > $3/amoadd_n2_w32_z128.log
+        check amoadd_n2_w32_z128
+        ############################# AMOINC ################################
+        echo "amoinc_n2_w1_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 11 > $3/amoinc_n2_w1_z1.log
+        check amoinc_n2_w1_z1
+        echo "amoinc_n2_w1_z1024"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1024 -a 11 > $3/amoinc_n2_w1_z1024.log
+        check amoinc_n2_w1_z1024
+        echo "amoinc_n2_w8_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 11 > $3/amoinc_n2_w8_z1.log
+        check amoinc_n2_w8_z1
+        echo "amoinc_n2_w32_z128"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 128 -a 11 > $3/amoinc_n2_w32_z128.log
+        check amoinc_n2_w32_z128
+        ############################## INIT #################################
+        echo "init_n2"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -a 13 > $3/init_n2.log
+        check init_n2
+        ########################### PINGPONG ################################
+        echo "pingpong_n2_w1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 14 > $3/pingpong_n2_w1.log
+        check pingpong_n2_w1
+        echo "pingpong_n2_w8"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -a 14 > $3/pingpong_n2_w8.log
+        check pingpong_n2_w8
+        echo "pingpong_n2_w32"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -a 14 > $3/pingpong_n2_w32.log
+        check pingpong_n2_w32
+        ############################ BARRIER ################################
+        echo "barrier_n2_w1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 17 > $3/barrier_n2_w1.log
+        check barrier_n2_w1
+        echo "barrier_n2_w8"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -a 17 > $3/barrier_n2_w8.log
+        check barrier_n2_w8
+        echo "barrier_n2_w32"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -a 17 > $3/barrier_n2_w32.log
+        check barrier_n2_w32
+        ############################ SYNCALL ################################
+        echo "syncall_n2_w1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 18 > $3/syncall_n2_w1.log
+        check syncall_n2_w1
+        echo "syncall_n2_w8"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -a 18 > $3/syncall_n2_w8.log
+        check syncall_n2_w8
+        echo "syncall_n2_w32"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -a 18 > $3/syncall_n2_w32.log
+        check syncall_n2_w32
+        ############################# SYNC ##################################
+        echo "sync_n2_w1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 19 > $3/sync_n2_w1.log
+        check sync_n2_w1
+        echo "sync_n2_w8"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -a 19 > $3/sync_n2_w8.log
+        check sync_n2_w8
+        echo "sync_n2_w32"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -a 19 > $3/sync_n2_w32.log
+        check sync_n2_w32
+        ########################### FCOLLECT ################################
+        echo "fcollect_n2_w1_512B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -s 512 -a 22 > $3/fcollect_n2_w1_512B.log
+        check fcollect_n2_w1_512B
+        echo "fcollect_n2_w8_512B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -s 512 -a 22 > $3/fcollect_n2_w8_512B.log
+        check fcollect_n2_w8_512B
+        echo "fcollect_n2_w32_512B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -s 512 -a 22 > $3/fcollect_n2_w32_512B.log
+        check fcollect_n2_w32_512B
+        ########################### ALLTOALL ################################
+        echo "alltoall_n2_w1_512B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -s 512 -a 23 > $3/alltoall_n2_w1_512B.log
+        check alltoall_n2_w1_512B
+        echo "alltoall_n2_w8_512B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -s 512 -a 23 > $3/alltoall_n2_w8_512B.log
+        check alltoall_n2_w8_512B
+        echo "alltoall_n2_w32_512B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -s 512 -a 23 > $3/alltoall_n2_w32_512B.log
+        check alltoall_n2_w32_512B
+        ########################## TEAMGETNBI ###############################
+        echo "teamgetnbi_n2_w1_1MB"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -s 1048576 -a 39 > $3/teamgetnbi_n2_w1_1MB.log
+        check teamgetnbi_n2_w1_1MB
+        ########################## TEAMPUTNBI ###############################
+        echo "teamputnbi_n2_w1_1MB"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -s 1048576 -a 41 > $3/teamputnbi_n2_w1_1MB.log
+        check teamputnbi_n2_w1_1MB
+        ############################ AMOSET #################################
+        echo "amoset_n2_w1_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 44 > $3/amoset_n2_w1_z1.log
+        check amoset_n2_w1_z1
+        echo "amoset_n2_w8_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 44 > $3/amoset_n2_w8_z1.log
+        check amoset_n2_w8_z1
+        echo "amoset_n2_w32_z1"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 1 -a 44 > $3/amoset_n2_w32_z1.log
+        check amoset_n2_w32_z1
         ;;
-    *"team_ctx_get")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 38 -x ${shm_ctx}
-        ;;
-    *"team_ctx_get_nbi")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 39 -x ${shm_ctx}
-        ;;
-    *"team_ctx_put")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 40 -x ${shm_ctx}
-        ;;
-    *"team_ctx_put_nbi")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 41 -x ${shm_ctx}
-        ;;
+
+    ###########################################################################
+    ############################# INDIVIDUAL TESTS ############################
+    ###########################################################################
     *"get")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 0 -x ${shm_ctx}
+        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 0
         ;;
-    *"get_nbi")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 1 -x ${shm_ctx}
+    *"getnbi")
+        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 1
         ;;
     *"put")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 2 -x ${shm_ctx}
+        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 2
         ;;
-    *"put_nbi")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 3 -x ${shm_ctx}
-        ;;
-    *"get_swarm")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 4 -x ${shm_ctx}
-        ;;
-    *"team_reduction")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 512 -a 37 -x ${shm_ctx}
+    *"putnbi")
+        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 3
         ;;
     *"reduction")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 512 -a 5 -x ${shm_ctx}
+        mpirun -np 2 $1 -w 1 -z 1 -s 32768 -a 5
         ;;
-    *"amo_fadd")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 6 -x ${shm_ctx}
+    *"amofadd")
+        mpirun -np 2 $1 -w 1 -z 1 -a 6
         ;;
-    *"amo_finc")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 7 -x ${shm_ctx}
+    *"amofinc")
+        mpirun -np 2 $1 -w 1 -z 1 -a 7
         ;;
-    *"amo_fetch")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 8 -x ${shm_ctx}
+    *"amofetch")
+        mpirun -np 2 $1 -w 1 -z 1 -a 8
         ;;
-    *"amo_fcswap")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 9 -x ${shm_ctx}
+    *"amofcswap")
+        mpirun -np 2 $1 -w 1 -z 1 -a 9
         ;;
-    *"amo_add")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 10 -x ${shm_ctx}
+    *"amoadd")
+        mpirun -np 2 $1 -w 1 -z 1 -a 10
         ;;
-    *"amo_set")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 44 -x ${shm_ctx}
-        ;;
-    *"amo_swap")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 45 -x ${shm_ctx}
-        ;;
-    *"amo_fetch_and")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 46 -x ${shm_ctx}
-        ;;
-    *"amo_and")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 49 -x ${shm_ctx}
-        ;;
-    *"amo_fetch_or")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 47 -x ${shm_ctx}
-        ;;
-    *"amo_or")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 50 -x ${shm_ctx}
-        ;;
-    *"amo_fetch_xor")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 48 -x ${shm_ctx}
-        ;;
-    *"amo_xor")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 51 -x ${shm_ctx}
-        ;;
-    *"amo_inc")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 11 -x ${shm_ctx}
+    *"amoinc")
+        mpirun -np 2 $1 -w 1 -z 1 -a 11
         ;;
     *"init")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 13 -x ${shm_ctx}
+        mpirun -np 2 $1 -a 13
         ;;
-    *"ping_pong")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 32768 -a 14 -x ${shm_ctx}
+    *"pingpong")
+        mpirun -np 2 $1 -w 1 -z 1 -a 14
         ;;
-    *"team_broadcast")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 512 -a 36 -x ${shm_ctx}
+    *"barrier")
+        mpirun -np 2 $1 -w 1 -z 1 -a 17
         ;;
-    *"alltoall")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 512 -a 23 -x ${shm_ctx}
-    ;;
-    *"fcollect")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 512 -a 22 -x ${shm_ctx}
-    ;;
-    *"broadcast")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 512 -a 20 -x ${shm_ctx}
-        ;;
-    *"barrier_all")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 8 -a 17 -x ${shm_ctx}
-        ;;
-    *"sync_all")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 8 -a 18 -x ${shm_ctx}
+    *"syncall")
+        mpirun -np 2 $1 -w 1 -z 1 -a 18
         ;;
     *"sync")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 8 -a 19 -x ${shm_ctx}
+        mpirun -np 2 $1 -w 1 -z 1 -s 8 -a 19
+        ;;
+    *"broadcast")
+        mpirun -np 2 $1 -w 1 -z 1 -s 32768 -a 20
+        ;;
+    *"fcollect")
+        mpirun -np 2 $1 -w 1 -z 1 -s 32768 -a 22
+        ;;
+    *"alltoall")
+        mpirun -np 2 $1 -w 1 -z 1 -s 32768 -a 23
+        ;;
+    *"team_broadcast")
+        mpirun -np 2 $1 -w 1 -z 1 -s 32768 -a 36
+        ;;
+    *"team_reduction")
+        mpirun -np 2 $1 -w 1 -z 1 -s 32768 -a 37
+        ;;
+    *"team_get")
+        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 38
+        ;;
+    *"team_getnbi")
+        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 39
+        ;;
+    *"team_put")
+        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 40
+        ;;
+    *"team_putnbi")
+        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 41
         ;;
     *"ctx_infra")
-        mpirun -np 2 ${gdb_cmd} $1 -t 1 -w 1 -s 8 -a 42 -x ${shm_ctx}
+        mpirun -np 2 $1 -w 1 -z 1 -a 42
+        ;;
+    *"amoset")
+        mpirun -np 2 $1 -w 1 -z 1 -a 44
+        ;;
+    *"amoswap")
+        mpirun -np 2 $1 -w 1 -z 1 -a 45
+        ;;
+    *"amofetchand")
+        mpirun -np 2 $1 -w 1 -z 1 -a 46
+        ;;
+    *"amofetchor")
+        mpirun -np 2 $1 -w 1 -z 1 -a 47
+        ;;
+    *"amofetchxor")
+        mpirun -np 2 $1 -w 1 -z 1 -a 48
+        ;;
+    *"amoand")
+        mpirun -np 2 $1 -w 1 -z 1 -a 49
+        ;;
+    *"amoor")
+        mpirun -np 2 $1 -w 1 -z 1 -a 50
+        ;;
+    *"amoxor")
+        mpirun -np 2 $1 -w 1 -z 1 -a 51
         ;;
     *)
         echo "UNKNOWN TEST TYPE: $2"
