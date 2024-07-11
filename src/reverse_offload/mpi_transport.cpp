@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <functional>
 #include <utility>
+#include <vector>
 
 #include "../host/host.hpp"
 #include "backend_ro.hpp"
@@ -311,14 +312,14 @@ MPI_Comm MPITransport::createComm(int start, int stride, int size) {
     MPI_Group world_group{};
     NET_CHECK(MPI_Comm_group(ro_net_comm_world, &world_group));
 
-    int group_ranks[size];  // NOLINT
+    std::vector<int> group_ranks(size);
     group_ranks[0] = start;
     for (int i{1}; i < size; i++) {
       group_ranks[i] = group_ranks[i - 1] + stride;
     }
 
     MPI_Group new_group{};
-    NET_CHECK(MPI_Group_incl(world_group, size, group_ranks, &new_group));
+    NET_CHECK(MPI_Group_incl(world_group, size, group_ranks.data(), &new_group));
     NET_CHECK(MPI_Comm_create_group(ro_net_comm_world, new_group, 0, &comm));
   }
 
@@ -525,20 +526,21 @@ void MPITransport::alltoall_broadcast(void *dst, void *src, int size,
   NET_CHECK(MPI_Comm_group(MPI_COMM_WORLD, &world_grp));
 
   int grp_size{};
+
   NET_CHECK(MPI_Group_size(grp, &grp_size));
 
-  int ranks[grp_size];
-  int world_ranks[grp_size];
+  std::vector<int> ranks(grp_size);
+  std::vector<int> world_ranks(grp_size);
 
   for (int i{0}; i < grp_size; i++) ranks[i] = i;
 
   NET_CHECK(
-      MPI_Group_translate_ranks(grp, grp_size, ranks, world_grp, world_ranks));
+      MPI_Group_translate_ranks(grp, grp_size, ranks.data(), world_grp, world_ranks.data()));
 
   int type_size{};
   MPI_Datatype mpi_type{convertType(type)};
   NET_CHECK(MPI_Type_size(mpi_type, &type_size));
-  MPI_Request pe_req[pe_size];
+  std::vector<MPI_Request> pe_req(pe_size);
 
   for (int i{0}; i < pe_size; ++i) {
     int src_offset{i * type_size * size};
@@ -550,7 +552,7 @@ void MPITransport::alltoall_broadcast(void *dst, void *src, int size,
                        size, mpi_type, bp->heap_window_info[win_id]->get_win(),
                        &pe_req[i]));
   }
-  NET_CHECK(MPI_Waitall(pe_size, pe_req, MPI_STATUSES_IGNORE));
+  NET_CHECK(MPI_Waitall(pe_size, pe_req.data(), MPI_STATUSES_IGNORE));
   NET_CHECK(MPI_Win_flush_all(bp->heap_window_info[win_id]->get_win()));
 
   barrier(blockId, threadId, blocking, comm);
@@ -588,12 +590,12 @@ void MPITransport::alltoall_gcen(void *dst, void *src, int size, int win_id,
   int grp_size{};
   NET_CHECK(MPI_Group_size(grp, &grp_size));
 
-  int ranks[grp_size];
-  int world_ranks[grp_size];
+  std::vector<int> ranks(grp_size);
+  std::vector<int> world_ranks(grp_size);
 
   for (int i{0}; i < grp_size; i++) ranks[i] = i;
   NET_CHECK(
-      MPI_Group_translate_ranks(grp, grp_size, ranks, world_grp, world_ranks));
+      MPI_Group_translate_ranks(grp, grp_size, ranks.data(), world_grp, world_ranks.data()));
 
   int type_size{};
   MPI_Datatype mpi_type{convertType(type)};
@@ -610,7 +612,7 @@ void MPITransport::alltoall_gcen(void *dst, void *src, int size, int win_id,
     abort();
   }
 
-  MPI_Request clust_req[pe_size];
+  std::vector<MPI_Request> clust_req(pe_size);
 
   // Step 1: Send data to PEs in cluster
   for (int i{0}; i < pe_size; ++i) {
@@ -627,7 +629,7 @@ void MPITransport::alltoall_gcen(void *dst, void *src, int size, int win_id,
         &clust_req[i]));
   }
 
-  NET_CHECK(MPI_Waitall(pe_size, clust_req, MPI_STATUSES_IGNORE));
+  NET_CHECK(MPI_Waitall(pe_size, clust_req.data(), MPI_STATUSES_IGNORE));
 
   // Step 2: Send final data to PEs outside cluster
   for (int i{0}; i < num_clust; ++i) {
@@ -678,13 +680,13 @@ void MPITransport::alltoall_gcen2(void *dst, void *src, int size, int win_id,
   int grp_size;
   NET_CHECK(MPI_Group_size(grp, &grp_size));
 
-  int ranks[grp_size];
-  int world_ranks[grp_size];
+  std::vector<int> ranks(grp_size);
+  std::vector<int> world_ranks(grp_size);
 
   for (int i = 0; i < grp_size; i++) ranks[i] = i;
   // Convert comm ranks to global ranks for rput
   NET_CHECK(
-      MPI_Group_translate_ranks(grp, grp_size, ranks, world_grp, world_ranks));
+      MPI_Group_translate_ranks(grp, grp_size, ranks.data(), world_grp, world_ranks.data()));
 
   int type_size;
   NET_CHECK(MPI_Type_size(mpi_type, &type_size));
@@ -702,7 +704,7 @@ void MPITransport::alltoall_gcen2(void *dst, void *src, int size, int win_id,
     abort();
   }
 
-  MPI_Request clust_req[pe_size];
+  std::vector<MPI_Request> clust_req(pe_size);
 
   // Step 1: Send data to PEs in cluster
   for (int i = 0; i < pe_size; ++i) {
@@ -719,7 +721,7 @@ void MPITransport::alltoall_gcen2(void *dst, void *src, int size, int win_id,
                        &clust_req[i]));
   }
 
-  NET_CHECK(MPI_Waitall(pe_size, clust_req, MPI_STATUSES_IGNORE));
+  NET_CHECK(MPI_Waitall(pe_size, clust_req.data(), MPI_STATUSES_IGNORE));
 
   // Now wait
   int stride = world_ranks[1] - world_ranks[0];
@@ -801,18 +803,18 @@ void MPITransport::fcollect_broadcast(void *dst, void *src, int size,
   int grp_size;
   NET_CHECK(MPI_Group_size(grp, &grp_size));
 
-  int ranks[grp_size];
-  int world_ranks[grp_size];
+  std::vector<int> ranks(grp_size);
+  std::vector<int> world_ranks(grp_size);
 
   for (int i = 0; i < grp_size; i++) ranks[i] = i;
   // Convert comm ranks to global ranks for rput
   NET_CHECK(
-      MPI_Group_translate_ranks(grp, grp_size, ranks, world_grp, world_ranks));
+      MPI_Group_translate_ranks(grp, grp_size, ranks.data(), world_grp, world_ranks.data()));
 
   int type_size;
   NET_CHECK(MPI_Type_size(mpi_type, &type_size));
 
-  MPI_Request pe_req[pe_size];
+  std::vector<MPI_Request> pe_req(pe_size);
 
   // Put data to all PEs
   for (int i = 0; i < pe_size; ++i) {
@@ -823,7 +825,7 @@ void MPITransport::fcollect_broadcast(void *dst, void *src, int size,
                                                  dst_offset),
         size, mpi_type, bp->heap_window_info[win_id]->get_win(), &pe_req[i]));
   }
-  NET_CHECK(MPI_Waitall(pe_size, pe_req, MPI_STATUSES_IGNORE));
+  NET_CHECK(MPI_Waitall(pe_size, pe_req.data(), MPI_STATUSES_IGNORE));
   NET_CHECK(MPI_Win_flush_all(bp->heap_window_info[win_id]->get_win()));
 
   // Now wait for completion
@@ -865,13 +867,13 @@ void MPITransport::fcollect_gcen(void *dst, void *src, int size, int win_id,
   int grp_size;
   NET_CHECK(MPI_Group_size(grp, &grp_size));
 
-  int ranks[grp_size];
-  int world_ranks[grp_size];
+  std::vector<int> ranks(grp_size);
+  std::vector<int> world_ranks(grp_size);
 
   for (int i = 0; i < grp_size; i++) ranks[i] = i;
   // Convert comm ranks to global ranks for rput
   NET_CHECK(
-      MPI_Group_translate_ranks(grp, grp_size, ranks, world_grp, world_ranks));
+      MPI_Group_translate_ranks(grp, grp_size, ranks.data(), world_grp, world_ranks.data()));
 
   int type_size;
   NET_CHECK(MPI_Type_size(mpi_type, &type_size));
@@ -889,7 +891,7 @@ void MPITransport::fcollect_gcen(void *dst, void *src, int size, int win_id,
     abort();
   }
 
-  MPI_Request clust_req[pe_size];
+  std::vector<MPI_Request> clust_req(pe_size);
 
   // Step 1: Send data to PEs in cluster
   for (int i = 0; i < clust_size; ++i) {
@@ -902,7 +904,7 @@ void MPITransport::fcollect_gcen(void *dst, void *src, int size, int win_id,
         bp->heap_window_info[win_id]->get_win(), &clust_req[i]));
   }
 
-  NET_CHECK(MPI_Waitall(clust_size, clust_req, MPI_STATUSES_IGNORE));
+  NET_CHECK(MPI_Waitall(clust_size, clust_req.data(), MPI_STATUSES_IGNORE));
 
   // Step 2: Send final data to PEs outside cluster
   for (int i = 0; i < num_clust; ++i) {
@@ -952,13 +954,13 @@ void MPITransport::fcollect_gcen2(void *dst, void *src, int size, int win_id,
   int grp_size;
   NET_CHECK(MPI_Group_size(grp, &grp_size));
 
-  int ranks[grp_size];
-  int world_ranks[grp_size];
+  std::vector<int> ranks(grp_size);
+  std::vector<int> world_ranks(grp_size);
 
   for (int i = 0; i < grp_size; i++) ranks[i] = i;
   // Convert comm ranks to global ranks for rput
   NET_CHECK(
-      MPI_Group_translate_ranks(grp, grp_size, ranks, world_grp, world_ranks));
+      MPI_Group_translate_ranks(grp, grp_size, ranks.data(), world_grp, world_ranks.data()));
 
   int type_size;
   NET_CHECK(MPI_Type_size(mpi_type, &type_size));
@@ -976,7 +978,7 @@ void MPITransport::fcollect_gcen2(void *dst, void *src, int size, int win_id,
     abort();
   }
 
-  MPI_Request clust_req[pe_size];
+  std::vector<MPI_Request> clust_req(pe_size);
 
   // Step 1: Send data to PEs in cluster
   for (int i = 0; i < clust_size; ++i) {
@@ -989,7 +991,7 @@ void MPITransport::fcollect_gcen2(void *dst, void *src, int size, int win_id,
         bp->heap_window_info[win_id]->get_win(), &clust_req[i]));
   }
 
-  NET_CHECK(MPI_Waitall(clust_size, clust_req, MPI_STATUSES_IGNORE));
+  NET_CHECK(MPI_Waitall(clust_size, clust_req.data(), MPI_STATUSES_IGNORE));
 
   int stride = world_ranks[1] - world_ranks[0];
   MPI_Comm comm_cluster =

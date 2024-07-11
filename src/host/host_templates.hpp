@@ -120,7 +120,7 @@ __host__ MPI_Comm HostInterface::get_mpi_comm(int pe_start, int log_pe_stride,
   /*
    * If there is not one cached, create a new one (expensive)
    */
-  int active_set_ranks[pe_size];  // NOLINT
+  std::vector<int> active_set_ranks(pe_size);
   int stride{1 << log_pe_stride};
   active_set_ranks[0] = pe_start;
 
@@ -133,7 +133,7 @@ __host__ MPI_Comm HostInterface::get_mpi_comm(int pe_start, int log_pe_stride,
 
   MPI_Comm_group(host_comm_world_, &comm_world_group);
 
-  MPI_Group_incl(comm_world_group, pe_size, active_set_ranks,
+  MPI_Group_incl(comm_world_group, pe_size, active_set_ranks.data(),
                  &active_set_group);
 
   MPI_Comm_create_group(host_comm_world_, active_set_group, 0,
