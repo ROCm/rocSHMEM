@@ -55,7 +55,7 @@ class CommunicatorMPI {
     MPI_Initialized(&initialized);
     if (!initialized) {
       int provided;
-      MPI_Init_thread(nullptr, nullptr, MPI_THREAD_SINGLE, &provided);
+      MPI_Init_thread(nullptr, nullptr, MPI_THREAD_MULTIPLE, &provided);
     }
     MPI_Comm_rank(comm_, &my_pe_);
     MPI_Comm_size(comm_, &num_pes_);

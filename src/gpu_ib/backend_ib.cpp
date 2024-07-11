@@ -343,7 +343,7 @@ void GPUIBBackend::init_mpi_once(MPI_Comm comm) {
   if (init_done == 0) {
     int provided;
     NET_CHECK(
-        MPI_Init_thread(nullptr, nullptr, MPI_THREAD_SINGLE, &provided));
+        MPI_Init_thread(nullptr, nullptr, MPI_THREAD_MULTIPLE, &provided));
   }
   if (comm == MPI_COMM_NULL) {
     NET_CHECK(MPI_Comm_dup(MPI_COMM_WORLD, &backend_comm));

@@ -31,7 +31,7 @@ MPIInitSingleton::MPIInitSingleton() {
 
   if (!pre_init_done) {
     int provided;
-    MPI_Init_thread(nullptr, nullptr, MPI_THREAD_SINGLE, &provided);
+    MPI_Init_thread(nullptr, nullptr, MPI_THREAD_MULTIPLE, &provided);
   }
 
   MPI_Comm_size(MPI_COMM_WORLD, &nprocs_);

@@ -48,9 +48,9 @@ MPITransport::MPITransport(MPI_Comm comm, Queue* q)
 
   int provided{};
   if (!init_done) {
-    NET_CHECK(MPI_Init_thread(0, 0, MPI_THREAD_SINGLE, &provided));
-    if (provided != MPI_THREAD_SINGLE) {
-      std::cerr << "MPI_THREAD_SINGLE support disabled.\n";
+    NET_CHECK(MPI_Init_thread(0, 0, MPI_THREAD_MULTIPLE, &provided));
+    if (provided != MPI_THREAD_MULTIPLE) {
+      std::cerr << "MPI_THREAD_MULTIPLE support disabled.\n";
     }
   }
   if (comm == MPI_COMM_NULL) comm = MPI_COMM_WORLD;
