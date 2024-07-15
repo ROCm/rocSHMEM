@@ -433,11 +433,6 @@ class Context {
    */
   ROCHostStats ctxHostStats{};
 
-  /**
-   * @brief Lock to prevent data races on shared data
-   */
-  SpinEBOBlockMutex dev_mtx_{};
-
  protected:
   /**************************************************************************
    ***************************** POLICY MEMBERS *****************************

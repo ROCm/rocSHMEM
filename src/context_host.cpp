@@ -29,8 +29,7 @@ namespace rocshmem {
 __host__ Context::Context(Backend* handle, bool shareable)
     : num_pes(handle->getNumPEs()),
       my_pe(handle->getMyPE()),
-      fence_(shareable),
-      dev_mtx_(shareable) {}
+      fence_(shareable) {}
 
 /******************************************************************************
  ********************** CONTEXT DISPATCH IMPLEMENTATIONS **********************

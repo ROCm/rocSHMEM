@@ -39,7 +39,6 @@
 #include "roc_shmem/roc_shmem.hpp"
 #include "backend_type.hpp"
 #include "ipc_policy.hpp"
-#include "memory/slab_heap.hpp"
 #include "memory/symmetric_heap.hpp"
 #include "stats.hpp"
 #include "team_tracker.hpp"
@@ -229,12 +228,6 @@ class Backend {
    * needed to allocate/free memory on the symmetric heap.
    */
   SymmetricHeap heap{};
-
-  /**
-   * @brief Object contains the interface and internal data structures
-   * needed to allocate/free memory on the slab heap.
-   */
-  SlabHeap slab{};
 
   /**
    * @brief Determines which device to launch device kernels onto.
