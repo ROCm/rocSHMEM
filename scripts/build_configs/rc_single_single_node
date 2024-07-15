@@ -20,12 +20,10 @@ cmake \
     -DUSE_DC=OFF \
     -DUSE_IPC=ON \
     -DUSE_COHERENT_HEAP=OFF \
-    -DUSE_CACHED_HEAP=OFF \
     -DUSE_THREADS=OFF \
     -DUSE_WF_COAL=OFF \
     -DUSE_SINGLE_NODE=ON \
     -DUSE_HOST_SIDE_HDP_FLUSH=ON\
-    -DROCM_PATH="/opt/rocm-5.4.2/"\
     $src_path
 cmake --build . --parallel 8
 cmake --install .

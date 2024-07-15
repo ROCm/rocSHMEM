@@ -126,7 +126,7 @@ extern const int gpu_clock_freq_mhz;
 __device__ __forceinline__ void __roc_inv() { asm volatile("buffer_wbinvl1;"); }
 
 __device__ __forceinline__ void __roc_flush() {
-#if defined USE_COHERENT_HEAP || defined USE_CACHED_HEAP
+#if defined USE_COHERENT_HEAP
 #if __gfx90a__
   asm volatile("s_dcache_wb;");
   asm volatile("buffer_wbl2;");

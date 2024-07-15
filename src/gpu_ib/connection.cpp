@@ -256,7 +256,7 @@ void* Connection::buf_alloc([[maybe_unused]] struct ibv_pd* pd,
   if (use_gpu_mem) {
     void* dev_ptr;
     if (coherent_cq == 1) {
-#if defined USE_COHERENT_HEAP || defined USE_CACHED_HEAP
+#if defined USE_COHERENT_HEAP
       CHECK_HIP(hipMalloc(reinterpret_cast<void**>(&dev_ptr), size));
 #else
   #ifdef HIP_SUPPORTS_MALLOC_UNCACHED
