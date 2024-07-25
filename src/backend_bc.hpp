@@ -38,7 +38,7 @@
 #include "config.h"  // NOLINT(build/include_subdir)
 #include "roc_shmem/roc_shmem.hpp"
 #include "backend_type.hpp"
-#include "ipc_policy.hpp"
+#include "ipc/ipc_policy.hpp"
 #include "memory/symmetric_heap.hpp"
 #include "stats.hpp"
 #include "team_tracker.hpp"

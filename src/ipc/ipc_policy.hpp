@@ -30,8 +30,8 @@
 #include <vector>
 
 #include "config.h"  // NOLINT(build/include_subdir)
-#include "memory/hip_allocator.hpp"
-#include "util.hpp"
+#include "../memory/hip_allocator.hpp"
+#include "../util.hpp"
 
 namespace rocshmem {
 
