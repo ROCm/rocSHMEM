@@ -27,4 +27,5 @@ target_sources(
   ${PROJECT_NAME}
   PRIVATE
     ipc_policy.cpp
+    context_ipc.cpp
 )
