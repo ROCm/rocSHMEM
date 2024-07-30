@@ -42,10 +42,12 @@ std::vector<device_agent_t> cpu_agents;
 
 __device__ uint64_t __read_clock() {
   uint64_t clock{};
+#if __gfx90a__
   asm volatile(
       "s_memrealtime %0\n"
       "s_waitcnt lgkmcnt(0)\n"
       : "=s"(clock));
+#endif
   return clock;
 }
 

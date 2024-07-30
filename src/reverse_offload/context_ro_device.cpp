@@ -391,20 +391,24 @@ __device__ bool enough_space(BlockHandle *h, uint64_t required) {
 
 __device__ void refresh_volatile_dwordx2(volatile uint64_t *assigned_value,
                                          volatile uint64_t *read_value) {
-  __asm__ volatile(
+#if __gfx90a__
+  asm volatile(
     "global_load_dwordx2 %0 %1 off glc slc\n "
     "s_waitcnt vmcnt(0)"
     : "=v"(*assigned_value)
     : "v"(read_value));
+#endif
 }
 
 __device__ void refresh_volatile_sbyte(volatile int *assigned_value,
                                        volatile char *read_value) {
-  __asm__ volatile(
+#if __gfx90a__
+  asm volatile(
     "global_load_sbyte %0 %1 off glc slc\n "
     "s_waitcnt vmcnt(0)"
     : "=v"(*assigned_value)
     : "v"(read_value));
+#endif
 }
 
 __device__ void acquire_lock(BlockHandle *handle) {

@@ -43,11 +43,13 @@ namespace rocshmem {
 
 __device__ __forceinline__ int uncached_load_ubyte(uint8_t* src) {
   int ret;
-  __asm__ volatile(
+#if __gfx90a__
+  asm volatile(
       "global_load_ubyte %0 %1 off glc slc \n"
       "s_waitcnt vmcnt(0)"
       : "=v"(ret)
       : "v"(src));
+#endif
   return ret;
 }
 
@@ -62,18 +64,22 @@ NOWARN(-Wdeprecated-volatile,
     T ret;
     switch (sizeof(T)) {
       case 4:
-        __asm__ volatile(
+#if __gfx90a__
+        asm volatile(
             "global_load_dword %0 %1 off glc slc \n"
             "s_waitcnt vmcnt(0)"
             : "=v"(ret)
             : "v"(src));
+#endif
         break;
       case 8:
-        __asm__ volatile(
+#if __gfx90a__
+        asm volatile(
             "global_load_dwordx2 %0 %1 off glc slc \n"
             "s_waitcnt vmcnt(0)"
             : "=v"(ret)
             : "v"(src));
+#endif
         break;
       default:
         break;
@@ -123,10 +129,20 @@ NOWARN(-Wdeprecated-volatile,
 extern const int gpu_clock_freq_mhz;
 
 /* Device-side internal functions */
-__device__ __forceinline__ void __roc_inv() { asm volatile("buffer_wbinvl1;"); }
+__device__ __forceinline__ void __roc_inv() {
+#if defined USE_COHERENT_HEAP
+#if __gfx90a__
+  asm volatile("buffer_wbinvl1;");
+#endif
+#endif
+}
 
 __device__ __forceinline__ void __roc_flush() {
 #if defined USE_COHERENT_HEAP
+#if __gfx90a__
+  asm volatile("s_dcache_wb;");
+  asm volatile("buffer_wbl2;");
+#endif
 #if __gfx90a__
   asm volatile("s_dcache_wb;");
   asm volatile("buffer_wbl2;");
@@ -227,17 +243,23 @@ __device__ __forceinline__ void store_asm(uint8_t* val, uint8_t* dst,
   switch (size) {
     case 2: {
       int16_t val16{*(reinterpret_cast<int16_t*>(val))};
+#if __gfx90a__
       asm volatile("flat_store_short %0 %1 glc slc" : : "v"(dst), "v"(val16));
+#endif
       break;
     }
     case 4: {
       int32_t val32{*(reinterpret_cast<int32_t*>(val))};
+#if __gfx90a__
       asm volatile("flat_store_dword %0 %1 glc slc" : : "v"(dst), "v"(val32));
+#endif
       break;
     }
     case 8: {
       int64_t val64{*(reinterpret_cast<int64_t*>(val))};
+#if __gfx90a__
       asm volatile("flat_store_dwordx2 %0 %1 glc slc" : : "v"(dst), "v"(val64));
+#endif
       break;
     }
     default:
