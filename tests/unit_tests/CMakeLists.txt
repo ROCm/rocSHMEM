@@ -87,6 +87,7 @@ target_sources(
     notifier_gtest.cpp
     #forward_list_gtest.cpp
     free_list_gtest.cpp
+    context_ipc_gtest.cpp
 )
 
 ###############################################################################
