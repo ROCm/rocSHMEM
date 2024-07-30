@@ -29,65 +29,11 @@
 
 #include <cstdio>
 
+#include "assembly.hpp"
 #include "config.h"  // NOLINT(build/include_subdir)
 #include "constants.hpp"
 
 namespace rocshmem {
-
-#define DO_PRAGMA(x) _Pragma(#x)
-#define NOWARN(warnoption, ...)                 \
-  DO_PRAGMA(GCC diagnostic push)                \
-  DO_PRAGMA(GCC diagnostic ignored #warnoption) \
-  __VA_ARGS__                                   \
-  DO_PRAGMA(GCC diagnostic pop)
-
-__device__ __forceinline__ int uncached_load_ubyte(uint8_t* src) {
-  int ret;
-#if __gfx90a__
-  asm volatile(
-      "global_load_ubyte %0 %1 off glc slc \n"
-      "s_waitcnt vmcnt(0)"
-      : "=v"(ret)
-      : "v"(src));
-#endif
-  return ret;
-}
-
-/* Ignore the warning about deprecated volatile.
- * The only usage of volatile is to force the compiler to generate
- * the assembly instruction. If volatile is omitted, the compiler
- * will NOT generate the non-temporal load or the waitcnt.
- */
-// clang-format off
-NOWARN(-Wdeprecated-volatile,
-  template <typename T> __device__ __forceinline__ T uncached_load(T* src) {
-    T ret;
-    switch (sizeof(T)) {
-      case 4:
-#if __gfx90a__
-        asm volatile(
-            "global_load_dword %0 %1 off glc slc \n"
-            "s_waitcnt vmcnt(0)"
-            : "=v"(ret)
-            : "v"(src));
-#endif
-        break;
-      case 8:
-#if __gfx90a__
-        asm volatile(
-            "global_load_dwordx2 %0 %1 off glc slc \n"
-            "s_waitcnt vmcnt(0)"
-            : "=v"(ret)
-            : "v"(src));
-#endif
-        break;
-      default:
-        break;
-    }
-    return ret;
-  }
-)
-// clang-format on
 
 #define LOAD(VAR) __atomic_load_n((VAR), __ATOMIC_SEQ_CST)
 #define STORE(DST, SRC) __atomic_store_n((DST), (SRC), __ATOMIC_SEQ_CST)
@@ -101,8 +47,6 @@ NOWARN(-Wdeprecated-volatile,
       exit(EXIT_FAILURE);                                                     \
     }                                                                         \
   }
-
-#define SFENCE() asm volatile("sfence" ::: "memory")
 
 #ifdef DEBUG
 #define DPRINTF(...)     \
@@ -129,29 +73,6 @@ NOWARN(-Wdeprecated-volatile,
 extern const int gpu_clock_freq_mhz;
 
 /* Device-side internal functions */
-__device__ __forceinline__ void __roc_inv() {
-#if defined USE_COHERENT_HEAP
-#if __gfx90a__
-  asm volatile("buffer_wbinvl1;");
-#endif
-#endif
-}
-
-__device__ __forceinline__ void __roc_flush() {
-#if defined USE_COHERENT_HEAP
-#if __gfx90a__
-  asm volatile("s_dcache_wb;");
-  asm volatile("buffer_wbl2;");
-#endif
-#if __gfx90a__
-  asm volatile("s_dcache_wb;");
-  asm volatile("buffer_wbl2;");
-#endif
-#endif
-}
-
-__device__ uint64_t __read_clock();
-
 __device__ __forceinline__ uint32_t lowerID() {
   return __ffsll(__ballot(1)) - 1;
 }
@@ -235,35 +156,6 @@ __device__ void gpu_dprintf(const char* fmt, const Args&... args) {
 
       *print_lock = 0;
     }
-  }
-}
-
-__device__ __forceinline__ void store_asm(uint8_t* val, uint8_t* dst,
-                                          int size) {
-  switch (size) {
-    case 2: {
-      int16_t val16{*(reinterpret_cast<int16_t*>(val))};
-#if __gfx90a__
-      asm volatile("flat_store_short %0 %1 glc slc" : : "v"(dst), "v"(val16));
-#endif
-      break;
-    }
-    case 4: {
-      int32_t val32{*(reinterpret_cast<int32_t*>(val))};
-#if __gfx90a__
-      asm volatile("flat_store_dword %0 %1 glc slc" : : "v"(dst), "v"(val32));
-#endif
-      break;
-    }
-    case 8: {
-      int64_t val64{*(reinterpret_cast<int64_t*>(val))};
-#if __gfx90a__
-      asm volatile("flat_store_dwordx2 %0 %1 glc slc" : : "v"(dst), "v"(val64));
-#endif
-      break;
-    }
-    default:
-      break;
   }
 }
 
