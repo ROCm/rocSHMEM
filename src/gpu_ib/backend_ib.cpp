@@ -133,8 +133,6 @@ __device__ bool GPUIBBackend::create_ctx(int64_t options,
     return false;
   }
   ctx_ = pop_result.value;
-
-  ctx_->dev_mtx_.shareable_ = static_cast<bool>(options >> 3);
   ctx->ctx_opaque = ctx_;
   return true;
 }
