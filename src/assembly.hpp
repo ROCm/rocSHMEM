@@ -40,53 +40,68 @@ namespace rocshmem {
 
 __device__ __forceinline__ int uncached_load_ubyte(uint8_t* src) {
   int ret;
-#if __gfx906__
+#if defined(__gfx906__)
 #endif
-#if __gfx908__
+#if defined(__gfx908__)
 #endif
-#if __gfx90a__
+#if defined(__gfx90a__)
   asm volatile(
       "global_load_ubyte %0 %1 off glc slc \n"
       "s_waitcnt vmcnt(0)"
       : "=v"(ret)
       : "v"(src));
 #endif
-#if __gfx940__
+#if defined(__gfx940__) || defined(__gfx941__) || defined(__gfx942__)
+  asm volatile(
+      "global_load_ubyte %0 %1 off sc0 sc1 \n"
+      "s_waitcnt vmcnt(0)"
+      : "=v"(ret)
+      : "v"(src));
 #endif
   return ret;
 }
 
 __device__ __forceinline__ void refresh_volatile_sbyte(volatile int *assigned_value,
                                                        volatile char *read_value) {
-#if __gfx906__
+#if defined(__gfx906__)
 #endif
-#if __gfx908__
+#if defined(__gfx908__)
 #endif
-#if __gfx90a__
+#if defined(__gfx90a__)
   asm volatile(
     "global_load_sbyte %0 %1 off glc slc\n "
     "s_waitcnt vmcnt(0)"
     : "=v"(*assigned_value)
     : "v"(read_value));
 #endif
-#if __gfx940__
+#if defined(__gfx940__) || defined(__gfx941__) || defined(__gfx942__)
+  asm volatile(
+    "global_load_sbyte %0 %1 off sc0 sc1\n "
+    "s_waitcnt vmcnt(0)"
+    : "=v"(*assigned_value)
+    : "v"(read_value));
 #endif
 }
 
 __device__ __forceinline__ void refresh_volatile_dwordx2(volatile uint64_t *assigned_value,
                                                          volatile uint64_t *read_value) {
-#if __gfx906__
+#if defined(__gfx906__)
 #endif
-#if __gfx908__
+#if defined(__gfx908__)
 #endif
-#if __gfx90a__
+#if defined(__gfx90a__)
   asm volatile(
     "global_load_dwordx2 %0 %1 off glc slc\n "
     "s_waitcnt vmcnt(0)"
     : "=v"(*assigned_value)
     : "v"(read_value));
 #endif
-#if __gfx940__
+#if defined(__gfx940__) || defined(__gfx941__) || defined(__gfx942__)
+  asm volatile(
+    "global_load_dwordx2 %0 %1 off sc0 sc1\n "
+    "s_waitcnt vmcnt(0)"
+    : "=v"(*assigned_value)
+    : "v"(read_value));
 #endif
 }
 
@@ -101,33 +116,43 @@ NOWARN(-Wdeprecated-volatile,
     T ret;
     switch (sizeof(T)) {
       case 4:
-#if __gfx906__
+#if defined(__gfx906__)
 #endif
-#if __gfx908__
+#if defined(__gfx908__)
 #endif
-#if __gfx90a__
+#if defined(__gfx90a__)
         asm volatile(
             "global_load_dword %0 %1 off glc slc \n"
             "s_waitcnt vmcnt(0)"
             : "=v"(ret)
             : "v"(src));
 #endif
-#if __gfx940__
+#if defined(__gfx940__) || defined(__gfx941__) || defined(__gfx942__)
+        asm volatile(
+            "global_load_dword %0 %1 off sc0 sc1 \n"
+            "s_waitcnt vmcnt(0)"
+            : "=v"(ret)
+            : "v"(src));
 #endif
         break;
+#if defined(__gfx906__)
+#endif
+#if defined(__gfx908__)
+#endif
+#if defined(__gfx90a__)
       case 8:
-#if __gfx906__
-#endif
-#if __gfx908__
-#endif
-#if __gfx90a__
         asm volatile(
             "global_load_dwordx2 %0 %1 off glc slc \n"
             "s_waitcnt vmcnt(0)"
             : "=v"(ret)
             : "v"(src));
 #endif
-#if __gfx940__
+#if defined(__gfx940__) || defined(__gfx941__) || defined(__gfx942__)
+        asm volatile(
+            "global_load_dwordx2 %0 %1 off sc0 sc1 \n"
+            "s_waitcnt vmcnt(0)"
+            : "=v"(ret)
+            : "v"(src));
 #endif
         break;
       default:
@@ -140,29 +165,32 @@ NOWARN(-Wdeprecated-volatile,
 
 __device__ __forceinline__ void __roc_inv() {
 #if defined USE_COHERENT_HEAP
-#if __gfx906__
+#if defined(__gfx906__)
 #endif
-#if __gfx908__
+#if defined(__gfx908__)
 #endif
-#if __gfx90a__
-  asm volatile("buffer_wbinvl1;");
+#if defined(__gfx90a__)
+//  asm volatile("buffer_wbinvl1;");
 #endif
-#if __gfx940__
+#if defined(__gfx940__) || defined(__gfx941__) || defined(__gfx942__)
+//  asm volatile("buffer_inv sc0 sc1;");
 #endif
 #endif
 }
 
 __device__ __forceinline__ void __roc_flush() {
 #if defined USE_COHERENT_HEAP
-#if __gfx906__
+#if defined(__gfx906__)
 #endif
-#if __gfx908__
+#if defined(__gfx908__)
 #endif
-#if __gfx90a__
-  asm volatile("s_dcache_wb;");
-  asm volatile("buffer_wbl2;");
+#if defined(__gfx90a__)
+//  asm volatile("s_dcache_wb;");
+//  asm volatile("buffer_wbl2;");
 #endif
-#if __gfx940__
+#if defined(__gfx940__) || defined(__gfx941__) || defined(__gfx942__)
+//  asm volatile("s_dcache_wb;");
+//  asm volatile("buffer_wbl2;");
 #endif
 #endif
 }
@@ -172,40 +200,43 @@ __device__ __forceinline__ void store_asm(uint8_t* val, uint8_t* dst,
   switch (size) {
     case 2: {
       int16_t val16{*(reinterpret_cast<int16_t*>(val))};
-#if __gfx906__
+#if defined(__gfx906__)
 #endif
-#if __gfx908__
+#if defined(__gfx908__)
 #endif
-#if __gfx90a__
+#if defined(__gfx90a__)
       asm volatile("flat_store_short %0 %1 glc slc" : : "v"(dst), "v"(val16));
 #endif
-#if __gfx940__
+#if defined(__gfx940__) || defined(__gfx941__) || defined(__gfx942__)
+      asm volatile("flat_store_short %0 %1 sc0 sc1" : : "v"(dst), "v"(val16));
 #endif
       break;
     }
     case 4: {
       int32_t val32{*(reinterpret_cast<int32_t*>(val))};
-#if __gfx906__
+#if defined(__gfx906__)
 #endif
-#if __gfx908__
+#if defined(__gfx908__)
 #endif
-#if __gfx90a__
+#if defined(__gfx90a__)
       asm volatile("flat_store_dword %0 %1 glc slc" : : "v"(dst), "v"(val32));
 #endif
-#if __gfx940__
+#if defined(__gfx940__) || defined(__gfx941__) || defined(__gfx942__)
+      asm volatile("flat_store_dword %0 %1 sc0 sc1" : : "v"(dst), "v"(val32));
 #endif
       break;
     }
     case 8: {
       int64_t val64{*(reinterpret_cast<int64_t*>(val))};
-#if __gfx906__
+#if defined(__gfx906__)
 #endif
-#if __gfx908__
+#if defined(__gfx908__)
 #endif
-#if __gfx90a__
+#if defined(__gfx90a__)
       asm volatile("flat_store_dwordx2 %0 %1 glc slc" : : "v"(dst), "v"(val64));
 #endif
-#if __gfx940__
+#if defined(__gfx940__) || defined(__gfx941__) || defined(__gfx942__)
+      asm volatile("flat_store_dwordx2 %0 %1 sc0 sc1" : : "v"(dst), "v"(val64));
 #endif
       break;
     }
@@ -216,17 +247,21 @@ __device__ __forceinline__ void store_asm(uint8_t* val, uint8_t* dst,
 
 __device__ __forceinline__ uint64_t __read_clock() {
   uint64_t clock{};
-#if __gfx906__
+#if defined(__gfx906__)
 #endif
-#if __gfx908__
+#if defined(__gfx908__)
 #endif
-#if __gfx90a__
+#if defined(__gfx90a__)
   asm volatile(
       "s_memrealtime %0\n"
       "s_waitcnt lgkmcnt(0)\n"
       : "=s"(clock));
 #endif
-#if __gfx940__
+#if defined(__gfx940__) || defined(__gfx941__) || defined(__gfx942__)
+  asm volatile(
+      "s_memrealtime %0\n"
+      "s_waitcnt lgkmcnt(0)\n"
+      : "=s"(clock));
 #endif
   return clock;
 }
