@@ -40,7 +40,7 @@ namespace rocshmem {
 
 #if defined USE_MANAGED_HEAP
 using HEAP_T = HeapMemory<HIPAllocatorManaged>;
-#elif defined USE_COHERENT_HEAP || defined USE_CACHED_HEAP
+#elif defined USE_COHERENT_HEAP
 using HEAP_T = HeapMemory<HIPAllocator>;
 #elif defined USE_HOST_HEAP
 using HEAP_T = HeapMemory<HostAllocator>;
