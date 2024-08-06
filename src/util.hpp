@@ -302,19 +302,34 @@ __device__ __forceinline__ void memcpy_wg(void* dst, void* src, size_t size) {
 }
 
 __device__ __forceinline__ void memcpy_wave(void* dst, void* src, size_t size) {
-  uint8_t* dst_bytes{static_cast<uint8_t*>(dst)};
-  uint8_t* src_bytes{static_cast<uint8_t*>(src)};
+  int wave_tid = get_flat_block_id() % WF_SIZE;
+  int wave_size{wave_SZ()};
 
   int cpy_size{};
-  int thread_id{get_flat_block_id()};
+  uint8_t* dst_bytes{nullptr};
+  uint8_t* dst_def{nullptr};
+  uint8_t* src_bytes{nullptr};
+  uint8_t* src_def{nullptr};
+
+  dst_def = reinterpret_cast<uint8_t*>(dst);
+  src_def = reinterpret_cast<uint8_t*>(src);
+  dst_bytes = dst_def;
+  src_bytes = src_def;
+
   for (int j{8}; j > 1; j >>= 1) {
     cpy_size = size / j;
-    for (int i{thread_id}; i < cpy_size; i += WF_SIZE) {
-      store_asm(src_bytes, dst_bytes, j);
+    for (int i{wave_tid}; i < cpy_size; i += wave_size) {
+      dst_bytes = dst_def;
+      src_bytes = src_def;
+
       src_bytes += i * j;
       dst_bytes += i * j;
-      size -= cpy_size * j;
+
+      store_asm(src_bytes, dst_bytes, j);
     }
+    size -= cpy_size * j;
+    dst_def += cpy_size * j;
+    src_def += cpy_size * j;
   }
 
   if (size == 1) {
