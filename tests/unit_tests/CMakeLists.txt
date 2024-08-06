@@ -71,6 +71,7 @@ target_sources(
   PRIVATE
     shmem_gtest.cpp
     heap_memory_gtest.cpp
+    hipmalloc_gtest.cpp
     bin_gtest.cpp
     binner_gtest.cpp
     #bitwise_gtest.cpp # Test is disabled becasue of compilation errors
@@ -88,6 +89,7 @@ target_sources(
     #forward_list_gtest.cpp
     free_list_gtest.cpp
     context_ipc_gtest.cpp
+    ipc_impl_simple_coarse_gtest.cpp
 )
 
 ###############################################################################
