@@ -24,4 +24,4 @@ cmake \
     -DUSE_COHERENT_HEAP=ON \
     $src_path
 cmake --build . --parallel 8
-cmake --install .
+#cmake --install .

@@ -20,30 +20,21 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-/**
- * @file notifier.hpp
- *
- * @brief Contains the notification memory space for threads to communicate
- * results with one another.
- *
- * Assume one thread does work on behalf of other threads (as a leader) and
- * that work needs to be communicated to the other threads as a result.
- * To expose the result, the threads need to share a memory space where the
- * result can be written. The leader thread writes the result out to this
- * memory space and all threads synchronize on it.
- *
- * This class allows the leader thread to notify other threads of the update.
- */
-
 #ifndef LIBRARY_SRC_MEMORY_NOTIFIER_HPP_
 #define LIBRARY_SRC_MEMORY_NOTIFIER_HPP_
 
 #include "../device_proxy.hpp"
 #include "../util.hpp"
+#include "../atomic.hpp"
 
 namespace rocshmem {
 
+template<detail::atomic::rocshmem_memory_scope Scope>
 class Notifier {
+};
+
+template<detail::atomic::rocshmem_memory_scope Scope>
+class Notifier<detail::atomic::memory_scope_workgroup> {
  public:
   __device__ uint64_t read() { return value_; }
 
@@ -67,9 +58,9 @@ class Notifier {
   uint64_t value_{};
 };
 
-template <typename ALLOCATOR>
+template <typename ALLOCATOR, detail::atomic::rocshmem_memory_scope Scope>
 class NotifierProxy {
-  using ProxyT = DeviceProxy<ALLOCATOR, Notifier, 1>;
+  using ProxyT = DeviceProxy<ALLOCATOR, Notifier<Scope>, 1>;
 
  public:
   __host__ __device__ Notifier* get() { return proxy_.get(); }
