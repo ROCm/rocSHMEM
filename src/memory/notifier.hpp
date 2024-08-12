@@ -32,11 +32,11 @@ namespace rocshmem {
 template<detail::atomic::rocshmem_memory_scope scope>
 class Notifier {
  public:
-  __device__ uint64_t read() {
+  __device__ uint64_t load() {
       return detail::atomic::load<uint64_t, scope>(&value_, orders);
   }
 
-  __device__ void write(uint64_t val) {
+  __device__ void store(uint64_t val) {
       detail::atomic::store<uint64_t, scope>(&value_, val, orders);
   }
 
