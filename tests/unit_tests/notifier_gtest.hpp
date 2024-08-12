@@ -52,7 +52,7 @@ write_to_memory(uint8_t* raw_memory) {
 __global__
 void
 all_threads_once(uint8_t* raw_memory,
-                 Notifier* notifier) {
+                 Notifier<detail::atomic::memory_scope_workgroup> * notifier) {
     notifier->write(NOTIFIER_OFFSET);
     uint64_t offset_u64 {notifier->read()};
     notifier->done();
@@ -65,7 +65,7 @@ all_threads_once(uint8_t* raw_memory,
 }
 
 class NotifierTestFixture : public ::testing::Test {
-    using NotifierProxyT = NotifierProxy<HIPAllocator>;
+    using NotifierProxyT = NotifierProxy<HIPAllocator, detail::atomic::memory_scope_workgroup>;
 
   public:
     NotifierTestFixture() {

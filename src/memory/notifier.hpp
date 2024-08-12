@@ -29,20 +29,15 @@
 
 namespace rocshmem {
 
-template<detail::atomic::rocshmem_memory_scope Scope>
+template<detail::atomic::rocshmem_memory_scope scope>
 class Notifier {
-};
-
-template<detail::atomic::rocshmem_memory_scope Scope>
-class Notifier<detail::atomic::memory_scope_workgroup> {
  public:
-  __device__ uint64_t read() { return value_; }
+  __device__ uint64_t read() {
+      return detail::atomic::load<uint64_t, scope>(&value_, orders);
+  }
 
   __device__ void write(uint64_t val) {
-    if (is_thread_zero_in_block()) {
-      value_ = val;
-    }
-    publish();
+      detail::atomic::store<uint64_t, scope>(&value_, val, orders);
   }
 
   __device__ void done() { __syncthreads(); }
@@ -55,15 +50,17 @@ class Notifier<detail::atomic::memory_scope_workgroup> {
     __syncthreads();
   }
 
+  detail::atomic::rocshmem_memory_orders orders;
+
   uint64_t value_{};
 };
 
-template <typename ALLOCATOR, detail::atomic::rocshmem_memory_scope Scope>
+template <typename ALLOCATOR, detail::atomic::rocshmem_memory_scope scope>
 class NotifierProxy {
-  using ProxyT = DeviceProxy<ALLOCATOR, Notifier<Scope>, 1>;
+  using ProxyT = DeviceProxy<ALLOCATOR, Notifier<scope>, 1>;
 
  public:
-  __host__ __device__ Notifier* get() { return proxy_.get(); }
+  __host__ __device__ Notifier<scope>* get() { return proxy_.get(); }
 
  private:
   ProxyT proxy_{};
