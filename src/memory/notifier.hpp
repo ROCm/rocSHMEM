@@ -40,15 +40,11 @@ class Notifier {
       detail::atomic::store<uint64_t, scope>(&value_, val, orders);
   }
 
-  __device__ void done() { __syncthreads(); }
+  __device__ void fence() {
+      detail::atomic::thread_fence<scope>();
+  }
 
  private:
-  __device__ void publish() {
-    if (is_thread_zero_in_block()) {
-      __threadfence();
-    }
-    __syncthreads();
-  }
 
   detail::atomic::rocshmem_memory_orders orders;
 

@@ -53,10 +53,12 @@ __global__
 void
 all_threads_once(uint8_t* raw_memory,
                  Notifier<detail::atomic::memory_scope_workgroup> * notifier) {
-    notifier->store(NOTIFIER_OFFSET);
+    if (!threadIdx.x) {
+      notifier->store(NOTIFIER_OFFSET);
+      notifier->fence();
+    }
+    __syncthreads();
     uint64_t offset_u64 {notifier->load()};
-    notifier->done();
-
     uint64_t raw_memory_u64 {reinterpret_cast<uint64_t>(raw_memory)};
     uint64_t address_u64 {raw_memory_u64 + offset_u64};
     uint8_t* address {reinterpret_cast<uint8_t*>(address_u64)};

@@ -47,7 +47,6 @@ typedef enum rocshmem_memory_order {
 struct rocshmem_memory_orders {
   rocshmem_memory_order load {memory_order_acquire};
   rocshmem_memory_order store {memory_order_release};
-  rocshmem_memory_order fence {memory_order_acq_rel};
   rocshmem_memory_order atomic {memory_order_acq_rel};
   rocshmem_memory_order weak_cas_success {memory_order_acq_rel};
   rocshmem_memory_order weak_cas_failure {memory_order_acq_rel};
@@ -123,7 +122,7 @@ T fetch_min(T* obj, U arg, rocshmem_memory_orders o) {
 
 template <rocshmem_memory_scope s>
 __device__
-void thread_fence([[maybe_unused]] rocshmem_memory_order order) {
+void thread_fence() {
   if constexpr (s == memory_scope_system) {
     __threadfence_system();
   } else if constexpr (s == memory_scope_agent) {
