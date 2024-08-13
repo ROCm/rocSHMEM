@@ -27,6 +27,7 @@
 #include "roc_shmem/roc_shmem.hpp"
 #include "context_ipc_device.hpp"
 #include "../util.hpp"
+#include "ipc_team.hpp"
 
 namespace rocshmem {
 
@@ -151,10 +152,47 @@ __device__ void IPCContext::to_all(T *dest, const T *source, int nreduce,
 }
 
 template <typename T>
+__device__ void IPCContext::internal_put_broadcast(
+    T *dst, const T *src, int nelems, int pe_root, int pe_start,
+    int log_pe_stride, int pe_size,
+    [[maybe_unused]] long *p_sync) {  // NOLINT(runtime/int)
+  if (my_pe == pe_root) {
+    int stride = 1 << log_pe_stride;
+    int finish = pe_start + stride * pe_size;
+    for (int i = pe_start; i < finish; i += stride) {
+      if (i != my_pe) {
+        put_nbi_wg(dst, src, nelems, i);
+      }
+    }
+  }
+}
+
+template <typename T>
+__device__ void IPCContext::internal_get_broadcast(
+    T *dst, const T *src, int nelems, int pe_root,
+    [[maybe_unused]] long *pSync) {  // NOLINT(runtime/int)
+  if (my_pe != pe_root) {
+    get_wg(dst, src, nelems, pe_root);
+  }
+}
+
+template <typename T>
 __device__ void IPCContext::broadcast(roc_shmem_team_t team, T *dst,
 				      const T *src, int nelems, int pe_root) {
-  //broadcast<T>(dst, src, nelems, pe_root_world, pe_start, log_pe_stride,
-  //             pe_size, p_sync);
+  IPCTeam *team_obj = reinterpret_cast<IPCTeam *>(team);
+
+  /**
+   * Ensure that the stride is a multiple of 2 .
+   */
+  int log_pe_stride = static_cast<int>(team_obj->tinfo_wrt_world->log_stride);
+  int pe_start = team_obj->tinfo_wrt_world->pe_start;
+  int pe_size = team_obj->tinfo_wrt_world->size;
+  long *p_sync = team_obj->bcast_pSync;
+
+  // Passed pe_root is relative to team, convert to world root
+  int pe_root_world = team_obj->get_pe_in_world(pe_root);
+  broadcast<T>(dst, src, nelems, pe_root_world, pe_start, log_pe_stride,
+               pe_size, p_sync);
 }
 
 template <typename T>
@@ -162,16 +200,88 @@ __device__ void IPCContext::broadcast(T *dst, const T *src, int nelems,
 				      int pe_root, int pe_start,
 				      int log_pe_stride, int pe_size,
 				      long *p_sync) {  // NOLINT(runtime/int)
+  if (num_pes < 4) {
+    internal_put_broadcast(dst, src, nelems, pe_root, pe_start, log_pe_stride,
+                           pe_size, p_sync);
+  } else {
+    internal_get_broadcast(dst, src, nelems, pe_root, p_sync);
+  }
+
+  // Synchronize on completion of broadcast
+  internal_sync(my_pe, pe_start, (1 << log_pe_stride), pe_size, p_sync);
 }
 
 template <typename T>
 __device__ void IPCContext::alltoall(roc_shmem_team_t team, T *dst,
 				     const T *src, int nelems) {
+  alltoall_linear(team, dst, src, nelems);
+}
+
+template <typename T>
+__device__ void IPCContext::alltoall_linear(roc_shmem_team_t team, T *dst,
+                                            const T *src, int nelems) {
+  IPCTeam *team_obj = reinterpret_cast<IPCTeam *>(team);
+
+  /**
+   * Ensure that the stride is a multiple of 2
+   */
+  int log_pe_stride = static_cast<int>(team_obj->tinfo_wrt_world->log_stride);
+  int pe_start = team_obj->tinfo_wrt_world->pe_start;
+  int pe_size = team_obj->num_pes;
+  int stride = 1 << log_pe_stride;
+  long *pSync = team_obj->alltoall_pSync;
+  int my_pe_in_team = team_obj->my_pe;
+
+  /* TODO (egabriel): shouldn't the loop handle pe_start, pe_size, and stride?
+   * otherwise what is the point of the few lines above?
+   */
+  // Have each PE put their designated data to the other PEs
+  for (int j = 0; j < pe_size; j++) {
+    int dest_pe = team_obj->get_pe_in_world(j);
+    put_nbi_wg(&dst[my_pe_in_team * nelems], &src[j * nelems], nelems, dest_pe);
+  }
+  if (is_thread_zero_in_block()) {
+    quiet();
+  }
+  // wait until everyone has obtained their designated data
+  internal_sync(my_pe, pe_start, stride, pe_size, pSync);
 }
 
 template <typename T>
 __device__ void IPCContext::fcollect(roc_shmem_team_t team, T *dst,
 				     const T *src, int nelems) {
+  fcollect_linear(team, dst, src, nelems);
+}
+
+template <typename T>
+__device__ void IPCContext::fcollect_linear(roc_shmem_team_t team, T *dst,
+                                            const T *src, int nelems) {
+  IPCTeam *team_obj = reinterpret_cast<IPCTeam *>(team);
+
+  /**
+   * Ensure that the stride is a multiple of 2.
+   */
+  int log_pe_stride = static_cast<int>(team_obj->tinfo_wrt_world->log_stride);
+  int pe_start = team_obj->tinfo_wrt_world->pe_start;
+  int pe_size = team_obj->num_pes;
+  int stride = 1 << log_pe_stride;
+  long *pSync = team_obj->alltoall_pSync;
+  int my_pe_in_team = team_obj->my_pe;
+
+  /* TODO (egabriel): shouldn't the loop handle pe_start, pe_size, and stride?
+   * otherwise what is the point of the few lines above?
+   */
+  // Have each PE put their designated data to the other PEs
+  for (int j = 0; j < pe_size; j++) {
+    int dest_pe = team_obj->get_pe_in_world(j);
+    put_nbi_wg(&dst[my_pe_in_team * nelems], src, nelems, dest_pe);
+  }
+
+  if (is_thread_zero_in_block()) {
+    quiet();
+  }
+  // wait until everyone has obtained their designated data
+  internal_sync(my_pe, pe_start, stride, pe_size, pSync);
 }
 
 // Block/wave functions

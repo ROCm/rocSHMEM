@@ -100,18 +100,6 @@ __device__ void *IPCContext::shmem_ptr(const void *dest, int pe) {
   return ret;
 }
 
-__device__ void IPCContext::barrier_all() {
-  __syncthreads();
-}
-
-__device__ void IPCContext::sync_all() {
-  __syncthreads();
-}
-
-__device__ void IPCContext::sync(roc_shmem_team_t team) {
-  __syncthreads();
-}
-
 __device__ void IPCContext::putmem_wg(void *dest, const void *source,
                                      size_t nelems, int pe) {
   // TODO (Avinash) check if PE is available for IPC using (isIpcAvailable)
