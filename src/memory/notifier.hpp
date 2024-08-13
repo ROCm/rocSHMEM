@@ -33,15 +33,19 @@ template<detail::atomic::rocshmem_memory_scope scope>
 class Notifier {
  public:
   __device__ uint64_t load() {
-      return detail::atomic::load<uint64_t, scope>(&value_, orders);
+    return detail::atomic::load<uint64_t, scope>(&value_, orders);
   }
 
   __device__ void store(uint64_t val) {
-      detail::atomic::store<uint64_t, scope>(&value_, val, orders);
+    detail::atomic::store<uint64_t, scope>(&value_, val, orders);
   }
 
   __device__ void fence() {
-      detail::atomic::thread_fence<scope>();
+    detail::atomic::threadfence<scope>();
+  }
+
+  __device__ void sync() {
+    detail::atomic::sync<scope>();
   }
 
  private:

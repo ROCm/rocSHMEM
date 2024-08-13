@@ -43,7 +43,7 @@ static const uint64_t NOTIFIER_OFFSET {0x100B00};
 
 inline __device__
 void
-write_to_memory(uint8_t* raw_memory) {
+write_to_memory_block(uint8_t* raw_memory) {
     auto thread_idx {get_flat_block_id()};
     raw_memory[thread_idx] = THREAD_VALUE;
     __threadfence();
@@ -51,44 +51,43 @@ write_to_memory(uint8_t* raw_memory) {
 
 __global__
 void
-all_threads_once(uint8_t* raw_memory,
-                 Notifier<detail::atomic::memory_scope_workgroup> * notifier) {
+all_threads_once_block(uint8_t* raw_memory,
+                       Notifier<detail::atomic::memory_scope_workgroup> * notifier) {
     if (!threadIdx.x) {
       notifier->store(NOTIFIER_OFFSET);
       notifier->fence();
     }
-    __syncthreads();
+    notifier->sync();
     uint64_t offset_u64 {notifier->load()};
     uint64_t raw_memory_u64 {reinterpret_cast<uint64_t>(raw_memory)};
     uint64_t address_u64 {raw_memory_u64 + offset_u64};
     uint8_t* address {reinterpret_cast<uint8_t*>(address_u64)};
-    write_to_memory(address);
-    __syncthreads();
+    write_to_memory_block(address);
 }
 
-class NotifierTestFixture : public ::testing::Test {
+class NotifierBlockTestFixture : public ::testing::Test {
     using NotifierProxyT = NotifierProxy<HIPAllocator, detail::atomic::memory_scope_workgroup>;
 
   public:
-    NotifierTestFixture() {
+    NotifierBlockTestFixture() {
         assert(raw_memory_ == nullptr);
         hip_allocator_.allocate((void**)&raw_memory_, GIBIBYTE_);
         assert(raw_memory_);
     }
 
-    ~NotifierTestFixture() {
+    ~NotifierBlockTestFixture() {
         if (raw_memory_) {
             hip_allocator_.deallocate(raw_memory_);
         }
     }
 
     void
-    run_all_threads_once(uint32_t x_block_dim,
-                         uint32_t x_grid_dim) {
+    run_all_threads_once_block(uint32_t x_block_dim,
+                               uint32_t x_grid_dim) {
         const dim3 hip_blocksize(x_block_dim, 1, 1);
         const dim3 hip_gridsize(x_grid_dim, 1, 1);
 
-        hipLaunchKernelGGL(all_threads_once,
+        hipLaunchKernelGGL(all_threads_once_block,
                            hip_gridsize,
                            hip_blocksize,
                            0,

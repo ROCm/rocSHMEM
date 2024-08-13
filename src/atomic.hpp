@@ -122,13 +122,23 @@ T fetch_min(T* obj, U arg, rocshmem_memory_orders o) {
 
 template <rocshmem_memory_scope s>
 __device__
-void thread_fence() {
+void threadfence() {
   if constexpr (s == memory_scope_system) {
     __threadfence_system();
   } else if constexpr (s == memory_scope_agent) {
     __threadfence();
   } else if constexpr (s == memory_scope_workgroup) {
     __threadfence_block();
+  }
+}
+
+template <rocshmem_memory_scope s>
+__device__
+void sync() {
+  if constexpr (s == memory_scope_workgroup) {
+    __syncthreads();
+  } else {
+    assert(false);
   }
 }
 
