@@ -25,8 +25,8 @@
 
 #include "gtest/gtest.h"
 
-#include "../src/ipc/context_ipc.hpp"
-#include "../src/reverse_offload/backend_ro.hpp"
+#include "../src/ipc/context_ipc_device.hpp"
+#include "../src/ipc/backend_ipc.hpp"
 
 namespace rocshmem {
 
@@ -36,7 +36,7 @@ class ContextIpcTestFixture : public ::testing::Test
     /**
      * @brief Context Ipc Test
      */
-   ROBackend be{MPI_COMM_WORLD};
+   IPCBackend be{MPI_COMM_WORLD};
 
    IPCContext ipc_context_ {&be};
 };

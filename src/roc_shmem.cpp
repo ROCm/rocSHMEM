@@ -88,11 +88,9 @@ roc_shmem_ctx_t ROC_SHMEM_HOST_CTX_DEFAULT;
   CHECK_HIP(hipHostMalloc(&backend, sizeof(GPUIBBackend)));
   backend = new (backend) GPUIBBackend(comm);
 #elif defined(USE_RO)
-  printf("RO Backend\n");
   CHECK_HIP(hipHostMalloc(&backend, sizeof(ROBackend)));
   backend = new (backend) ROBackend(comm);
 #else
-  printf("IPC Backend\n");
   CHECK_HIP(hipHostMalloc(&backend, sizeof(IPCBackend)));
   backend = new (backend) IPCBackend(comm);
 #endif
