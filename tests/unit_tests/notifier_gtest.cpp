@@ -29,29 +29,29 @@ using namespace rocshmem;
  *****************************************************************************/
 
 TEST_F(NotifierBlockTestFixture, run_all_threads_once_1_1) {
-  run_all_threads_once_block(1, 1);
+  run_all_threads_once(1, 1);
 }
 
 TEST_F(NotifierBlockTestFixture, run_all_threads_once_2_1) {
-  run_all_threads_once_block(2, 1);
+  run_all_threads_once(2, 1);
 }
 
 TEST_F(NotifierBlockTestFixture, run_all_threads_once_64_1) {
-  run_all_threads_once_block(64, 1);
+  run_all_threads_once(64, 1);
 }
 
 TEST_F(NotifierBlockTestFixture, run_all_threads_once_128_1) {
-  run_all_threads_once_block(128, 1);
+  run_all_threads_once(128, 1);
 }
 
 TEST_F(NotifierBlockTestFixture, run_all_threads_once_256_1) {
-  run_all_threads_once_block(256, 1);
+  run_all_threads_once(256, 1);
 }
 
 TEST_F(NotifierBlockTestFixture, run_all_threads_once_512_1) {
-  run_all_threads_once_block(512, 1);
+  run_all_threads_once(512, 1);
 }
 
 TEST_F(NotifierBlockTestFixture, run_all_threads_once_1024_1) {
-  run_all_threads_once_block(1024, 1);
+  run_all_threads_once(1024, 1);
 }
