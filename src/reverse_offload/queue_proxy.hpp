@@ -28,7 +28,7 @@
 #include "../atomic_return.hpp"
 #include "../device_proxy.hpp"
 #include "../hdp_policy.hpp"
-#include "../ipc/ipc_policy.hpp"
+#include "../ipc_policy.hpp"
 #include "commands_types.hpp"
 #include "profiler.hpp"
 #include "../sync/abql_block_mutex.hpp"

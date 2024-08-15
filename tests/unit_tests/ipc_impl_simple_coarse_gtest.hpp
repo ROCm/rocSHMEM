@@ -29,7 +29,7 @@
 
 #include <mpi.h>
 #include "../src/memory/symmetric_heap.hpp"
-#include "../src/ipc/ipc_policy.hpp"
+#include "../src/ipc_policy.hpp"
 
 namespace rocshmem {
 

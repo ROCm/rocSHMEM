@@ -24,7 +24,7 @@
 #define LIBRARY_SRC_REVERSE_OFFLOAD_BLOCK_HANDLE_HPP_
 
 #include "../hdp_policy.hpp"
-#include "../ipc/ipc_policy.hpp"
+#include "../ipc_policy.hpp"
 #include "profiler.hpp"
 #include "queue.hpp"
 

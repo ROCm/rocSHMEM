@@ -23,6 +23,9 @@
 ###############################################################################
 # ADD ROCSHMEM TARGET FOR FILES IN CURRENT DIRECTORY
 ###############################################################################
+message(STATUS "Compiler flag USE_GPU_IB: ${USE_GPU_IB}")
+message(STATUS "Compiler flag USE_RO: ${USE_RO}")
+message(STATUS "Compiler flag USE_IPC: ${USE_IPC}")
 target_sources(
   ${PROJECT_NAME}
   PRIVATE
@@ -37,6 +40,7 @@ target_sources(
     team_tracker.cpp
     util.cpp
     wf_coal_policy.cpp
+    ipc_policy.cpp
 )
 
 target_compile_options(
