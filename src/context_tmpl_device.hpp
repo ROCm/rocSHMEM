@@ -27,8 +27,10 @@
 #include "backend_type.hpp"
 #ifdef USE_GPU_IB
 #include "gpu_ib/context_ib_device.hpp"
-#else
+#elif defined(USE_RO)
 #include "reverse_offload/context_ro_device.hpp"
+#else
+#include "ipc/context_ipc_device.hpp"
 #endif
 
 namespace rocshmem {

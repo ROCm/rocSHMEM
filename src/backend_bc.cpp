@@ -25,10 +25,12 @@
 #include "backend_type.hpp"
 #include "context_incl.hpp"
 
-#ifndef USE_GPU_IB
+#ifdef USE_GPU_IB
+#include "gpu_ib/backend_ib.hpp"
+#elif defined(USE_RO)
 #include "reverse_offload/backend_ro.hpp"
 #else
-#include "gpu_ib/backend_ib.hpp"
+#include "ipc/backend_ipc.hpp"
 #endif
 
 namespace rocshmem {
@@ -201,18 +203,22 @@ void Backend::reset_stats() {
 }
 
 __device__ bool Backend::create_ctx(int64_t option, roc_shmem_ctx_t* ctx) {
-#ifndef USE_GPU_IB
+#ifdef USE_GPU_IB
+  return static_cast<GPUIBBackend*>(this)->create_ctx(option, ctx);
+#elif defined(USE_RO)
   return static_cast<ROBackend*>(this)->create_ctx(option, ctx);
 #else
-  return static_cast<GPUIBBackend*>(this)->create_ctx(option, ctx);
+  return static_cast<IPCBackend*>(this)->create_ctx(option, ctx);
 #endif
 }
 
 __device__ void Backend::destroy_ctx(roc_shmem_ctx_t* ctx) {
-#ifndef USE_GPU_IB
+#ifdef USE_GPU_IB
+  static_cast<GPUIBBackend*>(this)->destroy_ctx(ctx);
+#elif defined(USE_RO)
   static_cast<ROBackend*>(this)->destroy_ctx(ctx);
 #else
-  static_cast<GPUIBBackend*>(this)->destroy_ctx(ctx);
+  static_cast<IPCBackend*>(this)->destroy_ctx(ctx);
 #endif
 }
 

@@ -25,7 +25,7 @@
 
 #include "config.h"  // NOLINT(build/include_subdir)
 #include "roc_shmem/roc_shmem.hpp"
-#include "context_ipc.hpp"
+#include "context_ipc_device.hpp"
 #include "../util.hpp"
 
 namespace rocshmem {

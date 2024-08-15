@@ -23,9 +23,6 @@
 ###############################################################################
 # ADD ROCSHMEM TARGET FOR FILES IN CURRENT DIRECTORY
 ###############################################################################
-message(STATUS "Compiler flag USE_GPU_IB: ${USE_GPU_IB}")
-message(STATUS "Compiler flag USE_RO: ${USE_RO}")
-message(STATUS "Compiler flag USE_IPC: ${USE_IPC}")
 target_sources(
   ${PROJECT_NAME}
   PRIVATE
@@ -63,11 +60,12 @@ target_compile_options(
 ###############################################################################
 IF (USE_GPU_IB)
 add_subdirectory(gpu_ib)
-ELSE()
+ELSEIF(USE_RO)
 add_subdirectory(reverse_offload)
+ELSE()
+add_subdirectory(ipc)
 ENDIF()
 add_subdirectory(containers)
 add_subdirectory(host)
 add_subdirectory(memory)
 add_subdirectory(sync)
-add_subdirectory(ipc)

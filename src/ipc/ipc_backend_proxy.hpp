@@ -20,21 +20,50 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_CONTEXT_INCL_HPP_
-#define LIBRARY_SRC_CONTEXT_INCL_HPP_
+#ifndef LIBRARY_SRC_IPC_BACKEND_PROXY_HPP_
+#define LIBRARY_SRC_IPC_BACKEND_PROXY_HPP_
 
-#include "context.hpp"
-#include "context_tmpl_device.hpp"
-#include "context_tmpl_host.hpp"
-#ifdef USE_GPU_IB
-#include "gpu_ib/context_ib_device.hpp"
-#include "gpu_ib/context_ib_host.hpp"
-#elif defined (USE_RO)
-#include "reverse_offload/context_ro_device.hpp"
-#include "reverse_offload/context_ro_host.hpp"
-#else
-#include "ipc/context_ipc_device.hpp"
-#include "ipc/context_ipc_host.hpp"
-#endif
+#include "../device_proxy.hpp"
+#include "../atomic_return.hpp"
 
-#endif  // LIBRARY_SRC_CONTEXT_INCL_HPP_
+namespace rocshmem {
+
+struct IPCBackendRegister {
+  char *g_ret{nullptr};
+  atomic_ret_t *atomic_ret{nullptr};
+  SymmetricHeap *heap_ptr{nullptr};
+};
+
+template <typename ALLOCATOR>
+class IPCBackendProxy {
+  using ProxyT = DeviceProxy<ALLOCATOR, IPCBackendRegister>;
+
+ public:
+  /*
+   * Placement new the memory which is allocated by proxy_
+   */
+  IPCBackendProxy() { new (proxy_.get()) IPCBackendRegister(); }
+
+  /*
+   * Since placement new is called in the constructor, then
+   * delete must be called manually.
+   */
+  ~IPCBackendProxy() { proxy_.get()->~IPCBackendRegister(); }
+
+  /*
+   * @brief Provide access to the memory referenced by the proxy
+   */
+  __host__ __device__ IPCBackendRegister *get() { return proxy_.get(); }
+
+ private:
+  /*
+   * @brief Memory managed by the lifetime of this object
+   */
+  ProxyT proxy_{};
+};
+
+using IPCBackendProxyT = IPCBackendProxy<HIPHostAllocator>;
+
+}  // namespace rocshmem
+
+#endif  // #define LIBRARY_SRC_IPC_BACKEND_PROXY_HPP_

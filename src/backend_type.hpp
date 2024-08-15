@@ -44,7 +44,7 @@ namespace rocshmem {
  * @note Derived classes which use Backend as a base class must add
  * themselves to this enum class to support static polymorphism.
  */
-enum class BackendType { RO_BACKEND, GPU_IB_BACKEND };
+enum class BackendType { RO_BACKEND, GPU_IB_BACKEND, IPC_BACKEND };
 
 /**
  * @brief Helper macro for some dispatch calls
@@ -57,9 +57,12 @@ enum class BackendType { RO_BACKEND, GPU_IB_BACKEND };
 #ifdef USE_GPU_IB
 #define DISPATCH(Func)                     \
   static_cast<GPUIBContext *>(this)->Func;
-#else
+#elif defined(USE_RO)
 #define DISPATCH(Func)                     \
   static_cast<ROContext *>(this)->Func;
+#else
+#define DISPATCH(Func)                     \
+  static_cast<IPCContext *>(this)->Func;
 #endif
 
 /**
@@ -70,10 +73,15 @@ enum class BackendType { RO_BACKEND, GPU_IB_BACKEND };
   auto ret_val{0};                                   \
   ret_val = static_cast<GPUIBContext *>(this)->Func; \
   return ret_val;
-#else
+#elif defined(USE_RO)
 #define DISPATCH_RET(Func)                        \
   auto ret_val{0};                                \
   ret_val = static_cast<ROContext *>(this)->Func; \
+  return ret_val;
+#else
+#define DISPATCH_RET(Func)                        \
+  auto ret_val{0};                                \
+  ret_val = static_cast<IPCContext *>(this)->Func; \
   return ret_val;
 #endif
 /**
@@ -84,10 +92,15 @@ enum class BackendType { RO_BACKEND, GPU_IB_BACKEND };
   void *ret_val{nullptr};                            \
   ret_val = static_cast<GPUIBContext *>(this)->Func; \
   return ret_val;
-#else
+#elif defined(USE_RO)
 #define DISPATCH_RET_PTR(Func)                    \
   void *ret_val{nullptr};                         \
   ret_val = static_cast<ROContext *>(this)->Func; \
+  return ret_val;
+#else
+#define DISPATCH_RET_PTR(Func)                    \
+  void *ret_val{nullptr};                         \
+  ret_val = static_cast<IPCContext *>(this)->Func; \
   return ret_val;
 #endif
 
@@ -100,8 +113,10 @@ enum class BackendType { RO_BACKEND, GPU_IB_BACKEND };
  */
 #ifdef USE_GPU_IB
 #define HOST_DISPATCH(Func) static_cast<GPUIBHostContext *>(this)->Func;
-#else
+#elif defined(USE_RO)
 #define HOST_DISPATCH(Func) static_cast<ROHostContext *>(this)->Func;
+#else
+#define HOST_DISPATCH(Func) static_cast<IPCHostContext *>(this)->Func;
 #endif
 /**
  * @brief Host static dispatch method call with return value.
@@ -116,10 +131,15 @@ enum class BackendType { RO_BACKEND, GPU_IB_BACKEND };
   auto ret_val{0};                                       \
   ret_val = static_cast<GPUIBHostContext *>(this)->Func; \
   return ret_val;
-#else
+#elif defined(USE_RO)
 #define HOST_DISPATCH_RET(Func)                       \
   auto ret_val{0};                                    \
   ret_val = static_cast<ROHostContext *>(this)->Func; \
+  return ret_val;
+#else
+#define HOST_DISPATCH_RET(Func)                       \
+  auto ret_val{0};                                    \
+  ret_val = static_cast<IPCHostContext *>(this)->Func; \
   return ret_val;
 #endif
 
