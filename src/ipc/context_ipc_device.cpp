@@ -32,11 +32,19 @@
 
 #include "config.h"  // NOLINT(build/include_subdir)
 #include "roc_shmem/roc_shmem.hpp"
+#include "backend_ipc.hpp"
 
 namespace rocshmem {
 
 __host__ IPCContext::IPCContext(Backend *b)
     : Context(b, false) {
+  IPCBackend *backend{static_cast<IPCBackend *>(b)};
+  ipcImpl = &backend->ipcImpl;
+
+  auto *bp{backend->ipc_backend_proxy.get()};
+
+  g_ret = bp->g_ret;
+  atomic_base_ptr = bp->atomic_ret->atomic_base_ptr;
 }
 
 __device__ void IPCContext::threadfence_system() {
@@ -50,18 +58,32 @@ __device__ void IPCContext::ctx_destroy(){
 
 __device__ void IPCContext::putmem(void *dest, const void *source, size_t nelems,
                                   int pe) {
+  // TODO (Avinash) check if PE is available for IPC using (isIpcAvailable)
+  int local_pe = pe % ipcImpl->shm_size;
+  uint64_t L_offset =
+      reinterpret_cast<char *>(dest) - ipcImpl->ipc_bases[my_pe];
+  ipcImpl->ipcCopy(ipcImpl->ipc_bases[local_pe] + L_offset,
+                   const_cast<void *>(source), nelems);
 }
 
 __device__ void IPCContext::getmem(void *dest, const void *source, size_t nelems,
                                   int pe) {
+  // TODO (Avinash) check if PE is available for IPC using (isIpcAvailable)
+  int local_pe = pe % ipcImpl->shm_size;
+  const char *src_typed = reinterpret_cast<const char *>(source);
+  uint64_t L_offset =
+      const_cast<char *>(src_typed) - ipcImpl->ipc_bases[my_pe];
+  ipcImpl->ipcCopy(dest, ipcImpl->ipc_bases[local_pe] + L_offset, nelems);
 }
 
 __device__ void IPCContext::putmem_nbi(void *dest, const void *source,
                                       size_t nelems, int pe) {
+  putmem(dest, source, nelems, pe);
 }
 
 __device__ void IPCContext::getmem_nbi(void *dest, const void *source,
                                       size_t nelems, int pe) {
+  getmem(dest, source, nelems, pe);
 }
 
 __device__ void IPCContext::fence() {
@@ -92,38 +114,65 @@ __device__ void IPCContext::sync(roc_shmem_team_t team) {
 
 __device__ void IPCContext::putmem_wg(void *dest, const void *source,
                                      size_t nelems, int pe) {
+  // TODO (Avinash) check if PE is available for IPC using (isIpcAvailable)
+  int local_pe = pe % ipcImpl->shm_size;
+  uint64_t L_offset =
+      reinterpret_cast<char *>(dest) - ipcImpl->ipc_bases[my_pe];
+  ipcImpl->ipcCopy_wg(ipcImpl->ipc_bases[local_pe] + L_offset,
+                      const_cast<void *>(source), nelems);
   __syncthreads();
 }
 
 __device__ void IPCContext::getmem_wg(void *dest, const void *source,
                                      size_t nelems, int pe) {
+  // TODO (Avinash) check if PE is available for IPC using (isIpcAvailable)
+  int local_pe = pe % ipcImpl->shm_size;
+  const char *src_typed = reinterpret_cast<const char *>(source);
+  uint64_t L_offset =
+      const_cast<char *>(src_typed) - ipcImpl->ipc_bases[my_pe];
+  ipcImpl->ipcCopy_wg(dest, ipcImpl->ipc_bases[local_pe] + L_offset, nelems);
   __syncthreads();
 }
 
 __device__ void IPCContext::putmem_nbi_wg(void *dest, const void *source,
                                          size_t nelems, int pe) {
-  __syncthreads();
+  putmem_wg(dest, source, nelems, pe);
 }
 
 __device__ void IPCContext::getmem_nbi_wg(void *dest, const void *source,
                                          size_t nelems, int pe) {
-  __syncthreads();
+  getmem_wg(dest, source, nelems, pe);
 }
 
 __device__ void IPCContext::putmem_wave(void *dest, const void *source,
                                        size_t nelems, int pe) {
+  // TODO (Avinash) check if PE is available for IPC using (isIpcAvailable)
+  int local_pe = pe % ipcImpl->shm_size;
+  uint64_t L_offset =
+      reinterpret_cast<char *>(dest) - ipcImpl->ipc_bases[my_pe];
+  ipcImpl->ipcCopy_wave(ipcImpl->ipc_bases[local_pe] + L_offset,
+                        const_cast<void *>(source), nelems);
 }
 
 __device__ void IPCContext::getmem_wave(void *dest, const void *source,
                                        size_t nelems, int pe) {
+  // TODO (Avinash) check if PE is available for IPC using (isIpcAvailable)
+  int local_pe = pe % ipcImpl->shm_size;
+  const char *src_typed = reinterpret_cast<const char *>(source);
+  uint64_t L_offset =
+      const_cast<char *>(src_typed) - ipcImpl->ipc_bases[my_pe];
+  ipcImpl->ipcCopy_wave(dest, ipcImpl->ipc_bases[local_pe] + L_offset,
+                        nelems);
 }
 
 __device__ void IPCContext::putmem_nbi_wave(void *dest, const void *source,
                                            size_t nelems, int pe) {
+  putmem_wave(dest, source, nelems, pe);
 }
 
 __device__ void IPCContext::getmem_nbi_wave(void *dest, const void *source,
                                            size_t nelems, int pe) {
+  getmem_wave(dest, source, nelems, pe);
 }
 
 }  // namespace rocshmem
