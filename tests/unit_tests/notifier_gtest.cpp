@@ -55,3 +55,71 @@ TEST_F(NotifierBlockTestFixture, run_all_threads_once_512_1) {
 TEST_F(NotifierBlockTestFixture, run_all_threads_once_1024_1) {
   run_all_threads_once(1024, 1);
 }
+
+TEST_F(NotifierAgentTestFixture, run_all_threads_once_1_1) {
+  run_all_threads_once(1, 1);
+}
+
+TEST_F(NotifierAgentTestFixture, run_all_threads_once_2_1) {
+  run_all_threads_once(2, 1);
+}
+
+TEST_F(NotifierAgentTestFixture, run_all_threads_once_64_1) {
+  run_all_threads_once(64, 1);
+}
+
+TEST_F(NotifierAgentTestFixture, run_all_threads_once_128_1) {
+  run_all_threads_once(128, 1);
+}
+
+TEST_F(NotifierAgentTestFixture, run_all_threads_once_256_1) {
+  run_all_threads_once(256, 1);
+}
+
+TEST_F(NotifierAgentTestFixture, run_all_threads_once_512_1) {
+  run_all_threads_once(512, 1);
+}
+
+TEST_F(NotifierAgentTestFixture, run_all_threads_once_1024_1) {
+  run_all_threads_once(1024, 1);
+}
+
+TEST_F(NotifierAgentTestFixture, run_all_threads_once_1_2) {
+  run_all_threads_once(1, 2);
+}
+
+TEST_F(NotifierAgentTestFixture, run_all_threads_once_1024_2) {
+  run_all_threads_once(1024, 2);
+}
+
+TEST_F(NotifierAgentTestFixture, run_all_threads_once_1_4) {
+  run_all_threads_once(1, 4);
+}
+
+TEST_F(NotifierAgentTestFixture, run_all_threads_once_1024_4) {
+  run_all_threads_once(1024, 4);
+}
+
+TEST_F(NotifierAgentTestFixture, run_all_threads_once_1_8) {
+  run_all_threads_once(1, 8);
+}
+
+TEST_F(NotifierAgentTestFixture, run_all_threads_once_1024_8) {
+  run_all_threads_once(1024, 8);
+}
+
+TEST_F(NotifierAgentTestFixture, run_all_threads_once_1_32) {
+  run_all_threads_once(1, 32);
+}
+
+TEST_F(NotifierAgentTestFixture, run_all_threads_once_1024_32) {
+  run_all_threads_once(1024, 32);
+}
+
+TEST_F(NotifierAgentTestFixture, run_all_threads_once_1_64) {
+  run_all_threads_once(1, 64);
+}
+
+TEST_F(NotifierAgentTestFixture, run_all_threads_once_1024_64) {
+  run_all_threads_once(1024, 64);
+}

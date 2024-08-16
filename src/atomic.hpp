@@ -132,16 +132,6 @@ void threadfence() {
   }
 }
 
-template <rocshmem_memory_scope s>
-__device__
-void sync() {
-  if constexpr (s == memory_scope_workgroup) {
-    __syncthreads();
-  } else {
-    assert(false);
-  }
-}
-
 } // namespace atomic
 } // namespace detail
 } // namespace rocshmem

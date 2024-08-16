@@ -53,7 +53,7 @@ template <typename NotifierT>
 __global__
 void
 all_threads_once(uint8_t* raw_memory,
-                 Notifier<detail::atomic::memory_scope_workgroup> * notifier) {
+                 NotifierT * notifier) {
     if (!get_flat_id()) {
       notifier->store(NOTIFIER_OFFSET);
       notifier->fence();
@@ -125,13 +125,11 @@ class NotifierBlockTestFixture : public NotifierBase {
     void
     run_all_threads_once(uint32_t x_block_dim,
                          uint32_t x_grid_dim) {
+        new (notifier_.get()) NotifierT();
         const dim3 block(x_block_dim, 1, 1);
         const dim3 grid(x_grid_dim, 1, 1);
-
         all_threads_once<NotifierT><<<grid, block>>>(raw_memory_, notifier_.get());
-
         CHECK_HIP(hipStreamSynchronize(nullptr));
-
         verify(x_block_dim * x_grid_dim);
     }
 
@@ -141,6 +139,27 @@ class NotifierBlockTestFixture : public NotifierBase {
     NotifierProxyT notifier_ {};
 };
 
+class NotifierAgentTestFixture : public NotifierBase {
+    using NotifierT = Notifier<detail::atomic::memory_scope_agent>;
+    using NotifierProxyT = NotifierProxy<HIPAllocator, detail::atomic::memory_scope_agent>;
+
+  public:
+    void
+    run_all_threads_once(uint32_t x_block_dim,
+                         uint32_t x_grid_dim) {
+        new (notifier_.get()) NotifierT();
+        const dim3 block(x_block_dim, 1, 1);
+        const dim3 grid(x_grid_dim, 1, 1);
+        all_threads_once<NotifierT><<<grid, block>>>(raw_memory_, notifier_.get());
+        CHECK_HIP(hipStreamSynchronize(nullptr));
+        verify(x_block_dim * x_grid_dim);
+    }
+
+    /**
+     * @brief Used to broadcast base offset for writing.
+     */
+    NotifierProxyT notifier_ {};
+};
 
 } // namespace rocshmem
 

@@ -31,13 +31,14 @@ namespace rocshmem {
 
 template<detail::atomic::rocshmem_memory_scope scope>
 class Notifier {
+
  public:
   __device__ uint64_t load() {
-    return detail::atomic::load<uint64_t, scope>(&value_, orders);
+    return detail::atomic::load<uint64_t, scope>(&value_, orders_);
   }
 
   __device__ void store(uint64_t val) {
-    detail::atomic::store<uint64_t, scope>(&value_, val, orders);
+    detail::atomic::store<uint64_t, scope>(&value_, val, orders_);
   }
 
   __device__ void fence() {
@@ -45,19 +46,56 @@ class Notifier {
   }
 
   __device__ void sync() {
-    detail::atomic::sync<scope>();
+    if constexpr (scope == detail::atomic::memory_scope_thread ||
+                  scope == detail::atomic::memory_scope_wavefront) {
+      return;
+    }
+    if constexpr (scope == detail::atomic::memory_scope_workgroup) {
+      __syncthreads();
+      return;
+    }
+    if constexpr (scope == detail::atomic::memory_scope_system) {
+      assert(false);
+      return;
+    }
+
+    uint32_t done = signal_ + 1;
+    __syncthreads();
+
+    uint32_t retval = 0;
+    bool executor {!threadIdx.x && !threadIdx.y && !threadIdx.z};
+    if (executor) {
+      retval = detail::atomic::fetch_add<uint32_t, uint32_t, scope>(&count_, 1, orders_);
+      detail::atomic::threadfence<scope>();
+    }
+    __syncthreads();
+
+    if (retval == ((gridDim.x * gridDim.y * gridDim.z) - 1)) {
+      if (executor) {
+        detail::atomic::store<uint32_t, scope>(&count_, 0, orders_);
+        detail::atomic::threadfence<scope>();
+        auto x = detail::atomic::fetch_add<uint32_t, uint32_t, scope>(&signal_, 1, orders_);
+        detail::atomic::threadfence<scope>();
+      }
+    }
+    while (detail::atomic::load<uint32_t, scope>(&signal_, orders_) != done) {
+      ;
+    }
   }
 
  private:
-
-  detail::atomic::rocshmem_memory_orders orders;
+  detail::atomic::rocshmem_memory_orders orders_{};
 
   uint64_t value_{};
+
+  uint32_t signal_ {};
+
+  uint32_t count_ {};
 };
 
 template <typename ALLOCATOR, detail::atomic::rocshmem_memory_scope scope>
 class NotifierProxy {
-  using ProxyT = DeviceProxy<ALLOCATOR, Notifier<scope>, 1>;
+  using ProxyT = DeviceProxy<ALLOCATOR, Notifier<scope>>;
 
  public:
   __host__ __device__ Notifier<scope>* get() { return proxy_.get(); }
