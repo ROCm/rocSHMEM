@@ -59,25 +59,25 @@ class Notifier {
       return;
     }
 
-    uint32_t done = signal_ + 1;
+    uint32_t done {signal_ + 1};
     __syncthreads();
 
-    uint32_t retval = 0;
+    uint32_t retval {0};
     bool executor {!threadIdx.x && !threadIdx.y && !threadIdx.z};
     if (executor) {
       retval = detail::atomic::fetch_add<uint32_t, uint32_t, scope>(&count_, 1, orders_);
-      detail::atomic::threadfence<scope>();
+      fence();
     }
     __syncthreads();
 
     if (retval == ((gridDim.x * gridDim.y * gridDim.z) - 1)) {
       if (executor) {
         detail::atomic::store<uint32_t, scope>(&count_, 0, orders_);
-        detail::atomic::threadfence<scope>();
-        auto x = detail::atomic::fetch_add<uint32_t, uint32_t, scope>(&signal_, 1, orders_);
-        detail::atomic::threadfence<scope>();
+        fence();
+        detail::atomic::fetch_add<uint32_t, uint32_t, scope>(&signal_, 1, orders_);
       }
     }
+
     while (detail::atomic::load<uint32_t, scope>(&signal_, orders_) != done) {
       ;
     }
