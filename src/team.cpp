@@ -44,6 +44,10 @@ ROTeam* get_internal_ro_team(roc_shmem_team_t team) {
   return reinterpret_cast<ROTeam*>(team);
 }
 
+IPCTeam* get_internal_ipc_team(roc_shmem_team_t team) {
+  return reinterpret_cast<IPCTeam*>(team);
+}
+
 __host__ __device__ int team_translate_pe(roc_shmem_team_t src_team, int src_pe,
                                           roc_shmem_team_t dst_team) {
   if (src_team == ROC_SHMEM_TEAM_INVALID ||

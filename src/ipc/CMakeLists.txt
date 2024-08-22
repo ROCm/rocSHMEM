@@ -29,4 +29,5 @@ target_sources(
     context_ipc_device.cpp
     context_ipc_host.cpp
     backend_ipc.cpp
+    ipc_team.cpp
 )

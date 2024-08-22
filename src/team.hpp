@@ -34,6 +34,7 @@ class Backend;
 class Team;
 class ROTeam;
 class GPUIBTeam;
+class IPCTeam;
 
 class TeamInfo {
  public:
@@ -161,6 +162,8 @@ __host__ __device__ Team* get_internal_team(roc_shmem_team_t team);
 GPUIBTeam* get_internal_gpu_ib_team(roc_shmem_team_t team);
 
 ROTeam* get_internal_ro_team(roc_shmem_team_t team);
+
+IPCTeam* get_internal_ipc_team(roc_shmem_team_t team);
 
 __host__ __device__ int team_translate_pe(roc_shmem_team_t src_team, int src_pe,
                                           roc_shmem_team_t dst_team);
