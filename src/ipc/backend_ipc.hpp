@@ -87,21 +87,6 @@ class IPCBackend : public Backend {
   void setup_ctxs();
 
   /**
-   * @brief Free all resources associated with the backend.
-   *
-   * The memory allocated to the handle param is deallocated during this
-   * method. The handle should be treated as a nullptr after the call.
-   *
-   * The destructor treats this method as a helper function to destroy
-   * this object.
-   *
-   * @todo The method needs to be broken into smaller pieces and most
-   * of these internal resources need to be moved into subclasses using
-   * RAII.
-   */
-  void ipc_net_free_runtime();
-
-  /**
    * @brief Abort the application.
    *
    * @param[in] status Exit code.
@@ -136,6 +121,41 @@ class IPCBackend : public Backend {
    */
   HostInterface *host_interface{nullptr};
 
+  /**
+   * @brief Scratchpad for the internal barrier algorithms.
+   */
+  int64_t *barrier_sync{nullptr};
+
+  /**
+   * @brief Handle for raw memory for barrier sync
+   */
+  long *barrier_pSync_pool{nullptr};
+
+  /**
+   * @brief Handle for raw memory for reduce sync
+   */
+  long *reduce_pSync_pool{nullptr};
+
+  /**
+   * @brief Handle for raw memory for broadcast sync
+   */
+  long *bcast_pSync_pool{nullptr};
+
+  /**
+   * @brief Handle for raw memory for alltoall sync
+   */
+  long *alltoall_pSync_pool{nullptr};
+
+  /**
+   * @brief Handle for raw memory for work
+   */
+  void *pWrk_pool{nullptr};
+
+  /**
+   * @brief Handle for raw memory for alltoall
+   */
+  void *pAta_pool{nullptr};
+
  protected:
    /**
    * @copydoc Backend::dump_backend_stats()
@@ -158,6 +178,30 @@ class IPCBackend : public Backend {
    * @brief Holds a copy of the default context for host functions
    */
   std::unique_ptr<IPCHostContext> default_host_ctx{nullptr};
+
+  /**
+   * @brief Allocate and initialize team world.
+   */
+  void setup_team_world();
+
+  /**
+   * @brief Initialize the resources required to support teams
+   */
+  void teams_init();
+
+  /**
+   * @brief Destruct the resources required to support teams
+   */
+  void teams_destroy();
+
+  /**
+   * @brief Allocate and initialize barrier operation addresses on
+   * symmetric heap.
+   *
+   * When this method completes, the barrier_sync member will be available
+   * for use.
+   */
+  void roc_shmem_collective_init();
 
  private:
   /**
@@ -182,6 +226,24 @@ class IPCBackend : public Backend {
    */
   size_t maximum_num_contexts_{1024};
 
+  /**
+   * @brief The bitmask representing the availability of teams in the pool
+   */
+  char *pool_bitmask_{nullptr};
+
+  /**
+   * @brief Bitmask to store the reduced result of bitmasks on pariticipating
+   * PEs
+   *
+   * With no thread-safety for this bitmask, multithreaded creation of teams is
+   * not supported.
+   */
+  char *reduced_bitmask_{nullptr};
+
+  /**
+   * @brief Size of the bitmask
+   */
+  int bitmask_size_{-1};
 
 };
 
