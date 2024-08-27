@@ -223,58 +223,6 @@ __device__ void IPCContext::get_nbi_wave(T *dest, const T *source,
   getmem_nbi_wave(dest, source, nelems * sizeof(T), pe);
 }
 
-
-//Wait/test functions
-template <typename T>
-__device__ void wait_until(T* ptr, roc_shmem_cmps cmp, T val) {
-}
-
-template <typename T>
-__device__ void wait_until_all(T* ptr, size_t nelems,
-			       const int *status,
-			       roc_shmem_cmps cmp, T val) {
-}
-
-template <typename T>
-__device__ size_t wait_until_any(T* ptr, size_t nelems,
-				 const int *status,
-				 roc_shmem_cmps cmp, T val) {
-  return 0;
-}
-
-template <typename T>
-__device__ size_t wait_until_some(T* ptr, size_t nelems,
-				  size_t* indices,
-				  const int *status,
-				  roc_shmem_cmps cmp, T val){
-  return 0;
-}
-
-template <typename T>
-__device__ void wait_until_all_vector(T* ptr, size_t nelems,
-				      const int *status,
-				      roc_shmem_cmps cmp, T* vals) {
-}
-
-template <typename T>
-__device__ size_t wait_until_any_vector(T* ptr, size_t nelems,
-					const int *status,
-					roc_shmem_cmps cmp, T* vals){
-  return 0;
-}
-
-template <typename T>
-__device__ size_t wait_until_some_vector(T* ptr, size_t nelems,
-					 size_t* indices,
-					 const int *status,
-					 roc_shmem_cmps cmp, T* vals) {
-}
-
-template <typename T>
-__device__ int test(T* ptr, roc_shmem_cmps cmp, T val) {
-  return 0;
-}
-  
 }  // namespace rocshmem
 
 #endif  // LIBRARY_SRC_IPC_CONTEXT_TMPL_DEVICE_HPP_

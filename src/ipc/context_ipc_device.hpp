@@ -194,44 +194,6 @@ class IPCContext : public Context {
   template <typename T>
   __device__ void get_nbi_wave(T *dest, const T *source, size_t nelems, int pe);
 
-  // Wait / Test functions
-  template <typename T>
-  __device__ void wait_until(T* ptr, roc_shmem_cmps cmp, T val);
-
-  template <typename T>
-  __device__ void wait_until_all(T* ptr, size_t nelems,
-                                 const int *status,
-                                 roc_shmem_cmps cmp, T val);
-
-  template <typename T>
-  __device__ size_t wait_until_any(T* ptr, size_t nelems,
-                                   const int *status,
-                                   roc_shmem_cmps cmp, T val);
-
-  template <typename T>
-  __device__ size_t wait_until_some(T* ptr, size_t nelems,
-                                    size_t* indices,
-                                    const int *status,
-                                    roc_shmem_cmps cmp, T val);
-
-  template <typename T>
-  __device__ void wait_until_all_vector(T* ptr, size_t nelems,
-                                        const int *status,
-                                        roc_shmem_cmps cmp, T* vals);
-
-  template <typename T>
-  __device__ size_t wait_until_any_vector(T* ptr, size_t nelems,
-                                          const int *status,
-                                          roc_shmem_cmps cmp, T* vals);
- template <typename T>
-  __device__ size_t wait_until_some_vector(T* ptr, size_t nelems,
-                                           size_t* indices,
-                                           const int *status,
-                                           roc_shmem_cmps cmp, T* vals);
-
-  template <typename T>
-  __device__ int test(T* ptr, roc_shmem_cmps cmp, T val);
-  
  private:
 
  //context class has IpcImpl object (ipcImpl_)
