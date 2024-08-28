@@ -50,6 +50,9 @@ __host__ ROContext::ROContext(Backend *b, size_t block_id)
     block_handle = &block_base[block_id];
   }
   ro_net_win_id = block_id % backend->ro_window_proxy_->MAX_NUM_WINDOWS;
+
+  ipcImpl_.ipc_bases = b->ipcImpl.ipc_bases;
+  ipcImpl_.shm_size = b->ipcImpl.shm_size;
 }
 
 __device__ void ROContext::putmem(void *dest, const void *source, size_t nelems,
