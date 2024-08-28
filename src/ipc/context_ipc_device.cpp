@@ -43,6 +43,7 @@ __host__ IPCContext::IPCContext(Backend *b)
 
   auto *bp{backend->ipc_backend_proxy.get()};
 
+  barrier_sync = backend->barrier_sync;
   g_ret = bp->g_ret;
   atomic_base_ptr = bp->atomic_ret->atomic_base_ptr;
 }
