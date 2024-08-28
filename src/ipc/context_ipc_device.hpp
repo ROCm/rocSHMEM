@@ -234,9 +234,6 @@ class IPCContext : public Context {
   
  private:
 
- //context class has IpcImpl object (ipcImpl_)
- IpcImpl *ipcImpl{nullptr};
-
  uint64_t* atomic_base_ptr{nullptr};
 
  char* g_ret;
