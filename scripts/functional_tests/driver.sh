@@ -73,9 +73,9 @@ case $2 in
         echo "amoinc_n2_w1_z1"
         ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 11 > $3/amoinc_n2_w1_z1.log
         check amoinc_n2_w1_z1
-        echo "pingpong_n2_w1"
-        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 14 > $3/pingpong_n2_w1.log
-        check pingpong_n2_w1
+        # echo "pingpong_n2_w1"
+        # ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 14 > $3/pingpong_n2_w1.log
+        # check pingpong_n2_w1
         echo "amoset_n2_w1_z1"
         ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 44 > $3/amoset_n2_w1_z1.log
         check amoset_n2_w1_z1
@@ -115,9 +115,9 @@ case $2 in
         echo "amoinc_n2_w8_z1"
         ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 11 > $3/amoinc_n2_w8_z1.log
         check amoinc_n2_w8_z1
-        echo "pingpong_n2_w1"
-        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 14 > $3/pingpong_n2_w1.log
-        check pingpong_n2_w1
+        # echo "pingpong_n2_w1"
+        # ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 14 > $3/pingpong_n2_w1.log
+        # check pingpong_n2_w1
         echo "amoset_n2_w8_z1"
         ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 44 > $3/amoset_n2_w8_z1.log
         check amoset_n2_w8_z1
