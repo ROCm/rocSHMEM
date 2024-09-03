@@ -52,6 +52,7 @@
 #include "team_ctx_infra_tester.hpp"
 #include "team_ctx_primitive_tester.hpp"
 #include "team_reduction_tester.hpp"
+#include "wave_level_primitives.hpp"
 
 Tester::Tester(TesterArguments args) : args(args) {
   _type = (TestType)args.algorithm;
@@ -487,6 +488,22 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       if (rank == 0)
         std::cout << "Non-Blocking Put message rate***" << std::endl;
       testers.push_back(new PrimitiveMRTester(args));
+      return testers;
+    case WAVEGetTestType:
+      if (rank == 0) std::cout << "WAVE Blocking Gets***" << std::endl;
+      testers.push_back(new WaveLevelPrimitiveTester(args));
+      return testers;
+    case WAVEGetNBITestType:
+      if (rank == 0) std::cout << "WAVE Non-Blocking Gets***" << std::endl;
+      testers.push_back(new WaveLevelPrimitiveTester(args));
+      return testers;
+    case WAVEPutTestType:
+      if (rank == 0) std::cout << "WAVE Blocking Puts***" << std::endl;
+      testers.push_back(new WaveLevelPrimitiveTester(args));
+      return testers;
+    case WAVEPutNBITestType:
+      if (rank == 0) std::cout << "WAVE Non-Blocking Puts***" << std::endl;
+      testers.push_back(new WaveLevelPrimitiveTester(args));
       return testers;
     default:
       if (rank == 0) std::cout << "Unknown***" << std::endl;

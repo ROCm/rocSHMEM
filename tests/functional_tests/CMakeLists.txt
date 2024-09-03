@@ -55,6 +55,7 @@ target_sources(
     shmem_ptr_tester.cpp
     extended_primitives.cpp
     empty_tester.cpp
+    wave_level_primitives.cpp
 )
 
 ###############################################################################
