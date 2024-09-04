@@ -469,19 +469,31 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       testers.push_back(new ShmemPtrTester(args));
       return testers;
     case WGGetTestType:
-      if (rank == 0) std::cout << "Blocking WG level Gets***" << std::endl;
+      if (rank == 0) {
+        if (args.tiled) std::cout << "Tiled Blocking WG level Gets***" << std::endl;
+        else std::cout << "Blocking WG level Gets***" << std::endl;
+      }
       testers.push_back(new ExtendedPrimitiveTester(args));
       return testers;
     case WGGetNBITestType:
-      if (rank == 0) std::cout << "Non-Blocking WG level Gets***" << std::endl;
+      if (rank == 0) {
+        if (args.tiled) std::cout << "Tiled Non-Blocking WG level Gets***" << std::endl;
+        else std::cout << "Non-Blocking WG level Gets***" << std::endl;
+      }
       testers.push_back(new ExtendedPrimitiveTester(args));
       return testers;
     case WGPutTestType:
-      if (rank == 0) std::cout << "Blocking WG level Puts***" << std::endl;
+      if (rank == 0) {
+        if (args.tiled) std::cout << "Tiled Blocking WG level Puts***" << std::endl;
+        else std::cout << "Blocking WG level Puts***" << std::endl;
+      }
       testers.push_back(new ExtendedPrimitiveTester(args));
       return testers;
     case WGPutNBITestType:
-      if (rank == 0) std::cout << "Non-Blocking WG level Puts***" << std::endl;
+      if (rank == 0) {
+        if(args.tiled) std::cout << "Tiled Non-Blocking WG level Puts***" << std::endl;
+        else std::cout << "Non-Blocking WG level Puts***" << std::endl;
+      }
       testers.push_back(new ExtendedPrimitiveTester(args));
       return testers;
     case PutNBIMRTestType:

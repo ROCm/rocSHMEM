@@ -24,6 +24,7 @@
 #define _EXTENDED_PRIMITIVES_HPP_
 
 #include "tester.hpp"
+#include "../src/util.hpp"
 
 /******************************************************************************
  * HOST TESTER CLASS

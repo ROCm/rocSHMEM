@@ -27,7 +27,7 @@
 using namespace rocshmem;
 
 /******************************************************************************
- * DEVICE TEST KERNEL
+ * DEVICE TEST KERNELS
  *****************************************************************************/
 __global__ void ExtendedPrimitiveTest(int loop, int skip, uint64_t *timer,
                                       char *s_buf, char *r_buf, int size,
@@ -38,6 +38,50 @@ __global__ void ExtendedPrimitiveTest(int loop, int skip, uint64_t *timer,
   roc_shmem_wg_ctx_create(ctx_type, &ctx);
 
   uint64_t start;
+
+  for (int i = 0; i < loop + skip; i++) {
+    if (i == skip) start = roc_shmem_timer();
+
+    switch (type) {
+      case WGGetTestType:
+        roc_shmemx_ctx_getmem_wg(ctx, r_buf, s_buf, size, 1);
+        break;
+      case WGGetNBITestType:
+        roc_shmemx_ctx_getmem_nbi_wg(ctx, r_buf, s_buf, size, 1);
+        break;
+      case WGPutTestType:
+        roc_shmemx_ctx_putmem_wg(ctx, r_buf, s_buf, size, 1);
+        break;
+      case WGPutNBITestType:
+        roc_shmemx_ctx_putmem_nbi_wg(ctx, r_buf, s_buf, size, 1);
+        break;
+      default:
+        break;
+    }
+  }
+
+  roc_shmem_ctx_quiet(ctx);
+
+  if (hipThreadIdx_x == 0) {
+    timer[hipBlockIdx_x] = roc_shmem_timer() - start;
+  }
+
+  roc_shmem_wg_ctx_destroy(&ctx);
+  roc_shmem_wg_finalize();
+}
+
+__global__ void ExtendedPrimitiveTestTiled(int loop, int skip, uint64_t *timer,
+                                      char *s_buf, char *r_buf, int size,
+                                      TestType type,
+                                      ShmemContextType ctx_type) {
+  __shared__ roc_shmem_ctx_t ctx;
+  roc_shmem_wg_init();
+  roc_shmem_wg_ctx_create(ctx_type, &ctx);
+
+  uint64_t start;
+  uint64_t idx = size * get_flat_grid_id();
+  s_buf += idx;
+  r_buf += idx;
 
   for (int i = 0; i < loop + skip; i++) {
     if (i == skip) start = roc_shmem_timer();
@@ -93,17 +137,23 @@ void ExtendedPrimitiveTester::launchKernel(dim3 gridSize, dim3 blockSize,
                                            int loop, uint64_t size) {
   size_t shared_bytes = 0;
 
-  hipLaunchKernelGGL(ExtendedPrimitiveTest, gridSize, blockSize, shared_bytes,
+  if (args.tiled){
+    hipLaunchKernelGGL(ExtendedPrimitiveTestTiled, gridSize, blockSize, shared_bytes,
                      stream, loop, args.skip, timer, s_buf, r_buf, size, _type,
                      _shmem_context);
+  }
+  else {
+    hipLaunchKernelGGL(ExtendedPrimitiveTest, gridSize, blockSize, shared_bytes,
+                     stream, loop, args.skip, timer, s_buf, r_buf, size, _type,
+                     _shmem_context);
+  }
 
   num_msgs = (loop + args.skip) * gridSize.x;
-  num_timed_msgs = loop;
+  num_timed_msgs = loop * gridSize.x;
 }
 
 void ExtendedPrimitiveTester::verifyResults(uint64_t size) {
-  int check_id = (_type == WGGetTestType || _type == WGGetNBITestType ||
-                  _type == WAVEGetTestType)
+  int check_id = (_type == WGGetTestType || _type == WGGetNBITestType)
                      ? 0
                      : 1;
 
