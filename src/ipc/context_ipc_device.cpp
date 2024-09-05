@@ -59,22 +59,18 @@ __device__ void IPCContext::ctx_destroy(){
 
 __device__ void IPCContext::putmem(void *dest, const void *source, size_t nelems,
                                   int pe) {
-  // TODO (Avinash) check if PE is available for IPC using (isIpcAvailable)
-  int local_pe = pe % ipcImpl_.shm_size;
   uint64_t L_offset =
       reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
-  ipcImpl_.ipcCopy(ipcImpl_.ipc_bases[local_pe] + L_offset,
+  ipcImpl_.ipcCopy(ipcImpl_.ipc_bases[pe] + L_offset,
                    const_cast<void *>(source), nelems);
 }
 
 __device__ void IPCContext::getmem(void *dest, const void *source, size_t nelems,
                                   int pe) {
-  // TODO (Avinash) check if PE is available for IPC using (isIpcAvailable)
-  int local_pe = pe % ipcImpl_.shm_size;
   const char *src_typed = reinterpret_cast<const char *>(source);
   uint64_t L_offset =
       const_cast<char *>(src_typed) - ipcImpl_.ipc_bases[my_pe];
-  ipcImpl_.ipcCopy(dest, ipcImpl_.ipc_bases[local_pe] + L_offset, nelems);
+  ipcImpl_.ipcCopy(dest, ipcImpl_.ipc_bases[pe] + L_offset, nelems);
 }
 
 __device__ void IPCContext::putmem_nbi(void *dest, const void *source,
@@ -115,23 +111,19 @@ __device__ void IPCContext::sync(roc_shmem_team_t team) {
 
 __device__ void IPCContext::putmem_wg(void *dest, const void *source,
                                      size_t nelems, int pe) {
-  // TODO (Avinash) check if PE is available for IPC using (isIpcAvailable)
-  int local_pe = pe % ipcImpl_.shm_size;
   uint64_t L_offset =
       reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
-  ipcImpl_.ipcCopy_wg(ipcImpl_.ipc_bases[local_pe] + L_offset,
+  ipcImpl_.ipcCopy_wg(ipcImpl_.ipc_bases[pe] + L_offset,
                       const_cast<void *>(source), nelems);
   __syncthreads();
 }
 
 __device__ void IPCContext::getmem_wg(void *dest, const void *source,
                                      size_t nelems, int pe) {
-  // TODO (Avinash) check if PE is available for IPC using (isIpcAvailable)
-  int local_pe = pe % ipcImpl_.shm_size;
   const char *src_typed = reinterpret_cast<const char *>(source);
   uint64_t L_offset =
       const_cast<char *>(src_typed) - ipcImpl_.ipc_bases[my_pe];
-  ipcImpl_.ipcCopy_wg(dest, ipcImpl_.ipc_bases[local_pe] + L_offset, nelems);
+  ipcImpl_.ipcCopy_wg(dest, ipcImpl_.ipc_bases[pe] + L_offset, nelems);
   __syncthreads();
 }
 
@@ -147,22 +139,18 @@ __device__ void IPCContext::getmem_nbi_wg(void *dest, const void *source,
 
 __device__ void IPCContext::putmem_wave(void *dest, const void *source,
                                        size_t nelems, int pe) {
-  // TODO (Avinash) check if PE is available for IPC using (isIpcAvailable)
-  int local_pe = pe % ipcImpl_.shm_size;
   uint64_t L_offset =
       reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
-  ipcImpl_.ipcCopy_wave(ipcImpl_.ipc_bases[local_pe] + L_offset,
+  ipcImpl_.ipcCopy_wave(ipcImpl_.ipc_bases[pe] + L_offset,
                         const_cast<void *>(source), nelems);
 }
 
 __device__ void IPCContext::getmem_wave(void *dest, const void *source,
                                        size_t nelems, int pe) {
-  // TODO (Avinash) check if PE is available for IPC using (isIpcAvailable)
-  int local_pe = pe % ipcImpl_.shm_size;
   const char *src_typed = reinterpret_cast<const char *>(source);
   uint64_t L_offset =
       const_cast<char *>(src_typed) - ipcImpl_.ipc_bases[my_pe];
-  ipcImpl_.ipcCopy_wave(dest, ipcImpl_.ipc_bases[local_pe] + L_offset,
+  ipcImpl_.ipcCopy_wave(dest, ipcImpl_.ipc_bases[pe] + L_offset,
                         nelems);
 }
 

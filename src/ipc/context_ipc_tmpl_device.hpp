@@ -71,20 +71,18 @@ __device__ void IPCContext::get_nbi(T *dest, const T *source, size_t nelems,
 // Atomics
 template <typename T>
 __device__ void IPCContext::amo_add(void *dest, T value, int pe) {
-  int local_pe = pe % ipcImpl_.shm_size;
   uint64_t L_offset =
       reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
   ipcImpl_.ipcAMOAdd(
-      reinterpret_cast<T *>(ipcImpl_.ipc_bases[local_pe] + L_offset), value);
+      reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), value);
 }
 
 template <typename T>
 __device__ void IPCContext::amo_set(void *dest, T value, int pe) {
-  int local_pe = pe % ipcImpl_.shm_size;
   uint64_t L_offset =
       reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
   ipcImpl_.ipcAMOSet(
-      reinterpret_cast<T *>(ipcImpl_.ipc_bases[local_pe] + L_offset), value);
+      reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), value);
 }
 
 template <typename T>
@@ -128,30 +126,27 @@ __device__ void IPCContext::amo_xor(void *dst, T value, int pe) {
 
 template <typename T>
 __device__ void IPCContext::amo_cas(void *dest, T value, T cond, int pe) {
-  int local_pe = pe % ipcImpl_.shm_size;
   uint64_t L_offset =
       reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
   ipcImpl_.ipcAMOCas(
-      reinterpret_cast<T *>(ipcImpl_.ipc_bases[local_pe] + L_offset), cond,
+      reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), cond,
       value);
 }
 
 template <typename T>
 __device__ T IPCContext::amo_fetch_add(void *dest, T value, int pe) {
-  int local_pe = pe % ipcImpl_.shm_size;
   uint64_t L_offset =
       reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
   return ipcImpl_.ipcAMOFetchAdd(
-      reinterpret_cast<T *>(ipcImpl_.ipc_bases[local_pe] + L_offset), value);
+      reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), value);
 }
 
 template <typename T>
 __device__ T IPCContext::amo_fetch_cas(void *dest, T value, T cond, int pe) {
-  int local_pe = pe % ipcImpl_.shm_size;
   uint64_t L_offset =
       reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
   return ipcImpl_.ipcAMOFetchCas(
-      reinterpret_cast<T *>(ipcImpl_.ipc_bases[local_pe] + L_offset), cond,
+      reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), cond,
       value);
 }
   
