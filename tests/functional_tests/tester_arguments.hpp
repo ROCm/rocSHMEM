@@ -58,7 +58,6 @@ class TesterArguments {
   unsigned coal_coef = 64;
   unsigned op_type = 0;
   unsigned shmem_context = rocshmem::ROC_SHMEM_CTX_WG_PRIVATE;
-  bool tiled = false;
 
   /**
    * Arguments obtained from rocshmem

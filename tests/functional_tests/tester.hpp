@@ -117,7 +117,9 @@ class Tester {
 
   int num_msgs = 0;
   int num_timed_msgs = 0;
+  int num_warps = 0;
   int bw_factor = 1;
+  int device_id = 0;
 
   TesterArguments args;
 
@@ -125,6 +127,7 @@ class Tester {
   ShmemContextType _shmem_context = 8;  // SHMEM_CTX_WP_PRIVATE
 
   hipStream_t stream;
+  hipDeviceProp_t deviceProps;
 
   uint64_t *timer = nullptr;
 

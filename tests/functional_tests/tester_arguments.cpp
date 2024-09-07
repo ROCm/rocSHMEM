@@ -60,9 +60,6 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
     } else if (arg == "-x") {
       i++;
       shmem_context = atoi(argv[i]);
-    } else if (arg == "-ti") {
-      i++;
-      tiled = (atoi(argv[i]) == 1);
     } else {
       show_usage(argv[0]);
       exit(-1);
@@ -122,7 +119,6 @@ void TesterArguments::show_usage(std::string executable_name) {
   std::cout << "\t-o <Operation type for the random_access test>\n";
   std::cout << "\t-ta <Number of Thread Accessing the communication>\n";
   std::cout << "\t-x <shmem context>\n";
-  std::cout << "\t-ti <Tiled version>\n";
 }
 
 void TesterArguments::get_rocshmem_arguments() {

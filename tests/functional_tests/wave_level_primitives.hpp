@@ -24,6 +24,7 @@
 #define _WAVE_LEVEL_PRIMITIVE_TEST_HPP_
 
 #include "tester.hpp"
+#include "../src/util.hpp"
 
 /******************************************************************************
  * HOST TESTER CLASS

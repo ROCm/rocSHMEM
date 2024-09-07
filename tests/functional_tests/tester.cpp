@@ -57,6 +57,9 @@
 Tester::Tester(TesterArguments args) : args(args) {
   _type = (TestType)args.algorithm;
   _shmem_context = args.shmem_context;
+  CHECK_HIP(hipGetDevice(&device_id));
+  CHECK_HIP(hipGetDeviceProperties(&deviceProps, device_id));
+  num_warps = args.wg_size / deviceProps.warpSize;
   CHECK_HIP(hipStreamCreate(&stream));
   CHECK_HIP(hipEventCreate(&start_event));
   CHECK_HIP(hipEventCreate(&stop_event));
@@ -470,28 +473,32 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       return testers;
     case WGGetTestType:
       if (rank == 0) {
-        if (args.tiled) std::cout << "Tiled Blocking WG level Gets***" << std::endl;
+        if (args.num_wgs > 1)
+          std::cout << "Tiled Blocking WG level Gets***" << std::endl;
         else std::cout << "Blocking WG level Gets***" << std::endl;
       }
       testers.push_back(new ExtendedPrimitiveTester(args));
       return testers;
     case WGGetNBITestType:
       if (rank == 0) {
-        if (args.tiled) std::cout << "Tiled Non-Blocking WG level Gets***" << std::endl;
+        if (args.num_wgs > 1)
+          std::cout << "Tiled Non-Blocking WG level Gets***" << std::endl;
         else std::cout << "Non-Blocking WG level Gets***" << std::endl;
       }
       testers.push_back(new ExtendedPrimitiveTester(args));
       return testers;
     case WGPutTestType:
       if (rank == 0) {
-        if (args.tiled) std::cout << "Tiled Blocking WG level Puts***" << std::endl;
+        if (args.num_wgs > 1)
+          std::cout << "Tiled Blocking WG level Puts***" << std::endl;
         else std::cout << "Blocking WG level Puts***" << std::endl;
       }
       testers.push_back(new ExtendedPrimitiveTester(args));
       return testers;
     case WGPutNBITestType:
       if (rank == 0) {
-        if(args.tiled) std::cout << "Tiled Non-Blocking WG level Puts***" << std::endl;
+        if (args.num_wgs > 1)
+          std::cout << "Tiled Non-Blocking WG level Puts***" << std::endl;
         else std::cout << "Non-Blocking WG level Puts***" << std::endl;
       }
       testers.push_back(new ExtendedPrimitiveTester(args));
@@ -502,19 +509,35 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       testers.push_back(new PrimitiveMRTester(args));
       return testers;
     case WAVEGetTestType:
-      if (rank == 0) std::cout << "WAVE Blocking Gets***" << std::endl;
+      if (rank == 0) {
+        if (args.num_wgs > 1 || args.wg_size / 64 > 1)
+          std::cout << "Tiled Blocking WAVE level Gets***" << std::endl;
+        else std::cout << "Blocking WAVE level Gets***" << std::endl;
+      }
       testers.push_back(new WaveLevelPrimitiveTester(args));
       return testers;
     case WAVEGetNBITestType:
-      if (rank == 0) std::cout << "WAVE Non-Blocking Gets***" << std::endl;
+      if (rank == 0) {
+        if (args.num_wgs > 1 || args.wg_size / 64 > 1)
+          std::cout << "Tiled Non-Blocking WAVE level Gets***" << std::endl;
+        else std::cout << "Non-Blocking WAVE level Gets***" << std::endl;
+      }
       testers.push_back(new WaveLevelPrimitiveTester(args));
       return testers;
     case WAVEPutTestType:
-      if (rank == 0) std::cout << "WAVE Blocking Puts***" << std::endl;
+      if (rank == 0) {
+        if (args.num_wgs > 1 || args.wg_size / 64 > 1)
+          std::cout << "Tiled Blocking WAVE level Puts***" << std::endl;
+        else std::cout << "Blocking WAVE level Puts***" << std::endl;
+      }
       testers.push_back(new WaveLevelPrimitiveTester(args));
       return testers;
     case WAVEPutNBITestType:
-      if (rank == 0) std::cout << "WAVE Non-Blocking Puts***" << std::endl;
+      if (rank == 0) {
+        if (args.num_wgs > 1 || args.wg_size / 64 > 1)
+          std::cout << "Tiled Non-Blocking WAVE level Puts***" << std::endl;
+        else std::cout << "Non-Blocking WAVE level Puts***" << std::endl;
+      }
       testers.push_back(new WaveLevelPrimitiveTester(args));
       return testers;
     default:
@@ -684,6 +707,8 @@ uint64_t Tester::gpuCyclesToMicroseconds(uint64_t cycles) {
 uint64_t Tester::timerAvgInMicroseconds() {
   uint64_t sum = 0;
 
+  //TODO: Modify the calcuation for the Tiled version of puts and gets at 
+  //      wavefront level (bpotter/avinash)
   for (int i = 0; i < args.num_wgs; i++) {
     sum += gpuCyclesToMicroseconds(timer[i]);
   }
