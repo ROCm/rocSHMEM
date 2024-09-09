@@ -33,6 +33,7 @@ TEST_F(IPCImplSimpleCoarseTestFixture, MPI_num_pes) {
 }
 
 TEST_F(IPCImplSimpleCoarseTestFixture, IPC_bases) {
+  ASSERT_NE(ipc_impl_.ipc_bases, nullptr);
   for(int i{0}; i < mpi_.num_pes(); i++) {
     ASSERT_NE(ipc_impl_.ipc_bases[i], nullptr);
   }
