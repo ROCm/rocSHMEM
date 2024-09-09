@@ -212,7 +212,7 @@ __device__ void gpu_dprintf(const char* fmt, const Args&... args) {
       while (atomicCAS(print_lock, 0, 1) == 1) {
       }
 
-      printf("WG (%lu, %lu, %lu) TH (%lu, %lu, %lu) ", hipBlockIdx_x,
+      printf("WG (%u, %u, %u) TH (%u, %u, %u) ", hipBlockIdx_x,
              hipBlockIdx_y, hipBlockIdx_z, hipThreadIdx_x, hipThreadIdx_y,
              hipThreadIdx_z);
       printf(fmt, args...);

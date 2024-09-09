@@ -194,50 +194,44 @@ class IPCContext : public Context {
   template <typename T>
   __device__ void get_nbi_wave(T *dest, const T *source, size_t nelems, int pe);
 
-  // Wait / Test functions
-  template <typename T>
-  __device__ void wait_until(T* ptr, roc_shmem_cmps cmp, T val);
-
-  template <typename T>
-  __device__ void wait_until_all(T* ptr, size_t nelems,
-                                 const int *status,
-                                 roc_shmem_cmps cmp, T val);
-
-  template <typename T>
-  __device__ size_t wait_until_any(T* ptr, size_t nelems,
-                                   const int *status,
-                                   roc_shmem_cmps cmp, T val);
-
-  template <typename T>
-  __device__ size_t wait_until_some(T* ptr, size_t nelems,
-                                    size_t* indices,
-                                    const int *status,
-                                    roc_shmem_cmps cmp, T val);
-
-  template <typename T>
-  __device__ void wait_until_all_vector(T* ptr, size_t nelems,
-                                        const int *status,
-                                        roc_shmem_cmps cmp, T* vals);
-
-  template <typename T>
-  __device__ size_t wait_until_any_vector(T* ptr, size_t nelems,
-                                          const int *status,
-                                          roc_shmem_cmps cmp, T* vals);
- template <typename T>
-  __device__ size_t wait_until_some_vector(T* ptr, size_t nelems,
-                                           size_t* indices,
-                                           const int *status,
-                                           roc_shmem_cmps cmp, T* vals);
-
-  template <typename T>
-  __device__ int test(T* ptr, roc_shmem_cmps cmp, T val);
-  
  private:
 
- uint64_t* atomic_base_ptr{nullptr};
+  //context class has IpcImpl object (ipcImpl_)
+  IpcImpl *ipcImpl{nullptr};
 
- char* g_ret;
+  uint64_t* atomic_base_ptr{nullptr};
 
+  char* g_ret;
+
+  //internal functions used by collective operations
+   template <typename T>
+  __device__ void internal_put_broadcast(T *dst, const T *src, int nelems,
+                                         int pe_root, int PE_start,
+                                         int logPE_stride, int PE_size);  // NOLINT(runtime/int)
+
+  template <typename T>
+  __device__ void internal_get_broadcast(T *dst, const T *src, int nelems,
+                                         int pe_root);  // NOLINT(runtime/int)
+
+  template <typename T>
+  __device__ void fcollect_linear(roc_shmem_team_t team, T *dest,
+                                  const T *source, int nelems);
+
+  template <typename T>
+  __device__ void alltoall_linear(roc_shmem_team_t team, T *dest,
+                                  const T *source, int nelems);
+
+  __device__ void internal_sync(int pe, int PE_start, int stride, int PE_size,
+                                int64_t *pSync);
+
+  __device__ void internal_direct_barrier(int pe, int PE_start, int stride,
+                                          int n_pes, int64_t *pSync);
+
+  __device__ void internal_atomic_barrier(int pe, int PE_start, int stride,
+                                          int n_pes, int64_t *pSync);
+
+  //Temporary scratchpad memory used by internal barrier algorithms.
+  int64_t *barrier_sync{nullptr};
 };
 
 }  // namespace rocshmem

@@ -44,6 +44,7 @@ __host__ IPCContext::IPCContext(Backend *b)
 
   auto *bp{backend->ipc_backend_proxy.get()};
 
+  barrier_sync = backend->barrier_sync;
   g_ret = bp->g_ret;
   atomic_base_ptr = bp->atomic_ret->atomic_base_ptr;
 }
@@ -95,18 +96,6 @@ __device__ void IPCContext::quiet() {
 __device__ void *IPCContext::shmem_ptr(const void *dest, int pe) {
   void *ret = nullptr;
   return ret;
-}
-
-__device__ void IPCContext::barrier_all() {
-  __syncthreads();
-}
-
-__device__ void IPCContext::sync_all() {
-  __syncthreads();
-}
-
-__device__ void IPCContext::sync(roc_shmem_team_t team) {
-  __syncthreads();
 }
 
 __device__ void IPCContext::putmem_wg(void *dest, const void *source,
