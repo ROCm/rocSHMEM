@@ -207,13 +207,11 @@ class IPCContext : public Context {
    template <typename T>
   __device__ void internal_put_broadcast(T *dst, const T *src, int nelems,
                                          int pe_root, int PE_start,
-                                         int logPE_stride, int PE_size,
-                                         long *pSync);  // NOLINT(runtime/int)
+                                         int logPE_stride, int PE_size);  // NOLINT(runtime/int)
 
   template <typename T>
   __device__ void internal_get_broadcast(T *dst, const T *src, int nelems,
-                                         int pe_root,
-                                         long *pSync);  // NOLINT(runtime/int)
+                                         int pe_root);  // NOLINT(runtime/int)
 
   template <typename T>
   __device__ void fcollect_linear(roc_shmem_team_t team, T *dest,

@@ -154,8 +154,7 @@ __device__ void IPCContext::to_all(T *dest, const T *source, int nreduce,
 template <typename T>
 __device__ void IPCContext::internal_put_broadcast(
     T *dst, const T *src, int nelems, int pe_root, int pe_start,
-    int log_pe_stride, int pe_size,
-    [[maybe_unused]] long *p_sync) {  // NOLINT(runtime/int)
+    int log_pe_stride, int pe_size) {  // NOLINT(runtime/int)
   if (my_pe == pe_root) {
     int stride = 1 << log_pe_stride;
     int finish = pe_start + stride * pe_size;
@@ -169,8 +168,7 @@ __device__ void IPCContext::internal_put_broadcast(
 
 template <typename T>
 __device__ void IPCContext::internal_get_broadcast(
-    T *dst, const T *src, int nelems, int pe_root,
-    [[maybe_unused]] long *pSync) {  // NOLINT(runtime/int)
+  T *dst, const T *src, int nelems, int pe_root) {  // NOLINT(runtime/int)
   if (my_pe != pe_root) {
     get_wg(dst, src, nelems, pe_root);
   }
@@ -202,9 +200,9 @@ __device__ void IPCContext::broadcast(T *dst, const T *src, int nelems,
 				      long *p_sync) {  // NOLINT(runtime/int)
   if (num_pes < 4) {
     internal_put_broadcast(dst, src, nelems, pe_root, pe_start, log_pe_stride,
-                           pe_size, p_sync);
+                           pe_size);
   } else {
-    internal_get_broadcast(dst, src, nelems, pe_root, p_sync);
+    internal_get_broadcast(dst, src, nelems, pe_root);
   }
 
   // Synchronize on completion of broadcast
@@ -232,9 +230,6 @@ __device__ void IPCContext::alltoall_linear(roc_shmem_team_t team, T *dst,
   long *pSync = team_obj->alltoall_pSync;
   int my_pe_in_team = team_obj->my_pe;
 
-  /* TODO (egabriel): shouldn't the loop handle pe_start, pe_size, and stride?
-   * otherwise what is the point of the few lines above?
-   */
   // Have each PE put their designated data to the other PEs
   for (int j = 0; j < pe_size; j++) {
     int dest_pe = team_obj->get_pe_in_world(j);
@@ -268,9 +263,6 @@ __device__ void IPCContext::fcollect_linear(roc_shmem_team_t team, T *dst,
   long *pSync = team_obj->alltoall_pSync;
   int my_pe_in_team = team_obj->my_pe;
 
-  /* TODO (egabriel): shouldn't the loop handle pe_start, pe_size, and stride?
-   * otherwise what is the point of the few lines above?
-   */
   // Have each PE put their designated data to the other PEs
   for (int j = 0; j < pe_size; j++) {
     int dest_pe = team_obj->get_pe_in_world(j);
