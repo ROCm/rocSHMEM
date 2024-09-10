@@ -26,46 +26,9 @@
 target_sources(
   ${PROJECT_NAME}
   PRIVATE
-    atomic_return.cpp
-    backend_bc.cpp
-    context_host.cpp
-    context_device.cpp
-    mpi_init_singleton.cpp
-    roc_shmem_gpu.cpp
-    roc_shmem.cpp
-    team.cpp
-    team_tracker.cpp
-    util.cpp
-    wf_coal_policy.cpp
-    ipc_policy.cpp
+    context_ipc_device.cpp
+    context_ipc_host.cpp
+    backend_ipc.cpp
+    ipc_team.cpp
+    context_ipc_device_coll.cpp
 )
-
-target_compile_options(
-  ${PROJECT_NAME}
-  PUBLIC
-    -fgpu-rdc
-#   xnack allows address translation fault recovery
-#   required option for managed heap configs
-#    -mxnack
-)
-
-#target_link_options(
-  #${PROJECT_NAME}
-  #PUBLIC
-    #--hip-link
-#)
-
-###############################################################################
-# ROCSHMEM TARGET FOR BACKENDS
-###############################################################################
-IF (USE_GPU_IB)
-add_subdirectory(gpu_ib)
-ELSEIF(USE_RO)
-add_subdirectory(reverse_offload)
-ELSE()
-add_subdirectory(ipc)
-ENDIF()
-add_subdirectory(containers)
-add_subdirectory(host)
-add_subdirectory(memory)
-add_subdirectory(sync)

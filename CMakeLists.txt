@@ -54,7 +54,8 @@ string(REGEX REPLACE "([0-9]+)\.([0-9]+)\.([0-9]+)(.*)" "\\1.\\2.\\3" ROCSHMEM_V
 ###############################################################################
 option(DEBUG "Enable debug trace" OFF)
 option(PROFILE "Enable statistics and timing support" OFF)
-option(USE_GPU_IB "Enable GPU_IB conduit. If off, RO_NET will be used" ON)
+option(USE_GPU_IB "Enable GPU_IB conduit." ON)
+option(USE_RO "Enable RO conduit." ON)
 option(USE_DC "Enable IB dynamically connected transport (DC)" OFF)
 option(USE_IPC "Enable IPC support (using HIP)" OFF)
 option(USE_THREADS "Enable workgroup threads to share network queues" OFF)

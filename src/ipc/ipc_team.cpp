@@ -20,21 +20,37 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_CONTEXT_INCL_HPP_
-#define LIBRARY_SRC_CONTEXT_INCL_HPP_
+#include "ipc_team.hpp"
 
-#include "context.hpp"
-#include "context_tmpl_device.hpp"
-#include "context_tmpl_host.hpp"
-#ifdef USE_GPU_IB
-#include "gpu_ib/context_ib_device.hpp"
-#include "gpu_ib/context_ib_host.hpp"
-#elif defined (USE_RO)
-#include "reverse_offload/context_ro_device.hpp"
-#include "reverse_offload/context_ro_host.hpp"
-#else
-#include "ipc/context_ipc_device.hpp"
-#include "ipc/context_ipc_host.hpp"
-#endif
+#include "../backend_type.hpp"
+#include "backend_ipc.hpp"
 
-#endif  // LIBRARY_SRC_CONTEXT_INCL_HPP_
+namespace rocshmem {
+
+IPCTeam::IPCTeam(Backend *backend, TeamInfo *team_info_parent,
+                     TeamInfo *team_info_world, int num_pes, int my_pe,
+                     MPI_Comm mpi_comm, int pool_index)
+    : Team(backend, team_info_parent, team_info_world, num_pes, my_pe,
+           mpi_comm) {
+  type = BackendType::IPC_BACKEND;
+  const IPCBackend *b = static_cast<const IPCBackend *>(backend);
+
+  pool_index_ = pool_index;
+
+  barrier_pSync =
+      &(b->barrier_pSync_pool[pool_index * ROC_SHMEM_BARRIER_SYNC_SIZE]);
+  reduce_pSync =
+      &(b->reduce_pSync_pool[pool_index * ROC_SHMEM_REDUCE_SYNC_SIZE]);
+  bcast_pSync = &(b->bcast_pSync_pool[pool_index * ROC_SHMEM_BCAST_SYNC_SIZE]);
+  alltoall_pSync =
+      &(b->alltoall_pSync_pool[pool_index * ROC_SHMEM_ALLTOALL_SYNC_SIZE]);
+
+  pWrk = reinterpret_cast<char *>(b->pWrk_pool) +
+         ROC_SHMEM_REDUCE_MIN_WRKDATA_SIZE * sizeof(double) * pool_index;
+  pAta = reinterpret_cast<char *>(b->pAta_pool) +
+         ROC_SHMEM_ATA_MAX_WRKDATA_SIZE * sizeof(double) * pool_index;
+}
+
+IPCTeam::~IPCTeam() {}
+
+}  // namespace rocshmem

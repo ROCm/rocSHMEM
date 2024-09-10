@@ -20,21 +20,31 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_CONTEXT_INCL_HPP_
-#define LIBRARY_SRC_CONTEXT_INCL_HPP_
+#ifndef LIBRARY_SRC_IPC_TEAM_HPP_
+#define LIBRARY_SRC_IPC_TEAM_HPP_
 
-#include "context.hpp"
-#include "context_tmpl_device.hpp"
-#include "context_tmpl_host.hpp"
-#ifdef USE_GPU_IB
-#include "gpu_ib/context_ib_device.hpp"
-#include "gpu_ib/context_ib_host.hpp"
-#elif defined (USE_RO)
-#include "reverse_offload/context_ro_device.hpp"
-#include "reverse_offload/context_ro_host.hpp"
-#else
-#include "ipc/context_ipc_device.hpp"
-#include "ipc/context_ipc_host.hpp"
-#endif
+#include "../team.hpp"
 
-#endif  // LIBRARY_SRC_CONTEXT_INCL_HPP_
+namespace rocshmem {
+
+class IPCTeam : public Team {
+ public:
+  IPCTeam(Backend* handle, TeamInfo* team_info_wrt_parent,
+            TeamInfo* team_info_wrt_world, int num_pes, int my_pe,
+            MPI_Comm team_comm, int pool_index);
+
+  virtual ~IPCTeam();
+
+  long* barrier_pSync{nullptr};
+  long* reduce_pSync{nullptr};
+  long* bcast_pSync{nullptr};
+  long* alltoall_pSync{nullptr};
+  void* pWrk{nullptr};
+  void* pAta{nullptr};
+
+  int pool_index_{-1};
+};
+
+}  // namespace rocshmem
+
+#endif  // LIBRARY_SRC_IPC_TEAM_HPP_

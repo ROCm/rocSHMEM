@@ -20,21 +20,24 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_CONTEXT_INCL_HPP_
-#define LIBRARY_SRC_CONTEXT_INCL_HPP_
+#include "hipmalloc_gtest.hpp"
 
-#include "context.hpp"
-#include "context_tmpl_device.hpp"
-#include "context_tmpl_host.hpp"
-#ifdef USE_GPU_IB
-#include "gpu_ib/context_ib_device.hpp"
-#include "gpu_ib/context_ib_host.hpp"
-#elif defined (USE_RO)
-#include "reverse_offload/context_ro_device.hpp"
-#include "reverse_offload/context_ro_host.hpp"
-#else
-#include "ipc/context_ipc_device.hpp"
-#include "ipc/context_ipc_host.hpp"
-#endif
+using namespace rocshmem;
 
-#endif  // LIBRARY_SRC_CONTEXT_INCL_HPP_
+TEST_F(HipMallocTestFixture, normal_1GBx256) {
+    void* ptr{nullptr};
+    size_t gb {1073741824};
+    for (int i{0}; i < 256; i++) {
+        hip_allocator_.allocate(&ptr, gb);
+        hip_allocator_.deallocate(ptr);
+    }
+}
+
+TEST_F(HipMallocTestFixture, fine_1GBx256) {
+    void* ptr{nullptr};
+    size_t gb {1073741824};
+    for (int i{0}; i < 256; i++) {
+        hip_allocator_fg_.allocate(&ptr, gb);
+        hip_allocator_fg_.deallocate(ptr);
+    }
+}

@@ -20,21 +20,22 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_CONTEXT_INCL_HPP_
-#define LIBRARY_SRC_CONTEXT_INCL_HPP_
+#ifndef ROCSHMEM_HIPMALLOC_GTEST_HPP
+#define ROCSHMEM_HIPMALLOC_GTEST_HPP
 
-#include "context.hpp"
-#include "context_tmpl_device.hpp"
-#include "context_tmpl_host.hpp"
-#ifdef USE_GPU_IB
-#include "gpu_ib/context_ib_device.hpp"
-#include "gpu_ib/context_ib_host.hpp"
-#elif defined (USE_RO)
-#include "reverse_offload/context_ro_device.hpp"
-#include "reverse_offload/context_ro_host.hpp"
-#else
-#include "ipc/context_ipc_device.hpp"
-#include "ipc/context_ipc_host.hpp"
-#endif
+#include "gtest/gtest.h"
 
-#endif  // LIBRARY_SRC_CONTEXT_INCL_HPP_
+#include "../src/memory/symmetric_heap.hpp"
+#include "../src/util.hpp"
+
+namespace rocshmem {
+
+class HipMallocTestFixture : public ::testing::Test {
+  public:
+    HIPAllocator hip_allocator_ {};
+    HIPAllocatorFinegrained hip_allocator_fg_ {};
+};
+
+} // namespace rocshmem
+
+#endif  // ROCSHMEM_HIPMALLOC_GTEST_HPP

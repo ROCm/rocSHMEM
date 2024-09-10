@@ -39,12 +39,14 @@
 #ifdef USE_GPU_IB
 #include "gpu_ib/backend_ib.hpp"
 #include "gpu_ib/context_ib_tmpl_host.hpp"
-#endif
-#include "mpi_init_singleton.hpp"
-#ifndef USE_GPU_IB
+#elif defined(USE_RO)
 #include "reverse_offload/backend_ro.hpp"
 #include "reverse_offload/context_ro_tmpl_host.hpp"
+#else
+#include "ipc/backend_ipc.hpp"
+#include "ipc/context_ipc_tmpl_host.hpp"
 #endif
+#include "mpi_init_singleton.hpp"
 #include "team.hpp"
 #include "templates_host.hpp"
 #include "util.hpp"
@@ -82,12 +84,15 @@ roc_shmem_ctx_t ROC_SHMEM_HOST_CTX_DEFAULT;
 
   rocm_init();
 
-#ifndef USE_GPU_IB
+#ifdef USE_GPU_IB
+  CHECK_HIP(hipHostMalloc(&backend, sizeof(GPUIBBackend)));
+  backend = new (backend) GPUIBBackend(comm);
+#elif defined(USE_RO)
   CHECK_HIP(hipHostMalloc(&backend, sizeof(ROBackend)));
   backend = new (backend) ROBackend(comm);
 #else
-  CHECK_HIP(hipHostMalloc(&backend, sizeof(GPUIBBackend)));
-  backend = new (backend) GPUIBBackend(comm);
+  CHECK_HIP(hipHostMalloc(&backend, sizeof(IPCBackend)));
+  backend = new (backend) IPCBackend(comm);
 #endif
 
   if (!backend) {

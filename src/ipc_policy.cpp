@@ -50,7 +50,6 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
   /*
    * Figure out how this process' rank among local processes.
    */
-  int shm_rank;
   MPI_Comm_rank(shmcomm, &shm_rank);
 
   /*
@@ -92,7 +91,6 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
       void **ipc_base_uncast = reinterpret_cast<void **>(&ipc_base[i]);
       CHECK_HIP(hipIpcOpenMemHandle(ipc_base_uncast, vec_ipc_handle[i],
                                     hipIpcMemLazyEnablePeerAccess));
-      // TODO(bpotter): add some error checking here if happens to fail
     } else {
       ipc_base[i] = base_heap;
     }
@@ -108,6 +106,15 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
    * addresses.
    */
   free(vec_ipc_handle);
+}
+
+__host__ void IpcOnImpl::ipcHostStop() {
+  for (size_t i = 0; i < shm_size; i++) {
+    if (i != shm_rank) {
+      CHECK_HIP(hipIpcCloseMemHandle(ipc_bases[i]));
+    }
+  }
+  CHECK_HIP(hipFree(ipc_bases));
 }
 
 __device__ void IpcOnImpl::ipcCopy(void *dst, void *src, size_t size) {

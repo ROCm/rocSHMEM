@@ -42,12 +42,16 @@ class IpcOnImpl {
   using HEAP_BASES_T = std::vector<char *, StdAllocatorHIP<char *>>;
 
  public:
+  int shm_rank{0};
+
   uint32_t shm_size{0};
 
   char **ipc_bases{nullptr};
 
   __host__ void ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
                             MPI_Comm thread_comm);
+
+  __host__ void ipcHostStop();
 
   __device__ bool isIpcAvailable(int my_pe, int target_pe) {
     return my_pe / shm_size == target_pe / shm_size;
@@ -114,6 +118,8 @@ class IpcOffImpl {
 
   __host__ void ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
                             MPI_Comm thread_comm) {}
+
+  __host__ void ipcHostStop() {}
 
   __device__ bool isIpcAvailable(int my_pe, int target_pe) { return false; }
 
