@@ -23,6 +23,8 @@
 #ifndef LIBRARY_SRC_ATOMIC_HPP
 #define LIBRARY_SRC_ATOMIC_HPP
 
+#include <hip/hip_runtime.h>
+
 namespace rocshmem {
 namespace detail {
 namespace atomic {
