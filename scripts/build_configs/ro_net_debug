@@ -18,7 +18,7 @@ cmake \
     -DPROFILE=OFF \
     -DUSE_GPU_IB=OFF \
     -DUSE_DC=OFF \
-    -DUSE_IPC=OFF \
+    -DUSE_IPC=ON \
     -DUSE_THREADS=ON \
     -DUSE_WF_COAL=OFF \
     -DUSE_COHERENT_HEAP=ON \

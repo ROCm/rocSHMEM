@@ -218,8 +218,6 @@ class IPCImplSimpleCoarseTestFixture : public ::testing::Test {
   protected:
     std::vector<int> golden_;
 
-    std::vector<int> output_;
-
     HEAP_T heap_mem_ {};
 
     MPI_T mpi_ {heap_mem_.get_ptr(), heap_mem_.get_size()};

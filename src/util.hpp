@@ -93,11 +93,19 @@ __device__ __forceinline__ bool is_thread_zero_in_block() {
 __device__ __forceinline__ bool is_block_zero_in_grid() {
   return hipBlockIdx_x == 0 && hipBlockIdx_y == 0 && hipBlockIdx_z == 0;
 }
+
 /*
  * Returns the number of threads in the caller's flattened thread block.
  */
 __device__ __forceinline__ int get_flat_block_size() {
   return hipBlockDim_x * hipBlockDim_y * hipBlockDim_z;
+}
+
+/*
+ * Returns the number of threads in the caller's flattened grid.
+ */
+__device__ __forceinline__ int get_flat_grid_size() {
+  return get_flat_block_size() * hipGridDim_x * hipGridDim_y * hipGridDim_z;
 }
 
 /*

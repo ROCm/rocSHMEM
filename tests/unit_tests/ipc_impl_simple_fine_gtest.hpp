@@ -33,9 +33,27 @@
 
 namespace rocshmem {
 
+enum TestType {
+    READ = 0,
+    WRITE = 1
+};
+
 __global__
 void
-kernel_simple_fine_copy(IpcImpl *ipc_impl, int *src, int *dest, size_t bytes) {
+kernel_simple_fine_copy(IpcImpl *ipc_impl, int *src, int *dest, size_t bytes, TestType test) {
+    if (!threadIdx.x) {
+      ipc_impl->ipcCopy(dest, src, bytes);
+      ipc_impl->ipcFence();
+      if (test == WRITE) {
+        ipc_impl->ipc
+      }
+    }
+    __syncthreads();
+}
+
+__global__
+void
+kernel_simple_fine_copy_signal_validate(IpcImpl *ipc_impl, int *src, int *dest, size_t bytes) {
     if (!threadIdx.x) {
       ipc_impl->ipcCopy(dest, src, bytes);
       ipc_impl->ipcFence();
@@ -53,7 +71,23 @@ kernel_simple_fine_copy_wg(IpcImpl *ipc_impl, int *src, int *dest, size_t bytes)
 
 __global__
 void
+kernel_simple_fine_copy_wg_signal_validate(IpcImpl *ipc_impl, int *src, int *dest, size_t bytes) {
+    ipc_impl->ipcCopy_wg(dest, src, bytes);
+    ipc_impl->ipcFence();
+    __syncthreads();
+}
+
+__global__
+void
 kernel_simple_fine_copy_wave(IpcImpl *ipc_impl, int *src, int *dest, size_t bytes) {
+    ipc_impl->ipcCopy_wave(dest, src, bytes);
+    ipc_impl->ipcFence();
+    __syncthreads();
+}
+
+__global__
+void
+kernel_simple_fine_copy_wave_signal_validate(IpcImpl *ipc_impl, int *src, int *dest, size_t bytes) {
     ipc_impl->ipcCopy_wave(dest, src, bytes);
     ipc_impl->ipcFence();
     __syncthreads();
@@ -91,51 +125,46 @@ class IPCImplSimpleFineTestFixture : public ::testing::Test {
         CHECK_HIP(hipStreamSynchronize(nullptr));
     }
 
-    enum TestType {
-        READ = 0,
-        WRITE = 1
-    };
-
     void write(const dim3 grid, const dim3 block, size_t elems) {
         iota_golden(elems);
         initialize_src_buffer(WRITE);
         copy(WRITE, grid, block);
-        validate_dest_buffer(WRITE);
+        check_device_validation_errors(WRITE);
     }
 
     void write_wg(const dim3 grid, const dim3 block, size_t elems) {
         iota_golden(elems);
         initialize_src_buffer(WRITE);
         copy_wg(WRITE, grid, block);
-        validate_dest_buffer(WRITE);
+        check_device_validation_errors(WRITE);
     }
 
     void write_wave(const dim3 grid, const dim3 block, size_t elems) {
         iota_golden(elems);
         initialize_src_buffer(WRITE);
         copy_wave(WRITE, grid, block);
-        validate_dest_buffer(WRITE);
+        check_device_validation_errors(WRITE);
     }
 
     void read(const dim3 grid, const dim3 block, size_t elems) {
         iota_golden(elems);
         initialize_src_buffer(READ);
         copy(READ, grid, block);
-        validate_dest_buffer(READ);
+        check_device_validation_errors(READ);
     }
 
     void read_wg(const dim3 grid, const dim3 block, size_t elems) {
         iota_golden(elems);
         initialize_src_buffer(READ);
         copy_wg(READ, grid, block);
-        validate_dest_buffer(READ);
+        check_device_validation_errors(READ);
     }
 
     void read_wave(const dim3 grid, const dim3 block, size_t elems) {
         iota_golden(elems);
         initialize_src_buffer(READ);
         copy_wave(READ, grid, block);
-        validate_dest_buffer(READ);
+        check_device_validation_errors(READ);
     }
 
     void iota_golden(size_t elems) {
@@ -160,6 +189,7 @@ class IPCImplSimpleFineTestFixture : public ::testing::Test {
         CHECK_HIP(hipStreamSynchronize(nullptr));
     }
 
+    __host__ __device__
     bool pe_initializes_src_buffer(TestType test) {
         bool is_write_test = test;
         bool is_read_test = !test;
@@ -184,7 +214,7 @@ class IPCImplSimpleFineTestFixture : public ::testing::Test {
         }
         size_t bytes = golden_.size() * sizeof(int);
         mpi_.barrier();
-        launch(fn, grid, block, src, dest, bytes);
+        launch(fn, grid, block, src, dest, bytes, test);
         mpi_.barrier();
     }
 
@@ -200,6 +230,13 @@ class IPCImplSimpleFineTestFixture : public ::testing::Test {
         execute(test, kernel_simple_fine_copy_wave, grid, block);
     }
 
+    void check_device_validation_errors(TestType test) {
+        if (!pe_validates_dest_buffer(test)) {
+            return;
+        }
+        ASSERT_EQ(validation_error, false);
+    }
+
     void validate_dest_buffer(TestType test) {
         if (!pe_validates_dest_buffer(test)) {
             return;
@@ -211,6 +248,21 @@ class IPCImplSimpleFineTestFixture : public ::testing::Test {
         }
     }
 
+    __device__
+    void validate_dest_buffer(TestType test) {
+        if (!pe_validates_dest_buffer(test)) {
+            return;
+        }
+
+        auto dev_dest = reinterpret_cast<int*>(ipc_impl_.ipc_bases[mpi_.my_pe()]);
+        for (int i {get_flat_id()}; i < golden_.size(); i += get_flat_grid_size()) {
+            if (dev_golden_[i] != dev_dest[i]) {
+                validation_error = true;
+            }
+        }
+    }
+
+    __host__ __device__
     bool pe_validates_dest_buffer(TestType test) {
         return !pe_initializes_src_buffer(test);
     }
@@ -218,7 +270,7 @@ class IPCImplSimpleFineTestFixture : public ::testing::Test {
   protected:
     std::vector<int> golden_;
 
-    std::vector<int> output_;
+    std::vector<int> device_golden_;
 
     HEAP_T heap_mem_ {};
 
@@ -229,6 +281,8 @@ class IPCImplSimpleFineTestFixture : public ::testing::Test {
     IpcImpl *ipc_impl_dptr_ {nullptr};
 
     HIPAllocator hip_allocator_ {};
+
+    bool validation_error {false};
 };
 
 } // namespace rocshmem
