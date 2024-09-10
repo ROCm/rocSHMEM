@@ -26,10 +26,13 @@
 #include "gtest/gtest.h"
 
 #include <numeric>
-
 #include <mpi.h>
+
+#include "../src/atomic.hpp"
+#include "../src/ipc_policy.hpp"
+#include "../src/memory/notifier.hpp"
 #include "../src/memory/symmetric_heap.hpp"
-#include "../src/ipc/ipc_policy.hpp"
+#include "../src/util.hpp"
 
 namespace rocshmem {
 
@@ -38,68 +41,96 @@ enum TestType {
     WRITE = 1
 };
 
+const uint32_t SIGNAL_OFFSET {67108864};
+
+__device__
+void
+validator(bool *error, int *golden, int *dest, size_t bytes) {
+    size_t elements {bytes / sizeof(int)};
+    for (int i {get_flat_id()}; i < elements; i += get_flat_grid_size()) {
+        if (golden[i] != dest[i]) {
+            *error = true;
+        }
+    }
+}
+
+template <typename NotifierT>
 __global__
 void
-kernel_simple_fine_copy(IpcImpl *ipc_impl, int *src, int *dest, size_t bytes, TestType test) {
-    if (!threadIdx.x) {
-      ipc_impl->ipcCopy(dest, src, bytes);
-      ipc_impl->ipcFence();
-      if (test == WRITE) {
-        ipc_impl->ipc
-      }
+kernel_put_with_signal_validator(bool *error, int *golden, int *dest, size_t bytes, NotifierT *notifier) {
+    detail::atomic::rocshmem_memory_orders orders{};
+    if (!get_flat_id()) {
+        while (detail::atomic::load<int, detail::atomic::memory_scope_system>(dest + SIGNAL_OFFSET, orders) == 0) {
+            ;
+        }
+    }
+    notifier->sync();
+    validator(error, golden, dest, bytes);
+}
+
+template <typename NotifierT>
+__global__
+void
+kernel_simple_fine_copy(IpcImpl *ipc_impl, bool *error, int *golden, int *src, int *dest, size_t bytes, TestType test, NotifierT *notifier) {
+    if (!get_flat_id()) {
+        ipc_impl->ipcCopy(dest, src, bytes);
+        ipc_impl->ipcFence();
+        if (test == WRITE) {
+            ipc_impl->ipcAMOFetchAdd(dest + SIGNAL_OFFSET, 1);
+        }
+    }
+    if (test == READ) {
+        notifier->sync();
+        validator(error, golden, dest, bytes);
+    }
+}
+
+template <typename NotifierT>
+__global__
+void
+kernel_simple_fine_copy_wg(IpcImpl *ipc_impl, bool *error, int *golden, int *src, int *dest, size_t bytes, TestType test, NotifierT *notifier) {
+    if (!blockIdx.x) {
+        ipc_impl->ipcCopy_wg(dest, src, bytes);
+        ipc_impl->ipcFence();
+        if (test == WRITE) {
+            if (!threadIdx.x) {
+                ipc_impl->ipcAMOFetchAdd(dest + SIGNAL_OFFSET, 1);
+            }
+        }
+    }
+    if (test == READ) {
+        notifier->sync();
+        validator(error, golden, dest, bytes);
+    }
+}
+
+template <typename NotifierT>
+__global__
+void
+kernel_simple_fine_copy_wave(IpcImpl *ipc_impl, bool *error, int *golden, int *src, int *dest, size_t bytes, TestType test, NotifierT *notifier) {
+    if (!blockIdx.x && threadIdx.x < 64) {
+        ipc_impl->ipcCopy_wave(dest, src, bytes);
+        ipc_impl->ipcFence();
+        if (test == WRITE) {
+            if (!threadIdx.x) {
+                ipc_impl->ipcAMOFetchAdd(dest + SIGNAL_OFFSET, 1);
+            }
+        }
     }
     __syncthreads();
-}
-
-__global__
-void
-kernel_simple_fine_copy_signal_validate(IpcImpl *ipc_impl, int *src, int *dest, size_t bytes) {
-    if (!threadIdx.x) {
-      ipc_impl->ipcCopy(dest, src, bytes);
-      ipc_impl->ipcFence();
+    if (test == READ) {
+        notifier->sync();
+        validator(error, golden, dest, bytes);
     }
-    __syncthreads();
-}
-
-__global__
-void
-kernel_simple_fine_copy_wg(IpcImpl *ipc_impl, int *src, int *dest, size_t bytes) {
-    ipc_impl->ipcCopy_wg(dest, src, bytes);
-    ipc_impl->ipcFence();
-    __syncthreads();
-}
-
-__global__
-void
-kernel_simple_fine_copy_wg_signal_validate(IpcImpl *ipc_impl, int *src, int *dest, size_t bytes) {
-    ipc_impl->ipcCopy_wg(dest, src, bytes);
-    ipc_impl->ipcFence();
-    __syncthreads();
-}
-
-__global__
-void
-kernel_simple_fine_copy_wave(IpcImpl *ipc_impl, int *src, int *dest, size_t bytes) {
-    ipc_impl->ipcCopy_wave(dest, src, bytes);
-    ipc_impl->ipcFence();
-    __syncthreads();
-}
-
-__global__
-void
-kernel_simple_fine_copy_wave_signal_validate(IpcImpl *ipc_impl, int *src, int *dest, size_t bytes) {
-    ipc_impl->ipcCopy_wave(dest, src, bytes);
-    ipc_impl->ipcFence();
-    __syncthreads();
 }
 
 class IPCImplSimpleFineTestFixture : public ::testing::Test {
-
     using HEAP_T = HeapMemory<HIPDefaultFinegrainedAllocator>;
-
     using MPI_T = RemoteHeapInfo<CommunicatorMPI>;
-
-    using FN_T = void (*)(IpcImpl*, int*, int*, size_t);
+    using NotifierT = Notifier<detail::atomic::memory_scope_agent>;
+    using NotifierProxyT = NotifierProxy<HIPAllocator, detail::atomic::memory_scope_agent>;
+    using FN_T1 = void (*)(IpcImpl*, bool*, int*, int*, int*, size_t, TestType, NotifierT*);
+    using FN_T2 = void (*)(bool*, int*, int*, size_t, NotifierT*);
 
   public:
     IPCImplSimpleFineTestFixture() {
@@ -107,21 +138,34 @@ class IPCImplSimpleFineTestFixture : public ::testing::Test {
 
         assert(ipc_impl_dptr_ == nullptr);
         hip_allocator_.allocate((void**)&ipc_impl_dptr_, sizeof(IpcImpl));
+        CHECK_HIP(hipMemcpy(ipc_impl_dptr_, &ipc_impl_, sizeof(IpcImpl), hipMemcpyHostToDevice));
 
-        CHECK_HIP(hipMemcpy(ipc_impl_dptr_, &ipc_impl_,
-                            sizeof(IpcImpl), hipMemcpyHostToDevice));
+        assert(error_dptr_ == nullptr);
+        hip_allocator_.allocate((void**)&error_dptr_, sizeof(bool));
+        *error_dptr_ = false;
     }
 
     ~IPCImplSimpleFineTestFixture() {
         if (ipc_impl_dptr_) {
             hip_allocator_.deallocate(ipc_impl_dptr_);
         }
+        if (error_dptr_) {
+            hip_allocator_.deallocate(error_dptr_);
+        }
+        if (golden_dptr_) {
+            hip_allocator_.deallocate(golden_dptr_);
+        }
 
         ipc_impl_.ipcHostStop();
     }
 
-    void launch(FN_T f, const dim3 grid, const dim3 block, int* src, int* dest, size_t bytes) {
-        f<<<grid, block>>>(ipc_impl_dptr_, src, dest, bytes);
+    void launch(FN_T1 f, const dim3 grid, const dim3 block, int* src, int* dest, size_t bytes, TestType test) {
+        f<<<grid, block>>>(ipc_impl_dptr_, error_dptr_, golden_dptr_, src, dest, bytes, test, notifier_.get());
+        CHECK_HIP(hipStreamSynchronize(nullptr));
+    }
+
+    void launch(FN_T2 f, const dim3 grid, const dim3 block, int* dest, size_t bytes) {
+        f<<<grid, block>>>(error_dptr_, golden_dptr_, dest, bytes, notifier_.get());
         CHECK_HIP(hipStreamSynchronize(nullptr));
     }
 
@@ -170,6 +214,11 @@ class IPCImplSimpleFineTestFixture : public ::testing::Test {
     void iota_golden(size_t elems) {
         golden_.resize(elems);
         std::iota(golden_.begin(), golden_.end(), 0);
+
+        assert(golden_dptr_ == nullptr);
+        size_t golden_dptr_bytes {golden_.size() * sizeof(int)};
+        hip_allocator_.allocate((void**)&golden_dptr_, golden_dptr_bytes);
+        CHECK_HIP(hipMemcpy(golden_dptr_, golden_.data(), golden_dptr_bytes, hipMemcpyHostToDevice));
     }
 
     void validate_golden(size_t elems) {
@@ -186,10 +235,8 @@ class IPCImplSimpleFineTestFixture : public ::testing::Test {
         size_t bytes = golden_.size() * sizeof(int);
         auto dev_src = reinterpret_cast<int*>(ipc_impl_.ipc_bases[mpi_.my_pe()]);
         CHECK_HIP(hipMemcpy(dev_src, golden_.data(), bytes, hipMemcpyHostToDevice));
-        CHECK_HIP(hipStreamSynchronize(nullptr));
     }
 
-    __host__ __device__
     bool pe_initializes_src_buffer(TestType test) {
         bool is_write_test = test;
         bool is_read_test = !test;
@@ -197,9 +244,15 @@ class IPCImplSimpleFineTestFixture : public ::testing::Test {
                (is_read_test && mpi_.my_pe() == 1);
     }
 
-    void execute(TestType test, FN_T fn, const dim3 grid, const dim3 block) {
+    void execute(TestType test, FN_T1 fn, const dim3 grid, const dim3 block) {
+        size_t bytes = golden_.size() * sizeof(int);
         if (mpi_.my_pe()) {
             mpi_.barrier();
+            if (test == WRITE) {
+                int *dest = reinterpret_cast<int*>(ipc_impl_.ipc_bases[1]);
+                FN_T2 val_fn = kernel_put_with_signal_validator;
+                launch(val_fn, grid, block, dest, bytes);
+            }
             mpi_.barrier();
             return;
         }
@@ -212,7 +265,6 @@ class IPCImplSimpleFineTestFixture : public ::testing::Test {
             src = reinterpret_cast<int*>(ipc_impl_.ipc_bases[1]);
             dest = reinterpret_cast<int*>(ipc_impl_.ipc_bases[0]);
         }
-        size_t bytes = golden_.size() * sizeof(int);
         mpi_.barrier();
         launch(fn, grid, block, src, dest, bytes, test);
         mpi_.barrier();
@@ -234,7 +286,7 @@ class IPCImplSimpleFineTestFixture : public ::testing::Test {
         if (!pe_validates_dest_buffer(test)) {
             return;
         }
-        ASSERT_EQ(validation_error, false);
+        ASSERT_EQ(*error_dptr_, false);
     }
 
     void validate_dest_buffer(TestType test) {
@@ -248,41 +300,28 @@ class IPCImplSimpleFineTestFixture : public ::testing::Test {
         }
     }
 
-    __device__
-    void validate_dest_buffer(TestType test) {
-        if (!pe_validates_dest_buffer(test)) {
-            return;
-        }
-
-        auto dev_dest = reinterpret_cast<int*>(ipc_impl_.ipc_bases[mpi_.my_pe()]);
-        for (int i {get_flat_id()}; i < golden_.size(); i += get_flat_grid_size()) {
-            if (dev_golden_[i] != dev_dest[i]) {
-                validation_error = true;
-            }
-        }
-    }
-
-    __host__ __device__
     bool pe_validates_dest_buffer(TestType test) {
         return !pe_initializes_src_buffer(test);
     }
 
   protected:
-    std::vector<int> golden_;
+    HIPDefaultFinegrainedAllocator hip_allocator_ {};
 
-    std::vector<int> device_golden_;
+    NotifierProxyT notifier_ {};
 
     HEAP_T heap_mem_ {};
 
     MPI_T mpi_ {heap_mem_.get_ptr(), heap_mem_.get_size()};
 
+    std::vector<int> golden_;
+
+    int *golden_dptr_ {nullptr};
+
     IpcImpl ipc_impl_ {};
 
     IpcImpl *ipc_impl_dptr_ {nullptr};
 
-    HIPAllocator hip_allocator_ {};
-
-    bool validation_error {false};
+    bool *error_dptr_ {nullptr};
 };
 
 } // namespace rocshmem
