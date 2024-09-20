@@ -135,12 +135,12 @@ NOWARN(-Wdeprecated-volatile,
             : "v"(src));
 #endif
         break;
+      case 8:
 #if defined(__gfx906__)
 #endif
 #if defined(__gfx908__)
 #endif
 #if defined(__gfx90a__)
-      case 8:
         asm volatile(
             "global_load_dwordx2 %0 %1 off glc slc \n"
             "s_waitcnt vmcnt(0)"
