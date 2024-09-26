@@ -98,6 +98,14 @@ class NotifierProxy {
   using ProxyT = DeviceProxy<ALLOCATOR, Notifier<scope>>;
 
  public:
+  NotifierProxy() {
+    new (proxy_.get()) Notifier<scope>();
+  }
+
+  ~NotifierProxy() {
+    proxy_.get()->~Notifier<scope>();
+  }
+
   __host__ __device__ Notifier<scope>* get() { return proxy_.get(); }
 
  private:

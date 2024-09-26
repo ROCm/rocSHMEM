@@ -64,7 +64,7 @@ class IpcOnImpl {
 
   __device__ void ipcCopy_wave(void *dst, void *src, size_t size);
 
-  __device__ void ipcFence() { __threadfence(); }
+  __device__ void ipcFence() { __threadfence_system(); }
 
   template <typename T>
   __device__ T ipcAMOFetchAdd(T *val, T value) {

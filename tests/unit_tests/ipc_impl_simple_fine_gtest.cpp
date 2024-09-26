@@ -46,6 +46,12 @@ TEST_F(IPCImplSimpleFineTestFixture, golden_1048576_int) {
 
 //=============================================================================
 
+TEST_F(IPCImplSimpleFineTestFixture, write_wg_1x1x1_1x1x1_32_int) {
+    dim3 grid {1,1,1};
+    dim3 block {1,1,1};
+    write_wg(grid, block, 32);
+}
+
 TEST_F(IPCImplSimpleFineTestFixture, write_wg_1x1x1_1024x1x1_32_int) {
     dim3 grid {1,1,1};
     dim3 block {1024,1,1};

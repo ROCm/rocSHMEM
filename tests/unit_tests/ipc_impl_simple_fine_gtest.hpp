@@ -49,6 +49,7 @@ validator(bool *error, int *golden, int *dest, size_t bytes) {
     size_t elements {bytes / sizeof(int)};
     for (int i {get_flat_id()}; i < elements; i += get_flat_grid_size()) {
         if (golden[i] != dest[i]) {
+            printf("golden[%d] %d != dest[%d] %d\n", i, golden[i], i, dest[i]);
             *error = true;
         }
     }
@@ -171,6 +172,7 @@ class IPCImplSimpleFineTestFixture : public ::testing::Test {
 
     void write(const dim3 grid, const dim3 block, size_t elems) {
         iota_golden(elems);
+        initialize_signal(WRITE);
         initialize_src_buffer(WRITE);
         copy(WRITE, grid, block);
         check_device_validation_errors(WRITE);
@@ -178,6 +180,7 @@ class IPCImplSimpleFineTestFixture : public ::testing::Test {
 
     void write_wg(const dim3 grid, const dim3 block, size_t elems) {
         iota_golden(elems);
+        initialize_signal(WRITE);
         initialize_src_buffer(WRITE);
         copy_wg(WRITE, grid, block);
         check_device_validation_errors(WRITE);
@@ -185,6 +188,7 @@ class IPCImplSimpleFineTestFixture : public ::testing::Test {
 
     void write_wave(const dim3 grid, const dim3 block, size_t elems) {
         iota_golden(elems);
+        initialize_signal(WRITE);
         initialize_src_buffer(WRITE);
         copy_wave(WRITE, grid, block);
         check_device_validation_errors(WRITE);
@@ -192,6 +196,7 @@ class IPCImplSimpleFineTestFixture : public ::testing::Test {
 
     void read(const dim3 grid, const dim3 block, size_t elems) {
         iota_golden(elems);
+        initialize_signal(READ);
         initialize_src_buffer(READ);
         copy(READ, grid, block);
         check_device_validation_errors(READ);
@@ -199,6 +204,7 @@ class IPCImplSimpleFineTestFixture : public ::testing::Test {
 
     void read_wg(const dim3 grid, const dim3 block, size_t elems) {
         iota_golden(elems);
+        initialize_signal(READ);
         initialize_src_buffer(READ);
         copy_wg(READ, grid, block);
         check_device_validation_errors(READ);
@@ -206,6 +212,7 @@ class IPCImplSimpleFineTestFixture : public ::testing::Test {
 
     void read_wave(const dim3 grid, const dim3 block, size_t elems) {
         iota_golden(elems);
+        initialize_signal(READ);
         initialize_src_buffer(READ);
         copy_wave(READ, grid, block);
         check_device_validation_errors(READ);
@@ -225,6 +232,14 @@ class IPCImplSimpleFineTestFixture : public ::testing::Test {
         ASSERT_EQ(golden_.size(), elems);
         for (int i{0}; i < golden_.size(); i++) {
             ASSERT_EQ(golden_[i], i);
+        }
+    }
+
+    void initialize_signal(TestType test) {
+        bool is_write_test = test;
+        if (is_write_test && mpi_.my_pe() == 0) {
+            int *dest = reinterpret_cast<int*>(ipc_impl_.ipc_bases[1]);
+            *(dest + SIGNAL_OFFSET) = 0;
         }
     }
 
