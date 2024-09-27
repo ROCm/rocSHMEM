@@ -116,10 +116,10 @@ TEST_F(NotifierAgentTestFixture, run_all_threads_once_1024_32) {
   run_all_threads_once(1024, 32);
 }
 
-TEST_F(NotifierAgentTestFixture, run_all_threads_once_1_64) {
-  run_all_threads_once(1, 64);
+TEST_F(NotifierAgentTestFixture, run_all_threads_once_1_38) {
+  run_all_threads_once(1, 38);  // MI300 CPX
 }
 
-TEST_F(NotifierAgentTestFixture, run_all_threads_once_1024_64) {
-  run_all_threads_once(1024, 64);
+TEST_F(NotifierAgentTestFixture, run_all_threads_once_1024_38) {
+  run_all_threads_once(1024, 38);  // MI300 CPX
 }
