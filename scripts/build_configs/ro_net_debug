@@ -18,10 +18,10 @@ cmake \
     -DPROFILE=OFF \
     -DUSE_GPU_IB=OFF \
     -DUSE_DC=OFF \
-    -DUSE_IPC=ON \
+    -DUSE_IPC=OFF \
     -DUSE_THREADS=ON \
     -DUSE_WF_COAL=OFF \
-    -DUSE_COHERENT_HEAP=ON \
+    -DUSE_COHERENT_HEAP=OFF \
     $src_path
 cmake --build . --parallel 8
 cmake --install .
