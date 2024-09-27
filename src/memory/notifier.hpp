@@ -78,9 +78,12 @@ class Notifier {
       }
     }
 
-    while (detail::atomic::load<uint32_t, scope>(&signal_, orders_) != done) {
-      ;
+    if (executor) {
+      while (detail::atomic::load<uint32_t, scope>(&signal_, orders_) != done) {
+        ;
+      }
     }
+    __syncthreads();
   }
 
  private:
