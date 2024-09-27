@@ -28,6 +28,7 @@
 #include "context_ipc_device.hpp"
 #include "../util.hpp"
 #include "ipc_team.hpp"
+#include "../roc_shmem_calc.hpp"
 
 namespace rocshmem {
 
@@ -153,10 +154,87 @@ __device__ T IPCContext::amo_fetch_cas(void *dest, T value, T cond, int pe) {
   
 // Collectives
 template <typename T, ROC_SHMEM_OP Op>
+__device__ void compute_reduce(T *src, T *dst, int size, int wg_id,
+                               int wg_size) {
+  for (size_t i = wg_id; i < size; i += wg_size) {
+    OpWrap<Op>::Calc(src, dst, i);
+  }
+  __syncthreads();
+}
+
+template <typename T, ROC_SHMEM_OP Op>
+__device__ void IPCContext::internal_direct_allreduce(
+    T *dst, const T *src, int nelems, int PE_start, int logPE_stride,
+    int PE_size, T *pWrk,
+    long *pSync) {  // NOLINT(runtime/int)
+
+  int stride = 1 << logPE_stride;
+  int finish = PE_start + stride * PE_size;
+  int pe = my_pe;
+
+  int wg_id = get_flat_block_id();
+  int wg_size = get_flat_block_size();
+  int64_t flag_val = 1;
+
+  for (int i = wg_id; i < nelems; i += wg_size) {
+    dst[i] = src[i];
+  }
+  __syncthreads();
+
+  for (int i = PE_start; i < finish; i += stride) {
+    if (i != pe) {
+      putmem_nbi_wg(&pWrk[pe * nelems], reinterpret_cast<const void *>(src),
+                    nelems * sizeof(T), i);
+
+      if (is_thread_zero_in_block()) {
+        fence();
+        put_nbi(&pSync[pe], &flag_val, 1, i);
+      }
+    }
+  }
+  threadfence_system();
+  __syncthreads();
+
+  // Do the compute and pSync reset in parallel.
+  for (int i = PE_start; i < finish; i += stride) {
+    if (i != pe) {
+      // Wait for leader thread to see that the buffer is ready.
+      if (is_thread_zero_in_block()) {
+        wait_until(&pSync[i], ROC_SHMEM_CMP_EQ, flag_val);
+      }
+      __syncthreads();
+
+      T *ptr = &pWrk[i * nelems];
+      compute_reduce<T, Op>(ptr, dst, nelems, wg_id, wg_size);
+      threadfence_system();
+    }
+  }
+
+  __syncthreads();
+
+  for (int i = wg_id; i < num_pes; i += wg_size) {
+    pSync[i] = ROC_SHMEM_SYNC_VALUE;
+  }
+  threadfence_system();
+  __syncthreads();
+}
+
+template <typename T, ROC_SHMEM_OP Op>
 __device__ void IPCContext::to_all(roc_shmem_team_t team, T *dest,
 				   const T *source, int nreduce) {
-  //to_all<T, Op>(dest, source, nreduce, pe_start, log_pe_stride, pe_size, pWrk,
-  //              p_sync);
+  IPCTeam *team_obj = reinterpret_cast<IPCTeam *>(team);
+
+  /**
+   * Ensure that the stride is a multiple of 2 for GPU_IB.
+   */
+  int log_pe_stride = static_cast<int>(team_obj->tinfo_wrt_world->log_stride);
+  int pe_start = team_obj->tinfo_wrt_world->pe_start;
+  int pe_size = team_obj->tinfo_wrt_world->size;
+  long *p_sync = team_obj->barrier_pSync;
+  T *pWrk = reinterpret_cast<T *>(team_obj->pWrk);
+
+  to_all<T, Op>(dest, source, nreduce, pe_start, log_pe_stride, pe_size, pWrk,
+                p_sync);
 }
 
 template <typename T, ROC_SHMEM_OP Op>
@@ -164,6 +242,8 @@ __device__ void IPCContext::to_all(T *dest, const T *source, int nreduce,
 				   int PE_start, int logPE_stride,
 				   int PE_size, T *pWrk,
 				   long *pSync) {  // NOLINT(runtime/int)
+  internal_direct_allreduce<T, Op>(dest, source, nreduce, PE_start, logPE_stride,
+				   PE_size, pWrk, pSync);
 }
 
 template <typename T>

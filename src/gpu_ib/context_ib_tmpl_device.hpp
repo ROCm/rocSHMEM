@@ -29,79 +29,9 @@
 #include "gpu_ib_team.hpp"
 #include "queue_pair.hpp"
 #include "../util.hpp"
+#include "../roc_shmem_calc.hpp"
 
 namespace rocshmem {
-
-// clang-format off
-NOWARN(-Wunused-parameter,
-template <ROC_SHMEM_OP Op>
-struct OpWrap {
-  template <typename T>
-  __device__ static void Calc(T *src, T *dst, int i) {
-    static_assert(true, "Unimplemented gpu_ib collective.");
-  }
-};
-)
-// clang-format on
-
-/******************************************************************************
- ************************** TEMPLATE SPECIALIZATIONS **************************
- *****************************************************************************/
-template <>
-struct OpWrap<ROC_SHMEM_SUM> {
-  template <typename T>
-  __device__ static void Calc(T *src, T *dst, int i) {
-    dst[i] += src[i];
-  }
-};
-
-template <>
-struct OpWrap<ROC_SHMEM_MAX> {
-  template <typename T>
-  __device__ static void Calc(T *src, T *dst, int i) {
-    dst[i] = max(dst[i], src[i]);
-  }
-};
-
-template <>
-struct OpWrap<ROC_SHMEM_MIN> {
-  template <typename T>
-  __device__ static void Calc(T *src, T *dst, int i) {
-    dst[i] = min(dst[i], src[i]);
-  }
-};
-
-template <>
-struct OpWrap<ROC_SHMEM_PROD> {
-  template <typename T>
-  __device__ static void Calc(T *src, T *dst, int i) {
-    dst[i] *= src[i];
-  }
-};
-
-template <>
-struct OpWrap<ROC_SHMEM_AND> {
-  template <typename T>
-  __device__ static void Calc(T *src, T *dst, int i) {
-    dst[i] &= src[i];
-  }
-};
-
-template <>
-struct OpWrap<ROC_SHMEM_OR> {
-  template <typename T>
-  __device__ static void Calc(T *src, T *dst, int i) {
-    dst[i] |= src[i];
-  }
-};
-
-template <>
-struct OpWrap<ROC_SHMEM_XOR> {
-  template <typename T>
-  __device__ static void Calc(T *src, T *dst, int i) {
-    dst[i] ^= src[i];
-  }
-};
 
 template <typename T, ROC_SHMEM_OP Op>
 __device__ void compute_reduce(T *src, T *dst, int size, int wg_id,

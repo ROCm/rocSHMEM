@@ -239,6 +239,12 @@ class IPCContext : public Context {
   __device__ void internal_atomic_barrier(int pe, int PE_start, int stride,
                                           int n_pes, int64_t *pSync);
 
+  template <typename T, ROC_SHMEM_OP Op>
+  __device__ void internal_direct_allreduce(T *dst, const T *src,
+                                            int nelems, int PE_start, int
+                                            logPE_stride, int PE_size,
+                                            T *pWrk, long *pSync);
+
   //internal functions used by collectives routines to write/read to
   //work/sync buffers
   __device__ void internal_putmem(void *dest, const void *source,
