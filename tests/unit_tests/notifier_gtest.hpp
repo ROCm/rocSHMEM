@@ -44,66 +44,45 @@ static const uint64_t NOTIFIER_OFFSET {0x100B00};
 inline __device__
 void
 write_to_memory(uint8_t* raw_memory) {
-    auto thread_idx {get_flat_block_id()};
+    auto thread_idx {get_flat_id()};
     raw_memory[thread_idx] = THREAD_VALUE;
     __threadfence();
 }
 
+template <typename NotifierT>
 __global__
 void
 all_threads_once(uint8_t* raw_memory,
-                 Notifier* notifier) {
-    notifier->write(NOTIFIER_OFFSET);
-    uint64_t offset_u64 {notifier->read()};
-    notifier->done();
-
+                 NotifierT * notifier) {
+    if (!get_flat_id()) {
+      notifier->store(NOTIFIER_OFFSET);
+      notifier->fence();
+    }
+    notifier->sync();
+    uint64_t offset_u64 {notifier->load()};
     uint64_t raw_memory_u64 {reinterpret_cast<uint64_t>(raw_memory)};
     uint64_t address_u64 {raw_memory_u64 + offset_u64};
     uint8_t* address {reinterpret_cast<uint8_t*>(address_u64)};
     write_to_memory(address);
-    __syncthreads();
 }
 
-class NotifierTestFixture : public ::testing::Test {
-    using NotifierProxyT = NotifierProxy<HIPAllocator>;
-
+class NotifierBase : public ::testing::Test {
   public:
-    NotifierTestFixture() {
+    NotifierBase() {
         assert(raw_memory_ == nullptr);
         hip_allocator_.allocate((void**)&raw_memory_, GIBIBYTE_);
         assert(raw_memory_);
     }
 
-    ~NotifierTestFixture() {
+    ~NotifierBase() {
         if (raw_memory_) {
             hip_allocator_.deallocate(raw_memory_);
         }
     }
 
     void
-    run_all_threads_once(uint32_t x_block_dim,
-                         uint32_t x_grid_dim) {
-        const dim3 hip_blocksize(x_block_dim, 1, 1);
-        const dim3 hip_gridsize(x_grid_dim, 1, 1);
-
-        hipLaunchKernelGGL(all_threads_once,
-                           hip_gridsize,
-                           hip_blocksize,
-                           0,
-                           nullptr,
-                           raw_memory_,
-                           notifier_.get());
-
-        hipError_t return_code = hipStreamSynchronize(nullptr);
-        if (return_code != hipSuccess) {
-            printf("Failed in stream synchronize\n");
-            assert(return_code == hipSuccess);
-        }
-
-        size_t number_threads {x_block_dim * x_grid_dim};
-
+    verify(size_t number_threads) {
         uint8_t* offset_addr {compute_offset_addr()};
-
         for (size_t i {0}; i < number_threads; i++) {
             ASSERT_EQ(offset_addr[i], THREAD_VALUE);
         }
@@ -136,12 +115,51 @@ class NotifierTestFixture : public ::testing::Test {
      */
     uint8_t *raw_memory_ {nullptr};
 
+};
+
+class NotifierBlockTestFixture : public NotifierBase {
+    using NotifierT = Notifier<detail::atomic::memory_scope_workgroup>;
+    using NotifierProxyT = NotifierProxy<HIPAllocator, detail::atomic::memory_scope_workgroup>;
+
+  public:
+    void
+    run_all_threads_once(uint32_t x_block_dim,
+                         uint32_t x_grid_dim) {
+        new (notifier_.get()) NotifierT();
+        const dim3 block(x_block_dim, 1, 1);
+        const dim3 grid(x_grid_dim, 1, 1);
+        all_threads_once<NotifierT><<<grid, block>>>(raw_memory_, notifier_.get());
+        CHECK_HIP(hipStreamSynchronize(nullptr));
+        verify(x_block_dim * x_grid_dim);
+    }
+
     /**
      * @brief Used to broadcast base offset for writing.
      */
     NotifierProxyT notifier_ {};
 };
 
+class NotifierAgentTestFixture : public NotifierBase {
+    using NotifierT = Notifier<detail::atomic::memory_scope_agent>;
+    using NotifierProxyT = NotifierProxy<HIPAllocator, detail::atomic::memory_scope_agent>;
+
+  public:
+    void
+    run_all_threads_once(uint32_t x_block_dim,
+                         uint32_t x_grid_dim) {
+        new (notifier_.get()) NotifierT();
+        const dim3 block(x_block_dim, 1, 1);
+        const dim3 grid(x_grid_dim, 1, 1);
+        all_threads_once<NotifierT><<<grid, block>>>(raw_memory_, notifier_.get());
+        CHECK_HIP(hipStreamSynchronize(nullptr));
+        verify(x_block_dim * x_grid_dim);
+    }
+
+    /**
+     * @brief Used to broadcast base offset for writing.
+     */
+    NotifierProxyT notifier_ {};
+};
 
 } // namespace rocshmem
 

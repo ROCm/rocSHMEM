@@ -20,59 +20,96 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-/**
- * @file notifier.hpp
- *
- * @brief Contains the notification memory space for threads to communicate
- * results with one another.
- *
- * Assume one thread does work on behalf of other threads (as a leader) and
- * that work needs to be communicated to the other threads as a result.
- * To expose the result, the threads need to share a memory space where the
- * result can be written. The leader thread writes the result out to this
- * memory space and all threads synchronize on it.
- *
- * This class allows the leader thread to notify other threads of the update.
- */
-
 #ifndef LIBRARY_SRC_MEMORY_NOTIFIER_HPP_
 #define LIBRARY_SRC_MEMORY_NOTIFIER_HPP_
 
 #include "../device_proxy.hpp"
 #include "../util.hpp"
+#include "../atomic.hpp"
 
 namespace rocshmem {
 
+template<detail::atomic::rocshmem_memory_scope scope>
 class Notifier {
- public:
-  __device__ uint64_t read() { return value_; }
 
-  __device__ void write(uint64_t val) {
-    if (is_thread_zero_in_block()) {
-      value_ = val;
-    }
-    publish();
+ public:
+  __device__ uint64_t load() {
+    return detail::atomic::load<uint64_t, scope>(&value_, orders_);
   }
 
-  __device__ void done() { __syncthreads(); }
+  __device__ void store(uint64_t val) {
+    detail::atomic::store<uint64_t, scope>(&value_, val, orders_);
+  }
 
- private:
-  __device__ void publish() {
-    if (is_thread_zero_in_block()) {
-      __threadfence();
+  __device__ void fence() {
+    detail::atomic::threadfence<scope>();
+  }
+
+  __device__ void sync() {
+    if constexpr (scope == detail::atomic::memory_scope_thread ||
+                  scope == detail::atomic::memory_scope_wavefront) {
+      return;
+    }
+    if constexpr (scope == detail::atomic::memory_scope_workgroup) {
+      __syncthreads();
+      return;
+    }
+    if constexpr (scope == detail::atomic::memory_scope_system) {
+      assert(false);
+      return;
+    }
+
+    uint32_t done {signal_ + 1};
+    __syncthreads();
+
+    uint32_t retval {0};
+    bool executor {!threadIdx.x && !threadIdx.y && !threadIdx.z};
+    if (executor) {
+      retval = detail::atomic::fetch_add<uint32_t, uint32_t, scope>(&count_, 1, orders_);
+      fence();
+    }
+    __syncthreads();
+
+    if (retval == ((gridDim.x * gridDim.y * gridDim.z) - 1)) {
+      if (executor) {
+        detail::atomic::store<uint32_t, scope>(&count_, 0, orders_);
+        fence();
+        detail::atomic::fetch_add<uint32_t, uint32_t, scope>(&signal_, 1, orders_);
+      }
+    }
+
+    if (executor) {
+      while (detail::atomic::load<uint32_t, scope>(&signal_, orders_) != done) {
+        ;
+      }
     }
     __syncthreads();
   }
 
+ private:
+  detail::atomic::rocshmem_memory_orders orders_{};
+
   uint64_t value_{};
+
+  uint32_t signal_ {};
+
+  uint32_t count_ {};
 };
 
-template <typename ALLOCATOR>
+template <typename ALLOCATOR, detail::atomic::rocshmem_memory_scope scope>
 class NotifierProxy {
-  using ProxyT = DeviceProxy<ALLOCATOR, Notifier, 1>;
+  using ProxyT = DeviceProxy<ALLOCATOR, Notifier<scope>>;
 
  public:
-  __host__ __device__ Notifier* get() { return proxy_.get(); }
+  NotifierProxy() {
+    new (proxy_.get()) Notifier<scope>();
+  }
+
+  ~NotifierProxy() {
+    proxy_.get()->~Notifier<scope>();
+  }
+
+  __host__ __device__ Notifier<scope>* get() { return proxy_.get(); }
 
  private:
   ProxyT proxy_{};

@@ -48,7 +48,7 @@ class SlabHeap {
   /**
    * @brief Helper type for notifier
    */
-  using NOTIFIER_PROXY_T = NotifierProxy<HIPAllocator>;
+  using NOTIFIER_PROXY_T = NotifierProxy<HIPAllocator, detail::atomic::memory_scope_workgroup>;
 
   /**
    * @brief Helper type for notifier
