@@ -26,6 +26,7 @@
 #include "gtest/gtest.h"
 
 #include <numeric>
+#include <tuple>
 
 #include <mpi.h>
 #include "../src/memory/symmetric_heap.hpp"
@@ -45,7 +46,7 @@ kernel_simple_coarse_copy(IpcImpl *ipc_impl, int *src, int *dest, size_t bytes) 
 
 __global__
 void
-kernel_simple_coarse_copy_wg(IpcImpl *ipc_impl, int *src, int *dest, size_t bytes) {
+kernel_simple_coarse_copy_block(IpcImpl *ipc_impl, int *src, int *dest, size_t bytes) {
     ipc_impl->ipcCopy_wg(dest, src, bytes);
     ipc_impl->ipcFence();
     __syncthreads();
@@ -53,36 +54,30 @@ kernel_simple_coarse_copy_wg(IpcImpl *ipc_impl, int *src, int *dest, size_t byte
 
 __global__
 void
-kernel_simple_coarse_copy_wave(IpcImpl *ipc_impl, int *src, int *dest, size_t bytes) {
+kernel_simple_coarse_copy_warp(IpcImpl *ipc_impl, int *src, int *dest, size_t bytes) {
     ipc_impl->ipcCopy_wave(dest, src, bytes);
     ipc_impl->ipcFence();
     __syncthreads();
 }
 
-class IPCImplSimpleCoarseTestFixture : public ::testing::Test {
-
+class IPCImplSimpleCoarse : public ::testing::TestWithParam<std::tuple<int, int, int>> {
     using HEAP_T = HeapMemory<HIPAllocator>;
-
     using MPI_T = RemoteHeapInfo<CommunicatorMPI>;
-
     using FN_T = void (*)(IpcImpl*, int*, int*, size_t);
 
   public:
-    IPCImplSimpleCoarseTestFixture() {
+    IPCImplSimpleCoarse() {
         ipc_impl_.ipcHostInit(mpi_.my_pe(), mpi_.get_heap_bases() , MPI_COMM_WORLD);
-
         assert(ipc_impl_dptr_ == nullptr);
         hip_allocator_.allocate((void**)&ipc_impl_dptr_, sizeof(IpcImpl));
-
         CHECK_HIP(hipMemcpy(ipc_impl_dptr_, &ipc_impl_,
                             sizeof(IpcImpl), hipMemcpyHostToDevice));
     }
 
-    ~IPCImplSimpleCoarseTestFixture() {
+    virtual ~IPCImplSimpleCoarse() {
         if (ipc_impl_dptr_) {
             hip_allocator_.deallocate(ipc_impl_dptr_);
         }
-
         ipc_impl_.ipcHostStop();
     }
 
@@ -96,6 +91,10 @@ class IPCImplSimpleCoarseTestFixture : public ::testing::Test {
         WRITE = 1
     };
 
+    virtual void copy(TestType test, dim3 grid, dim3 block) {
+        FAIL();
+    }
+
     void write(const dim3 grid, const dim3 block, size_t elems) {
         iota_golden(elems);
         initialize_src_buffer(WRITE);
@@ -103,38 +102,10 @@ class IPCImplSimpleCoarseTestFixture : public ::testing::Test {
         validate_dest_buffer(WRITE);
     }
 
-    void write_wg(const dim3 grid, const dim3 block, size_t elems) {
-        iota_golden(elems);
-        initialize_src_buffer(WRITE);
-        copy_wg(WRITE, grid, block);
-        validate_dest_buffer(WRITE);
-    }
-
-    void write_wave(const dim3 grid, const dim3 block, size_t elems) {
-        iota_golden(elems);
-        initialize_src_buffer(WRITE);
-        copy_wave(WRITE, grid, block);
-        validate_dest_buffer(WRITE);
-    }
-
     void read(const dim3 grid, const dim3 block, size_t elems) {
         iota_golden(elems);
         initialize_src_buffer(READ);
         copy(READ, grid, block);
-        validate_dest_buffer(READ);
-    }
-
-    void read_wg(const dim3 grid, const dim3 block, size_t elems) {
-        iota_golden(elems);
-        initialize_src_buffer(READ);
-        copy_wg(READ, grid, block);
-        validate_dest_buffer(READ);
-    }
-
-    void read_wave(const dim3 grid, const dim3 block, size_t elems) {
-        iota_golden(elems);
-        initialize_src_buffer(READ);
-        copy_wave(READ, grid, block);
         validate_dest_buffer(READ);
     }
 
@@ -188,18 +159,6 @@ class IPCImplSimpleCoarseTestFixture : public ::testing::Test {
         mpi_.barrier();
     }
 
-    void copy(TestType test, dim3 grid, dim3 block) {
-        execute(test, kernel_simple_coarse_copy, grid, block);
-    }
-
-    void copy_wg(TestType test, dim3 grid, dim3 block) {
-        execute(test, kernel_simple_coarse_copy_wg, grid, block);
-    }
-
-    void copy_wave(TestType test, dim3 grid, dim3 block) {
-        execute(test, kernel_simple_coarse_copy_wave, grid, block);
-    }
-
     void validate_dest_buffer(TestType test) {
         if (!pe_validates_dest_buffer(test)) {
             return;
@@ -219,14 +178,44 @@ class IPCImplSimpleCoarseTestFixture : public ::testing::Test {
     std::vector<int> golden_;
 
     HEAP_T heap_mem_ {};
-
     MPI_T mpi_ {heap_mem_.get_ptr(), heap_mem_.get_size()};
 
     IpcImpl ipc_impl_ {};
-
     IpcImpl *ipc_impl_dptr_ {nullptr};
 
     HIPAllocator hip_allocator_ {};
+};
+
+class Degenerate : public IPCImplSimpleCoarse {
+  public:
+    ~Degenerate() override {};
+};
+
+class ParameterizedBlock : public IPCImplSimpleCoarse {
+  public:
+    ~ParameterizedBlock() override {};
+
+    void copy(IPCImplSimpleCoarse::TestType test, dim3 grid, dim3 block) override {
+        execute(test, kernel_simple_coarse_copy_block, grid, block);
+    }
+};
+
+class ParameterizedWarp : public IPCImplSimpleCoarse {
+  public:
+    ~ParameterizedWarp() override {};
+
+    void copy(IPCImplSimpleCoarse::TestType test, dim3 grid, dim3 block) override {
+        execute(test, kernel_simple_coarse_copy_warp, grid, block);
+    }
+};
+
+class ParameterizedThread : public IPCImplSimpleCoarse {
+  public:
+    ~ParameterizedThread() override {};
+
+    void copy(IPCImplSimpleCoarse::TestType test, dim3 grid, dim3 block) override {
+        execute(test, kernel_simple_coarse_copy, grid, block);
+    }
 };
 
 } // namespace rocshmem
