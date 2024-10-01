@@ -26,6 +26,11 @@
 #include "../util.hpp"
 #include "ipc_team.hpp"
 
+#ifdef USE_COOPERATIVE_GROUPS
+#include <hip/hip_cooperative_groups.h>
+namespace cg = cooperative_groups;
+#endif /* USE_COOPERATIVE_GROUPS */
+
 namespace rocshmem {
 
 __device__ void IPCContext::internal_direct_barrier(int pe, int PE_start,
@@ -84,8 +89,14 @@ __device__ void IPCContext::internal_atomic_barrier(int pe, int PE_start,
 // Uses PE values that are relative to world
 __device__ void IPCContext::internal_sync(int pe, int PE_start, int stride,
                                           int PE_size, int64_t *pSync) {
+#ifdef USE_COOPERATIVE_GROUPS
+  cg::grid_group grid = cg::this_grid();
+  grid.sync();
+  if (0 == grid.thread_rank()) {
+#else
   __syncthreads();
   if (is_thread_zero_in_block()) {
+#endif /* USE_COOPERATIVE_GROUPS */
     if (PE_size < 64) {
       internal_direct_barrier(pe, PE_start, stride, PE_size, pSync);
     } else {
@@ -93,7 +104,11 @@ __device__ void IPCContext::internal_sync(int pe, int PE_start, int stride,
     }
   }
   __threadfence();
+#ifdef USE_COOPERATIVE_GROUPS
+  grid.sync();
+#else
   __syncthreads();
+#endif /* USE_COOPERATIVE_GROUPS */
 }
 
 __device__ void IPCContext::sync(roc_shmem_team_t team) {
