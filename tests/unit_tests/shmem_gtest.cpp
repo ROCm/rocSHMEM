@@ -31,6 +31,9 @@ int main(int argc, char **argv) {
   if (!initialized) {
     int provided;
     MPI_Init_thread(nullptr, nullptr, MPI_THREAD_MULTIPLE, &provided);
+    if (provided != MPI_THREAD_MULTIPLE) {
+      std::cerr << "MPI_THREAD_MULTIPLE support disabled.\n";
+    }
   }
 
   int ret_val = RUN_ALL_TESTS();
