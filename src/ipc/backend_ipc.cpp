@@ -88,6 +88,8 @@ IPCBackend::IPCBackend(MPI_Comm comm)
 
   roc_shmem_collective_init();
 
+  setup_fence_buffer();
+
   teams_init();
 
   setup_ctxs();
@@ -285,6 +287,14 @@ void IPCBackend::teams_destroy() {
 
   free(pool_bitmask_);
   free(reduced_bitmask_);
+}
+
+void IPCBackend::setup_fence_buffer() {
+  /*
+  * Allocate heap space for fence
+  */
+  fence_pool = reinterpret_cast<int *>(roc_shmem_malloc(
+      sizeof(int) * num_pes));
 }
 
 void IPCBackend::roc_shmem_collective_init() {

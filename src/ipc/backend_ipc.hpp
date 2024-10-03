@@ -156,6 +156,11 @@ class IPCBackend : public Backend {
    */
   void *pAta_pool{nullptr};
 
+  /**
+   * @brief Handle for raw memory for fence/quiet
+  */
+  int *fence_pool{nullptr};
+
  protected:
    /**
    * @copydoc Backend::dump_backend_stats()
@@ -202,6 +207,11 @@ class IPCBackend : public Backend {
    * for use.
    */
   void roc_shmem_collective_init();
+
+  /**
+   * @brief Allocate buffer for fence/quiet operation
+   */
+  void setup_fence_buffer();
 
  private:
   /**

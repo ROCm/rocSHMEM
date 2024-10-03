@@ -47,6 +47,9 @@ __host__ IPCContext::IPCContext(Backend *b)
   barrier_sync = backend->barrier_sync;
   g_ret = bp->g_ret;
   atomic_base_ptr = bp->atomic_ret->atomic_base_ptr;
+  fence_pool = backend->fence_pool;
+
+  orders_.store = detail::atomic::rocshmem_memory_order::memory_order_seq_cst;
 }
 
 __device__ void IPCContext::threadfence_system() {
@@ -85,12 +88,17 @@ __device__ void IPCContext::getmem_nbi(void *dest, const void *source,
 }
 
 __device__ void IPCContext::fence() {
+  for (int i{0}; i < num_pes; i++) {
+    detail::atomic::store<int, detail::atomic::memory_scope_system>(&fence_pool[i], 1, orders_);
+  }
 }
 
 __device__ void IPCContext::fence(int pe) {
+  detail::atomic::store<int, detail::atomic::memory_scope_system>(&fence_pool[pe], 1, orders_);
 }
 
 __device__ void IPCContext::quiet() {
+  fence();
 }
 
 __device__ void *IPCContext::shmem_ptr(const void *dest, int pe) {
