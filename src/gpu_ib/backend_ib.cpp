@@ -296,7 +296,8 @@ void GPUIBBackend::setup_default_ctx() {
   CHECK_HIP(hipGetSymbolAddress(reinterpret_cast<void **>(&symbol_address),
                                 HIP_SYMBOL(ROC_SHMEM_CTX_DEFAULT)));
 
-  roc_shmem_ctx_t ctx_default_host{default_ctx_, nullptr};
+  TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
+  roc_shmem_ctx_t ctx_default_host{default_ctx_, tinfo};
 
   hipStream_t stream;
   CHECK_HIP(hipStreamCreateWithFlags(&stream, hipStreamNonBlocking));

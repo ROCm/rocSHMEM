@@ -25,6 +25,7 @@
 
 #include "../context.hpp"
 #include "../atomic.hpp"
+#include "../team.hpp"
 
 namespace rocshmem {
 
@@ -239,6 +240,14 @@ class IPCContext : public Context {
 
   //Buffer to perform Atomic store to enforce memory ordering
   int *fence_pool{nullptr};
+
+ public:
+  //TODO(Avinash):
+  //Make tinfo private variable, it requires changes to the context
+  //creation API in backend
+
+  //Team information for the team associated with the context
+  TeamInfo *tinfo{nullptr};
 };
 
 }  // namespace rocshmem
