@@ -241,9 +241,13 @@ class IPCContext : public Context {
 
   template <typename T, ROC_SHMEM_OP Op>
   __device__ void internal_direct_allreduce(T *dst, const T *src,
-                                            int nelems, int PE_start, int
-                                            logPE_stride, int PE_size,
-                                            T *pWrk, long *pSync);
+                                            int nelems, int PE_start, int logPE_stride,
+					    int PE_size, T *pWrk, long *pSync);
+  template <typename T, ROC_SHMEM_OP Op>
+  __device__ void internal_ring_allreduce(T *dst, const T *src,
+                                          int nelems, int PE_start, int logPE_stride,
+					  int PE_size, T *pWrk, long *pSync,
+					  int n_seg, int seg_size, int chunk_size);
 
   //internal functions used by collectives routines to write/read to
   //work/sync buffers
