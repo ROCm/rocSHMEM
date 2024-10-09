@@ -56,18 +56,18 @@ int get_ls_non_zero_bit(char *bitmask, int mask_length) {
 IPCBackend::IPCBackend(MPI_Comm comm)
     :  Backend() {
   type = BackendType::IPC_BACKEND;
-    
+
   if (auto maximum_num_contexts_str = getenv("ROC_SHMEM_MAX_NUM_CONTEXTS")) {
     std::stringstream sstream(maximum_num_contexts_str);
     sstream >> maximum_num_contexts_;
   }
 
   init_mpi_once(comm);
-    
+
   initIPC();
-    
+
   auto *bp{ipc_backend_proxy.get()};
-    
+
   bp->heap_ptr = &heap;
 
   /* Initialize the host interface */
@@ -85,7 +85,6 @@ IPCBackend::IPCBackend(MPI_Comm comm)
   setup_team_world();
 
   TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
-  default_context_proxy_ = IPCDefaultContextProxyT(this, tinfo);
 
   roc_shmem_collective_init();
 
@@ -93,8 +92,9 @@ IPCBackend::IPCBackend(MPI_Comm comm)
 
   teams_init();
 
+  default_context_proxy_ = IPCDefaultContextProxyT(this, tinfo);
+
   setup_ctxs();
-  
 }
 
 IPCBackend::~IPCBackend() {
@@ -108,7 +108,7 @@ IPCBackend::~IPCBackend() {
    * Free the atomic_ret array.
    */
   CHECK_HIP(hipFree(bp->atomic_ret->atomic_base_ptr));
-  
+
   // TODO(Avinash) Free g_ret
 
   // delete host_interface;
