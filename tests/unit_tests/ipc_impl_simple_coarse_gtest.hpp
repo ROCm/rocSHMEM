@@ -186,32 +186,32 @@ class IPCImplSimpleCoarse : public ::testing::TestWithParam<std::tuple<int, int,
     HIPAllocator hip_allocator_ {};
 };
 
-class Degenerate : public IPCImplSimpleCoarse {
+class DegenerateSimpleCoarse : public IPCImplSimpleCoarse {
   public:
-    ~Degenerate() override {};
+    ~DegenerateSimpleCoarse() override {};
 };
 
-class ParameterizedBlock : public IPCImplSimpleCoarse {
+class ParameterizedBlockSimpleCoarse : public IPCImplSimpleCoarse {
   public:
-    ~ParameterizedBlock() override {};
+    ~ParameterizedBlockSimpleCoarse() override {};
 
     void copy(IPCImplSimpleCoarse::TestType test, dim3 grid, dim3 block) override {
         execute(test, kernel_simple_coarse_copy_block, grid, block);
     }
 };
 
-class ParameterizedWarp : public IPCImplSimpleCoarse {
+class ParameterizedWarpSimpleCoarse : public IPCImplSimpleCoarse {
   public:
-    ~ParameterizedWarp() override {};
+    ~ParameterizedWarpSimpleCoarse() override {};
 
     void copy(IPCImplSimpleCoarse::TestType test, dim3 grid, dim3 block) override {
         execute(test, kernel_simple_coarse_copy_warp, grid, block);
     }
 };
 
-class ParameterizedThread : public IPCImplSimpleCoarse {
+class ParameterizedThreadSimpleCoarse : public IPCImplSimpleCoarse {
   public:
-    ~ParameterizedThread() override {};
+    ~ParameterizedThreadSimpleCoarse() override {};
 
     void copy(IPCImplSimpleCoarse::TestType test, dim3 grid, dim3 block) override {
         execute(test, kernel_simple_coarse_copy, grid, block);
