@@ -89,9 +89,8 @@ __device__ void IPCContext::internal_sync(int pe, int PE_start, int stride,
   grid.sync();
   if (0 == grid.thread_rank())
 #else
-  auto notifier{notifier_.get()};
-  notifier->sync();
-  if (is_thread_zero_in_block() && is_block_zero_in_grid())
+  notifier_->sync();
+  if (0 == get_flat_id())
 #endif /* USE_COOPERATIVE_GROUPS */
   {
     if (PE_size < 64) {
@@ -104,7 +103,7 @@ __device__ void IPCContext::internal_sync(int pe, int PE_start, int stride,
 #ifdef USE_COOPERATIVE_GROUPS
   grid.sync();
 #else
-  notifier->sync();
+  notifier_->sync();
 #endif /* USE_COOPERATIVE_GROUPS */
 }
 

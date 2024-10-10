@@ -50,6 +50,10 @@ __host__ IPCContext::IPCContext(Backend *b)
   fence_pool = backend->fence_pool;
 
   orders_.store = detail::atomic::rocshmem_memory_order::memory_order_seq_cst;
+
+#ifndef USE_COOPERATIVE_GROUPS
+  notifier_ = backend->notifier_.get();
+#endif /* NOT DEFINED: USE_COOPERATIVE_GROUPS */
 }
 
 __device__ void IPCContext::threadfence_system() {

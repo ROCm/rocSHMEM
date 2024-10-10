@@ -243,8 +243,7 @@ class IPCContext : public Context {
   int64_t *barrier_sync{nullptr};
 
 #ifndef USE_COOPERATIVE_GROUPS
-  using NOTIFIER_PROXY_T = NotifierProxy<HIPAllocator, detail::atomic::memory_scope_agent>;
-  NOTIFIER_PROXY_T notifier_{};
+  Notifier<detail::atomic::memory_scope_agent> *notifier_{nullptr};
 #endif /* NOT DEFINED: USE_COOPERATIVE_GROUPS */
 
   //Struct defining memory ordering for atomic operations.
