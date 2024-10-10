@@ -380,7 +380,7 @@ __device__ void roc_shmem_atomic_set(T *dest, T value, int pe);
  * coalesce contiguous messages and elect a leader thread to call into the
  * ROC_SHMEM function.
  *
- * @param[in] ptr Pointer to memory on the symmetric heap to wait for.
+ * @param[in] ivars Pointer to memory on the symmetric heap to wait for.
  * @param[in] cmp Operation for the comparison.
  * @param[in] val Value to compare the memory at \p ptr to.
  *
@@ -388,7 +388,7 @@ __device__ void roc_shmem_atomic_set(T *dest, T value, int pe);
  *
  */
 template <typename T>
-__device__ void roc_shmem_wait_until(T *ptr, roc_shmem_cmps cmp, T val);
+__device__ void roc_shmem_wait_until(T *ivars, roc_shmem_cmps cmp, T val);
 
 /**
  * @brief test if the condition (* \p ptr \p cmps \p val) is
@@ -399,7 +399,7 @@ __device__ void roc_shmem_wait_until(T *ptr, roc_shmem_cmps cmp, T val);
  * coalesce contiguous messages and elect a leader thread to call into the
  * ROC_SHMEM function.
  *
- * @param[in] ptr Pointer to memory on the symmetric heap to wait for.
+ * @param[in] ivars Pointer to memory on the symmetric heap to wait for.
  * @param[in] cmp Operation for the comparison.
  * @param[in] val Value to compare the memory at \p ptr to.
  *
@@ -407,7 +407,7 @@ __device__ void roc_shmem_wait_until(T *ptr, roc_shmem_cmps cmp, T val);
  *
  */
 template <typename T>
-__device__ int roc_shmem_test(T *ptr, roc_shmem_cmps cmp, T val);
+__device__ int roc_shmem_test(T *ivars, roc_shmem_cmps cmp, T val);
 
 /**
  * @brief Perform a broadcast between PEs in the active set. The caller

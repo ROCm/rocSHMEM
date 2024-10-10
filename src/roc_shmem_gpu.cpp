@@ -488,67 +488,67 @@ __device__ void roc_shmem_wg_fcollect(roc_shmem_ctx_t ctx,
 }
 
 template <typename T>
-__device__ void roc_shmem_wait_until(T *ptr, roc_shmem_cmps cmp, T val) {
+__device__ void roc_shmem_wait_until(T *ivars, roc_shmem_cmps cmp, T val) {
   GPU_DPRINTF("Function: roc_shmem_wait_until\n");
 
   Context *ctx_internal = get_internal_ctx(ROC_SHMEM_CTX_DEFAULT);
   ctx_internal->ctxStats.incStat(NUM_WAIT_UNTIL);
-  ctx_internal->wait_until(ptr, cmp, val);
+  ctx_internal->wait_until(ivars, cmp, val);
 }
 
 template <typename T>
-__device__ void roc_shmem_wait_until_all(T *ptr, size_t nelems, const int* status,
+__device__ void roc_shmem_wait_until_all(T *ivars, size_t nelems, const int* status,
                                          roc_shmem_cmps cmp, T val) {
   GPU_DPRINTF("Function: roc_shmem_wait_until_all\n");
 
   Context *ctx_internal = get_internal_ctx(ROC_SHMEM_CTX_DEFAULT);
   ctx_internal->ctxStats.incStat(NUM_WAIT_UNTIL_ALL);
-  ctx_internal->wait_until_all(ptr, nelems, status, cmp, val);
+  ctx_internal->wait_until_all(ivars, nelems, status, cmp, val);
 }
 
 template <typename T>
-__device__ size_t roc_shmem_wait_until_any(T *ptr, size_t nelems, const int* status,
+__device__ size_t roc_shmem_wait_until_any(T *ivars, size_t nelems, const int* status,
                                            roc_shmem_cmps cmp, T val) {
   GPU_DPRINTF("Function: roc_shmem_wait_until_any\n");
 
   Context *ctx_internal = get_internal_ctx(ROC_SHMEM_CTX_DEFAULT);
   ctx_internal->ctxStats.incStat(NUM_WAIT_UNTIL_ANY);
-  return ctx_internal->wait_until_any(ptr, nelems, status, cmp, val);
+  return ctx_internal->wait_until_any(ivars, nelems, status, cmp, val);
 }
 
 template <typename T>
-__device__ size_t roc_shmem_wait_until_some(T *ptr, size_t nelems, size_t* indices,
+__device__ size_t roc_shmem_wait_until_some(T *ivars, size_t nelems, size_t* indices,
                                           const int* status, roc_shmem_cmps cmp,
                                           T val) {
   DPRINTF("Function: roc_shmem_wait_until_some\n");
 
   Context *ctx_internal = get_internal_ctx(ROC_SHMEM_CTX_DEFAULT);
   ctx_internal->ctxStats.incStat(NUM_WAIT_UNTIL_SOME);
-  return ctx_internal->wait_until_some(ptr, nelems, indices, status, cmp, val);
+  return ctx_internal->wait_until_some(ivars, nelems, indices, status, cmp, val);
 }
 
 template <typename T>
-__device__ size_t roc_shmem_wait_until_any_vector(T *ptr, size_t nelems, const int* status,
+__device__ size_t roc_shmem_wait_until_any_vector(T *ivars, size_t nelems, const int* status,
                                                   roc_shmem_cmps cmp, T* vals) {
   DPRINTF("Function: roc_shmem_wait_until_any_vector\n");
 
   Context *ctx_internal = get_internal_ctx(ROC_SHMEM_CTX_DEFAULT);
   ctx_internal->ctxStats.incStat(NUM_WAIT_UNTIL_ANY_VECTOR);
-  return ctx_internal->wait_until_any_vector(ptr, nelems, status, cmp, vals);
+  return ctx_internal->wait_until_any_vector(ivars, nelems, status, cmp, vals);
 }
 
 template <typename T>
-__device__ void roc_shmem_wait_until_all_vector(T *ptr, size_t nelems, const int* status,
+__device__ void roc_shmem_wait_until_all_vector(T *ivars, size_t nelems, const int* status,
                                                 roc_shmem_cmps cmp, T* vals) {
   DPRINTF("Function: roc_shmem_wait_until_all_vector\n");
 
   Context *ctx_internal = get_internal_ctx(ROC_SHMEM_CTX_DEFAULT);
   ctx_internal->ctxStats.incStat(NUM_WAIT_UNTIL_ALL_VECTOR);
-  ctx_internal->wait_until_all_vector(ptr, nelems, status, cmp, vals);
+  ctx_internal->wait_until_all_vector(ivars, nelems, status, cmp, vals);
 }
 
 template <typename T>
-__device__ size_t roc_shmem_wait_until_some_vector(T *ptr, size_t nelems,
+__device__ size_t roc_shmem_wait_until_some_vector(T *ivars, size_t nelems,
                                                  size_t* indices,
                                                  const int* status,
                                                  roc_shmem_cmps cmp, T* vals) {
@@ -556,17 +556,17 @@ __device__ size_t roc_shmem_wait_until_some_vector(T *ptr, size_t nelems,
 
   Context *ctx_internal = get_internal_ctx(ROC_SHMEM_CTX_DEFAULT);
   ctx_internal->ctxStats.incStat(NUM_WAIT_UNTIL_SOME_VECTOR);
-  return ctx_internal->wait_until_some_vector(ptr, nelems, indices, status, cmp, vals);
+  return ctx_internal->wait_until_some_vector(ivars, nelems, indices, status, cmp, vals);
 }
 
 template <typename T>
-__device__ int roc_shmem_test(T *ptr, roc_shmem_cmps cmp, T val) {
+__device__ int roc_shmem_test(T *ivars, roc_shmem_cmps cmp, T val) {
   GPU_DPRINTF("Function: roc_shmem_testl\n");
 
   Context *ctx_internal = get_internal_ctx(ROC_SHMEM_CTX_DEFAULT);
   ctx_internal->ctxStats.incStat(NUM_TEST);
 
-  return ctx_internal->test(ptr, cmp, val);
+  return ctx_internal->test(ivars, cmp, val);
 }
 
 __device__ void roc_shmem_ctx_wg_barrier_all(roc_shmem_ctx_t ctx) {
@@ -1030,52 +1030,53 @@ __device__ int roc_shmem_team_translate_pe(roc_shmem_team_t src_team,
  * Declare templates for the wait types
  */
 #define WAIT_GEN(T)                                                            \
-  template __device__ void roc_shmem_wait_until<T>(T * ptr,                    \
+  template __device__ void roc_shmem_wait_until<T>(T *ivars,                   \
                                                    roc_shmem_cmps cmp, T val); \
-  template __device__ size_t roc_shmem_wait_until_any<T>(T * ptr,              \
+  template __device__ size_t roc_shmem_wait_until_any<T>(T *ivars,             \
                                       size_t nelems, const int* status,        \
                                       roc_shmem_cmps cmp, T val);              \
-  template __device__ void roc_shmem_wait_until_all<T>(T * ptr,                \
+  template __device__ void roc_shmem_wait_until_all<T>(T *ivars,               \
                                       size_t nelems, const int* status,        \
                                       roc_shmem_cmps cmp, T val);              \
-  template __device__ size_t roc_shmem_wait_until_some<T>(T * ptr, size_t nelems,\
-                                      size_t* indices, const int* status,      \
+  template __device__ size_t roc_shmem_wait_until_some<T>(T *ivars,            \
+                                      size_t nelems, size_t* indices,          \
+                                      const int* status,                       \
                                       roc_shmem_cmps cmp, T val);              \
-  template __device__ size_t roc_shmem_wait_until_any_vector<T>(T * ptr,       \
+  template __device__ size_t roc_shmem_wait_until_any_vector<T>(T *ivars,      \
                                       size_t nelems, const int* status,        \
                                       roc_shmem_cmps cmp, T* vals);            \
-  template __device__ void roc_shmem_wait_until_all_vector<T>(T * ptr,         \
+  template __device__ void roc_shmem_wait_until_all_vector<T>(T *ivars,        \
                                       size_t nelems, const int* status,        \
                                       roc_shmem_cmps cmp, T* vals);            \
-  template __device__ size_t roc_shmem_wait_until_some_vector<T>(T * ptr,      \
+  template __device__ size_t roc_shmem_wait_until_some_vector<T>(T *ivars,     \
                                       size_t nelems, size_t* indices,          \
                                       const int* status, roc_shmem_cmps cmp,   \
                                       T* vals);                                \
-  template __device__ int roc_shmem_test<T>(T * ptr, roc_shmem_cmps cmp,       \
+  template __device__ int roc_shmem_test<T>(T *ivars, roc_shmem_cmps cmp,      \
                                             T val);                            \
-  template __device__ void Context::wait_until<T>(T * ptr, roc_shmem_cmps cmp, \
+  template __device__ void Context::wait_until<T>(T *ivars, roc_shmem_cmps cmp,\
                                                   T val);                      \
-  template __device__ size_t Context::wait_until_any<T>(T * ptr,               \
+  template __device__ size_t Context::wait_until_any<T>(T *ivars,              \
                                       size_t nelems, const int* status,        \
                                       roc_shmem_cmps cmp, T val);              \
-  template __device__ void Context::wait_until_all<T>(T * ptr,                 \
+  template __device__ void Context::wait_until_all<T>(T *ivars,                \
                                       size_t nelems, const int* status,        \
                                       roc_shmem_cmps cmp, T val);              \
-  template __device__ size_t Context::wait_until_some<T>(T * ptr,              \
+  template __device__ size_t Context::wait_until_some<T>(T *ivars,             \
                                       size_t nelems,                           \
                                       size_t* indices, const int* status,      \
                                       roc_shmem_cmps cmp, T val);              \
-  template __device__ size_t Context::wait_until_any_vector<T>(T * ptr,        \
+  template __device__ size_t Context::wait_until_any_vector<T>(T *ivars,       \
                                       size_t nelems, const int* status,        \
                                       roc_shmem_cmps cmp, T* vals);            \
-  template __device__ void Context::wait_until_all_vector<T>(T * ptr,          \
+  template __device__ void Context::wait_until_all_vector<T>(T *ivars,         \
                                       size_t nelems, const int* status,        \
                                       roc_shmem_cmps cmp, T* vals);            \
-  template __device__ size_t Context::wait_until_some_vector<T>(T * ptr,       \
+  template __device__ size_t Context::wait_until_some_vector<T>(T *ivars,      \
                                       size_t nelems, size_t* indices,          \
                                       const int* status, roc_shmem_cmps cmp,   \
                                       T* vals);                                \
-  template __device__ int Context::test<T>(T * ptr, roc_shmem_cmps cmp, T val);
+  template __device__ int Context::test<T>(T *ivars, roc_shmem_cmps cmp, T val);
 
 #define ARITH_REDUCTION_GEN(T)    \
   REDUCTION_GEN(T, ROC_SHMEM_SUM) \
@@ -1370,57 +1371,57 @@ __device__ int roc_shmem_team_translate_pe(roc_shmem_team_t src_team,
   }
 
 #define WAIT_DEF_GEN(T, TNAME)                                                 \
-  __device__ void roc_shmem_##TNAME##_wait_until(T *ptr, roc_shmem_cmps cmp,   \
+  __device__ void roc_shmem_##TNAME##_wait_until(T *ivars, roc_shmem_cmps cmp, \
                                                  T val) {                      \
-    roc_shmem_wait_until<T>(ptr, cmp, val);                                    \
+    roc_shmem_wait_until<T>(ivars, cmp, val);                                  \
   }                                                                            \
-  __device__ size_t roc_shmem_##TNAME##_wait_until_any(T *ptr, size_t nelems,\
+  __device__ size_t roc_shmem_##TNAME##_wait_until_any(T *ivars, size_t nelems,\
                                                      const int* status,      \
                                                      roc_shmem_cmps cmp,     \
                                                      T val) {                \
-    return roc_shmem_wait_until_any<T>(ptr, nelems, status, cmp, val);       \
+    return roc_shmem_wait_until_any<T>(ivars, nelems, status, cmp, val);     \
   }                                                                          \
-  __device__ void roc_shmem_##TNAME##_wait_until_all(T *ptr, size_t nelems,  \
+  __device__ void roc_shmem_##TNAME##_wait_until_all(T *ivars, size_t nelems,\
                                                    const int* status,        \
                                                    roc_shmem_cmps cmp,       \
                                                    T val) {                  \
-    roc_shmem_wait_until_all<T>(ptr, nelems, status, cmp, val);              \
+    roc_shmem_wait_until_all<T>(ivars, nelems, status, cmp, val);            \
   }                                                                          \
-  __device__ size_t roc_shmem_##TNAME##_wait_until_some(T *ptr,              \
+  __device__ size_t roc_shmem_##TNAME##_wait_until_some(T *ivars,            \
                                                     size_t nelems,           \
                                                     size_t* indices,         \
                                                     const int* status,       \
                                                     roc_shmem_cmps cmp,      \
                                                     T val) {                 \
-    return roc_shmem_wait_until_some<T>(ptr, nelems, indices, status, cmp,   \
+    return roc_shmem_wait_until_some<T>(ivars, nelems, indices, status, cmp, \
                                         val);                                \
   }                                                                          \
-  __device__ size_t roc_shmem_##TNAME##_wait_until_any_vector(T *ptr,        \
+  __device__ size_t roc_shmem_##TNAME##_wait_until_any_vector(T *ivars,      \
                                                           size_t nelems,     \
                                                           const int* status, \
                                                           roc_shmem_cmps cmp,\
                                                           T* vals) {         \
-    return roc_shmem_wait_until_any_vector<T>(ptr, nelems, status, cmp,      \
+    return roc_shmem_wait_until_any_vector<T>(ivars, nelems, status, cmp,    \
                                               vals);                         \
   }                                                                          \
-  __device__ void roc_shmem_##TNAME##_wait_until_all_vector(T *ptr,          \
+  __device__ void roc_shmem_##TNAME##_wait_until_all_vector(T *ivars,        \
                                                           size_t nelems,     \
                                                           const int* status, \
                                                           roc_shmem_cmps cmp,\
                                                           T* vals) {         \
-    roc_shmem_wait_until_all_vector<T>(ptr, nelems, status, cmp, vals);      \
+    roc_shmem_wait_until_all_vector<T>(ivars, nelems, status, cmp, vals);    \
   }                                                                          \
-  __device__ size_t roc_shmem_##TNAME##_wait_until_some_vector(T *ptr,       \
+  __device__ size_t roc_shmem_##TNAME##_wait_until_some_vector(T *ivars,     \
                                                            size_t nelems,    \
                                                            size_t* indices,  \
                                                            const int* status,\
                                                           roc_shmem_cmps cmp,\
                                                            T* vals) {        \
-    return roc_shmem_wait_until_some_vector<T>(ptr, nelems, indices,         \
+    return roc_shmem_wait_until_some_vector<T>(ivars, nelems, indices,       \
         status, cmp, vals);                                                  \
   }                                                                          \
-  __device__ int roc_shmem_##TNAME##_test(T *ptr, roc_shmem_cmps cmp, T val) { \
-    return roc_shmem_test<T>(ptr, cmp, val);                                   \
+  __device__ int roc_shmem_##TNAME##_test(T *ivars, roc_shmem_cmps cmp, T val) { \
+    return roc_shmem_test<T>(ivars, cmp, val);                                   \
   }
 
 /******************************************************************************

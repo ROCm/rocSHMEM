@@ -446,7 +446,7 @@ __host__ inline int HostInterface::test_and_compare(MPI_Aint offset,
 }
 
 template <typename T>
-__host__ void HostInterface::wait_until(T* ptr, roc_shmem_cmps cmp, T val,
+__host__ void HostInterface::wait_until(T *ivars, roc_shmem_cmps cmp, T val,
                                         WindowInfo* window_info) {
   DPRINTF("Function: host_wait_until\n");
 
@@ -454,13 +454,13 @@ __host__ void HostInterface::wait_until(T* ptr, roc_shmem_cmps cmp, T val,
    * Find the offset of this memory in the window
    */
   MPI_Aint offset{
-      compute_offset(ptr, window_info->get_start(), window_info->get_end())};
+      compute_offset(ivars, window_info->get_start(), window_info->get_end())};
 
   MPI_Datatype mpi_type{get_mpi_type<T>()};
   MPI_Win win{window_info->get_win()};
 
   /*
-   * Continuously read the ptr atomically until it satisfies the condition
+   * Continuously read the ivars atomically until it satisfies the condition
    */
   while (1) {
     int cond_satisfied{test_and_compare(offset, mpi_type, cmp, val, win)};
@@ -500,7 +500,7 @@ __host__ size_t status_entry(size_t nelems,
 }
 
 template <typename T>
-__host__ size_t HostInterface::wait_until_any(T* ptr, size_t nelems,
+__host__ size_t HostInterface::wait_until_any(T* ivars, size_t nelems,
                                               const int *status,
                                               roc_shmem_cmps cmp, T val,
                                               WindowInfo* window_info) {
@@ -524,7 +524,7 @@ __host__ size_t HostInterface::wait_until_any(T* ptr, size_t nelems,
       if (status[i]) {
         continue;
       }
-      if (test(ptr + i, cmp, val, window_info)) {
+      if (test(ivars + i, cmp, val, window_info)) {
         return i;
       }
     }
@@ -532,7 +532,7 @@ __host__ size_t HostInterface::wait_until_any(T* ptr, size_t nelems,
 }
 
 template <typename T>
-__host__ void HostInterface::wait_until_all(T* ptr, size_t nelems,
+__host__ void HostInterface::wait_until_all(T* ivars, size_t nelems,
                                             const int *status,
                                             roc_shmem_cmps cmp, T val,
                                             WindowInfo* window_info) {
@@ -554,13 +554,13 @@ __host__ void HostInterface::wait_until_all(T* ptr, size_t nelems,
     if (status[i]) {
       continue;
     }
-    while (!test(ptr + i, cmp, val, window_info)) {
+    while (!test(ivars + i, cmp, val, window_info)) {
     }
   }
 }
 
 template <typename T>
-__host__ size_t HostInterface::wait_until_some(T* ptr, size_t nelems,
+__host__ size_t HostInterface::wait_until_some(T* ivars, size_t nelems,
                                              size_t* indices,
                                              const int *status,
                                              roc_shmem_cmps cmp, T val,
@@ -587,7 +587,7 @@ __host__ size_t HostInterface::wait_until_some(T* ptr, size_t nelems,
       if (status[i]) {
         continue;
       }
-      if (test(ptr + i, cmp, val, window_info)) {
+      if (test(ivars + i, cmp, val, window_info)) {
         done = true;
         indices[ncompleted] = i;
         ncompleted++;
@@ -598,7 +598,7 @@ __host__ size_t HostInterface::wait_until_some(T* ptr, size_t nelems,
 }
 
 template <typename T>
-__host__ void HostInterface::wait_until_all_vector(T* ptr, size_t nelems,
+__host__ void HostInterface::wait_until_all_vector(T* ivars, size_t nelems,
                                                    const int *status,
                                                    roc_shmem_cmps cmp, T* vals,
                                                    WindowInfo* window_info) {
@@ -606,7 +606,7 @@ __host__ void HostInterface::wait_until_all_vector(T* ptr, size_t nelems,
 }
 
 template <typename T>
-__host__ size_t HostInterface::wait_until_any_vector(T* ptr, size_t nelems,
+__host__ size_t HostInterface::wait_until_any_vector(T* ivars, size_t nelems,
                                                      const int *status,
                                                      roc_shmem_cmps cmp, T* vals,
                                                      WindowInfo* window_info) {
@@ -615,7 +615,7 @@ __host__ size_t HostInterface::wait_until_any_vector(T* ptr, size_t nelems,
 }
 
 template <typename T>
-__host__ size_t HostInterface::wait_until_some_vector(T* ptr, size_t nelems,
+__host__ size_t HostInterface::wait_until_some_vector(T* ivars, size_t nelems,
                                                     size_t* indices,
                                                     const int *status,
                                                     roc_shmem_cmps cmp, T* vals,
@@ -625,7 +625,7 @@ __host__ size_t HostInterface::wait_until_some_vector(T* ptr, size_t nelems,
 }
 
 template <typename T>
-__host__ int HostInterface::test(T* ptr, roc_shmem_cmps cmp, T val,
+__host__ int HostInterface::test(T* ivars, roc_shmem_cmps cmp, T val,
                                  WindowInfo* window_info) {
   DPRINTF("Function: host_test\n");
 
@@ -633,7 +633,7 @@ __host__ int HostInterface::test(T* ptr, roc_shmem_cmps cmp, T val,
    * Find the offset of this memory in the window
    */
   MPI_Aint offset{
-      compute_offset(ptr, window_info->get_start(), window_info->get_end())};
+      compute_offset(ivars, window_info->get_start(), window_info->get_end())};
 
   MPI_Datatype mpi_type{get_mpi_type<T>()};
 

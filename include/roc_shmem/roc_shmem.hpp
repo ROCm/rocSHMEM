@@ -1152,71 +1152,71 @@ __device__ ATTR_NO_INLINE void roc_shmem_threadfence_system();
  * MACRO DECLARE SHMEM_WAIT_UNTIL APIs
  */
 #define WAIT_UNTIL_API_GEN(T, TNAME)                                            \
-  __device__ void roc_shmem_##TNAME##_wait_until(T *ptr,                        \
+  __device__ void roc_shmem_##TNAME##_wait_until(T *ivars,                      \
                                                  roc_shmem_cmps cmp,            \
                                                  T val);                        \
-  __device__ size_t roc_shmem_##TNAME##_wait_until_any(T *ptr,                  \
+  __device__ size_t roc_shmem_##TNAME##_wait_until_any(T *ivars,                \
                                                      size_t nelems,             \
                                                      const int* status,         \
                                                      roc_shmem_cmps cmp,        \
                                                      T val);                    \
-  __device__ void roc_shmem_##TNAME##_wait_until_all(T *ptr,                    \
+  __device__ void roc_shmem_##TNAME##_wait_until_all(T *ivars,                  \
                                                      size_t nelems,             \
                                                      const int* status,         \
                                                      roc_shmem_cmps cmp,        \
                                                      T val);                    \
-  __device__ size_t roc_shmem_##TNAME##_wait_until_some(T *ptr,                 \
+  __device__ size_t roc_shmem_##TNAME##_wait_until_some(T *ivars,               \
                                                       size_t nelems,            \
                                                       size_t* indices,          \
                                                       const int* status,        \
                                                       roc_shmem_cmps cmp,       \
                                                       T val);                   \
-  __device__ size_t roc_shmem_##TNAME##_wait_until_any_vector(T *ptr,           \
+  __device__ size_t roc_shmem_##TNAME##_wait_until_any_vector(T *ivars,         \
                                                             size_t nelems,      \
                                                             const int* status,  \
                                                             roc_shmem_cmps cmp, \
                                                             T* vals);           \
-  __device__ void roc_shmem_##TNAME##_wait_until_all_vector(T *ptr,             \
+  __device__ void roc_shmem_##TNAME##_wait_until_all_vector(T *ivars,           \
                                                             size_t nelems,      \
                                                             const int* status,  \
                                                             roc_shmem_cmps cmp, \
                                                             T* vals);           \
-  __device__ size_t roc_shmem_##TNAME##_wait_until_some_vector(T *ptr,          \
+  __device__ size_t roc_shmem_##TNAME##_wait_until_some_vector(T *ivars,        \
                                                              size_t nelems,     \
                                                              size_t* indices,   \
                                                              const int* status, \
                                                              roc_shmem_cmps cmp,\
                                                              T* vals);          \
-  __host__ void roc_shmem_##TNAME##_wait_until(T *ptr,                          \
+  __host__ void roc_shmem_##TNAME##_wait_until(T *ivars,                        \
                                                roc_shmem_cmps cmp,              \
                                                T val);                          \
-  __host__ size_t roc_shmem_##TNAME##_wait_until_any(T *ptr,                    \
+  __host__ size_t roc_shmem_##TNAME##_wait_until_any(T *ivars,                  \
                                                      size_t nelems,             \
                                                      const int* status,         \
                                                      roc_shmem_cmps cmp,        \
                                                      T val);                    \
-  __host__ void roc_shmem_##TNAME##_wait_until_all(T *ptr,                      \
+  __host__ void roc_shmem_##TNAME##_wait_until_all(T *ivars,                    \
                                                    size_t nelems,               \
                                                    const int* status,           \
                                                    roc_shmem_cmps cmp,          \
                                                    T val);                      \
-  __host__ size_t roc_shmem_##TNAME##_wait_until_some(T *ptr,                   \
+  __host__ size_t roc_shmem_##TNAME##_wait_until_some(T *ivars,                 \
                                                     size_t nelems,              \
                                                     size_t* indices,            \
                                                     const int* status,          \
                                                     roc_shmem_cmps cmp,         \
                                                     T val);                     \
-  __host__ size_t roc_shmem_##TNAME##_wait_until_any_vector(T *ptr,             \
+  __host__ size_t roc_shmem_##TNAME##_wait_until_any_vector(T *ivars,           \
                                                             size_t nelems,      \
                                                             const int* status,  \
                                                             roc_shmem_cmps cmp, \
                                                             T* vals);           \
-  __host__ void roc_shmem_##TNAME##_wait_until_all_vector(T *ptr,               \
+  __host__ void roc_shmem_##TNAME##_wait_until_all_vector(T *ivars,             \
                                                           size_t nelems,        \
                                                           const int* status,    \
                                                           roc_shmem_cmps cmp,   \
                                                           T* vals);             \
-  __host__ size_t roc_shmem_##TNAME##_wait_until_some_vector(T *ptr,            \
+  __host__ size_t roc_shmem_##TNAME##_wait_until_some_vector(T *ivars,          \
                                                            size_t nelems,       \
                                                            size_t* indices,     \
                                                            const int* status,   \
@@ -1226,9 +1226,9 @@ __device__ ATTR_NO_INLINE void roc_shmem_threadfence_system();
 /*
  * MACRO DECLARE SHMEM_TEST APIs
  */
-#define TEST_API_GEN(T, TNAME)                                                \
-  __device__ int roc_shmem_##TNAME##_test(T *ptr, roc_shmem_cmps cmp, T val); \
-  __host__ int roc_shmem_##TNAME##_test(T *ptr, roc_shmem_cmps cmp, T val);
+#define TEST_API_GEN(T, TNAME)                                                  \
+  __device__ int roc_shmem_##TNAME##_test(T *ivars, roc_shmem_cmps cmp, T val); \
+  __host__ int roc_shmem_##TNAME##_test(T *ivars, roc_shmem_cmps cmp, T val);
 
 /**
  * @name SHMEM_REDUCTIONS
@@ -2031,7 +2031,7 @@ ATOMIC_INC_API_GEN(ptrdiff_t, ptrdiff)
  * coalesce contiguous messages and elect a leader thread to call into the
  * ROC_SHMEM function.
  *
- * @param[in] ptr Pointer to memory on the symmetric heap to wait for.
+ * @param[in] ivars Pointer to memory on the symmetric heap to wait for.
  * @param[in] cmp Operation for the comparison.
  * @param[in] val Value to compare the memory at \p ptr to.
  *
@@ -2064,7 +2064,7 @@ WAIT_UNTIL_API_GEN(unsigned long long, ulonglong)  // NOLINT(runtime/int)
  * coalesce contiguous messages and elect a leader thread to call into the
  * ROC_SHMEM function.
  *
- * @param[in] ptr Pointer to memory on the symmetric heap to wait for.
+ * @param[in] ivars Pointer to memory on the symmetric heap to wait for.
  * @param[in] cmp Operation for the comparison.
  * @param[in] val Value to compare the memory at \p ptr to.
  *

@@ -136,35 +136,35 @@ __host__ void roc_shmem_to_all(roc_shmem_ctx_t ctx, T *dest, const T *source,
                                int PE_size, T *pWrk, long *pSync);
 
 template <typename T>
-__host__ void roc_shmem_wait_until(T *ptr, roc_shmem_cmps cmp, T val);
+__host__ void roc_shmem_wait_until(T *ivars, roc_shmem_cmps cmp, T val);
 
 template <typename T>
-__host__ void wait_until_all(T* ptr, size_t nelems, const int *status,
+__host__ void wait_until_all(T* ivars, size_t nelems, const int *status,
                              roc_shmem_cmps cmp, T val);
 
 template <typename T>
-__host__ size_t wait_until_any(T* ptr, size_t nelems, const int *status,
+__host__ size_t wait_until_any(T* ivars, size_t nelems, const int *status,
                                roc_shmem_cmps cmp, T val);
 
 template <typename T>
-__host__ size_t wait_until_some(T* ptr, size_t nelems, size_t* indices,
+__host__ size_t wait_until_some(T* ivars, size_t nelems, size_t* indices,
                               const int *status, roc_shmem_cmps cmp, T val);
 
 template <typename T>
-__host__ void wait_until_all_vector(T* ptr, size_t nelems, const int *status,
+__host__ void wait_until_all_vector(T* ivars, size_t nelems, const int *status,
                                     roc_shmem_cmps cmp, T* vals);
 
 template <typename T>
-__host__ size_t wait_until_any_vector(T* ptr, size_t nelems, const int *status,
+__host__ size_t wait_until_any_vector(T* ivars, size_t nelems, const int *status,
                                       roc_shmem_cmps cmp, T* vals);
 
 template <typename T>
-__host__ size_t wait_until_some_vector(T* ptr, size_t nelems,
+__host__ size_t wait_until_some_vector(T* ivars, size_t nelems,
                                      size_t* indices, const int *status,
                                      roc_shmem_cmps cmp, T* vals);
 
 template <typename T>
-__host__ int roc_shmem_test(T *ptr, roc_shmem_cmps cmp, T val);
+__host__ int roc_shmem_test(T *ivars, roc_shmem_cmps cmp, T val);
 
 }  // namespace rocshmem
 

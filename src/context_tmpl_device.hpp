@@ -199,9 +199,9 @@ __device__ void Context::broadcast(T *dest, const T *source, int nelems,
 }
 
 template <typename T>
-__device__ __forceinline__ void Context::wait_until(T *ptr, roc_shmem_cmps cmp,
+__device__ __forceinline__ void Context::wait_until(T *ivars, roc_shmem_cmps cmp,
                                                     T val) {
-  while (!test(ptr, cmp, val)) {
+  while (!test(ivars, cmp, val)) {
   }
 }
 
@@ -219,7 +219,7 @@ __device__ __forceinline__ size_t status_entry(size_t nelems,
 
 template <typename T>
 __device__ __forceinline__
-size_t Context::wait_until_any(T* ptr, size_t nelems,
+size_t Context::wait_until_any(T *ivars, size_t nelems,
                                const int *status,
                                roc_shmem_cmps cmp, T val) {
   // zero nelems error condition
@@ -240,7 +240,7 @@ size_t Context::wait_until_any(T* ptr, size_t nelems,
       if (status[i]) {
         continue;
       }
-      if (test(ptr + i, cmp, val)) {
+      if (test(ivars + i, cmp, val)) {
         return i;
       }
     }
@@ -249,7 +249,7 @@ size_t Context::wait_until_any(T* ptr, size_t nelems,
 
 template <typename T>
 __device__ __forceinline__
-void Context::wait_until_all(T* ptr, size_t nelems,
+void Context::wait_until_all(T *ivars, size_t nelems,
                              const int *status,
                              roc_shmem_cmps cmp, T val) {
   // zero nelems error condition
@@ -268,14 +268,14 @@ void Context::wait_until_all(T* ptr, size_t nelems,
     if (status[i]) {
       continue;
     }
-    while (!test(ptr + i, cmp, val)) {
+    while (!test(ivars + i, cmp, val)) {
     }
   }
 }
 
 template <typename T>
 __device__ __forceinline__
-size_t Context::wait_until_some(T* ptr, size_t nelems,
+size_t Context::wait_until_some(T *ivars, size_t nelems,
                               size_t* indices,
                               const int *status,
                               roc_shmem_cmps cmp, T val) {
@@ -299,7 +299,7 @@ size_t Context::wait_until_some(T* ptr, size_t nelems,
       if (status[i]) {
         continue;
       }
-      if (test(ptr + i, cmp, val)) {
+      if (test(ivars + i, cmp, val)) {
         done = true;
         indices[ncompleted] = i;
         ncompleted++;
@@ -311,7 +311,7 @@ size_t Context::wait_until_some(T* ptr, size_t nelems,
 
 template <typename T>
 __device__ __forceinline__
-void Context::wait_until_all_vector(T* ptr, size_t nelems,
+void Context::wait_until_all_vector(T *ivars, size_t nelems,
                                     const int *status,
                                     roc_shmem_cmps cmp, T* vals) {
   ;
@@ -319,7 +319,7 @@ void Context::wait_until_all_vector(T* ptr, size_t nelems,
 
 template <typename T>
 __device__ __forceinline__
-size_t Context::wait_until_any_vector(T* ptr, size_t nelems,
+size_t Context::wait_until_any_vector(T *ivars, size_t nelems,
                                       const int *status,
                                       roc_shmem_cmps cmp, T* vals) {
   return 0;
@@ -327,7 +327,7 @@ size_t Context::wait_until_any_vector(T* ptr, size_t nelems,
 
 template <typename T>
 __device__ __forceinline__
-size_t Context::wait_until_some_vector(T* ptr, size_t nelems,
+size_t Context::wait_until_some_vector(T *ivars, size_t nelems,
                                      size_t* indices,
                                      const int *status,
                                      roc_shmem_cmps cmp, T* vals) {
@@ -335,38 +335,38 @@ size_t Context::wait_until_some_vector(T* ptr, size_t nelems,
 }
 
 template <typename T>
-__device__ __forceinline__ int Context::test(T *ptr, roc_shmem_cmps cmp,
+__device__ __forceinline__ int Context::test(T *ivars, roc_shmem_cmps cmp,
                                              T val) {
   int ret = 0;
-  volatile T *vol_ptr = reinterpret_cast<T *>(ptr);
+  volatile T *vol_ivars = reinterpret_cast<T *>(ivars);
   switch (cmp) {
     case ROC_SHMEM_CMP_EQ:
-      if (uncached_load(vol_ptr) == val) {
+      if (uncached_load(vol_ivars) == val) {
         ret = 1;
       }
       break;
     case ROC_SHMEM_CMP_NE:
-      if (uncached_load(vol_ptr) != val) {
+      if (uncached_load(vol_ivars) != val) {
         ret = 1;
       }
       break;
     case ROC_SHMEM_CMP_GT:
-      if (uncached_load(vol_ptr) > val) {
+      if (uncached_load(vol_ivars) > val) {
         ret = 1;
       }
       break;
     case ROC_SHMEM_CMP_GE:
-      if (uncached_load(vol_ptr) >= val) {
+      if (uncached_load(vol_ivars) >= val) {
         ret = 1;
       }
       break;
     case ROC_SHMEM_CMP_LT:
-      if (uncached_load(vol_ptr) < val) {
+      if (uncached_load(vol_ivars) < val) {
         ret = 1;
       }
       break;
     case ROC_SHMEM_CMP_LE:
-      if (uncached_load(vol_ptr) <= val) {
+      if (uncached_load(vol_ivars) <= val) {
         ret = 1;
       }
       break;
