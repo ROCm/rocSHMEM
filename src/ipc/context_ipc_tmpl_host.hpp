@@ -115,21 +115,21 @@ __host__ void IPCHostContext::to_all(roc_shmem_team_t team, T *dest,
 }
 
 template <typename T>
-__host__ void IPCHostContext::wait_until(T *ivars, roc_shmem_cmps cmp, T val) {
+__host__ void IPCHostContext::wait_until(T *ivars, int cmp, T val) {
   host_interface->wait_until<T>(ivars, cmp, val, context_window_info);
 }
 
 template <typename T>
 __host__ void IPCHostContext::wait_until_all(T *ivars, size_t nelems,
                                                const int* status,
-                                               roc_shmem_cmps cmp, T val) {
+                                               int cmp, T val) {
   host_interface->wait_until_all<T>(ivars, nelems, status, cmp, val, context_window_info);
 }
 
 template <typename T>
 __host__ size_t IPCHostContext::wait_until_any(T *ivars, size_t nelems,
                                                const int* status,
-                                               roc_shmem_cmps cmp, T val) {
+                                               int cmp, T val) {
   return host_interface->wait_until_any<T>(ivars, nelems, status, cmp, val, context_window_info);
 }
 
@@ -137,21 +137,21 @@ template <typename T>
 __host__ size_t IPCHostContext::wait_until_some(T *ivars, size_t nelems,
                                                  size_t* indices,
                                                  const int* status,
-                                                 roc_shmem_cmps cmp, T val) {
+                                                 int cmp, T val) {
   return host_interface->wait_until_some<T>(ivars, nelems, indices, status, cmp, val, context_window_info);
 }
 
 template <typename T>
 __host__ void IPCHostContext::wait_until_all_vector(T *ivars, size_t nelems,
                                                       const int* status,
-                                                      roc_shmem_cmps cmp, T* vals) {
+                                                      int cmp, T* vals) {
   host_interface->wait_until_all_vector<T>(ivars, nelems, status, cmp, vals, context_window_info);
 }
 
 template <typename T>
 __host__ size_t IPCHostContext::wait_until_any_vector(T *ivars, size_t nelems,
                                                         const int* status,
-                                                        roc_shmem_cmps cmp, T* vals) {
+                                                        int cmp, T* vals) {
   return host_interface->wait_until_any_vector<T>(ivars, nelems, status, cmp, vals, context_window_info);
 }
 
@@ -159,12 +159,12 @@ template <typename T>
 __host__ size_t IPCHostContext::wait_until_some_vector(T *ivars, size_t nelems,
                                                          size_t* indices,
                                                          const int* status,
-                                                         roc_shmem_cmps cmp, T* vals) {
+                                                         int cmp, T* vals) {
   return host_interface->wait_until_some_vector<T>(ivars, nelems, indices, status, cmp, vals, context_window_info);
 }
 
 template <typename T>
-__host__ int IPCHostContext::test(T *ivars, roc_shmem_cmps cmp, T val) {
+__host__ int IPCHostContext::test(T *ivars, int cmp, T val) {
   return host_interface->test<T>(ivars, cmp, val, context_window_info);
 }
 

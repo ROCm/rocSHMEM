@@ -388,7 +388,7 @@ __device__ void roc_shmem_atomic_set(T *dest, T value, int pe);
  *
  */
 template <typename T>
-__device__ void roc_shmem_wait_until(T *ivars, roc_shmem_cmps cmp, T val);
+__device__ void roc_shmem_wait_until(T *ivars, int cmp, T val);
 
 /**
  * @brief test if the condition (* \p ptr \p cmps \p val) is
@@ -407,7 +407,7 @@ __device__ void roc_shmem_wait_until(T *ivars, roc_shmem_cmps cmp, T val);
  *
  */
 template <typename T>
-__device__ int roc_shmem_test(T *ivars, roc_shmem_cmps cmp, T val);
+__device__ int roc_shmem_test(T *ivars, int cmp, T val);
 
 /**
  * @brief Perform a broadcast between PEs in the active set. The caller

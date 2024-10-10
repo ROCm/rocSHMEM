@@ -392,7 +392,7 @@ __host__ void HostInterface::to_all(roc_shmem_team_t team, T* dest,
 }
 
 template <typename T>
-__host__ inline int HostInterface::compare(roc_shmem_cmps cmp, T input_val,
+__host__ inline int HostInterface::compare(int cmp, T input_val,
                                            T target_val) {
   int cond_satisfied{0};
 
@@ -426,7 +426,7 @@ __host__ inline int HostInterface::compare(roc_shmem_cmps cmp, T input_val,
 template <typename T>
 __host__ inline int HostInterface::test_and_compare(MPI_Aint offset,
                                                     MPI_Datatype mpi_type,
-                                                    roc_shmem_cmps cmp, T val,
+                                                    int cmp, T val,
                                                     MPI_Win win) {
   T fetched_val{};
 
@@ -446,7 +446,7 @@ __host__ inline int HostInterface::test_and_compare(MPI_Aint offset,
 }
 
 template <typename T>
-__host__ void HostInterface::wait_until(T *ivars, roc_shmem_cmps cmp, T val,
+__host__ void HostInterface::wait_until(T *ivars, int cmp, T val,
                                         WindowInfo* window_info) {
   DPRINTF("Function: host_wait_until\n");
 
@@ -502,7 +502,7 @@ __host__ size_t status_entry(size_t nelems,
 template <typename T>
 __host__ size_t HostInterface::wait_until_any(T* ivars, size_t nelems,
                                               const int *status,
-                                              roc_shmem_cmps cmp, T val,
+                                              int cmp, T val,
                                               WindowInfo* window_info) {
   DPRINTF("Function: host_wait_until_any\n");
 
@@ -534,7 +534,7 @@ __host__ size_t HostInterface::wait_until_any(T* ivars, size_t nelems,
 template <typename T>
 __host__ void HostInterface::wait_until_all(T* ivars, size_t nelems,
                                             const int *status,
-                                            roc_shmem_cmps cmp, T val,
+                                            int cmp, T val,
                                             WindowInfo* window_info) {
   DPRINTF("Function: host_wait_until_all\n");
 
@@ -563,7 +563,7 @@ template <typename T>
 __host__ size_t HostInterface::wait_until_some(T* ivars, size_t nelems,
                                              size_t* indices,
                                              const int *status,
-                                             roc_shmem_cmps cmp, T val,
+                                             int cmp, T val,
                                              WindowInfo* window_info) {
   DPRINTF("Function: host_wait_until_some\n");
 
@@ -600,7 +600,7 @@ __host__ size_t HostInterface::wait_until_some(T* ivars, size_t nelems,
 template <typename T>
 __host__ void HostInterface::wait_until_all_vector(T* ivars, size_t nelems,
                                                    const int *status,
-                                                   roc_shmem_cmps cmp, T* vals,
+                                                   int cmp, T* vals,
                                                    WindowInfo* window_info) {
   DPRINTF("Function: host_wait_until_all_vector\n");
 }
@@ -608,7 +608,7 @@ __host__ void HostInterface::wait_until_all_vector(T* ivars, size_t nelems,
 template <typename T>
 __host__ size_t HostInterface::wait_until_any_vector(T* ivars, size_t nelems,
                                                      const int *status,
-                                                     roc_shmem_cmps cmp, T* vals,
+                                                     int cmp, T* vals,
                                                      WindowInfo* window_info) {
   DPRINTF("Function: host_wait_until_any_vector\n");
   return 0;
@@ -618,14 +618,14 @@ template <typename T>
 __host__ size_t HostInterface::wait_until_some_vector(T* ivars, size_t nelems,
                                                     size_t* indices,
                                                     const int *status,
-                                                    roc_shmem_cmps cmp, T* vals,
+                                                    int cmp, T* vals,
                                                     WindowInfo* window_info) {
   DPRINTF("Function: host_wait_until_some_vector\n");
   return 0;
 }
 
 template <typename T>
-__host__ int HostInterface::test(T* ivars, roc_shmem_cmps cmp, T val,
+__host__ int HostInterface::test(T* ivars, int cmp, T val,
                                  WindowInfo* window_info) {
   DPRINTF("Function: host_test\n");
 
