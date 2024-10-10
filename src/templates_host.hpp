@@ -102,10 +102,10 @@ template <typename T>
 __host__ T roc_shmem_atomic_fetch_inc(T *dest, int pe);
 
 template <typename T>
-__host__ T roc_shmem_atomic_fetch(roc_shmem_ctx_t ctx, T *dest, int pe);
+__host__ T roc_shmem_atomic_fetch(roc_shmem_ctx_t ctx, T *source, int pe);
 
 template <typename T>
-__host__ T roc_shmem_atomic_fetch(T *dest, int pe);
+__host__ T roc_shmem_atomic_fetch(T *source, int pe);
 
 template <typename T>
 __host__ void roc_shmem_atomic_add(roc_shmem_ctx_t ctx, T *dest, T val, int pe);

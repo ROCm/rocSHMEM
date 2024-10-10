@@ -1021,12 +1021,12 @@ __device__ ATTR_NO_INLINE void roc_shmem_threadfence_system();
  */
 #define ATOMIC_FETCH_API_GEN(T, TNAME)                                  \
   __device__ ATTR_NO_INLINE T roc_shmem_ctx_##TNAME##_atomic_fetch(     \
-      roc_shmem_ctx_t ctx, T *dest, int pe);                            \
-  __device__ ATTR_NO_INLINE T roc_shmem_##TNAME##_atomic_fetch(T *dest, \
+      roc_shmem_ctx_t ctx, T *source, int pe);                          \
+  __device__ ATTR_NO_INLINE T roc_shmem_##TNAME##_atomic_fetch(T *source, \
                                                                int pe); \
   __host__ T roc_shmem_ctx_##TNAME##_atomic_fetch(roc_shmem_ctx_t ctx,  \
-                                                  T *dest, int pe);     \
-  __host__ T roc_shmem_##TNAME##_atomic_fetch(T *dest, int pe);
+                                                  T *source, int pe);     \
+  __host__ T roc_shmem_##TNAME##_atomic_fetch(T *source, int pe);
 
 /*
  * MACRO DECLARE SHMEM_ATOMIC_ADD APIs

@@ -181,8 +181,8 @@ __device__ T roc_shmem_atomic_fetch_inc(T *dest, int pe) {
 }
 
 template <typename T>
-__device__ T roc_shmem_atomic_fetch(T *dest, int pe) {
-  return roc_shmem_atomic_fetch(ROC_SHMEM_CTX_DEFAULT, dest, pe);
+__device__ T roc_shmem_atomic_fetch(T *source, int pe) {
+  return roc_shmem_atomic_fetch(ROC_SHMEM_CTX_DEFAULT, source, pe);
 }
 
 template <typename T>
@@ -650,10 +650,10 @@ __device__ T roc_shmem_atomic_fetch_inc(roc_shmem_ctx_t ctx, T *dest, int pe) {
 }
 
 template <typename T>
-__device__ T roc_shmem_atomic_fetch(roc_shmem_ctx_t ctx, T *dest, int pe) {
+__device__ T roc_shmem_atomic_fetch(roc_shmem_ctx_t ctx, T *source, int pe) {
   GPU_DPRINTF("Function: roc_shmem_atomic_fetch\n");
 
-  return get_internal_ctx(ctx)->amo_fetch_add<T>(dest, 0, pe);
+  return get_internal_ctx(ctx)->amo_fetch_add<T>(source, 0, pe);
 }
 
 template <typename T>
@@ -1303,11 +1303,11 @@ __device__ int roc_shmem_team_translate_pe(roc_shmem_team_t src_team,
 
 #define AMO_EXTENDED_DEF_GEN(T, TNAME)                                         \
   __device__ T roc_shmem_ctx_##TNAME##_atomic_fetch(roc_shmem_ctx_t ctx,       \
-                                                    T *dest, int pe) {         \
-    return roc_shmem_atomic_fetch<T>(ctx, dest, pe);                           \
+                                                    T *source, int pe) {       \
+    return roc_shmem_atomic_fetch<T>(ctx, source, pe);                         \
   }                                                                            \
-  __device__ T roc_shmem_##TNAME##_atomic_fetch(T *dest, int pe) {             \
-    return roc_shmem_atomic_fetch<T>(dest, pe);                                \
+  __device__ T roc_shmem_##TNAME##_atomic_fetch(T *source, int pe) {           \
+    return roc_shmem_atomic_fetch<T>(source, pe);                              \
   }                                                                            \
   __device__ void roc_shmem_ctx_##TNAME##_atomic_set(                          \
       roc_shmem_ctx_t ctx, T *dest, T value, int pe) {                         \

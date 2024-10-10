@@ -287,7 +287,7 @@ __device__ T roc_shmem_atomic_fetch_inc(T *dest, int pe);
  * granularity.
  *
  * @param[in] ctx     Context with which to perform this operation.
- * @param[in] dest    Destination address. Must be an address on the symmetric
+ * @param[in] source  Source address. Must be an address on the symmetric
                       heap.
  * @param[in] val     The value to be atomically added.
  * @param[in] pe      PE of the remote process.
@@ -296,10 +296,10 @@ __device__ T roc_shmem_atomic_fetch_inc(T *dest, int pe);
  *
  */
 template <typename T>
-__device__ T roc_shmem_atomic_fetch(roc_shmem_ctx_t ctx, T *dest, int pe);
+__device__ T roc_shmem_atomic_fetch(roc_shmem_ctx_t ctx, T *source, int pe);
 
 template <typename T>
-__device__ T roc_shmem_atomic_fetch(T *dest, int pe);
+__device__ T roc_shmem_atomic_fetch(T *source, int pe);
 
 /**
  * @brief Atomically add the value \p val to \p dest on \p pe.
