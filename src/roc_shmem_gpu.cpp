@@ -262,9 +262,9 @@ __device__ int roc_shmem_wg_ctx_create(long option, roc_shmem_ctx_t *ctx) {
   GPU_DPRINTF("Function: roc_shmem_ctx_create\n");
   bool result{true};
   if (get_flat_block_id() == 0) {
+    ctx->team_opaque = reinterpret_cast<TeamInfo *>(ROC_SHMEM_CTX_DEFAULT.team_opaque);
     device_backend_proxy->create_ctx(option, ctx);
     reinterpret_cast<Context *>(ctx->ctx_opaque)->setFence(option);
-    ctx->team_opaque = nullptr;
   }
   __syncthreads();
   return result == true ? 0 : -1;
@@ -279,11 +279,11 @@ __device__ int roc_shmem_wg_team_create_ctx(roc_shmem_team_t team, long options,
 
   bool result{true};
   if (get_flat_block_id() == 0) {
-    result = device_backend_proxy->create_ctx(options, ctx);
-    reinterpret_cast<Context *>(ctx->ctx_opaque)->setFence(options);
     Team *team_obj{get_internal_team(team)};
     TeamInfo *info_wrt_world = team_obj->tinfo_wrt_world;
     ctx->team_opaque = info_wrt_world;
+    result = device_backend_proxy->create_ctx(options, ctx);
+    reinterpret_cast<Context *>(ctx->ctx_opaque)->setFence(options);
   }
   __syncthreads();
 
@@ -412,7 +412,9 @@ __device__ void roc_shmem_ctx_fence(roc_shmem_ctx_t ctx) {
 __device__ void roc_shmem_ctx_fence(roc_shmem_ctx_t ctx, int pe) {
   GPU_DPRINTF("Function: roc_shmem_ctx_fence\n");
 
-  get_internal_ctx(ctx)->fence(pe);
+  int pe_in_world = translate_pe(ctx, pe);
+
+  get_internal_ctx(ctx)->fence(pe_in_world);
 }
 
 __device__ void roc_shmem_ctx_quiet(roc_shmem_ctx_t ctx) {

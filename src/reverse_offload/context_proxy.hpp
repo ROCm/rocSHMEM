@@ -42,10 +42,11 @@ class DefaultContextProxy {
   /*
    * Placement new the memory which is allocated by proxy_
    */
-  explicit DefaultContextProxy(ROBackend* backend) : constructed_{true} {
+  explicit DefaultContextProxy(ROBackend* backend, TeamInfo *tinfo)
+  : constructed_{true} {
     auto ctx{proxy_.get()};
     new (ctx) ROContext(reinterpret_cast<Backend*>(backend), -1);
-    roc_shmem_ctx_t local{ctx, nullptr};
+    roc_shmem_ctx_t local{ctx, tinfo};
     set_internal_ctx(&local);
   }
 

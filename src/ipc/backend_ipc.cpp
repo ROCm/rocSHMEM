@@ -56,18 +56,18 @@ int get_ls_non_zero_bit(char *bitmask, int mask_length) {
 IPCBackend::IPCBackend(MPI_Comm comm)
     :  Backend() {
   type = BackendType::IPC_BACKEND;
-    
+
   if (auto maximum_num_contexts_str = getenv("ROC_SHMEM_MAX_NUM_CONTEXTS")) {
     std::stringstream sstream(maximum_num_contexts_str);
     sstream >> maximum_num_contexts_;
   }
 
   init_mpi_once(comm);
-    
+
   initIPC();
-    
+
   auto *bp{ipc_backend_proxy.get()};
-    
+
   bp->heap_ptr = &heap;
 
   /* Initialize the host interface */
@@ -82,16 +82,19 @@ IPCBackend::IPCBackend(MPI_Comm comm)
 
   allocate_atomic_region(&bp->atomic_ret, MAX_NUM_BLOCKS);
 
-  default_context_proxy_ = IPCDefaultContextProxyT(this);
-
   setup_team_world();
+
+  TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
 
   roc_shmem_collective_init();
 
+  setup_fence_buffer();
+
   teams_init();
 
+  default_context_proxy_ = IPCDefaultContextProxyT(this, tinfo);
+
   setup_ctxs();
-  
 }
 
 IPCBackend::~IPCBackend() {
@@ -105,7 +108,7 @@ IPCBackend::~IPCBackend() {
    * Free the atomic_ret array.
    */
   CHECK_HIP(hipFree(bp->atomic_ret->atomic_base_ptr));
-  
+
   // TODO(Avinash) Free g_ret
 
   // delete host_interface;
@@ -141,6 +144,8 @@ __device__ bool IPCBackend::create_ctx(int64_t options, roc_shmem_ctx_t *ctx) {
   ctx_ = pop_result.value;
 
   ctx->ctx_opaque = ctx_;
+
+  ctx_->tinfo = reinterpret_cast<TeamInfo *>(ctx->team_opaque);
   return true;
 }
 
@@ -285,6 +290,14 @@ void IPCBackend::teams_destroy() {
 
   free(pool_bitmask_);
   free(reduced_bitmask_);
+}
+
+void IPCBackend::setup_fence_buffer() {
+  /*
+  * Allocate heap space for fence
+  */
+  fence_pool = reinterpret_cast<int *>(roc_shmem_malloc(
+      sizeof(int) * num_pes));
 }
 
 void IPCBackend::roc_shmem_collective_init() {

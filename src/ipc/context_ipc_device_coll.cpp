@@ -35,6 +35,9 @@ __device__ void IPCContext::internal_direct_barrier(int pe, int PE_start,
   if (pe == PE_start) {
     // Go through all PE offsets (except current offset = 0)
     // and wait until they all reach
+#if defined(__gfx90a__)
+    __threadfence_system();
+#endif /* __gfx90a__ */
     for (size_t i = 1; i < n_pes; i++) {
       wait_until(&pSync[i], ROC_SHMEM_CMP_EQ, flag_val);
       pSync[i] = ROC_SHMEM_SYNC_VALUE;
@@ -49,6 +52,9 @@ __device__ void IPCContext::internal_direct_barrier(int pe, int PE_start,
     // Mark current PE offset as reached
     size_t pe_offset = (pe - PE_start) / stride;
     put_nbi(&pSync[pe_offset], &flag_val, 1, PE_start);
+#if defined(__gfx90a__)
+    __threadfence_system();
+#endif /* __gfx90a__ */
     wait_until(&pSync[0], ROC_SHMEM_CMP_EQ, flag_val);
     pSync[0] = ROC_SHMEM_SYNC_VALUE;
     threadfence_system();
@@ -78,8 +84,15 @@ __device__ void IPCContext::internal_atomic_barrier(int pe, int PE_start,
 // Uses PE values that are relative to world
 __device__ void IPCContext::internal_sync(int pe, int PE_start, int stride,
                                           int PE_size, int64_t *pSync) {
-  __syncthreads();
-  if (is_thread_zero_in_block()) {
+#ifdef USE_COOPERATIVE_GROUPS
+  cg::grid_group grid = cg::this_grid();
+  grid.sync();
+  if (0 == grid.thread_rank())
+#else
+  notifier_->sync();
+  if (0 == get_flat_id())
+#endif /* USE_COOPERATIVE_GROUPS */
+  {
     if (PE_size < 64) {
       internal_direct_barrier(pe, PE_start, stride, PE_size, pSync);
     } else {
@@ -87,7 +100,11 @@ __device__ void IPCContext::internal_sync(int pe, int PE_start, int stride,
     }
   }
   __threadfence();
-  __syncthreads();
+#ifdef USE_COOPERATIVE_GROUPS
+  grid.sync();
+#else
+  notifier_->sync();
+#endif /* USE_COOPERATIVE_GROUPS */
 }
 
 __device__ void IPCContext::sync(roc_shmem_team_t team) {

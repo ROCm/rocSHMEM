@@ -41,10 +41,11 @@ class IPCDefaultContextProxy {
   /*
    * Placement new the memory which is allocated by proxy_
    */
-  explicit IPCDefaultContextProxy(IPCBackend* backend) : constructed_{true} {
+  explicit IPCDefaultContextProxy(IPCBackend* backend, TeamInfo *tinfo)
+  : constructed_{true} {
     auto ctx{proxy_.get()};
     new (ctx) IPCContext(reinterpret_cast<Backend*>(backend));
-    roc_shmem_ctx_t local{ctx, nullptr};
+    roc_shmem_ctx_t local{ctx, tinfo};
     set_internal_ctx(&local);
   }
 

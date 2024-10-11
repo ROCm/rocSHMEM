@@ -22,6 +22,7 @@
 
 #include "segment_builder.hpp"
 
+#include "../util.hpp"
 #include "endian.hpp"
 
 namespace rocshmem {
@@ -35,9 +36,9 @@ __device__ SegmentBuilder::SegmentBuilder(uint64_t wqe_idx, void *base) {
 __device__ void SegmentBuilder::update_cntrl_seg(
     uint8_t opcode, uint16_t wqe_idx, uint32_t ctrl_qp_sq, uint64_t ctrl_sig,
     ConnectionImpl *connection_policy, bool zero_byte_rd) {
-  mlx5_wqe_ctrl_seg *ctrl_seg = &seg_ptr->ctrl_seg;
+  mlx5_wqe_ctrl_seg ctrl_seg;
 
-  ctrl_seg->opmod_idx_opcode = (opcode << 24) | (wqe_idx << 8);
+  ctrl_seg.opmod_idx_opcode = (opcode << 24) | (wqe_idx << 8);
 
   uint32_t DS = 2;
   if (zero_byte_rd == false) {
@@ -48,39 +49,43 @@ __device__ void SegmentBuilder::update_cntrl_seg(
 
   DS += connection_policy->wqeCntrlOffset();
 
-  ctrl_seg->qpn_ds = (DS << 24) | ctrl_qp_sq;
+  ctrl_seg.qpn_ds = (DS << 24) | ctrl_qp_sq;
 
-  ctrl_seg->signature = ctrl_sig;
+  ctrl_seg.signature = ctrl_sig;
 
-  ctrl_seg->fm_ce_se = ctrl_sig >> 24;
+  ctrl_seg.fm_ce_se = ctrl_sig >> 24;
 
-  ctrl_seg->imm = ctrl_sig >> 32;
+  ctrl_seg.imm = ctrl_sig >> 32;
+
+  memcpy(&seg_ptr->ctrl_seg, &ctrl_seg, sizeof(mlx5_wqe_ctrl_seg));
 
   seg_ptr++;
 }
 
 __device__ void SegmentBuilder::update_atomic_data_seg(uint64_t atomic_data,
                                                        uint64_t atomic_cmp) {
-  mlx5_wqe_atomic_seg *atomic_seg = &seg_ptr->atomic_seg;
+  mlx5_wqe_atomic_seg atomic_seg;
 
-  swap_endian_store(reinterpret_cast<uint64_t *>(&atomic_seg->swap_add),
+  swap_endian_store(reinterpret_cast<uint64_t *>(&atomic_seg.swap_add),
                     atomic_data);
 
-  swap_endian_store(reinterpret_cast<uint64_t *>(&atomic_seg->compare),
+  swap_endian_store(reinterpret_cast<uint64_t *>(&atomic_seg.compare),
                     atomic_cmp);
 
+  memcpy(&seg_ptr->atomic_seg, &atomic_seg, sizeof(mlx5_wqe_atomic_seg));
   seg_ptr++;
 }
 
 __device__ void SegmentBuilder::update_rdma_seg(uintptr_t *raddr,
                                                 uint32_t rkey) {
-  mlx5_wqe_raddr_seg *raddr_seg = &seg_ptr->raddr_seg;
+  mlx5_wqe_raddr_seg raddr_seg;
 
-  raddr_seg->rkey = rkey;
+  raddr_seg.rkey = rkey;
 
-  swap_endian_store(reinterpret_cast<uint64_t *>(&raddr_seg->raddr),
+  swap_endian_store(reinterpret_cast<uint64_t *>(&raddr_seg.raddr),
                     reinterpret_cast<uint64_t>(raddr));
 
+  memcpy(&seg_ptr->raddr_seg, &raddr_seg, sizeof(mlx5_wqe_raddr_seg));
   seg_ptr++;
 }
 
@@ -90,33 +95,36 @@ __device__ void SegmentBuilder::update_data_seg(uintptr_t *laddr, int32_t size,
     return;
   }
 
-  mlx5_wqe_data_seg *data_seg = &seg_ptr->data_seg;
+  mlx5_wqe_data_seg data_seg;
+  data_seg.lkey = lkey;
 
-  data_seg->lkey = lkey;
-
-  swap_endian_store(&data_seg->byte_count, size & 0x7FFFFFFFU);
-
-  swap_endian_store(reinterpret_cast<uint64_t *>(&data_seg->addr),
+  swap_endian_store(&data_seg.byte_count, size & 0x7FFFFFFFU);
+  swap_endian_store(reinterpret_cast<uint64_t *>(&data_seg.addr),
                     reinterpret_cast<uint64_t>(laddr));
 
+  memcpy(&seg_ptr->data_seg, &data_seg, sizeof(mlx5_wqe_data_seg));
   seg_ptr++;
 }
 
 __device__ void SegmentBuilder::update_inl_data_seg(uintptr_t *laddr,
                                                     int32_t size) {
-  mlx5_wqe_inl_data_seg *inl_data_seg = &seg_ptr->inl_data_seg;
+  mlx5_wqe_inl_data_seg inl_data_seg;
 
-  swap_endian_store(&inl_data_seg->byte_count, (size & 0x3FF) | 0x80000000);
+  swap_endian_store(&inl_data_seg.byte_count, (size & 0x3FF) | 0x80000000);
 
   // Assume fence HDP flush
   // TODO(khamidou): Rework fence interface to avoid this
+  size_t field_size{sizeof(mlx5_wqe_inl_data_seg)};
   if (!laddr) {
     uint8_t flush_val = 1;
-    memcpy(inl_data_seg + 1, &flush_val, sizeof(flush_val));
+    memcpy(&inl_data_seg + 1, &flush_val, sizeof(flush_val));
+    field_size += sizeof(flush_val);
   } else {
-    memcpy(inl_data_seg + 1, laddr, size);
+    memcpy(&inl_data_seg + 1, laddr, size);
+    field_size += size;
   }
 
+  memcpy(&seg_ptr->inl_data_seg, &inl_data_seg, field_size);
   seg_ptr++;
 }
 
