@@ -94,7 +94,9 @@ ROBackend::ROBackend(MPI_Comm comm)
 
   default_block_handle_proxy_ = DefaultBlockHandleProxyT(
       bp->g_ret, bp->atomic_ret, &queue_, &ipcImpl, hdp_proxy_.get());
-  default_context_proxy_ = DefaultContextProxyT(this);
+
+  TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
+  default_context_proxy_ = DefaultContextProxyT(this, tinfo);
 
   block_handle_proxy_ = BlockHandleProxyT(bp->g_ret, bp->atomic_ret, &queue_,
                                           &ipcImpl, hdp_proxy_.get());

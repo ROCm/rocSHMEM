@@ -50,6 +50,9 @@ __host__ ROContext::ROContext(Backend *b, size_t block_id)
     block_handle = &block_base[block_id];
   }
   ro_net_win_id = block_id % backend->ro_window_proxy_->MAX_NUM_WINDOWS;
+
+  ipcImpl_.ipc_bases = b->ipcImpl.ipc_bases;
+  ipcImpl_.shm_size = b->ipcImpl.shm_size;
 }
 
 __device__ void ROContext::putmem(void *dest, const void *source, size_t nelems,
@@ -387,24 +390,6 @@ __device__ uint64_t broadcast(bool lowest_active, uint64_t value) {
 
 __device__ bool enough_space(BlockHandle *h, uint64_t required) {
   return (h->queue_size - (h->write_index - h->read_index)) >= required;
-}
-
-__device__ void refresh_volatile_dwordx2(volatile uint64_t *assigned_value,
-                                         volatile uint64_t *read_value) {
-  __asm__ volatile(
-    "global_load_dwordx2 %0 %1 off glc slc\n "
-    "s_waitcnt vmcnt(0)"
-    : "=v"(*assigned_value)
-    : "v"(read_value));
-}
-
-__device__ void refresh_volatile_sbyte(volatile int *assigned_value,
-                                       volatile char *read_value) {
-  __asm__ volatile(
-    "global_load_sbyte %0 %1 off glc slc\n "
-    "s_waitcnt vmcnt(0)"
-    : "=v"(*assigned_value)
-    : "v"(read_value));
 }
 
 __device__ void acquire_lock(BlockHandle *handle) {

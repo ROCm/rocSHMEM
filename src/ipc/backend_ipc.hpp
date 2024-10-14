@@ -32,6 +32,10 @@
 #include "ipc_context_proxy.hpp"
 #include "../ipc_policy.hpp"
 
+#ifndef USE_COOPERATIVE_GROUPS
+#include "../memory/notifier.hpp"
+#endif /* NOT DEFINED: USE_COOPERATIVE_GROUPS */
+
 namespace rocshmem {
 
 class IPCBackend : public Backend {
@@ -104,7 +108,7 @@ class IPCBackend : public Backend {
                        TeamInfo *team_info_wrt_world, int num_pes,
                        int my_pe_in_new_team, MPI_Comm team_comm,
                        roc_shmem_team_t *new_team) override;
-  
+
   /**
    * @copydoc Backend::team_destroy(roc_shmem_team_t)
    */
@@ -156,6 +160,15 @@ class IPCBackend : public Backend {
    */
   void *pAta_pool{nullptr};
 
+  /**
+   * @brief Handle for raw memory for fence/quiet
+  */
+  int *fence_pool{nullptr};
+
+#ifndef USE_COOPERATIVE_GROUPS
+  NotifierProxy<HIPAllocator, detail::atomic::memory_scope_agent> notifier_{};
+#endif /* NOT DEFINED: USE_COOPERATIVE_GROUPS */
+
  protected:
    /**
    * @copydoc Backend::dump_backend_stats()
@@ -202,6 +215,11 @@ class IPCBackend : public Backend {
    * for use.
    */
   void roc_shmem_collective_init();
+
+  /**
+   * @brief Allocate buffer for fence/quiet operation
+   */
+  void setup_fence_buffer();
 
  private:
   /**

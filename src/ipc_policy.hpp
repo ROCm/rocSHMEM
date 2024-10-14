@@ -64,38 +64,38 @@ class IpcOnImpl {
 
   __device__ void ipcCopy_wave(void *dst, void *src, size_t size);
 
-  __device__ void ipcFence() { __threadfence(); }
+  __device__ void ipcFence() { __threadfence_system(); }
 
   template <typename T>
   __device__ T ipcAMOFetchAdd(T *val, T value) {
-    return __hip_atomic_fetch_add(val, value, __ATOMIC_RELAXED,
-                                  __HIP_MEMORY_SCOPE_AGENT);
+    return __hip_atomic_fetch_add(val, value, __ATOMIC_SEQ_CST,
+                                  __HIP_MEMORY_SCOPE_SYSTEM);
   }
 
   template <typename T>
   __device__ T ipcAMOFetchCas(T *val, T cond, T value) {
-    __hip_atomic_compare_exchange_strong(val, &cond, value, __ATOMIC_RELAXED,
-                                         __ATOMIC_RELAXED,
-                                         __HIP_MEMORY_SCOPE_AGENT);
+    __hip_atomic_compare_exchange_strong(val, &cond, value, __ATOMIC_SEQ_CST,
+                                         __ATOMIC_SEQ_CST,
+                                         __HIP_MEMORY_SCOPE_SYSTEM);
     return cond;
   }
 
   template <typename T>
   __device__ void ipcAMOAdd(T *val, T value) {
-    __hip_atomic_fetch_add(val, value, __ATOMIC_RELAXED,
-                           __HIP_MEMORY_SCOPE_AGENT);
+    __hip_atomic_fetch_add(val, value, __ATOMIC_SEQ_CST,
+                           __HIP_MEMORY_SCOPE_SYSTEM);
   }
 
   template <typename T>
   __device__ void ipcAMOCas(T *val, T cond, T value) {
-    __hip_atomic_compare_exchange_strong(val, &cond, value, __ATOMIC_RELAXED,
-                                         __ATOMIC_RELAXED,
-                                         __HIP_MEMORY_SCOPE_AGENT);
+    __hip_atomic_compare_exchange_strong(val, &cond, value, __ATOMIC_SEQ_CST,
+                                         __ATOMIC_SEQ_CST,
+                                         __HIP_MEMORY_SCOPE_SYSTEM);
   }
 
   template <typename T>
   __device__ void ipcAMOSet(T *val, T value) {
-    __hip_atomic_store(val, value, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+    __hip_atomic_store(val, value, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
   }
 
   __device__ void zero_byte_read(int pe) {

@@ -133,8 +133,6 @@ __device__ bool GPUIBBackend::create_ctx(int64_t options,
     return false;
   }
   ctx_ = pop_result.value;
-
-  ctx_->dev_mtx_.shareable_ = static_cast<bool>(options >> 3);
   ctx->ctx_opaque = ctx_;
   return true;
 }
@@ -296,7 +294,8 @@ void GPUIBBackend::setup_default_ctx() {
   CHECK_HIP(hipGetSymbolAddress(reinterpret_cast<void **>(&symbol_address),
                                 HIP_SYMBOL(ROC_SHMEM_CTX_DEFAULT)));
 
-  roc_shmem_ctx_t ctx_default_host{default_ctx_, nullptr};
+  TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
+  roc_shmem_ctx_t ctx_default_host{default_ctx_, tinfo};
 
   hipStream_t stream;
   CHECK_HIP(hipStreamCreateWithFlags(&stream, hipStreamNonBlocking));

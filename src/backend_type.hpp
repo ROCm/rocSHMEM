@@ -70,13 +70,11 @@ enum class BackendType { RO_BACKEND, GPU_IB_BACKEND, IPC_BACKEND };
  */
 #ifdef USE_GPU_IB
 #define DISPATCH_RET(Func)                           \
-  auto ret_val{0};                                   \
-  ret_val = static_cast<GPUIBContext *>(this)->Func; \
+  auto ret_val = static_cast<GPUIBContext *>(this)->Func; \
   return ret_val;
 #elif defined(USE_RO)
 #define DISPATCH_RET(Func)                        \
-  auto ret_val{0};                                \
-  ret_val = static_cast<ROContext *>(this)->Func; \
+  auto ret_val = static_cast<ROContext *>(this)->Func; \
   return ret_val;
 #else
 #define DISPATCH_RET(Func)                        \
@@ -128,13 +126,11 @@ enum class BackendType { RO_BACKEND, GPU_IB_BACKEND, IPC_BACKEND };
 
 #ifdef USE_GPU_IB
 #define HOST_DISPATCH_RET(Func)                          \
-  auto ret_val{0};                                       \
-  ret_val = static_cast<GPUIBHostContext *>(this)->Func; \
+  auto ret_val = static_cast<GPUIBHostContext *>(this)->Func; \
   return ret_val;
 #elif defined(USE_RO)
 #define HOST_DISPATCH_RET(Func)                       \
-  auto ret_val{0};                                    \
-  ret_val = static_cast<ROHostContext *>(this)->Func; \
+  auto ret_val = static_cast<ROHostContext *>(this)->Func; \
   return ret_val;
 #else
 #define HOST_DISPATCH_RET(Func)                       \

@@ -45,7 +45,7 @@ ROC_SHMEM base requirements:
     *  May work with other versions, but not tested
 * AMD GFX9 GPUs (e.g.: MI25, Vega 56, Vega 64, MI50, MI60, MI100, Radeon VII)
 * AMD MI200 GPUs: To enable the support on MI200, please configure the library
- with USE_CACHED_HEAP
+ with USE_COHERENT_HEAP
 * ROCm-aware MPI as described in
   [Building the Dependencies](#building-the-dependencies)
 * InfiniBand adaptor compatable with ROCm RDMA technology

@@ -21,8 +21,27 @@
  *****************************************************************************/
 
 #include "gtest/gtest.h"
+#include <mpi.h>
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+  
+  int initialized;
+  MPI_Initialized(&initialized);
+  if (!initialized) {
+    int provided;
+    MPI_Init_thread(nullptr, nullptr, MPI_THREAD_MULTIPLE, &provided);
+    if (provided != MPI_THREAD_MULTIPLE) {
+      std::cerr << "MPI_THREAD_MULTIPLE support disabled.\n";
+    }
+  }
+
+  int ret_val = RUN_ALL_TESTS();
+  
+  int finalized{0};
+  MPI_Finalized(&finalized);
+  if (!finalized) {
+    MPI_Finalize();
+  }
+  return ret_val;
 }

@@ -75,9 +75,12 @@ __device__ void SlabHeap::malloc(void** ptr, size_t size) {
    * Notify other threads in block about the allocation result.
    */
   auto notifier{notifier_.get()};
-  notifier->write(ptr_deref_u64);
-  uint64_t notification_u64{notifier->read()};
-  notifier->done();
+  if (!threadIdx.x) {
+    notifier->store(ptr_deref_u64);
+    notifier->fence();
+  }
+  __syncthreads();
+  uint64_t notification_u64{notifier->load()};
 
   /*
    * Write to the ptr parameter (to return it back up the call stack).

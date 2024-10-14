@@ -40,15 +40,6 @@ typedef struct device_agent {
 std::vector<device_agent_t> gpu_agents;
 std::vector<device_agent_t> cpu_agents;
 
-__device__ uint64_t __read_clock() {
-  uint64_t clock{};
-  asm volatile(
-      "s_memrealtime %0\n"
-      "s_waitcnt lgkmcnt(0)\n"
-      : "=s"(clock));
-  return clock;
-}
-
 hsa_status_t rocm_hsa_amd_memory_pool_callback(
     hsa_amd_memory_pool_t memory_pool, void* data) {
   hsa_amd_memory_pool_global_flag_t pool_flag{};

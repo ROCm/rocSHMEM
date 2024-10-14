@@ -17,12 +17,15 @@ cmake \
     -DDEBUG=OFF \
     -DPROFILE=OFF \
     -DUSE_GPU_IB=OFF \
-    -DUSE_RO=ON \
+    -DUSE_RO=OFF \
     -DUSE_DC=OFF \
-    -DUSE_IPC=OFF \
-    -DUSE_THREADS=ON \
+    -DUSE_IPC=ON \
+    -DUSE_COHERENT_HEAP=ON \
+    -DUSE_THREADS=OFF \
     -DUSE_WF_COAL=OFF \
-    -DUSE_COHERENT_HEAP=OFF \
+    -DUSE_SINGLE_NODE=ON \
+    -DUSE_HOST_SIDE_HDP_FLUSH=OFF \
+    -DUSE_COOPERATIVE_GROUPS=ON \
     $src_path
 cmake --build . --parallel 8
 cmake --install .
