@@ -42,8 +42,9 @@ class WaveLevelPrimitiveTester : public Tester {
 
   virtual void verifyResults(uint64_t size) override;
 
-  char *s_buf = nullptr;
-  char *r_buf = nullptr;
+  int *s_buf = nullptr;
+  int *r_buf = nullptr;
+  int num_elems = 0;
 };
 
 #endif

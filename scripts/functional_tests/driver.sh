@@ -56,52 +56,52 @@ case $2 in
         ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 3 > $3/putnbi_n2_w1_z1_1MB.log
         check putnbi_n2_w1_z1_1MB
         echo "wg_get_n2_w1_z1_1MB"
-        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 28 > $3/wg_get_n2_w1_z1_1MB.log
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 28 > $3/wg_get_n2_w1_z64_1MB.log
         check wg_get_n2_w1_z1_1MB
         echo "wg_getnbi_n2_w1_z1_1MB"
-        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 29 > $3/wg_getnbi_n2_w1_z1_1MB.log
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 29 > $3/wg_getnbi_n2_w1_z64_1MB.log
         check wg_getnbi_n2_w1_z1_1MB
         echo "wg_put_n2_w1_z1_1MB"
-        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 30 > $3/wg_put_n2_w1_z1_1MB.log
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 30 > $3/wg_put_n2_w1_z64_1MB.log
         check wg_put_n2_w1_z1_1MB
         echo "wg_putnbi_n2_w1_z1_1MB"
-        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 31 > $3/wg_putnbi_n2_w1_z1_1MB.log
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 31 > $3/wg_putnbi_n2_w1_z64_1MB.log
         check wg_putnbi_n2_w1_z1_1MB
         echo "wg_get_tiled_n2_w1_z1_1MB"
-        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 64 -s 1048576 -a 28 > $3/wg_get_tiled_n2_w1_z1_1MB.log
+        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 64 -s 1048576 -a 28 > $3/wg_get_tiled_n2_w2_z64_1MB.log
         check wg_get_tiled_n2_w1_z1_1MB
         echo "wg_getnbi_tiled_n2_w1_z1_1MB"
-        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 64 -s 1048576 -a 29 > $3/wg_getnbi_tiled_n2_w1_z1_1MB.log
+        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 64 -s 1048576 -a 29 > $3/wg_getnbi_tiled_n2_w2_z64_1MB.log
         check wg_getnbi_tiled_n2_w1_z1_1MB
         echo "wg_put_tiled_n2_w1_z1_1MB"
-        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 64 -s 1048576 -a 30 > $3/wg_put_tiled_n2_w1_z1_1MB.log
+        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 64 -s 1048576 -a 30 > $3/wg_put_tiled_n2_w2_z64_1MB.log
         check wg_put_tiled_n2_w1_z1_1MB
         echo "wg_putnbi_tiled_n2_w1_z1_1MB"
-        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 64 -s 1048576 -a 31 > $3/wg_putnbi_tiled_n2_w1_z1_1MB.log
+        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 64 -s 1048576 -a 31 > $3/wg_putnbi_tiled_n2_w2_z64_1MB.log
         check wg_putnbi_tiled_n2_w1_z1_1MB
         echo "wave_get_n2_w1_z1_1MB"
-        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 32 > $3/wave_get_n2_w1_z1_1MB.log
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 32 > $3/wave_get_n2_w1_z64_1MB.log
         check wave_get_n2_w1_z1_1MB
         echo "wave_getnbi_n2_w1_z1_1MB"
-        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 33 > $3/wave_getnbi_n2_w1_z1_1MB.log
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 33 > $3/wave_getnbi_n2_w1_z64_1MB.log
         check wave_getnbi_n2_w1_z1_1MB
         echo "wave_put_n2_w1_z1_1MB"
-        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 34 > $3/wave_put_n2_w1_z1_1MB.log
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 34 > $3/wave_put_n2_w1_z64_1MB.log
         check wave_put_n2_w1_z1_1MB
         echo "wave_putnbi_n2_w1_z1_1MB"
-        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 35 > $3/wave_putnbi_n2_w1_z1_1MB.log
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 35 > $3/wave_putnbi_n2_w1_z64_1MB.log
         check wave_putnbi_n2_w1_z1_1MB
         echo "wave_get_tiled_n2_w1_z1_1MB"
-        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 128 -s 1048576 -a 32 > $3/wave_get_tiled_n2_w1_z1_1MB.log
+        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 128 -s 1048576 -a 32 > $3/wave_get_tiled_n2_w2_z128_1MB.log
         check wave_get_tiled_n2_w1_z1_1MB
         echo "wave_getnbi_tiled_n2_w1_z1_1MB"
-        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 128 -s 1048576 -a 33 > $3/wave_getnbi_tiled_n2_w1_z1_1MB.log
+        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 128 -s 1048576 -a 33 > $3/wave_getnbi_tiled_n2_w2_z128_1MB.log
         check wave_getnbi_tiled_n2_w1_z1_1MB
         echo "wave_put_tiled_n2_w1_z1_1MB"
-        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 128 -s 1048576 -a 34 > $3/wave_put_tiled_n2_w1_z1_1MB.log
+        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 128 -s 1048576 -a 34 > $3/wave_put_tiled_n2_w2_z128_1MB.log
         check wave_put_tiled_n2_w1_z1_1MB
         echo "wave_putnbi_tiled_n2_w1_z1_1MB"
-        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 128 -s 1048576 -a 35 > $3/wave_putnbi_tiled_n2_w1_z1_1MB.log
+        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 128 -s 1048576 -a 35 > $3/wave_putnbi_tiled_n2_w2_z128_1MB.log
         check wave_putnbi_tiled_n2_w1_z1_1MB
         echo "amofadd_n2_w1_z1"
         ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 6 > $3/amofadd_n2_w1_z1.log
@@ -145,6 +145,54 @@ case $2 in
         echo "putnbi_n2_w16_z128_8B"
         ROC_SHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 3 > $3/putnbi_n2_w16_z128_8B.log
         check putnbi_n2_w16_z128_8B
+        echo "wg_get_n2_w1_z64_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 28 > $3/wg_get_n2_w1_z64_8B.log
+        check wg_get_n2_w1_z64_8B
+        echo "wg_getnbi_n2_w1_z64_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 29 > $3/wg_getnbi_n2_w1_z64_8B.log
+        check wg_getnbi_n2_w1_z64_8B
+        echo "wg_put_n2_w1_z64_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 30 > $3/wg_put_n2_w1_z64_8B.log
+        check wg_put_n2_w1_z64_8B
+        echo "wg_putnbi_n2_w1_z64_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 31 > $3/wg_putnbi_n2_w1_z64_8B.log
+        check wg_putnbi_n2_w1_z64_8B
+        echo "wg_get_tiled_n2_w16_z64_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 64 -s 8 -a 28 > $3/wg_get_tiled_n2_w16_z64_8B.log
+        check wg_get_tiled_n2_w16_z64_8B
+        echo "wg_getnbi_tiled_n2_w16_z64_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 64 -s 8 -a 29 > $3/wg_getnbi_tiled_n2_w16_z64_8B.log
+        check wg_getnbi_tiled_n2_w16_z64_8B
+        echo "wg_put_tiled_n2_w16_z64_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 64 -s 8 -a 30 > $3/wg_put_tiled_n2_w16_z64_8B.log
+        check wg_put_tiled_n2_w16_z64_8B
+        echo "wg_putnbi_tiled_n2_w16_z64_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 64 -s 8 -a 31 > $3/wg_putnbi_tiled_n2_w16_z64_8B.log
+        check wg_putnbi_tiled_n2_w16_z64_8B
+        echo "wave_get_n2_w1_z64_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 32 > $3/wave_get_n2_w1_z64_8B.log
+        check wave_get_n2_w1_z64_8B
+        echo "wave_getnbi_n2_w1_z64_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 33 > $3/wave_getnbi_n2_w1_z64_8B.log
+        check wave_getnbi_n2_w1_z64_8B
+        echo "wave_put_n2_w1_z64_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 34 > $3/wave_put_n2_w1_z64_8B.log
+        check wave_put_n2_w1_z64_8B
+        echo "wave_putnbi_n2_w1_z64_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 35 > $3/wave_putnbi_n2_w1_z64_8B.log
+        check wave_putnbi_n2_w1_z64_8B
+        echo "wave_get_tiled_n2_w16_z128_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 32 > $3/wave_get_tiled_n2_w16_z128_8B.log
+        check wave_get_tiled_n2_w16_z128_8B
+        echo "wave_getnbi_tiled_n2_w16_z128_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 33 > $3/wave_getnbi_tiled_n2_w16_z128_8B.log
+        check wave_getnbi_tiled_n2_w16_z128_8B
+        echo "wave_put_tiled_n2_w16_z128_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 34 > $3/wave_put_tiled_n2_w16_z128_8B.log
+        check wave_put_tiled_n2_w16_z128_8B
+        echo "wave_putnbi_tiled_n2_w16_z128_8B"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 35 > $3/wave_putnbi_tiled_n2_w16_z128_8B.log
+        check wave_putnbi_tiled_n2_w16_z128_8B
         echo "amofadd_n2_w8_z1"
         ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 6 > $3/amofadd_n2_w8_z1.log
         check amofadd_n2_w8_z1

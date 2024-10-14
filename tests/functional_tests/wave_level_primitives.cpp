@@ -24,10 +24,12 @@
 
 #include <roc_shmem/roc_shmem.hpp>
 
+#include <numeric>
+
 using namespace rocshmem;
 
 /******************************************************************************
- * DEVICE TEST KERNELS
+ * DEVICE TEST KERNEL
  *****************************************************************************/
 __global__ void WaveLevelPrimitiveTest(int loop, int skip, uint64_t *timer,
                                       char *s_buf, char *r_buf, int size,
@@ -37,10 +39,15 @@ __global__ void WaveLevelPrimitiveTest(int loop, int skip, uint64_t *timer,
   roc_shmem_wg_init();
   roc_shmem_wg_ctx_create(ctx_type, &ctx);
 
+  /**
+   * Calculate start index for each wavefront for tiled version
+   * If the number of wavefronts is greater than 1, this kernel performs a
+   * tiled functional test
+  */
   uint64_t start;
   int wf_id = get_flat_block_id() / wf_size;
-  int offset = size * get_flat_grid_id() * (get_flat_block_size() / wf_size);
-  int idx = wf_id * size + offset;
+  int wg_offset = size * get_flat_grid_id() * (get_flat_block_size() / wf_size);
+  int idx = wf_id * size + wg_offset;
   s_buf += idx;
   r_buf += idx;
 
@@ -80,10 +87,10 @@ __global__ void WaveLevelPrimitiveTest(int loop, int skip, uint64_t *timer,
  *****************************************************************************/
 WaveLevelPrimitiveTester::WaveLevelPrimitiveTester(TesterArguments args)
     : Tester(args) {
-  s_buf = (char *)roc_shmem_malloc(args.max_msg_size * args.num_wgs
-           * num_warps);
-  r_buf = (char *)roc_shmem_malloc(args.max_msg_size * args.num_wgs
-           * num_warps);
+  s_buf = static_cast<int*>(
+      roc_shmem_malloc(args.max_msg_size * args.num_wgs * num_warps));
+  r_buf = static_cast<int*>(
+      roc_shmem_malloc(args.max_msg_size * args.num_wgs * num_warps));
 }
 
 WaveLevelPrimitiveTester::~WaveLevelPrimitiveTester() {
@@ -92,8 +99,9 @@ WaveLevelPrimitiveTester::~WaveLevelPrimitiveTester() {
 }
 
 void WaveLevelPrimitiveTester::resetBuffers(uint64_t size) {
-  memset(s_buf, '0', size * args.num_wgs * num_warps);
-  memset(r_buf, '1', size * args.num_wgs * num_warps);
+  num_elems = (size * args.num_wgs * num_warps) / sizeof(int);
+  std::iota(s_buf, s_buf + num_elems, 0);
+  memset(r_buf, 0, size * args.num_wgs * num_warps);
 }
 
 void WaveLevelPrimitiveTester::launchKernel(dim3 gridSize, dim3 blockSize,
@@ -101,11 +109,12 @@ void WaveLevelPrimitiveTester::launchKernel(dim3 gridSize, dim3 blockSize,
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(WaveLevelPrimitiveTest, gridSize, blockSize, shared_bytes,
-                     stream, loop, args.skip, timer, s_buf, r_buf, size, _type,
-                     _shmem_context, deviceProps.warpSize);
+                     stream, loop, args.skip, timer, (char*)s_buf,
+                     (char*)r_buf, size, _type, _shmem_context,
+                     deviceProps.warpSize);
 
-  num_msgs = (loop + args.skip) * gridSize.x;
-  num_timed_msgs = loop * gridSize.x;
+  num_msgs = (loop + args.skip) * gridSize.x * num_warps;
+  num_timed_msgs = loop * gridSize.x * num_warps;
 }
 
 void WaveLevelPrimitiveTester::verifyResults(uint64_t size) {
@@ -114,10 +123,10 @@ void WaveLevelPrimitiveTester::verifyResults(uint64_t size) {
                      : 1;
 
   if (args.myid == check_id) {
-    for (int i = 0; i < size * args.num_wgs * num_warps; i++) {
-      if (r_buf[i] != '0') {
+    for (int i = 0; i < num_elems; i++) {
+      if (r_buf[i] != i) {
         fprintf(stderr, "Data validation error at idx %d\n", i);
-        fprintf(stderr, "Got %c, Expected %c \n", r_buf[i], '0');
+        fprintf(stderr, "Got %d, Expected %d \n", r_buf[i], i);
         exit(-1);
       }
     }

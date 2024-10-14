@@ -24,10 +24,12 @@
 
 #include <roc_shmem/roc_shmem.hpp>
 
+#include <numeric>
+
 using namespace rocshmem;
 
 /******************************************************************************
- * DEVICE TEST KERNELS
+ * DEVICE TEST KERNEL
  *****************************************************************************/
 __global__ void ExtendedPrimitiveTest(int loop, int skip, uint64_t *timer,
                                       char *s_buf, char *r_buf, int size,
@@ -37,6 +39,11 @@ __global__ void ExtendedPrimitiveTest(int loop, int skip, uint64_t *timer,
   roc_shmem_wg_init();
   roc_shmem_wg_ctx_create(ctx_type, &ctx);
 
+  /**
+   * Calculate start index for each work group for tiled version
+   * If the number of work groups is greater than 1, this kernel performs a
+   * tiled functional test
+  */
   uint64_t start;
   uint64_t idx = size * get_flat_grid_id();
   s_buf += idx;
@@ -78,8 +85,8 @@ __global__ void ExtendedPrimitiveTest(int loop, int skip, uint64_t *timer,
  *****************************************************************************/
 ExtendedPrimitiveTester::ExtendedPrimitiveTester(TesterArguments args)
     : Tester(args) {
-  s_buf = (char *)roc_shmem_malloc(args.max_msg_size * args.num_wgs);
-  r_buf = (char *)roc_shmem_malloc(args.max_msg_size * args.num_wgs);
+  s_buf = static_cast<int*>(roc_shmem_malloc(args.max_msg_size * args.num_wgs));
+  r_buf = static_cast<int*>(roc_shmem_malloc(args.max_msg_size * args.num_wgs));
 }
 
 ExtendedPrimitiveTester::~ExtendedPrimitiveTester() {
@@ -88,8 +95,9 @@ ExtendedPrimitiveTester::~ExtendedPrimitiveTester() {
 }
 
 void ExtendedPrimitiveTester::resetBuffers(uint64_t size) {
-  memset(s_buf, '0', size * args.num_wgs);
-  memset(r_buf, '1', size * args.num_wgs);
+  num_elems = (size * args.num_wgs) / sizeof(int);
+  std::iota(s_buf, s_buf + num_elems, 0);
+  memset(r_buf, 0, size * args.num_wgs);
 }
 
 void ExtendedPrimitiveTester::launchKernel(dim3 gridSize, dim3 blockSize,
@@ -97,8 +105,8 @@ void ExtendedPrimitiveTester::launchKernel(dim3 gridSize, dim3 blockSize,
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(ExtendedPrimitiveTest, gridSize, blockSize, shared_bytes,
-                     stream, loop, args.skip, timer, s_buf, r_buf, size, _type,
-                     _shmem_context);
+                     stream, loop, args.skip, timer, (char*)s_buf,
+                     (char*)r_buf, size, _type, _shmem_context);
 
   num_msgs = (loop + args.skip) * gridSize.x;
   num_timed_msgs = loop * gridSize.x;
@@ -110,10 +118,10 @@ void ExtendedPrimitiveTester::verifyResults(uint64_t size) {
                      : 1;
 
   if (args.myid == check_id) {
-    for (int i = 0; i < size * args.num_wgs; i++) {
-      if (r_buf[i] != '0') {
+    for (int i = 0; i < num_elems; i++) {
+      if (r_buf[i] != i) {
         fprintf(stderr, "Data validation error at idx %d\n", i);
-        fprintf(stderr, "Got %c, Expected %c \n", r_buf[i], '0');
+        fprintf(stderr, "Got %d, Expected %d \n", r_buf[i], i);
         exit(-1);
       }
     }
