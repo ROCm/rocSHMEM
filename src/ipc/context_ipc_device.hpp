@@ -239,6 +239,26 @@ class IPCContext : public Context {
   __device__ void internal_atomic_barrier(int pe, int PE_start, int stride,
                                           int n_pes, int64_t *pSync);
 
+  //internal functions used by collectives routines to write/read to
+  //work/sync buffers
+  __device__ void internal_putmem(void *dest, const void *source,
+                                  size_t nelems, int pe);
+
+  __device__ void internal_getmem(void *dest, const void *source,
+                                  size_t nelems, int pe);
+
+  __device__ void internal_putmem_wg(void *dest, const void *source,
+                                    size_t nelems, int pe);
+
+  __device__ void internal_getmem_wg(void *dest, const void *source,
+                                    size_t nelems, int pe);
+
+  __device__ void internal_putmem_wave(void *dest, const void *source,
+                                      size_t nelems, int pe);
+
+  __device__ void internal_getmem_wave(void *dest, const void *source,
+                                      size_t nelems, int pe);
+
   //Temporary scratchpad memory used by internal barrier algorithms.
   int64_t *barrier_sync{nullptr};
 
@@ -251,6 +271,12 @@ class IPCContext : public Context {
 
   //Buffer to perform Atomic store to enforce memory ordering
   int *fence_pool{nullptr};
+
+  /**
+   * @brief Array containing the addresses of the work/sync buffer bases
+   * of other PEs
+  */
+  char **Wrk_Sync_buffer_bases_{nullptr};
 
  public:
   //TODO(Avinash):
