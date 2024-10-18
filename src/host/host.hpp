@@ -211,41 +211,41 @@ class HostInterface {
                        int nreduce);
 
   template <typename T>
-  __host__ void wait_until(T* ptr, roc_shmem_cmps cmp, T val,
+  __host__ void wait_until(T *ivars, int cmp, T val,
                            WindowInfo* window_info);
 
   template <typename T>
-  __host__ void wait_until_all(T* ptr, size_t nelems, const int* status,
-                               roc_shmem_cmps cmp, T val,
+  __host__ void wait_until_all(T *ivars, size_t nelems, const int* status,
+                               int cmp, T val,
                                WindowInfo* window_info);
 
   template <typename T>
-  __host__ size_t wait_until_any(T* ptr, size_t nelems, const int* status,
-                                 roc_shmem_cmps cmp, T val,
+  __host__ size_t wait_until_any(T *ivars, size_t nelems, const int* status,
+                                 int cmp, T val,
                                  WindowInfo* window_info);
 
   template <typename T>
-  __host__ size_t wait_until_some(T* ptr, size_t nelems, size_t* indices,
-                                  const int* status, roc_shmem_cmps cmp, T val,
+  __host__ size_t wait_until_some(T *ivars, size_t nelems, size_t* indices,
+                                  const int* status, int cmp, T val,
                                   WindowInfo* window_info);
 
   template <typename T>
-  __host__ void wait_until_all_vector(T* ptr, size_t nelems, const int* status,
-                                      roc_shmem_cmps cmp, T* vals,
+  __host__ void wait_until_all_vector(T *ivars, size_t nelems, const int* status,
+                                      int cmp, T* vals,
                                       WindowInfo* window_info);
 
   template <typename T>
-  __host__ size_t wait_until_any_vector(T* ptr, size_t nelems,
-                                        const int* status, roc_shmem_cmps cmp,
+  __host__ size_t wait_until_any_vector(T *ivars, size_t nelems,
+                                        const int* status, int cmp,
                                         T* vals, WindowInfo* window_info);
 
   template <typename T>
-  __host__ size_t wait_until_some_vector(T* ptr, size_t nelems, size_t* indices,
-                                         const int* status, roc_shmem_cmps cmp,
+  __host__ size_t wait_until_some_vector(T *ivars, size_t nelems, size_t* indices,
+                                         const int* status, int cmp,
                                          T* vals, WindowInfo* window_info);
 
   template <typename T>
-  __host__ int test(T* ptr, roc_shmem_cmps cmp, T val, WindowInfo* window_info);
+  __host__ int test(T *ivars, int cmp, T val, WindowInfo* window_info);
 
 #ifndef USE_COHERENT_HEAP
   __host__ void create_hdp_window();
@@ -295,11 +295,11 @@ class HostInterface {
   __host__ MPI_Datatype get_mpi_type();
 
   template <typename T>
-  __host__ int compare(roc_shmem_cmps cmp, T input_val, T target_val);
+  __host__ int compare(int cmp, T input_val, T target_val);
 
   template <typename T>
   __host__ int test_and_compare(MPI_Aint offset, MPI_Datatype mpi_type,
-                                roc_shmem_cmps cmp, T val, MPI_Win win);
+                                int cmp, T val, MPI_Win win);
 
   template <typename T, ROC_SHMEM_OP Op>
   __host__ void to_all_internal(MPI_Comm mpi_comm, T* dest, const T* source,

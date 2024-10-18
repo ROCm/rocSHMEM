@@ -287,7 +287,7 @@ __device__ T roc_shmem_atomic_fetch_inc(T *dest, int pe);
  * granularity.
  *
  * @param[in] ctx     Context with which to perform this operation.
- * @param[in] dest    Destination address. Must be an address on the symmetric
+ * @param[in] source  Source address. Must be an address on the symmetric
                       heap.
  * @param[in] val     The value to be atomically added.
  * @param[in] pe      PE of the remote process.
@@ -296,10 +296,10 @@ __device__ T roc_shmem_atomic_fetch_inc(T *dest, int pe);
  *
  */
 template <typename T>
-__device__ T roc_shmem_atomic_fetch(roc_shmem_ctx_t ctx, T *dest, int pe);
+__device__ T roc_shmem_atomic_fetch(roc_shmem_ctx_t ctx, T *source, int pe);
 
 template <typename T>
-__device__ T roc_shmem_atomic_fetch(T *dest, int pe);
+__device__ T roc_shmem_atomic_fetch(T *source, int pe);
 
 /**
  * @brief Atomically add the value \p val to \p dest on \p pe.
@@ -380,7 +380,7 @@ __device__ void roc_shmem_atomic_set(T *dest, T value, int pe);
  * coalesce contiguous messages and elect a leader thread to call into the
  * ROC_SHMEM function.
  *
- * @param[in] ptr Pointer to memory on the symmetric heap to wait for.
+ * @param[in] ivars Pointer to memory on the symmetric heap to wait for.
  * @param[in] cmp Operation for the comparison.
  * @param[in] val Value to compare the memory at \p ptr to.
  *
@@ -388,7 +388,7 @@ __device__ void roc_shmem_atomic_set(T *dest, T value, int pe);
  *
  */
 template <typename T>
-__device__ void roc_shmem_wait_until(T *ptr, roc_shmem_cmps cmp, T val);
+__device__ void roc_shmem_wait_until(T *ivars, int cmp, T val);
 
 /**
  * @brief test if the condition (* \p ptr \p cmps \p val) is
@@ -399,7 +399,7 @@ __device__ void roc_shmem_wait_until(T *ptr, roc_shmem_cmps cmp, T val);
  * coalesce contiguous messages and elect a leader thread to call into the
  * ROC_SHMEM function.
  *
- * @param[in] ptr Pointer to memory on the symmetric heap to wait for.
+ * @param[in] ivars Pointer to memory on the symmetric heap to wait for.
  * @param[in] cmp Operation for the comparison.
  * @param[in] val Value to compare the memory at \p ptr to.
  *
@@ -407,7 +407,7 @@ __device__ void roc_shmem_wait_until(T *ptr, roc_shmem_cmps cmp, T val);
  *
  */
 template <typename T>
-__device__ int roc_shmem_test(T *ptr, roc_shmem_cmps cmp, T val);
+__device__ int roc_shmem_test(T *ivars, int cmp, T val);
 
 /**
  * @brief Perform a broadcast between PEs in the active set. The caller

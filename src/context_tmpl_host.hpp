@@ -234,73 +234,73 @@ __host__ void Context::to_all(roc_shmem_team_t team, T *dest, const T *source,
 }
 
 template <typename T>
-__host__ void Context::wait_until(T *ptr, roc_shmem_cmps cmp, T val) {
+__host__ void Context::wait_until(T *ivars, int cmp, T val) {
   ctxHostStats.incStat(NUM_HOST_WAIT_UNTIL);
 
-  HOST_DISPATCH(wait_until<T>(ptr, cmp, val));
+  HOST_DISPATCH(wait_until<T>(ivars, cmp, val));
 }
 
 template <typename T>
-__host__ size_t Context::wait_until_any(T* ptr, size_t nelems,
+__host__ size_t Context::wait_until_any(T *ivars, size_t nelems,
                                         const int* status,
-                                        roc_shmem_cmps cmp, T val) {
+                                        int cmp, T val) {
   ctxHostStats.incStat(NUM_HOST_WAIT_UNTIL_ANY);
 
-  return HOST_DISPATCH(wait_until_any<T>(ptr, nelems, status, cmp, val));
+  return HOST_DISPATCH(wait_until_any<T>(ivars, nelems, status, cmp, val));
 }
 
 template <typename T>
-__host__ void Context::wait_until_all(T* ptr, size_t nelems,
+__host__ void Context::wait_until_all(T *ivars, size_t nelems,
                                       const int* status,
-                                      roc_shmem_cmps cmp, T val) {
+                                      int cmp, T val) {
   ctxHostStats.incStat(NUM_HOST_WAIT_UNTIL_ALL);
 
-  HOST_DISPATCH(wait_until_all<T>(ptr, nelems, status, cmp, val));
+  HOST_DISPATCH(wait_until_all<T>(ivars, nelems, status, cmp, val));
 }
 
 template <typename T>
-__host__ size_t Context::wait_until_some(T* ptr, size_t nelems,
+__host__ size_t Context::wait_until_some(T *ivars, size_t nelems,
                                          size_t* indices,
                                          const int* status,
-                                         roc_shmem_cmps cmp, T val) {
+                                         int cmp, T val) {
   ctxHostStats.incStat(NUM_HOST_WAIT_UNTIL_SOME);
 
-  HOST_DISPATCH_RET(wait_until_some<T>(ptr, nelems, indices, status, cmp, val));
+  HOST_DISPATCH_RET(wait_until_some<T>(ivars, nelems, indices, status, cmp, val));
 }
 
 template <typename T>
-__host__ void Context::wait_until_all_vector(T* ptr, size_t nelems,
+__host__ void Context::wait_until_all_vector(T *ivars, size_t nelems,
                                              const int *status,
-                                             roc_shmem_cmps cmp, T* vals) {
+                                             int cmp, T* vals) {
   ctxHostStats.incStat(NUM_HOST_WAIT_UNTIL_ALL_VECTOR);
 
-  HOST_DISPATCH(wait_until_all_vector<T>(ptr, nelems, status, cmp, vals));
+  HOST_DISPATCH(wait_until_all_vector<T>(ivars, nelems, status, cmp, vals));
 }
 
 template <typename T>
-__host__ size_t Context::wait_until_any_vector(T* ptr, size_t nelems,
+__host__ size_t Context::wait_until_any_vector(T *ivars, size_t nelems,
                                                const int *status,
-                                               roc_shmem_cmps cmp, T* vals) {
+                                               int cmp, T* vals) {
   ctxHostStats.incStat(NUM_HOST_WAIT_UNTIL_ANY_VECTOR);
 
-  HOST_DISPATCH_RET(wait_until_any_vector<T>(ptr, nelems, status, cmp, vals));
+  HOST_DISPATCH_RET(wait_until_any_vector<T>(ivars, nelems, status, cmp, vals));
 }
 
 template <typename T>
-__host__ size_t Context::wait_until_some_vector(T* ptr, size_t nelems,
+__host__ size_t Context::wait_until_some_vector(T *ivars, size_t nelems,
                                                 size_t* indices,
                                                 const int *status,
-                                                roc_shmem_cmps cmp, T* vals) {
+                                                int cmp, T* vals) {
   ctxHostStats.incStat(NUM_HOST_WAIT_UNTIL_SOME_VECTOR);
 
-  HOST_DISPATCH_RET(wait_until_some_vector<T>(ptr, nelems, indices, status, cmp, vals));
+  HOST_DISPATCH_RET(wait_until_some_vector<T>(ivars, nelems, indices, status, cmp, vals));
 }
 
 template <typename T>
-__host__ int Context::test(T *ptr, roc_shmem_cmps cmp, T val) {
+__host__ int Context::test(T *ivars, int cmp, T val) {
   ctxHostStats.incStat(NUM_HOST_TEST);
 
-  HOST_DISPATCH_RET(test<T>(ptr, cmp, val));
+  HOST_DISPATCH_RET(test<T>(ivars, cmp, val));
 }
 
 }  // namespace rocshmem
