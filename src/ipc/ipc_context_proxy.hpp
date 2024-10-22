@@ -45,6 +45,7 @@ class IPCDefaultContextProxy {
   : constructed_{true} {
     auto ctx{proxy_.get()};
     new (ctx) IPCContext(reinterpret_cast<Backend*>(backend));
+    ctx->tinfo = tinfo;
     roc_shmem_ctx_t local{ctx, tinfo};
     set_internal_ctx(&local);
   }

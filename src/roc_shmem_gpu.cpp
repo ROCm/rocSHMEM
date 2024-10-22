@@ -263,7 +263,7 @@ __device__ int roc_shmem_wg_ctx_create(long option, roc_shmem_ctx_t *ctx) {
   bool result{true};
   if (get_flat_block_id() == 0) {
     ctx->team_opaque = reinterpret_cast<TeamInfo *>(ROC_SHMEM_CTX_DEFAULT.team_opaque);
-    device_backend_proxy->create_ctx(option, ctx);
+    result = device_backend_proxy->create_ctx(option, ctx);
     reinterpret_cast<Context *>(ctx->ctx_opaque)->setFence(option);
   }
   __syncthreads();
