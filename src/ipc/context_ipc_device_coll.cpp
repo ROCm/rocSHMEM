@@ -47,6 +47,9 @@ __device__ void IPCContext::internal_direct_barrier(int pe, int PE_start,
     // Announce to other PEs that all have reached
     for (size_t i = 1, j = PE_start + stride; i < n_pes; ++i, j += stride) {
       internal_putmem(&pSync[0], &flag_val, sizeof(*pSync), j);
+#if defined(__gfx90a__)
+        __threadfence_system();
+#endif /* __gfx90a__ */
     }
   } else {
     // Mark current PE offset as reached

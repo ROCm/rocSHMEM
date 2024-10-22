@@ -58,6 +58,7 @@ __host__ IPCContext::IPCContext(Backend *b)
 }
 
 __device__ void IPCContext::threadfence_system() {
+  __threadfence_system();
 }
 
 __device__ void IPCContext::ctx_create() {
