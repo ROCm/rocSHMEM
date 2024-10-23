@@ -321,19 +321,16 @@ __device__ void IPCContext::to_all(T *dest, const T *source, int nreduce,
     internal_direct_allreduce<T, Op>(dest, source, nreduce, PE_start, logPE_stride,
                                      PE_size, pWrk, pSync);
   } else {
-    /* TODO (Edgar): some nreduce values cannot be evenly divided
-    **               among num_pes and/or segments. THe algorithm
-    **               currently cannot handle that one segment is of
-    **               different size than other segments.
-    */
     if (ring_pSync <= ROC_SHMEM_REDUCE_SYNC_SIZE) {
       size_t ring_pWrk = ROC_SHMEM_REDUCE_MIN_WRKDATA_SIZE;
       // integer division truncating value
       int chunk_size = ring_pWrk / num_pes;
       int seg_size = chunk_size * num_pes;
 
+      // integer division truncating value
+      int n_seg = nreduce / seg_size;
       // integer division rounding up
-      int n_seg = (nreduce + (seg_size -1)) / seg_size;
+      int n_seg_up = (nreduce + (seg_size -1)) / seg_size;
       // recalculate chunk_size
       chunk_size = seg_size / num_pes;
       if (n_seg == 0) {
@@ -342,6 +339,25 @@ __device__ void IPCContext::to_all(T *dest, const T *source, int nreduce,
       internal_ring_allreduce<T, Op>(dest, source, nreduce, PE_start,
                                      logPE_stride, PE_size, pWrk, pSync, n_seg,
                                      seg_size, chunk_size);
+      if (n_seg_up > n_seg) {
+        T *p_dst = (dest + (n_seg * seg_size));
+        const T *p_src = (source + (n_seg * seg_size));
+        int p_count = nreduce - (n_seg * seg_size);
+        int p_chunk = p_count / num_pes;
+
+        internal_ring_allreduce<T, Op>(p_dst, p_src, p_count, PE_start, logPE_stride,
+                                       PE_size, pWrk, pSync, 1, (p_chunk * num_pes), p_chunk);
+
+        if ((p_chunk * num_pes) < p_count) {
+          // Final elements need to use direct_allreduce
+          p_count -= (p_chunk * num_pes);
+          p_dst += (p_chunk * num_pes);
+          const T *p_src2 = p_src + (p_chunk * num_pes);
+
+          internal_direct_allreduce<T, Op>(p_dst, p_src2, p_count, PE_start, logPE_stride,
+                                           PE_size, pWrk, pSync);
+        }
+      }
     } else {
       GPU_DPRINTF("Unsupported reduction size for IPC conduit.\n");
     }
