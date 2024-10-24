@@ -24,1007 +24,178 @@
 
 using namespace rocshmem;
 
-TEST_F(IPCImplSimpleCoarseTestFixture, ptr_check) {
+
+TEST_P(Degenerate, ptr_check) {
     ASSERT_NE(heap_mem_.get_ptr(), nullptr);
 }
 
-TEST_F(IPCImplSimpleCoarseTestFixture, MPI_num_pes) {
+TEST_P(Degenerate, MPI_num_pes) {
     ASSERT_EQ(mpi_.num_pes(), 2);
 }
 
-TEST_F(IPCImplSimpleCoarseTestFixture, IPC_bases) {
-  ASSERT_NE(ipc_impl_.ipc_bases, nullptr);
-  for(int i{0}; i < mpi_.num_pes(); i++) {
-    ASSERT_NE(ipc_impl_.ipc_bases[i], nullptr);
-  }
+TEST_P(Degenerate, IPC_bases) {
+    ASSERT_EQ(mpi_.num_pes(), 2);
+    ASSERT_NE(ipc_impl_.ipc_bases, nullptr);
+    for(int i{0}; i < mpi_.num_pes(); i++) {
+        ASSERT_NE(ipc_impl_.ipc_bases[i], nullptr);
+    }
 }
 
-TEST_F(IPCImplSimpleCoarseTestFixture, golden_1048576_int) {
+TEST_P(Degenerate, golden_1048576_int) {
     iota_golden(1048576);
     validate_golden(1048576);
 }
 
-//=============================================================================
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wg_1x1x1_1024x1x1_32_int) {
-    dim3 grid {1,1,1};
-    dim3 block {1024,1,1};
-    write_wg(grid, block, 32);
-}
-
-//=============================================================================
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wg_1x1x1_1024x1x1_32_int) {
-    dim3 grid {1,1,1};
-    dim3 block {1024,1,1};
-    read_wg(grid, block, 32);
-}
+INSTANTIATE_TEST_SUITE_P(
+    IPCImplSimpleCoarseTestFixture,
+    Degenerate,
+    ::testing::Values(
+        std::make_tuple(1,  1,   1))
+);
 
 //=============================================================================
 
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wg_1x1x1_1x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {1,1,1};
-    write_wg(grid, block, 1048576);
+TEST_P(ParameterizedBlock, write) {
+    dim3 grid = dim3(std::get<0>(GetParam()), 1, 1);
+    dim3 block = dim3(std::get<1>(GetParam()), 1, 1);
+    size_t size = std::get<2>(GetParam());
+    write(grid, block, size);
 }
 
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wg_1x1x1_2x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {2,1,1};
-    write_wg(grid, block, 1048576);
+TEST_P(ParameterizedBlock, read) {
+    dim3 grid = dim3(std::get<0>(GetParam()), 1, 1);
+    dim3 block = dim3(std::get<1>(GetParam()), 1, 1);
+    size_t size = std::get<2>(GetParam());
+    read(grid, block, size);
 }
 
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wg_1x1x1_4x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {4,1,1};
-    write_wg(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wg_1x1x1_8x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {8,1,1};
-    write_wg(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wg_1x1x1_16x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {16,1,1};
-    write_wg(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wg_1x1x1_32x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {32,1,1};
-    write_wg(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wg_1x1x1_64x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {64,1,1};
-    write_wg(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wg_1x1x1_128x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {128,1,1};
-    write_wg(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wg_1x1x1_256x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {256,1,1};
-    write_wg(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wg_1x1x1_512x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {512,1,1};
-    write_wg(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wg_1x1x1_768x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {768,1,1};
-    write_wg(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wg_1x1x1_1024x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {1024,1,1};
-    write_wg(grid, block, 1048576);
-}
+INSTANTIATE_TEST_SUITE_P(
+    IPCImplSimpleCoarseTestFixture,
+    ParameterizedBlock,
+    ::testing::Values(
+        std::make_tuple(1, 1024, 32),      // 0
+        std::make_tuple(1, 1,    1048576), // 1
+        std::make_tuple(1, 2,    1048576), // 2
+        std::make_tuple(1, 4,    1048576), // 3
+        std::make_tuple(1, 8,    1048576), // 4
+        std::make_tuple(1, 16,   1048576), // 5
+        std::make_tuple(1, 32,   1048576), // 6
+        std::make_tuple(1, 64,   1048576), // 7
+        std::make_tuple(1, 128,  1048576), // 8
+        std::make_tuple(1, 256,  1048576), // 9
+        std::make_tuple(1, 512,  1048576), // 10
+        std::make_tuple(1, 768,  1048576), // 11
+        std::make_tuple(1, 1024, 1048576)) // 12
+);
 
 //=============================================================================
 
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wg_1x1x1_1x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {1,1,1};
-    read_wg(grid, block, 1048576);
+TEST_P(ParameterizedWarp, write) {
+    dim3 grid = dim3(std::get<0>(GetParam()), 1, 1);
+    dim3 block = dim3(std::get<1>(GetParam()), 1, 1);
+    size_t size = std::get<2>(GetParam());
+    write(grid, block, size);
 }
 
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wg_1x1x1_2x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {2,1,1};
-    read_wg(grid, block, 1048576);
+TEST_P(ParameterizedWarp, read) {
+    dim3 grid = dim3(std::get<0>(GetParam()), 1, 1);
+    dim3 block = dim3(std::get<1>(GetParam()), 1, 1);
+    size_t size = std::get<2>(GetParam());
+    read(grid, block, size);
 }
 
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wg_1x1x1_4x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {4,1,1};
-    read_wg(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wg_1x1x1_8x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {8,1,1};
-    read_wg(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wg_1x1x1_16x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {16,1,1};
-    read_wg(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wg_1x1x1_32x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {32,1,1};
-    read_wg(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wg_1x1x1_64x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {64,1,1};
-    read_wg(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wg_1x1x1_128x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {128,1,1};
-    read_wg(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wg_1x1x1_256x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {256,1,1};
-    read_wg(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wg_1x1x1_512x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {512,1,1};
-    read_wg(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wg_1x1x1_768x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {768,1,1};
-    read_wg(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wg_1x1x1_1024x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {1024,1,1};
-    read_wg(grid, block, 1048576);
-}
-
-//=============================================================================
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_64x1x1_1_int) {
-    dim3 grid {1,1,1};
-    dim3 block {64,1,1};
-    write_wave(grid, block, 1);
-}
-
-//=============================================================================
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_64x1x1_1_int) {
-    dim3 grid {1,1,1};
-    dim3 block {64,1,1};
-    read_wave(grid, block, 1);
-}
-
-//=============================================================================
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_64x1x1_32_int) {
-    dim3 grid {1,1,1};
-    dim3 block {64,1,1};
-    write_wave(grid, block, 32);
-}
+INSTANTIATE_TEST_SUITE_P(
+    IPCImplSimpleCoarseTestFixture,
+    ParameterizedWarp,
+    ::testing::Values(
+        std::make_tuple(1, 64,   1),       // 0
+        std::make_tuple(1, 64,   32),      // 1
+        std::make_tuple(1,  1,   1048576), // 2
+        std::make_tuple(1,  2,   1048576), // 3
+        std::make_tuple(1,  3,   1048576), // 4
+        std::make_tuple(1,  4,   1048576), // 5
+        std::make_tuple(1,  5,   1048576), // 6
+        std::make_tuple(1,  6,   1048576), // 7
+        std::make_tuple(1,  7,   1048576), // 8
+        std::make_tuple(1,  8,   1048576), // 9
+        std::make_tuple(1,  9,   1048576), // 10
+        std::make_tuple(1, 10,   1048576), // 11
+        std::make_tuple(1, 11,   1048576), // 12
+        std::make_tuple(1, 12,   1048576), // 13
+        std::make_tuple(1, 13,   1048576), // 14
+        std::make_tuple(1, 14,   1048576), // 15
+        std::make_tuple(1, 15,   1048576), // 16
+        std::make_tuple(1, 16,   1048576), // 17
+        std::make_tuple(1, 17,   1048576), // 18
+        std::make_tuple(1, 18,   1048576), // 19
+        std::make_tuple(1, 19,   1048576), // 20
+        std::make_tuple(1, 20,   1048576), // 21
+        std::make_tuple(1, 21,   1048576), // 22
+        std::make_tuple(1, 22,   1048576), // 23
+        std::make_tuple(1, 23,   1048576), // 24
+        std::make_tuple(1, 24,   1048576), // 25
+        std::make_tuple(1, 25,   1048576), // 26
+        std::make_tuple(1, 26,   1048576), // 27
+        std::make_tuple(1, 27,   1048576), // 28
+        std::make_tuple(1, 28,   1048576), // 29
+        std::make_tuple(1, 28,   1048576), // 30
+        std::make_tuple(1, 29,   1048576), // 31
+        std::make_tuple(1, 30,   1048576), // 32
+        std::make_tuple(1, 31,   1048576), // 33
+        std::make_tuple(1, 32,   1048576), // 34
+        std::make_tuple(1, 33,   1048576), // 35
+        std::make_tuple(1, 34,   1048576), // 36
+        std::make_tuple(1, 35,   1048576), // 37
+        std::make_tuple(1, 36,   1048576), // 38
+        std::make_tuple(1, 37,   1048576), // 39
+        std::make_tuple(1, 38,   1048576), // 40
+        std::make_tuple(1, 39,   1048576), // 41
+        std::make_tuple(1, 40,   1048576), // 42
+        std::make_tuple(1, 41,   1048576), // 43
+        std::make_tuple(1, 42,   1048576), // 44
+        std::make_tuple(1, 43,   1048576), // 45
+        std::make_tuple(1, 44,   1048576), // 46
+        std::make_tuple(1, 45,   1048576), // 47
+        std::make_tuple(1, 46,   1048576), // 48
+        std::make_tuple(1, 47,   1048576), // 49
+        std::make_tuple(1, 48,   1048576), // 50
+        std::make_tuple(1, 49,   1048576), // 51
+        std::make_tuple(1, 50,   1048576), // 52
+        std::make_tuple(1, 51,   1048576), // 53
+        std::make_tuple(1, 52,   1048576), // 54
+        std::make_tuple(1, 53,   1048576), // 55
+        std::make_tuple(1, 54,   1048576), // 56
+        std::make_tuple(1, 55,   1048576), // 57
+        std::make_tuple(1, 56,   1048576), // 58
+        std::make_tuple(1, 57,   1048576), // 59
+        std::make_tuple(1, 58,   1048576), // 60
+        std::make_tuple(1, 59,   1048576), // 61
+        std::make_tuple(1, 60,   1048576), // 62
+        std::make_tuple(1, 61,   1048576), // 63
+        std::make_tuple(1, 62,   1048576), // 64
+        std::make_tuple(1, 63,   1048576), // 65
+        std::make_tuple(1, 64,   1048576)) // 66
+);
 
 //=============================================================================
 
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_64x1x1_32_int) {
-    dim3 grid {1,1,1};
-    dim3 block {64,1,1};
-    read_wave(grid, block, 32);
-}
-
-//=============================================================================
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_1x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {1,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_2x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {2,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_3x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {3,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_4x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {4,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_5x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {5,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_6x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {6,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_7x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {7,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_8x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {8,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_9x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {9,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_10x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {10,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_11x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {11,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_12x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {12,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_13x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {13,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_14x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {14,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_15x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {15,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_16x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {16,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_17x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {17,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_18x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {18,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_19x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {19,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_20x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {20,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_21x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {21,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_22x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {22,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_23x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {23,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_24x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {24,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_25x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {25,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_26x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {26,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_27x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {27,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_28x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {28,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_29x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {29,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_30x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {30,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_31x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {31,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_32x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {32,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_33x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {33,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_34x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {34,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_35x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {35,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_36x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {36,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_37x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {37,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_38x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {38,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_39x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {39,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_40x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {40,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_41x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {41,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_42x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {42,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_43x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {43,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_44x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {44,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_45x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {45,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_46x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {46,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_47x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {47,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_48x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {48,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_49x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {49,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_50x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {50,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_51x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {51,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_52x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {52,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_53x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {53,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_54x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {54,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_55x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {55,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_56x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {56,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_57x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {57,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_58x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {58,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_59x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {59,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_60x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {60,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_61x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {61,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_62x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {62,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_63x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {63,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_wave_1x1x1_64x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {64,1,1};
-    write_wave(grid, block, 1048576);
-}
-
-//=============================================================================
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_1x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {1,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_2x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {2,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_3x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {3,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_4x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {4,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_5x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {5,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_6x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {6,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_7x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {7,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_8x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {8,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_9x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {9,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_10x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {10,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_11x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {11,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_12x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {12,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_13x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {13,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_14x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {14,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_15x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {15,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_16x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {16,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_17x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {17,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_18x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {18,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_19x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {19,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_20x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {20,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_21x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {21,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_22x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {22,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_23x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {23,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_24x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {24,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_25x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {25,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_26x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {26,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_27x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {27,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_28x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {28,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_29x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {29,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_30x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {30,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_31x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {31,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_32x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {32,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_33x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {33,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_34x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {34,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_35x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {35,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_36x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {36,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_37x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {37,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_38x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {38,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_39x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {39,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_40x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {40,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_41x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {41,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_42x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {42,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_43x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {43,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_44x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {44,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_45x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {45,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_46x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {46,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_47x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {47,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_48x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {48,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_49x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {49,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_50x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {50,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_51x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {51,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_52x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {52,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_53x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {53,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_54x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {54,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_55x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {55,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_56x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {56,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_57x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {57,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_58x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {58,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_59x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {59,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_60x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {60,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_61x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {61,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_62x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {62,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_63x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {63,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_wave_1x1x1_64x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {64,1,1};
-    read_wave(grid, block, 1048576);
-}
-
-//=============================================================================
-
-TEST_F(IPCImplSimpleCoarseTestFixture, write_1x1x1_1x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {1,1,1};
-    write(grid, block, 1048576);
-}
-
-//=============================================================================
-
-TEST_F(IPCImplSimpleCoarseTestFixture, read_1x1x1_1x1x1_1048576_int) {
-    dim3 grid {1,1,1};
-    dim3 block {1,1,1};
-    read(grid, block, 1048576);
-}
-
+TEST_P(ParameterizedThread, write) {
+    dim3 grid = dim3(std::get<0>(GetParam()), 1, 1);
+    dim3 block = dim3(std::get<1>(GetParam()), 1, 1);
+    size_t size = std::get<2>(GetParam());
+    write(grid, block, size);
+}
+
+TEST_P(ParameterizedThread, read) {
+    dim3 grid = dim3(std::get<0>(GetParam()), 1, 1);
+    dim3 block = dim3(std::get<1>(GetParam()), 1, 1);
+    size_t size = std::get<2>(GetParam());
+    read(grid, block, size);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    IPCImplSimpleCoarseTestFixture,
+    ParameterizedThread,
+    ::testing::Values(
+        std::make_tuple(1,  1,   1048576))
+);
