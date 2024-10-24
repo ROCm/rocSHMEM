@@ -46,12 +46,12 @@ __device__ void IPCContext::internal_direct_barrier(int pe, int PE_start,
 
     // Announce to other PEs that all have reached
     for (size_t i = 1, j = PE_start + stride; i < n_pes; ++i, j += stride) {
-      put_nbi(&pSync[0], &flag_val, 1, j);
+      internal_putmem(&pSync[0], &flag_val, sizeof(*pSync), j);
     }
   } else {
     // Mark current PE offset as reached
     size_t pe_offset = (pe - PE_start) / stride;
-    put_nbi(&pSync[pe_offset], &flag_val, 1, PE_start);
+    internal_putmem(&pSync[pe_offset], &flag_val, sizeof(*pSync), PE_start);
 #if defined(__gfx90a__)
     __threadfence_system();
 #endif /* __gfx90a__ */
@@ -71,7 +71,7 @@ __device__ void IPCContext::internal_atomic_barrier(int pe, int PE_start,
     threadfence_system();
 
     for (size_t i = 1, j = PE_start + stride; i < n_pes; ++i, j += stride) {
-      put_nbi(&pSync[0], &flag_val, 1, j);
+      internal_putmem(&pSync[0], &flag_val, sizeof(*pSync), j);
     }
   } else {
     amo_add<int64_t>(&pSync[0], flag_val, PE_start);

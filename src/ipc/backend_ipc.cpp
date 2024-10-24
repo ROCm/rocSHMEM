@@ -66,6 +66,12 @@ IPCBackend::IPCBackend(MPI_Comm comm)
 
   initIPC();
 
+  /**
+   * Check if num_pes == ipcImpl.shm_size)
+   * All the PEs must be with in a node for IPC conduit
+   */
+  assert(num_pes == ipcImpl.shm_size);
+
   auto *bp{ipc_backend_proxy.get()};
 
   bp->heap_ptr = &heap;
@@ -84,13 +90,15 @@ IPCBackend::IPCBackend(MPI_Comm comm)
 
   setup_team_world();
 
-  TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
+  init_wrk_sync_buffer();
 
   roc_shmem_collective_init();
 
   setup_fence_buffer();
 
   teams_init();
+
+  TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
 
   default_context_proxy_ = IPCDefaultContextProxyT(this, tinfo);
 
@@ -119,6 +127,7 @@ IPCBackend::~IPCBackend() {
    * and team world
    */
   teams_destroy();
+  cleanup_wrk_sync_buffer();
   auto *team_world{team_tracker.get_team_world()};
   team_world->~Team();
   CHECK_HIP(hipFree(team_world));
@@ -281,23 +290,111 @@ void IPCBackend::global_exit(int status) {
 }
 
 void IPCBackend::teams_destroy() {
-  roc_shmem_free(barrier_pSync_pool);
-  roc_shmem_free(reduce_pSync_pool);
-  roc_shmem_free(bcast_pSync_pool);
-  roc_shmem_free(alltoall_pSync_pool);
-  roc_shmem_free(pWrk_pool);
-  roc_shmem_free(pAta_pool);
-
   free(pool_bitmask_);
   free(reduced_bitmask_);
 }
 
+void IPCBackend::init_wrk_sync_buffer() {
+  /**
+   * calcualte work/sync buffer size
+   */
+  auto max_num_teams{team_tracker.get_max_num_teams()};
+
+  /**
+   * size of barrier sync
+   */
+  Wrk_Sync_buffer_size_ += sizeof(*barrier_sync) * ROC_SHMEM_BARRIER_SYNC_SIZE;
+
+  /**
+   * Size of sync arrays for the teams
+  */
+  Wrk_Sync_buffer_size_ += sizeof(long) * max_num_teams *
+                           (ROC_SHMEM_BARRIER_SYNC_SIZE +
+                            ROC_SHMEM_REDUCE_SYNC_SIZE +
+                            ROC_SHMEM_BCAST_SYNC_SIZE +
+                            ROC_SHMEM_ALLTOALL_SYNC_SIZE);
+
+  /**
+   * Size of work arrays for the teams
+   * Accommodate largest possible data type for pWrk
+  */
+  Wrk_Sync_buffer_size_ += sizeof(double) * max_num_teams *
+                           (ROC_SHMEM_REDUCE_MIN_WRKDATA_SIZE +
+                            ROC_SHMEM_ATA_MAX_WRKDATA_SIZE);
+
+  /**
+   * Size of fence array
+  */
+  Wrk_Sync_buffer_size_ += sizeof(int) * num_pes;
+
+  /**
+   * Allocate a buffer of size Wrk_Sync_buffer_size_, using fine-grained
+   * memory allocator
+  */
+  fine_grained_allocator_.allocate((void**)&Wrk_Sync_buffer_ptr_,
+                                   Wrk_Sync_buffer_size_);
+  assert(Wrk_Sync_buffer_ptr_);
+  temp_Wrk_Sync_buff_ptr_ = Wrk_Sync_buffer_ptr_;
+
+  /*
+   * Allocate a c-array to hold the IPC handles
+   */
+  hipIpcMemHandle_t *ipc_handle = reinterpret_cast<hipIpcMemHandle_t*>(
+            malloc(num_pes * sizeof(hipIpcMemHandle_t)));
+
+  /*
+   * Call into the hip runtime to get an IPC handle for the allocated
+   * Wrk_Sync_buffer_ and store that IPC handle
+   */
+  CHECK_HIP(hipIpcGetMemHandle(&ipc_handle[my_pe], Wrk_Sync_buffer_ptr_));
+
+  /*
+   * all-to-all exchange with each PE to share the IPC handles.
+   */
+  MPI_Allgather(MPI_IN_PLACE, sizeof(hipIpcMemHandle_t), MPI_CHAR,
+                ipc_handle, sizeof(hipIpcMemHandle_t), MPI_CHAR, thread_comm);
+
+  /*
+   * Allocate device-side fine grained memory to hold IPC addresses of
+   * work/sync buffers
+   */
+  fine_grained_allocator_.allocate(
+    reinterpret_cast<void**>(&Wrk_Sync_buffer_bases_),
+    num_pes * sizeof(char*));
+  assert(Wrk_Sync_buffer_bases_);
+
+  /*
+   * For all local processing elements, initialize the device-side array
+   * with the IPC work/sync buffer addresses.
+   */
+  for (size_t i = 0; i < num_pes; i++) {
+    if (i != my_pe) {
+      CHECK_HIP(hipIpcOpenMemHandle(
+          reinterpret_cast<void**>(&Wrk_Sync_buffer_bases_[i]),
+          ipc_handle[i],
+          hipIpcMemLazyEnablePeerAccess));
+    } else {
+      Wrk_Sync_buffer_bases_[i] = Wrk_Sync_buffer_ptr_;
+    }
+  }
+}
+
+void IPCBackend::cleanup_wrk_sync_buffer() {
+  for (size_t i = 0; i < num_pes; i++) {
+    if (i != my_pe) {
+      CHECK_HIP(hipIpcCloseMemHandle(Wrk_Sync_buffer_bases_[i]));
+    }
+  }
+  fine_grained_allocator_.deallocate(Wrk_Sync_buffer_bases_);
+  fine_grained_allocator_.deallocate(Wrk_Sync_buffer_ptr_);
+}
+
 void IPCBackend::setup_fence_buffer() {
   /*
-  * Allocate heap space for fence
+  * Allocate memory for fence
   */
-  fence_pool = reinterpret_cast<int *>(roc_shmem_malloc(
-      sizeof(int) * num_pes));
+  fence_pool = reinterpret_cast<int *>(temp_Wrk_Sync_buff_ptr_);
+  temp_Wrk_Sync_buff_ptr_ += sizeof(int) * num_pes;
 }
 
 void IPCBackend::roc_shmem_collective_init() {
@@ -306,7 +403,8 @@ void IPCBackend::roc_shmem_collective_init() {
    */
   size_t one_sync_size_bytes{sizeof(*barrier_sync)};
   size_t sync_size_bytes{one_sync_size_bytes * ROC_SHMEM_BARRIER_SYNC_SIZE};
-  heap.malloc(reinterpret_cast<void **>(&barrier_sync), sync_size_bytes);
+  barrier_sync = reinterpret_cast<int64_t*>(temp_Wrk_Sync_buff_ptr_);
+  temp_Wrk_Sync_buff_ptr_ += sync_size_bytes;
 
   /*
    * Initialize the barrier synchronization array with default values.
@@ -327,20 +425,32 @@ void IPCBackend::teams_init() {
    * Allocate pools for the teams sync and work arrary from the SHEAP.
    */
   auto max_num_teams{team_tracker.get_max_num_teams()};
-  barrier_pSync_pool = reinterpret_cast<long *>(roc_shmem_malloc(
-      sizeof(long) * ROC_SHMEM_BARRIER_SYNC_SIZE * max_num_teams));
-  reduce_pSync_pool = reinterpret_cast<long *>(roc_shmem_malloc(
-      sizeof(long) * ROC_SHMEM_REDUCE_SYNC_SIZE * max_num_teams));
-  bcast_pSync_pool = reinterpret_cast<long *>(roc_shmem_malloc(
-      sizeof(long) * ROC_SHMEM_BCAST_SYNC_SIZE * max_num_teams));
-  alltoall_pSync_pool = reinterpret_cast<long *>(roc_shmem_malloc(
-      sizeof(long) * ROC_SHMEM_ALLTOALL_SYNC_SIZE * max_num_teams));
+
+  barrier_pSync_pool = reinterpret_cast<long *>(temp_Wrk_Sync_buff_ptr_);
+  temp_Wrk_Sync_buff_ptr_ += sizeof(long) * ROC_SHMEM_BARRIER_SYNC_SIZE
+                            * max_num_teams;
+
+  reduce_pSync_pool = reinterpret_cast<long *>(temp_Wrk_Sync_buff_ptr_);
+  temp_Wrk_Sync_buff_ptr_ += sizeof(long) * ROC_SHMEM_REDUCE_SYNC_SIZE
+                            * max_num_teams;
+
+  bcast_pSync_pool = reinterpret_cast<long *>(temp_Wrk_Sync_buff_ptr_);
+  temp_Wrk_Sync_buff_ptr_ += sizeof(long) * ROC_SHMEM_BCAST_SYNC_SIZE
+                            * max_num_teams;
+
+  alltoall_pSync_pool = reinterpret_cast<long *>(temp_Wrk_Sync_buff_ptr_);
+  temp_Wrk_Sync_buff_ptr_ += sizeof(long) * ROC_SHMEM_BCAST_SYNC_SIZE
+                            * max_num_teams;
 
   /* Accommodating for largest possible data type for pWrk */
-  pWrk_pool = roc_shmem_malloc(
-      sizeof(double) * ROC_SHMEM_REDUCE_MIN_WRKDATA_SIZE * max_num_teams);
-  pAta_pool = roc_shmem_malloc(sizeof(double) * ROC_SHMEM_ATA_MAX_WRKDATA_SIZE *
-                               max_num_teams);
+  pWrk_pool = reinterpret_cast<void *>(temp_Wrk_Sync_buff_ptr_);
+  temp_Wrk_Sync_buff_ptr_ += sizeof(double) * ROC_SHMEM_REDUCE_MIN_WRKDATA_SIZE 
+                            * max_num_teams;
+
+
+  pAta_pool = reinterpret_cast<void *>(temp_Wrk_Sync_buff_ptr_);
+  temp_Wrk_Sync_buff_ptr_ += sizeof(double) * ROC_SHMEM_ATA_MAX_WRKDATA_SIZE
+                            * max_num_teams;
 
   /**
    * Initialize the sync arrays in the pool with default values.

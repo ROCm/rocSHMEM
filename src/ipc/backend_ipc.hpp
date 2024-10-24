@@ -115,6 +115,13 @@ class IPCBackend : public Backend {
   void team_destroy(roc_shmem_team_t team) override;
 
   /**
+   * @brief Accessor for work/sync bases
+   *
+   * @return Vector containing the addresses of the work/sync bases
+   */
+  char** get_wrk_sync_bases() { return Wrk_Sync_buffer_bases_; }
+
+  /**
    * @brief Handle to device memory fields.
    */
   IPCBackendProxyT ipc_backend_proxy{};
@@ -262,6 +269,46 @@ class IPCBackend : public Backend {
    * @brief Size of the bitmask
    */
   int bitmask_size_{-1};
+
+  /**
+   * Fine grained memory allocator for buffers used in collectives Routines
+   */
+  HIPDefaultFinegrainedAllocator fine_grained_allocator_ {};
+
+  /**
+   * @brief Collective routines work/sync buffer size
+   */
+  size_t Wrk_Sync_buffer_size_{};
+
+  /**
+   * @brief Collective routines work/sync buffer base ptr
+   */
+  char* const Wrk_Sync_buffer_ptr_{nullptr};
+
+  /**
+   * @brief Temporary buffer pointer pointing to the same address as
+   * Wrk_Sync_buffer_ptr_, used to calculate the starting addresses of
+   * different work and sync buffers.
+  */
+  char *temp_Wrk_Sync_buff_ptr_{nullptr};
+
+  /**
+   * @brief Array containing the addresses of the work/sync buffer bases
+   * of other PEs
+  */
+  char** Wrk_Sync_buffer_bases_{nullptr};
+
+  /**
+   * @brief Initialize memory required for work/sync buffers and open IPC
+   * handle on PE's Wrk_Sync_buffer_ptr.
+   */
+  void init_wrk_sync_buffer();
+
+  /**
+   * @brief Close IPC memory handles for work/sync buffers and deallocate
+   * work/sync buffer.
+  */
+  void cleanup_wrk_sync_buffer();
 
 };
 
