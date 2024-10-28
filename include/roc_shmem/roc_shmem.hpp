@@ -838,10 +838,6 @@ __device__ ATTR_NO_INLINE void roc_shmem_threadfence_system();
  */
 #define REDUCTION_API_GEN(T, TNAME, Op_API)                                    \
   __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_##Op_API##_wg_to_all( \
-      roc_shmem_ctx_t ctx, T *dest, const T *source, int nreduce,              \
-      int PE_start, int logPE_stride, int PE_size, T *pWrk,                    \
-      long *pSync); /* NOLINT */                                               \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_##Op_API##_wg_to_all( \
       roc_shmem_ctx_t ctx, roc_shmem_team_t team, T *dest, const T *source,    \
       int nreduce);                                                            \
   __host__ void roc_shmem_ctx_##TNAME##_##Op_API##_to_all(                     \

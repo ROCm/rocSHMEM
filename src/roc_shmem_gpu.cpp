@@ -430,17 +430,6 @@ __device__ void *roc_shmem_ptr(const void *dest, int pe) {
 }
 
 template <typename T, ROC_SHMEM_OP Op>
-__device__ void roc_shmem_wg_to_all(roc_shmem_ctx_t ctx, T *dest,
-                                    const T *source, int nreduce, int PE_start,
-                                    int logPE_stride, int PE_size, T *pWrk,
-                                    long *pSync) {
-  GPU_DPRINTF("Function: roc_shmem_to_all\n");
-
-  get_internal_ctx(ctx)->to_all<T, Op>(dest, source, nreduce, PE_start,
-                                       logPE_stride, PE_size, pWrk, pSync);
-}
-
-template <typename T, ROC_SHMEM_OP Op>
 __device__ void roc_shmem_wg_to_all(roc_shmem_ctx_t ctx, roc_shmem_team_t team,
                                     T *dest, const T *source, int nreduce) {
   GPU_DPRINTF("Function: roc_shmem_to_all\n");
@@ -887,9 +876,6 @@ __device__ int roc_shmem_team_translate_pe(roc_shmem_team_t src_team,
  */
 #define REDUCTION_GEN(T, Op)                                                 \
   template __device__ void roc_shmem_wg_to_all<T, Op>(                       \
-      roc_shmem_ctx_t ctx, T * dest, const T *source, int nreduce,           \
-      int PE_start, int logPE_stride, int PE_size, T *pWrk, long *pSync);    \
-  template __device__ void roc_shmem_wg_to_all<T, Op>(                       \
       roc_shmem_ctx_t ctx, roc_shmem_team_t team, T * dest, const T *source, \
       int nreduce);
 
@@ -1100,12 +1086,6 @@ __device__ int roc_shmem_team_translate_pe(roc_shmem_team_t src_team,
  **/
 
 #define REDUCTION_DEF_GEN(T, TNAME, Op_API, Op)                             \
-  __device__ void roc_shmem_ctx_##TNAME##_##Op_API##_wg_to_all(             \
-      roc_shmem_ctx_t ctx, T *dest, const T *source, int nreduce,           \
-      int PE_start, int logPE_stride, int PE_size, T *pWrk, long *pSync) {  \
-    roc_shmem_wg_to_all<T, Op>(ctx, dest, source, nreduce, PE_start,        \
-                               logPE_stride, PE_size, pWrk, pSync);         \
-  }                                                                         \
   __device__ void roc_shmem_ctx_##TNAME##_##Op_API##_wg_to_all(             \
       roc_shmem_ctx_t ctx, roc_shmem_team_t team, T *dest, const T *source, \
       int nreduce) {                                                        \
