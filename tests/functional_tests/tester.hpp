@@ -132,6 +132,7 @@ class Tester {
   uint64_t *timer = nullptr;
 
  private:
+  bool _print_header = 1;
   void print(uint64_t size);
 
   void barrier();
