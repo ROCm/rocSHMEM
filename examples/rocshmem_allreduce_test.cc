@@ -25,8 +25,8 @@
 
 using namespace rocshmem;
 
-__global__ void allreduce_test(int *source, int *dest, int* pWork, long *pSync, size_t nelem)
-{
+__global__ void allreduce_test(int *source, int *dest, size_t nelem,
+        roc_shmem_team_t team) {
     __shared__ roc_shmem_ctx_t ctx;
     int64_t ctx_type = 0;
 
@@ -34,7 +34,7 @@ __global__ void allreduce_test(int *source, int *dest, int* pWork, long *pSync, 
     roc_shmem_wg_ctx_create(ctx_type, &ctx);
     int num_pes = roc_shmem_ctx_n_pes(ctx);
 
-    roc_shmem_ctx_int_sum_wg_to_all(ctx, dest, source, nelem, 0, 0, num_pes, pWork, pSync);
+    roc_shmem_ctx_int_sum_wg_to_all(ctx, team, dest, source, nelem);
 
     roc_shmem_ctx_quiet(ctx);
     __syncthreads();
@@ -97,18 +97,16 @@ int main (int argc, char **argv)
         result[i] = -1;
     }
 
-    size_t p_wrk_size = ROC_SHMEM_REDUCE_MIN_WRKDATA_SIZE;
-    int *pWrk = (int *)roc_shmem_malloc(p_wrk_size * sizeof(int));
+    roc_shmem_team_t team_reduce_world_dup;
+    team_reduce_world_dup = ROC_SHMEM_TEAM_INVALID;
+    roc_shmem_team_split_strided(ROC_SHMEM_TEAM_WORLD, 0, 1, npes, nullptr, 0,
+                               &team_reduce_world_dup);
 
-    size_t p_sync_size = ROC_SHMEM_REDUCE_SYNC_SIZE;
-    long *pSync = (long *)roc_shmem_malloc(p_sync_size * sizeof(long));
-    for (int i = 0; i < p_sync_size; i++) {
-        pSync[i] = ROC_SHMEM_SYNC_VALUE;
-    }
     CHECK_HIP(hipDeviceSynchronize());
 
     int threadsPerBlock=256;
-    allreduce_test<<<dim3(1), dim3(threadsPerBlock), 0, 0>>>(source, result, pWrk, pSync, nelem);
+    allreduce_test<<<dim3(1), dim3(threadsPerBlock), 0, 0>>>(source, result,
+                        nelem, team_reduce_world_dup);
     CHECK_HIP(hipDeviceSynchronize());
 
     bool pass = check_recvbuf(result, npes, rank, nelem);
@@ -117,8 +115,6 @@ int main (int argc, char **argv)
     
     roc_shmem_free(source);
     roc_shmem_free(result);
-    roc_shmem_free(pWrk);
-    roc_shmem_free(pSync);
 
     roc_shmem_finalize();
     return 0;

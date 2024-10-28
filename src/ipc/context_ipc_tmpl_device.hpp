@@ -164,11 +164,10 @@ __device__ void compute_reduce(T *src, T *dst, int size, int wg_id,
 
 template <typename T, ROC_SHMEM_OP Op>
 __device__ void IPCContext::internal_direct_allreduce(
-    T *dst, const T *src, int nelems, int PE_start, int logPE_stride,
+    T *dst, const T *src, int nelems, int PE_start, int stride,
     int PE_size, T *pWrk,
     long *pSync) {  // NOLINT(runtime/int)
 
-  int stride = 1 << logPE_stride;
   int finish = PE_start + stride * PE_size;
   int pe = my_pe;
 
@@ -183,12 +182,12 @@ __device__ void IPCContext::internal_direct_allreduce(
 
   for (int i = PE_start; i < finish; i += stride) {
     if (i != pe) {
-      putmem_nbi_wg(&pWrk[pe * nelems], reinterpret_cast<const void *>(src),
+      internal_putmem_wg(&pWrk[pe * nelems], reinterpret_cast<const void *>(src),
                     nelems * sizeof(T), i);
 
       if (is_thread_zero_in_block()) {
         fence();
-        put_nbi(&pSync[pe], &flag_val, 1, i);
+        internal_putmem(&pSync[pe], &flag_val, sizeof(*pSync), i);
       }
     }
   }
@@ -278,7 +277,7 @@ __device__ void IPCContext::internal_direct_allreduce(
 template <typename T, ROC_SHMEM_OP Op>
 __device__ void IPCContext::internal_ring_allreduce(
     T *dst, const T *src, int nelems, [[maybe_unused]] int PE_start,
-    [[maybe_unused]] int logPE_stride, [[maybe_unused]] int PE_size, T *pWrk,
+    [[maybe_unused]] int stride, [[maybe_unused]] int PE_size, T *pWrk,
     long *pSync,  // NOLINT(runtime/int)
     int n_seg, int seg_size, int chunk_size) {
   int off_seg, off_send, off_recv;
@@ -300,7 +299,7 @@ __device__ void IPCContext::internal_ring_allreduce(
       off_send = (((my_pe + 1 - iter + 2 * num_pes) % num_pes) * chunk_size);
       off_recv = (((my_pe - iter + 2 * num_pes) % num_pes) * chunk_size);
 
-      putmem_nbi_wg(reinterpret_cast<void *>(&pWrk[off_send]),
+      internal_putmem_wg(reinterpret_cast<void *>(&pWrk[off_send]),
                     reinterpret_cast<void *>(&dst[off_send + off_seg]),
                     chunk_size * sizeof(T), send_pe);
 
@@ -308,7 +307,7 @@ __device__ void IPCContext::internal_ring_allreduce(
         fence();
 
         wait_val = seg + 100;
-        put_nbi(&pSync[iter], &wait_val, 1, send_pe);
+        internal_putmem(&pSync[iter], &wait_val, sizeof(*pSync), send_pe);
 #if defined(__gfx90a__)
         __threadfence_system();
 #endif /* __gfx90a__ */
@@ -329,7 +328,7 @@ __device__ void IPCContext::internal_ring_allreduce(
       if (is_thread_zero_in_block()) {
         fence();
         wait_val = seg + 100;
-        put_nbi(&pSync[iter], &wait_val, 1, send_pe);
+        internal_putmem(&pSync[iter], &wait_val, sizeof(*pSync), send_pe);
 #if defined(__gfx90a__)
         __threadfence_system();
 #endif /* __gfx90a__ */
@@ -354,19 +353,19 @@ __device__ void IPCContext::to_all(roc_shmem_team_t team, T *dest,
   /**
    * Ensure that the stride is a multiple of 2 for GPU_IB.
    */
-  int log_pe_stride = static_cast<int>(team_obj->tinfo_wrt_world->log_stride);
+  int stride = team_obj->tinfo_wrt_world->stride;
   int pe_start = team_obj->tinfo_wrt_world->pe_start;
   int pe_size = team_obj->tinfo_wrt_world->size;
   long *p_sync = team_obj->barrier_pSync;
   T *pWrk = reinterpret_cast<T *>(team_obj->pWrk);
 
-  to_all<T, Op>(dest, source, nreduce, pe_start, log_pe_stride, pe_size, pWrk,
+  internal_to_all<T, Op>(dest, source, nreduce, pe_start, stride, pe_size, pWrk,
                 p_sync);
 }
 
 template <typename T, ROC_SHMEM_OP Op>
-__device__ void IPCContext::to_all(T *dest, const T *source, int nreduce,
-                                   int PE_start, int logPE_stride,
+__device__ void IPCContext::internal_to_all(T *dest, const T *source, int nreduce,
+                                   int PE_start, int stride,
                                    int PE_size, T *pWrk,
                                    long *pSync) {  // NOLINT(runtime/int)
   size_t direct_pWrk = num_pes * nreduce;
@@ -376,7 +375,7 @@ __device__ void IPCContext::to_all(T *dest, const T *source, int nreduce,
   size_t provided_pSync = ROC_SHMEM_REDUCE_SYNC_SIZE;
 
   if (provided_pWrk >= direct_pWrk && provided_pSync >= direct_pSync) {
-    internal_direct_allreduce<T, Op>(dest, source, nreduce, PE_start, logPE_stride,
+    internal_direct_allreduce<T, Op>(dest, source, nreduce, PE_start, stride,
                                      PE_size, pWrk, pSync);
   } else {
     if (ring_pSync <= ROC_SHMEM_REDUCE_SYNC_SIZE) {
@@ -395,7 +394,7 @@ __device__ void IPCContext::to_all(T *dest, const T *source, int nreduce,
         n_seg = 1;
       }
       internal_ring_allreduce<T, Op>(dest, source, nreduce, PE_start,
-                                     logPE_stride, PE_size, pWrk, pSync, n_seg,
+                                     stride, PE_size, pWrk, pSync, n_seg,
                                      seg_size, chunk_size);
       if (n_seg_up > n_seg) {
         T *p_dst = (dest + (n_seg * seg_size));
@@ -403,7 +402,7 @@ __device__ void IPCContext::to_all(T *dest, const T *source, int nreduce,
         int p_count = nreduce - (n_seg * seg_size);
         int p_chunk = p_count / num_pes;
 
-        internal_ring_allreduce<T, Op>(p_dst, p_src, p_count, PE_start, logPE_stride,
+        internal_ring_allreduce<T, Op>(p_dst, p_src, p_count, PE_start, stride,
                                        PE_size, pWrk, pSync, 1, (p_chunk * num_pes), p_chunk);
 
         if ((p_chunk * num_pes) < p_count) {
@@ -412,7 +411,7 @@ __device__ void IPCContext::to_all(T *dest, const T *source, int nreduce,
           p_dst += (p_chunk * num_pes);
           const T *p_src2 = p_src + (p_chunk * num_pes);
 
-          internal_direct_allreduce<T, Op>(p_dst, p_src2, p_count, PE_start, logPE_stride,
+          internal_direct_allreduce<T, Op>(p_dst, p_src2, p_count, PE_start, stride,
                                            PE_size, pWrk, pSync);
         }
       }

@@ -129,11 +129,6 @@ class IPCContext : public Context {
 
   // Collectives
   template <typename T, ROC_SHMEM_OP Op>
-  __device__ void to_all(T *dest, const T *source, int nreduce, int PE_start,
-                         int logPE_stride, int PE_size, T *pWrk,
-                         long *pSync);  // NOLINT(runtime/int)
-
-  template <typename T, ROC_SHMEM_OP Op>
   __device__ void to_all(roc_shmem_team_t team, T *dest, const T *source,
                          int nreduce);
 
@@ -213,7 +208,12 @@ class IPCContext : public Context {
   char* g_ret;
 
   //internal functions used by collective operations
-   template <typename T>
+  template <typename T, ROC_SHMEM_OP Op>
+  __device__ void internal_to_all(T *dest, const T *source, int nreduce, int PE_start,
+                         int stride, int PE_size, T *pWrk,
+                         long *pSync);  // NOLINT(runtime/int)
+
+  template <typename T>
   __device__ void internal_put_broadcast(T *dst, const T *src, int nelems,
                                          int pe_root, int PE_start,
                                          int logPE_stride, int PE_size);  // NOLINT(runtime/int)
