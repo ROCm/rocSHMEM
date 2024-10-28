@@ -37,7 +37,7 @@ enum TestType {
   PutTestType = 2,
   PutNBITestType = 3,
   GetSwarmTestType = 4,
-  ReductionTestType = 5,
+  // ReductionTestType = 5,
   AMO_FAddTestType = 6,
   AMO_FIncTestType = 7,
   AMO_FetchTestType = 8,
