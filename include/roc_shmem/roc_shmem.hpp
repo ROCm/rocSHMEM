@@ -870,16 +870,12 @@ __device__ ATTR_NO_INLINE void roc_shmem_threadfence_system();
  */
 #define BROADCAST_API_GEN(T, TNAME)                                          \
   __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_wg_broadcast(       \
-      roc_shmem_ctx_t ctx, T *dest, const T *source, int nelem, int pe_root, \
-      int pe_start, int log_pe_stride, int pe_size,                          \
-      long *p_sync); /* NOLINT */                                            \
+      roc_shmem_ctx_t ctx, roc_shmem_team_t team, T *dest, const T *source,  \
+      int nelem, int pe_root); /* NOLINT */                                  \
   __host__ void roc_shmem_ctx_##TNAME##_broadcast(                           \
       roc_shmem_ctx_t ctx, T *dest, const T *source, int nelem, int pe_root, \
       int pe_start, int log_pe_stride, int pe_size,                          \
       long *p_sync); /* NOLINT */                                            \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_wg_broadcast(       \
-      roc_shmem_ctx_t ctx, roc_shmem_team_t team, T *dest, const T *source,  \
-      int nelem, int pe_root); /* NOLINT */                                  \
   __host__ void roc_shmem_ctx_##TNAME##_broadcast(                           \
       roc_shmem_ctx_t ctx, roc_shmem_team_t team, T *dest, const T *source,  \
       int nelem, int pe_root); /* NOLINT */

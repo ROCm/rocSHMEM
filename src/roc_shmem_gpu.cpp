@@ -438,17 +438,6 @@ __device__ void roc_shmem_wg_to_all(roc_shmem_ctx_t ctx, roc_shmem_team_t team,
 }
 
 template <typename T>
-__device__ void roc_shmem_wg_broadcast(roc_shmem_ctx_t ctx, T *dest,
-                                       const T *source, int nelem, int pe_root,
-                                       int pe_start, int log_pe_stride,
-                                       int pe_size, long *p_sync) {
-  GPU_DPRINTF("Function: roc_shmem_broadcast\n");
-
-  get_internal_ctx(ctx)->broadcast<T>(dest, source, nelem, pe_root, pe_start,
-                                      log_pe_stride, pe_size, p_sync);
-}
-
-template <typename T>
 __device__ void roc_shmem_wg_broadcast(roc_shmem_ctx_t ctx,
                                        roc_shmem_team_t team, T *dest,
                                        const T *source, int nelem,
@@ -906,9 +895,6 @@ __device__ int roc_shmem_team_translate_pe(roc_shmem_team_t src_team,
                                                 size_t nelems, int pe);        \
   template __device__ T roc_shmem_g<T>(const T *source, int pe);               \
   template __device__ void roc_shmem_wg_broadcast<T>(                          \
-      roc_shmem_ctx_t ctx, T * dest, const T *source, int nelem, int pe_root,  \
-      int pe_start, int log_pe_stride, int pe_size, long *p_sync);             \
-  template __device__ void roc_shmem_wg_broadcast<T>(                          \
       roc_shmem_ctx_t ctx, roc_shmem_team_t team, T * dest, const T *source,   \
       int nelem, int pe_root);                                                 \
   template __device__ void roc_shmem_wg_alltoall<T>(                           \
@@ -1219,12 +1205,6 @@ __device__ int roc_shmem_team_translate_pe(roc_shmem_team_t src_team,
   __device__ void roc_shmemx_##TNAME##_get_nbi_wg(T *dest, const T *source,    \
                                                   size_t nelems, int pe) {     \
     roc_shmemx_get_nbi_wg<T>(dest, source, nelems, pe);                        \
-  }                                                                            \
-  __device__ void roc_shmem_ctx_##TNAME##_wg_broadcast(                        \
-      roc_shmem_ctx_t ctx, T *dest, const T *source, int nelem, int pe_root,   \
-      int pe_start, int log_pe_stride, int pe_size, long *p_sync) {            \
-    roc_shmem_wg_broadcast<T>(ctx, dest, source, nelem, pe_root, pe_start,     \
-                              log_pe_stride, pe_size, p_sync);                 \
   }                                                                            \
   __device__ void roc_shmem_ctx_##TNAME##_wg_broadcast(                        \
       roc_shmem_ctx_t ctx, roc_shmem_team_t team, T *dest, const T *source,    \
