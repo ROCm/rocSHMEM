@@ -137,10 +137,9 @@ void TesterArguments::get_rocshmem_arguments() {
 
   TestType type = (TestType)algorithm;
   if ((type != BarrierAllTestType) && (type != SyncAllTestType) &&
-      (type != SyncTestType) && (type != BroadcastTestType) &&
-      (type != AllToAllTestType) && (type != FCollectTestType) &&
-      (type != TeamReductionTestType) && (type != TeamBroadcastTestType) &&
-      (type != PingAllTestType)) {
+      (type != SyncTestType) && (type != AllToAllTestType) &&
+      (type != FCollectTestType) && (type != TeamReductionTestType) &&
+      (type != TeamBroadcastTestType) && (type != PingAllTestType)) {
     if (numprocs != 2) {
       if (myid == 0) {
         std::cerr << "This test requires exactly two processes, we have "

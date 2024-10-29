@@ -52,7 +52,7 @@ enum TestType {
   BarrierAllTestType = 17,
   SyncAllTestType = 18,
   SyncTestType = 19,
-  BroadcastTestType = 20,
+  // BroadcastTestType = 20,
   CollectTestType = 21,
   FCollectTestType = 22,
   AllToAllTestType = 23,

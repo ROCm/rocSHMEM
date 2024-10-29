@@ -35,7 +35,6 @@
 #include "amo_extended_tester.hpp"
 #include "amo_standard_tester.hpp"
 #include "barrier_all_tester.hpp"
-#include "broadcast_tester.hpp"
 #include "empty_tester.hpp"
 #include "extended_primitives.hpp"
 #include "fcollect_tester.hpp"
@@ -153,43 +152,6 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
                        : std::make_pair(false, "Got " + std::to_string(v) +
                                                    ", Expect " +
                                                    std::to_string(n_pes));
-          }));
-      return testers;
-    case BroadcastTestType:
-      if (rank == 0) {
-        std::cout << "Broadcast Test ###" << std::endl;
-      }
-      testers.push_back(new BroadcastTester<long>(
-          args,
-          [](long& f1, long& f2) {
-            f1 = 1;
-            f2 = 2;
-          },
-          [rank](long v) {
-            long expected_val;
-            /**
-             * The verification routine here requires that the
-             * PE_root value is 0 which denotes that the
-             * sending processing element is rank 0.
-             *
-             * The difference in expected values arises from
-             * the specification for broadcast where the
-             * PE_root processing element does not copy the
-             * contents from its own source to dest during
-             * the broadcast.
-             */
-            if (rank == 0) {
-              expected_val = 2;
-            } else {
-              expected_val = 1;
-            }
-
-            return (v == expected_val)
-                       ? std::make_pair(true, "")
-                       : std::make_pair(
-                             false, "Rank " + std::to_string(rank) + ", Got " +
-                                        std::to_string(v) + ", Expect " +
-                                        std::to_string(expected_val));
           }));
       return testers;
     case TeamBroadcastTestType:
@@ -571,7 +533,6 @@ bool Tester::peLaunchesKernel() {
    * Some test types are active on both sides.
    */
   is_launcher = is_launcher || (_type == TeamReductionTestType) ||
-                (_type == BroadcastTestType) ||
                 (_type == TeamBroadcastTestType) ||
                 (_type == AllToAllTestType) || (_type == FCollectTestType) ||
                 (_type == PingPongTestType) || (_type == BarrierAllTestType) ||
