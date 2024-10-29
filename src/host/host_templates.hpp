@@ -376,9 +376,9 @@ __host__ void HostInterface::to_all(T* dest, const T* source, int nreduce,
 }
 
 template <typename T, ROC_SHMEM_OP Op>
-__host__ void HostInterface::to_all(roc_shmem_team_t team, T* dest,
+__host__ int HostInterface::reduce(roc_shmem_team_t team, T* dest,
                                     const T* source, int nreduce) {
-  DPRINTF("Function: Team-based host_to_all\n");
+  DPRINTF("Function: Team-based host_reduce\n");
 
   /*
    * Get the MPI communicator of this team
@@ -388,7 +388,7 @@ __host__ void HostInterface::to_all(roc_shmem_team_t team, T* dest,
 
   to_all_internal<T, Op>(mpi_comm, dest, source, nreduce);
 
-  return;
+  return ROC_SHMEM_SUCCESS;
 }
 
 template <typename T>

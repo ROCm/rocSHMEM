@@ -151,7 +151,7 @@ __device__ T IPCContext::amo_fetch_cas(void *dest, T value, T cond, int pe) {
       reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), cond,
       value);
 }
-  
+
 // Collectives
 template <typename T, ROC_SHMEM_OP Op>
 __device__ void compute_reduce(T *src, T *dst, int size, int wg_id,
@@ -346,8 +346,8 @@ __device__ void IPCContext::internal_ring_allreduce(
 }
 
 template <typename T, ROC_SHMEM_OP Op>
-__device__ void IPCContext::to_all(roc_shmem_team_t team, T *dest,
-                                   const T *source, int nreduce) {
+__device__ int IPCContext::reduce(roc_shmem_team_t team, T *dest,
+                                  const T *source, int nreduce) {
   IPCTeam *team_obj = reinterpret_cast<IPCTeam *>(team);
 
   /**
@@ -361,6 +361,7 @@ __device__ void IPCContext::to_all(roc_shmem_team_t team, T *dest,
 
   internal_to_all<T, Op>(dest, source, nreduce, pe_start, stride, pe_size, pWrk,
                 p_sync);
+  return ROC_SHMEM_SUCCESS;
 }
 
 template <typename T, ROC_SHMEM_OP Op>

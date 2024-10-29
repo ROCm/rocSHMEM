@@ -122,8 +122,7 @@ class IPCContext : public Context {
 
   // Collectives
   template <typename T, ROC_SHMEM_OP Op>
-  __device__ void to_all(roc_shmem_team_t team, T *dest, const T *source,
-                         int nreduce);
+  __device__ int reduce(roc_shmem_team_t team, T *dest, const T *source, int nreduce);
 
   template <typename T>
   __device__ void broadcast(roc_shmem_team_t team, T *dest, const T *source,

@@ -734,13 +734,13 @@ __host__ void roc_shmem_to_all([[maybe_unused]] roc_shmem_ctx_t ctx, T *dest,
 }
 
 template <typename T, ROC_SHMEM_OP Op>
-__host__ void roc_shmem_to_all([[maybe_unused]] roc_shmem_ctx_t ctx,
+__host__ int roc_shmem_reduce([[maybe_unused]] roc_shmem_ctx_t ctx,
                                roc_shmem_team_t team, T *dest, const T *source,
                                int nreduce) {
-  DPRINTF("Host function: Team-based roc_shmem_to_all\n");
+  DPRINTF("Host function: Team-based roc_shmem_reduce\n");
 
-  get_internal_ctx(ROC_SHMEM_HOST_CTX_DEFAULT)
-      ->to_all<T, Op>(team, dest, source, nreduce);
+  return get_internal_ctx(ROC_SHMEM_HOST_CTX_DEFAULT)
+              ->reduce<T, Op>(team, dest, source, nreduce);
 }
 
 template <typename T>
@@ -821,7 +821,7 @@ __host__ int roc_shmem_test(T *ivars, int cmp, T val) {
   template __host__ void roc_shmem_to_all<T, Op>(                            \
       roc_shmem_ctx_t ctx, T * dest, const T *source, int nreduce,           \
       int PE_start, int logPE_stride, int PE_size, T *pWrk, long *pSync);    \
-  template __host__ void roc_shmem_to_all<T, Op>(                            \
+  template __host__ int roc_shmem_reduce<T, Op>(                             \
       roc_shmem_ctx_t ctx, roc_shmem_team_t team, T * dest, const T *source, \
       int nreduce);
 
@@ -977,10 +977,10 @@ __host__ int roc_shmem_test(T *ivars, int cmp, T val) {
     roc_shmem_to_all<T, Op>(ctx, dest, source, nreduce, PE_start,           \
                             logPE_stride, PE_size, pWrk, pSync);            \
   }                                                                         \
-  __host__ void roc_shmem_ctx_##TNAME##_##Op_API##_to_all(                  \
+  __host__ int roc_shmem_ctx_##TNAME##_##Op_API##_reduce(                   \
       roc_shmem_ctx_t ctx, roc_shmem_team_t team, T *dest, const T *source, \
       int nreduce) {                                                        \
-    roc_shmem_to_all<T, Op>(ctx, team, dest, source, nreduce);              \
+    return roc_shmem_reduce<T, Op>(ctx, team, dest, source, nreduce);       \
   }
 
 #define ARITH_REDUCTION_DEF_GEN(T, TNAME)         \

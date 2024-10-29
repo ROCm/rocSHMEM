@@ -192,8 +192,7 @@ class Context {
                          long* pSync);  // NOLINT(runtime/int)
 
   template <typename T, ROC_SHMEM_OP Op>
-  __device__ void to_all(roc_shmem_team_t team, T* dest, const T* source,
-                         int nreduce);
+  __device__ int reduce(roc_shmem_team_t team, T* dest, const T* source, int nreduce);
 
   template <typename T>
   __device__ void put(T* dest, const T* source, size_t nelems, int pe);
@@ -361,8 +360,7 @@ class Context {
                        long* pSync);  // NOLINT(runtime/int)
 
   template <typename T, ROC_SHMEM_OP Op>
-  __host__ void to_all(roc_shmem_team_t team, T* dest, const T* source,
-                       int nreduce);
+  __host__ int reduce(roc_shmem_team_t team, T* dest, const T* source, int nreduce);
 
   template <typename T>
   __host__ void wait_until(T *ivars, int cmp, T val);

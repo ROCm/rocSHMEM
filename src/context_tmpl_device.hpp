@@ -80,17 +80,17 @@ __device__ void Context::to_all(T *dest, const T *source, int nreduce,
 }
 
 template <typename T, ROC_SHMEM_OP Op>
-__device__ void Context::to_all(roc_shmem_team_t team, T *dest, const T *source,
+__device__ int Context::reduce(roc_shmem_team_t team, T *dest, const T *source,
                                 int nreduce) {
   if (nreduce == 0) {
-    return;
+    return ROC_SHMEM_SUCCESS;
   }
 
   if (is_thread_zero_in_block()) {
     ctxStats.incStat(NUM_TO_ALL);
   }
 
-  DISPATCH(to_all<PAIR(T, Op)>(team, dest, source, nreduce));
+  DISPATCH_RET(reduce<PAIR(T, Op)>(team, dest, source, nreduce));
 }
 
 template <typename T>

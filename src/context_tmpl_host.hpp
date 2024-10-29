@@ -222,15 +222,15 @@ __host__ void Context::to_all(T *dest, const T *source, int nreduce,
 }
 
 template <typename T, ROC_SHMEM_OP Op>
-__host__ void Context::to_all(roc_shmem_team_t team, T *dest, const T *source,
-                              int nreduce) {  // NOLINT(runtime/int)
+__host__ int Context::reduce(roc_shmem_team_t team, T *dest, const T *source,
+                             int nreduce) {  // NOLINT(runtime/int)
   if (nreduce == 0) {
-    return;
+    return ROC_SHMEM_SUCCESS;
   }
 
   ctxHostStats.incStat(NUM_HOST_TO_ALL);
 
-  HOST_DISPATCH(to_all<PAIR(T, Op)>(team, dest, source, nreduce));
+  HOST_DISPATCH_RET(reduce<PAIR(T, Op)>(team, dest, source, nreduce));
 }
 
 template <typename T>

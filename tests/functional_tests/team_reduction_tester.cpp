@@ -24,19 +24,19 @@ using namespace rocshmem;
 
 /* Declare the template with a generic implementation */
 template <typename T, ROC_SHMEM_OP Op>
-__device__ void wg_team_to_all(roc_shmem_ctx_t ctx, roc_shmem_team_t, T *dest,
+__device__ int wg_team_reduce(roc_shmem_ctx_t ctx, roc_shmem_team_t, T *dest,
                                const T *source, int nreduce) {
-  return;
+  return ROC_SHMEM_SUCCESS;
 }
 
 /* Define templates to call ROC_SHMEM */
 #define TEAM_REDUCTION_DEF_GEN(T, TNAME, Op_API, Op)                      \
   template <>                                                             \
-  __device__ void wg_team_to_all<T, Op>(roc_shmem_ctx_t ctx,              \
-                                        roc_shmem_team_t team, T * dest,  \
-                                        const T *source, int nreduce) {   \
-    roc_shmem_ctx_##TNAME##_##Op_API##_wg_to_all(ctx, team, dest, source, \
-                                                 nreduce);                \
+  __device__ int wg_team_reduce<T, Op>(roc_shmem_ctx_t ctx,               \
+                                       roc_shmem_team_t team, T * dest,   \
+                                       const T *source, int nreduce) {    \
+    return roc_shmem_ctx_##TNAME##_##Op_API##_wg_reduce(ctx, team, dest,  \
+                                                        source, nreduce); \
   }
 
 #define TEAM_ARITH_REDUCTION_DEF_GEN(T, TNAME)         \
@@ -91,7 +91,7 @@ __global__ void TeamReductionTest(int loop, int skip, uint64_t *timer,
     if (i == skip && hipThreadIdx_x == 0) {
       start = roc_shmem_timer();
     }
-    wg_team_to_all<T1, T2>(ctx, team, r_buf, s_buf, size);
+    wg_team_reduce<T1, T2>(ctx, team, r_buf, s_buf, size);
     roc_shmem_ctx_wg_barrier_all(ctx);
   }
 

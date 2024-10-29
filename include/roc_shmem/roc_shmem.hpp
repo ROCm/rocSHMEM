@@ -49,6 +49,12 @@ namespace rocshmem {
 #define ATTR_NO_INLINE
 #endif
 
+
+enum ROC_SHMEM_STATUS {
+  ROC_SHMEM_SUCCESS = 0,
+  ROC_SHMEM_ERROR = 1,
+};
+
 enum ROC_SHMEM_OP {
   ROC_SHMEM_SUM,
   ROC_SHMEM_MAX,
@@ -837,14 +843,14 @@ __device__ ATTR_NO_INLINE void roc_shmem_threadfence_system();
  * MACRO DECLARE SHMEM_REDUCTION APIs
  */
 #define REDUCTION_API_GEN(T, TNAME, Op_API)                                    \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_##Op_API##_wg_to_all( \
+  __device__ ATTR_NO_INLINE int roc_shmem_ctx_##TNAME##_##Op_API##_wg_reduce(  \
       roc_shmem_ctx_t ctx, roc_shmem_team_t team, T *dest, const T *source,    \
       int nreduce);                                                            \
   __host__ void roc_shmem_ctx_##TNAME##_##Op_API##_to_all(                     \
       roc_shmem_ctx_t ctx, T *dest, const T *source, int nreduce,              \
       int PE_start, int logPE_stride, int PE_size, T *pWrk,                    \
       long *pSync); /* NOLINT */                                               \
-  __host__ void roc_shmem_ctx_##TNAME##_##Op_API##_to_all(                     \
+  __host__ int roc_shmem_ctx_##TNAME##_##Op_API##_reduce(                      \
       roc_shmem_ctx_t ctx, roc_shmem_team_t team, T *dest, const T *source,    \
       int nreduce);
 
