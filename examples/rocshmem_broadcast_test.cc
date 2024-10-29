@@ -1,11 +1,11 @@
 /*
-** hipcc -c -fgpu-rdc -x hip rocshmem_allreduce_test.cc -I/opt/rocm/include 
+** hipcc -c -fgpu-rdc -x hip rocshmem_broadcast_test.cc -I/opt/rocm/include 
 **       -I$ROCHSMEM_INSTALL_DIR/include -I$OPENMPI_UCX_INSTALL_DIR/include/
-** hipcc -fgpu-rdc --hip-link rocshmem_allreduce_test.o -o rocshmem_allreduce_test 
+** hipcc -fgpu-rdc --hip-link rocshmem_broadcast_test.o -o rocshmem_broadcast_test 
 **       $ROCHSMEM_INSTALL_DIR/lib/librocshmem.a $OPENMPI_UCX_INSTALL_DIR/lib/libmpi.so 
 **       -L/opt/rocm/lib -lamdhip64 -lhsa-runtime64
 **
-** ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 8 ./rocshmem_allreduce_test
+** ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 8 ./rocshmem_broadcast_test
 */
 
 #include <iostream>
@@ -25,8 +25,8 @@
 
 using namespace rocshmem;
 
-__global__ void allreduce_test(int *source, int *dest, size_t nelem,
-        roc_shmem_team_t team) {
+__global__ void broadcast_test(int *source, int *dest, size_t nelem,
+        int root, roc_shmem_team_t team) {
     __shared__ roc_shmem_ctx_t ctx;
     int64_t ctx_type = 0;
 
@@ -34,7 +34,7 @@ __global__ void allreduce_test(int *source, int *dest, size_t nelem,
     roc_shmem_wg_ctx_create(ctx_type, &ctx);
     int num_pes = roc_shmem_ctx_n_pes(ctx);
 
-    roc_shmem_ctx_int_sum_wg_to_all(ctx, team, dest, source, nelem);
+    roc_shmem_ctx_int_wg_broadcast(ctx, team, dest, source, nelem, root);
 
     roc_shmem_ctx_quiet(ctx);
     __syncthreads();
@@ -43,24 +43,22 @@ __global__ void allreduce_test(int *source, int *dest, size_t nelem,
     roc_shmem_wg_finalize();
 }
 
-static void init_sendbuf (int *source, int nelem, int my_pe)
+static void init_sendbuf(int *source, int nelem, int my_pe)
 {
     for (int i = 0; i < nelem; i++) {
-        source[i] = my_pe + i%9;
+        source[i] = i;
     }
 }
 
 static bool check_recvbuf(int *dest, int nelem, int my_pe, int npes)
 {
     bool res=true;
-    int expected = npes * (npes -1) / 2;
 
-    for (int i = 0; i < nelem; i++) {
-        int result = expected + npes * (i%9);
-        if (dest[i] != result) {
+    for (int i = 0; i < npes; i++) {
+        if (dest[i] != i) {
             res = false;
 #ifdef VERBOSE
-            printf("recvbuf[%d] = %d expected %d \n", i, recvbuf[i], result);
+            printf("PE: %d, dest[%d] = %d, expected %d \n", my_pe, i, dest[i], i);
 #endif
         }
     }
@@ -70,7 +68,7 @@ static bool check_recvbuf(int *dest, int nelem, int my_pe, int npes)
 
 #define MAX_ELEM 256
 
-int main (int argc, char **argv)
+int main(int argc, char **argv)
 {
     int nelem = MAX_ELEM;
 
@@ -100,6 +98,7 @@ int main (int argc, char **argv)
         dest[i] = -1;
     }
 
+    int root = 0;
     roc_shmem_team_t team_reduce_world_dup;
     team_reduce_world_dup = ROC_SHMEM_TEAM_INVALID;
     roc_shmem_team_split_strided(ROC_SHMEM_TEAM_WORLD, 0, 1, npes, nullptr, 0,
@@ -108,12 +107,14 @@ int main (int argc, char **argv)
     CHECK_HIP(hipDeviceSynchronize());
 
     int threadsPerBlock=256;
-    allreduce_test<<<dim3(1), dim3(threadsPerBlock), 0, 0>>>(source, dest,
-                        nelem, team_reduce_world_dup);
+    broadcast_test<<<dim3(1), dim3(threadsPerBlock), 0, 0>>>(source, dest,
+                        nelem, root, team_reduce_world_dup);
     CHECK_HIP(hipDeviceSynchronize());
 
-    bool pass = check_recvbuf(dest, nelem, my_pe, npes);
-    printf("Test %s \t nelem %d %s\n", argv[0], nelem, pass ? "[PASS]" : "[FAIL]");
+    if(my_pe != root) {
+        bool pass = check_recvbuf(dest, nelem, my_pe, npes);
+        printf("Test %s \t nelem %d %s\n", argv[0], nelem, pass ? "[PASS]" : "[FAIL]");
+    }
     
     roc_shmem_free(source);
     roc_shmem_free(dest);

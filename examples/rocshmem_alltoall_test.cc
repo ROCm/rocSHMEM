@@ -1,7 +1,7 @@
 /*
-** hipcc -c -fgpu-rdc -x hip rocshmem_allreduce_test.cc -I/opt/rocm/include 
+** hipcc -c -fgpu-rdc -x hip rocshmem_alltoall_test.cc -I/opt/rocm/include 
 **       -I$ROCHSMEM_INSTALL_DIR/include -I$OPENMPI_UCX_INSTALL_DIR/include/
-** hipcc -fgpu-rdc --hip-link rocshmem_allreduce_test.o -o rocshmem_allreduce_test 
+** hipcc -fgpu-rdc --hip-link rocshmem_alltoall_test.o -o rocshmem_alltoall_test 
 **       $ROCHSMEM_INSTALL_DIR/lib/librocshmem.a $OPENMPI_UCX_INSTALL_DIR/lib/libmpi.so 
 **       -L/opt/rocm/lib -lamdhip64 -lhsa-runtime64
 **
@@ -25,7 +25,7 @@
 
 using namespace rocshmem;
 
-__global__ void allreduce_test(int *source, int *dest, size_t nelem,
+__global__ void alltoall_test(int *source, int *dest, size_t nelem,
         roc_shmem_team_t team) {
     __shared__ roc_shmem_ctx_t ctx;
     int64_t ctx_type = 0;
@@ -34,7 +34,7 @@ __global__ void allreduce_test(int *source, int *dest, size_t nelem,
     roc_shmem_wg_ctx_create(ctx_type, &ctx);
     int num_pes = roc_shmem_ctx_n_pes(ctx);
 
-    roc_shmem_ctx_int_sum_wg_to_all(ctx, team, dest, source, nelem);
+    roc_shmem_ctx_int_wg_alltoall(ctx, team, dest, source, nelem);
 
     roc_shmem_ctx_quiet(ctx);
     __syncthreads();
@@ -43,25 +43,30 @@ __global__ void allreduce_test(int *source, int *dest, size_t nelem,
     roc_shmem_wg_finalize();
 }
 
-static void init_sendbuf (int *source, int nelem, int my_pe)
+static void init_sendbuf (int *source, int nelem, int my_pe, int npes)
 {
-    for (int i = 0; i < nelem; i++) {
-        source[i] = my_pe + i%9;
+    for (int pe = 0; pe < npes; pe++) {
+        for (int i = 0; i < nelem; i++) {
+            int idx = (pe * nelem) + i;
+            source[idx] = my_pe + pe;
+        }
     }
 }
 
 static bool check_recvbuf(int *dest, int nelem, int my_pe, int npes)
 {
     bool res=true;
-    int expected = npes * (npes -1) / 2;
 
-    for (int i = 0; i < nelem; i++) {
-        int result = expected + npes * (i%9);
-        if (dest[i] != result) {
-            res = false;
+    for(int pe = 0; pe < npes; pe++) {
+        for(int i = 0; i < nelem; i++) {
+            int idx = (pe * nelem) + i;
+            int result = my_pe + pe;
+            if (dest[idx] != result) {
+                res = false;
 #ifdef VERBOSE
-            printf("recvbuf[%d] = %d expected %d \n", i, recvbuf[i], result);
+                printf("recvbuf[%d] = %d expected %d \n", i, recvbuf[i], result);
 #endif
+            }
         }
     }
 
@@ -88,15 +93,15 @@ int main (int argc, char **argv)
 
     roc_shmem_init();
 
-    int *source = (int *)roc_shmem_malloc(nelem * sizeof(int));
-    int *dest = (int *)roc_shmem_malloc(nelem * sizeof(int));
+    int *source = (int *)roc_shmem_malloc(nelem * npes * sizeof(int));
+    int *dest = (int *)roc_shmem_malloc(nelem * npes * sizeof(int));
     if (NULL == source || NULL == dest) {
         std::cout << "Error allocating memory from symmetric heap" << std::endl;
         roc_shmem_global_exit(1);
     }
 
-    init_sendbuf(source, nelem, my_pe);
-    for (int i=0; i<nelem; i++) {
+    init_sendbuf(source, nelem, my_pe, npes);
+    for (int i = 0; i < nelem * npes; i++) {
         dest[i] = -1;
     }
 
@@ -108,11 +113,12 @@ int main (int argc, char **argv)
     CHECK_HIP(hipDeviceSynchronize());
 
     int threadsPerBlock=256;
-    allreduce_test<<<dim3(1), dim3(threadsPerBlock), 0, 0>>>(source, dest,
+    alltoall_test<<<dim3(1), dim3(threadsPerBlock), 0, 0>>>(source, dest,
                         nelem, team_reduce_world_dup);
     CHECK_HIP(hipDeviceSynchronize());
 
     bool pass = check_recvbuf(dest, nelem, my_pe, npes);
+
     printf("Test %s \t nelem %d %s\n", argv[0], nelem, pass ? "[PASS]" : "[FAIL]");
     
     roc_shmem_free(source);
