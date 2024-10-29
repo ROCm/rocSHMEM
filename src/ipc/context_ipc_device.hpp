@@ -137,10 +137,6 @@ class IPCContext : public Context {
                             int nelems, int pe_root);
 
   template <typename T>
-  __device__ void broadcast(T *dest, const T *source, int nelems, int pe_root,
-                            int pe_start, int log_pe_stride, int pe_size,
-                            long *p_sync);  // NOLINT(runtime/int)
-  template <typename T>
   __device__ void alltoall(roc_shmem_team_t team, T *dest, const T *source,
                            int nelems);
   template <typename T>
@@ -212,6 +208,11 @@ class IPCContext : public Context {
   __device__ void internal_to_all(T *dest, const T *source, int nreduce, int PE_start,
                          int stride, int PE_size, T *pWrk,
                          long *pSync);  // NOLINT(runtime/int)
+
+  template <typename T>
+  __device__ void internal_broadcast(T *dest, const T *source, int nelems, int pe_root,
+                            int pe_start, int stride, int pe_size,
+                            long *p_sync);  // NOLINT(runtime/int)
 
   template <typename T>
   __device__ void internal_put_broadcast(T *dst, const T *src, int nelems,

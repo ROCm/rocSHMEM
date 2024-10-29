@@ -424,9 +424,8 @@ __device__ void IPCContext::internal_to_all(T *dest, const T *source, int nreduc
 template <typename T>
 __device__ void IPCContext::internal_put_broadcast(
     T *dst, const T *src, int nelems, int pe_root, int pe_start,
-    int log_pe_stride, int pe_size) {  // NOLINT(runtime/int)
+    int stride, int pe_size) {  // NOLINT(runtime/int)
   if (my_pe == pe_root) {
-    int stride = 1 << log_pe_stride;
     int finish = pe_start + stride * pe_size;
     for (int i = pe_start; i < finish; i += stride) {
       if (i != my_pe) {
@@ -452,31 +451,31 @@ __device__ void IPCContext::broadcast(roc_shmem_team_t team, T *dst,
   /**
    * Ensure that the stride is a multiple of 2 .
    */
-  int log_pe_stride = static_cast<int>(team_obj->tinfo_wrt_world->log_stride);
+  int stride = team_obj->tinfo_wrt_world->stride;
   int pe_start = team_obj->tinfo_wrt_world->pe_start;
   int pe_size = team_obj->tinfo_wrt_world->size;
   long *p_sync = team_obj->bcast_pSync;
 
   // Passed pe_root is relative to team, convert to world root
   int pe_root_world = team_obj->get_pe_in_world(pe_root);
-  broadcast<T>(dst, src, nelems, pe_root_world, pe_start, log_pe_stride,
+  internal_broadcast<T>(dst, src, nelems, pe_root_world, pe_start, stride,
                pe_size, p_sync);
 }
 
 template <typename T>
-__device__ void IPCContext::broadcast(T *dst, const T *src, int nelems,
+__device__ void IPCContext::internal_broadcast(T *dst, const T *src, int nelems,
 				      int pe_root, int pe_start,
-				      int log_pe_stride, int pe_size,
+				      int stride, int pe_size,
 				      long *p_sync) {  // NOLINT(runtime/int)
   if (num_pes < 4) {
-    internal_put_broadcast(dst, src, nelems, pe_root, pe_start, log_pe_stride,
+    internal_put_broadcast(dst, src, nelems, pe_root, pe_start, stride,
                            pe_size);
   } else {
     internal_get_broadcast(dst, src, nelems, pe_root);
   }
 
   // Synchronize on completion of broadcast
-  internal_sync(my_pe, pe_start, (1 << log_pe_stride), pe_size, p_sync);
+  internal_sync(my_pe, pe_start, stride, pe_size, p_sync);
 }
 
 template <typename T>
