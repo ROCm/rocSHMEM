@@ -32,10 +32,6 @@
 #include "ipc_context_proxy.hpp"
 #include "../ipc_policy.hpp"
 
-#ifndef USE_COOPERATIVE_GROUPS
-#include "../memory/notifier.hpp"
-#endif /* NOT DEFINED: USE_COOPERATIVE_GROUPS */
-
 namespace rocshmem {
 
 class IPCBackend : public Backend {
@@ -171,10 +167,6 @@ class IPCBackend : public Backend {
    * @brief Handle for raw memory for fence/quiet
   */
   int *fence_pool{nullptr};
-
-#ifndef USE_COOPERATIVE_GROUPS
-  NotifierProxy<HIPAllocator, detail::atomic::memory_scope_agent> notifier_{};
-#endif /* NOT DEFINED: USE_COOPERATIVE_GROUPS */
 
  protected:
    /**
