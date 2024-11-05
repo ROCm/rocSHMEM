@@ -27,13 +27,6 @@
 #include "../atomic.hpp"
 #include "../team.hpp"
 
-#ifdef USE_COOPERATIVE_GROUPS
-#include <hip/hip_cooperative_groups.h>
-namespace cg = cooperative_groups;
-#else
-#include "../memory/notifier.hpp"
-#endif /* USE_COOPERATIVE_GROUPS */
-
 namespace rocshmem {
 
 class IPCContext : public Context {
@@ -272,10 +265,6 @@ class IPCContext : public Context {
 
   //Temporary scratchpad memory used by internal barrier algorithms.
   int64_t *barrier_sync{nullptr};
-
-#ifndef USE_COOPERATIVE_GROUPS
-  Notifier<detail::atomic::memory_scope_agent> *notifier_{nullptr};
-#endif /* NOT DEFINED: USE_COOPERATIVE_GROUPS */
 
   //Struct defining memory ordering for atomic operations.
   detail::atomic::rocshmem_memory_orders orders_{};

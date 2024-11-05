@@ -87,27 +87,15 @@ __device__ void IPCContext::internal_atomic_barrier(int pe, int PE_start,
 // Uses PE values that are relative to world
 __device__ void IPCContext::internal_sync(int pe, int PE_start, int stride,
                                           int PE_size, int64_t *pSync) {
-#ifdef USE_COOPERATIVE_GROUPS
-  cg::grid_group grid = cg::this_grid();
-  grid.sync();
-  if (0 == grid.thread_rank())
-#else
-  notifier_->sync();
-  if (0 == get_flat_id())
-#endif /* USE_COOPERATIVE_GROUPS */
-  {
+  __syncthreads();
+  if (is_thread_zero_in_block()) {
     if (PE_size < 64) {
       internal_direct_barrier(pe, PE_start, stride, PE_size, pSync);
     } else {
       internal_atomic_barrier(pe, PE_start, stride, PE_size, pSync);
     }
   }
-  __threadfence();
-#ifdef USE_COOPERATIVE_GROUPS
-  grid.sync();
-#else
-  notifier_->sync();
-#endif /* USE_COOPERATIVE_GROUPS */
+  __syncthreads();
 }
 
 __device__ void IPCContext::sync(roc_shmem_team_t team) {

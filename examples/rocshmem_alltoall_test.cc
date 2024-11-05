@@ -64,7 +64,7 @@ static bool check_recvbuf(int *dest, int nelem, int my_pe, int npes)
             if (dest[idx] != result) {
                 res = false;
 #ifdef VERBOSE
-                printf("recvbuf[%d] = %d expected %d \n", i, recvbuf[i], result);
+                printf("recvbuf[%d] = %d expected %d \n", i, dest[i], result);
 #endif
             }
         }

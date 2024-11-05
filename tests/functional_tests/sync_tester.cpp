@@ -83,21 +83,9 @@ void SyncTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
   roc_shmem_team_split_strided(ROC_SHMEM_TEAM_WORLD, 0, 1, n_pes, nullptr, 0,
                                &team_sync_world_dup);
 
-#ifdef USE_COOPERATIVE_GROUPS
-  void* kernelParams[] = {(void*)&loop,
-                          (void*)&args.skip,
-                          (void*)&timer,
-                          (void*)&_type,
-                          (void*)&_shmem_context,
-                          (void*)&team_sync_world_dup};
-
-  CHECK_HIP(hipLaunchCooperativeKernel(SyncTest, gridSize, blockSize,
-                                       kernelParams, shared_bytes, stream));
-#else
   hipLaunchKernelGGL(SyncTest, gridSize, blockSize, shared_bytes, stream, loop,
                      args.skip, timer, _type, _shmem_context,
                      team_sync_world_dup);
-#endif /* USE_COOPERATIVE_GROUPS */
 
   num_msgs = (loop + args.skip) * gridSize.x;
   num_timed_msgs = loop;
