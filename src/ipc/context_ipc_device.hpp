@@ -196,11 +196,6 @@ class IPCContext : public Context {
   char* g_ret;
 
   //internal functions used by collective operations
-  template <typename T, ROC_SHMEM_OP Op>
-  __device__ void internal_to_all(T *dest, const T *source, int nreduce, int PE_start,
-                         int stride, int PE_size, T *pWrk,
-                         long *pSync);  // NOLINT(runtime/int)
-
   template <typename T>
   __device__ void internal_broadcast(T *dest, const T *source, int nelems, int pe_root,
                             int pe_start, int stride, int pe_size,
@@ -234,12 +229,10 @@ class IPCContext : public Context {
 
   template <typename T, ROC_SHMEM_OP Op>
   __device__ void internal_direct_allreduce(T *dst, const T *src,
-                                            int nelems, int PE_start, int logPE_stride,
-					    int PE_size, T *pWrk, long *pSync);
+                                            int nelems, IPCTeam *team_obj);
   template <typename T, ROC_SHMEM_OP Op>
   __device__ void internal_ring_allreduce(T *dst, const T *src,
-                                          int nelems, int PE_start, int logPE_stride,
-					  int PE_size, T *pWrk, long *pSync,
+                                          int nelems, IPCTeam *team_obj,
 					  int n_seg, int seg_size, int chunk_size);
 
   //internal functions used by collectives routines to write/read to
