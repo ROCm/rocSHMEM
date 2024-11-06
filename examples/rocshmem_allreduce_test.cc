@@ -1,8 +1,8 @@
 /*
-** hipcc -c -fgpu-rdc -x hip rocshmem_allreduce_test.cc -I/opt/rocm/include 
+** hipcc -c -fgpu-rdc -x hip rocshmem_allreduce_test.cc -I/opt/rocm/include
 **       -I$ROCHSMEM_INSTALL_DIR/include -I$OPENMPI_UCX_INSTALL_DIR/include/
-** hipcc -fgpu-rdc --hip-link rocshmem_allreduce_test.o -o rocshmem_allreduce_test 
-**       $ROCHSMEM_INSTALL_DIR/lib/librocshmem.a $OPENMPI_UCX_INSTALL_DIR/lib/libmpi.so 
+** hipcc -fgpu-rdc --hip-link rocshmem_allreduce_test.o -o rocshmem_allreduce_test
+**       $ROCHSMEM_INSTALL_DIR/lib/librocshmem.a $OPENMPI_UCX_INSTALL_DIR/lib/libmpi.so
 **       -L/opt/rocm/lib -lamdhip64 -lhsa-runtime64
 **
 ** ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 8 ./rocshmem_allreduce_test
@@ -34,7 +34,7 @@ __global__ void allreduce_test(int *source, int *dest, size_t nelem,
     roc_shmem_wg_ctx_create(ctx_type, &ctx);
     int num_pes = roc_shmem_ctx_n_pes(ctx);
 
-    roc_shmem_ctx_int_sum_wg_to_all(ctx, team, dest, source, nelem);
+    roc_shmem_ctx_int_sum_wg_reduce(ctx, team, dest, source, nelem);
 
     roc_shmem_ctx_quiet(ctx);
     __syncthreads();
@@ -114,7 +114,7 @@ int main (int argc, char **argv)
 
     bool pass = check_recvbuf(dest, nelem, my_pe, npes);
     printf("Test %s \t nelem %d %s\n", argv[0], nelem, pass ? "[PASS]" : "[FAIL]");
-    
+
     roc_shmem_free(source);
     roc_shmem_free(dest);
 
