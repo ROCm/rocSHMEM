@@ -20,6 +20,8 @@
 
 #!/bin/bash
 
+driver_return_status=0
+
 if [ $# -eq 0 ] ; then
     echo "This script must be run with at least 2 arguments."
     echo 'Usage: ${0} argument1 argument2 [argument3]'
@@ -35,6 +37,7 @@ check() {
     if [ $? -ne 0 ]
     then
         echo "Failed $1" >&2
+        driver_return_status=1
     fi
 }
 
@@ -579,4 +582,4 @@ case $2 in
         ;;
 esac
 
-exit $?
+exit $(($driver_return_status || $?))

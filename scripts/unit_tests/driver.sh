@@ -16,13 +16,14 @@ function display_help {
 }
 
 # Validate number of arguments for each mode
-if [[ "$#" -lt 2 ]] || 
+if [[ "$#" -lt 2 ]] ||
    { [[ "$2" == "all" ]] && [[ "$#" -ne 2 ]]; } ||
    { [[ "$2" == "custom" ]] && [[ "$#" -ne 4 ]]; }; then
     display_help
     exit 1
 fi
 
+driver_return_status=0
 binary_name=$1
 mode=$2
 timestamp=$(date "+%Y-%m-%d-%H:%M:%S")
@@ -32,15 +33,24 @@ log_file="unit_tests_${timestamp}.log"
 function run_mpirun {
     local np=$1
     local gtest_filter=$2
-    echo "mpirun -np $np $binary_name --gtest_filter='$gtest_filter'" | tee -a "$log_file"
-    mpirun -np "$np" "$binary_name" --gtest_filter="$gtest_filter" >> "$log_file" 2>&1
+    cmd_str="mpirun -np $np $binary_name --gtest_filter=$gtest_filter >> $log_file 2>&1"
+    echo $cmd_str
+    eval $cmd_str
+
+    # Test if mpirun failed
+    if [ $? -ne 0 ]
+    then
+        echo "FAILED: $cmd_str" >&2
+        cat $log_file
+        driver_return_status=1
+    fi
 }
 
 # Processing modes
 case $mode in
     all)
-        run_mpirun 4 "-IPCImplSimpleCoarseTestFixture.*:IPCImplSimpleFineTestFixture.*"
-        run_mpirun 2 "IPCImplSimpleCoarseTestFixture.*:IPCImplSimpleFineTestFixture.*"
+        run_mpirun 4 "-IPCImplSimpleCoarseTestFixture/*:IPCImplSimpleFineTestFixture.*"
+        run_mpirun 2 "IPCImplSimpleCoarseTestFixture/*:IPCImplSimpleFineTestFixture.*"
         ;;
     custom)
         # Check if ranks is a positive integer
@@ -60,3 +70,4 @@ esac
 
 echo "Tests Completed"
 echo "log file: '$log_file'"
+exit $driver_return_status
