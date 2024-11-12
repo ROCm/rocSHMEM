@@ -199,6 +199,7 @@ set_target_properties(
 add_subdirectory(src)
 add_subdirectory(docs)
 add_subdirectory(tests)
+add_subdirectory(examples)
 
 ###############################################################################
 # HIP
