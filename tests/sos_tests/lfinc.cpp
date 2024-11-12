@@ -44,7 +44,7 @@ using namespace rocshmem;
 
 #define LOOPS 25000
 
-static double shmemx_wtime(void) {
+static double shmem_wtime(void) {
   struct timeval tv;
   gettimeofday(&tv, NULL);
   return (double)tv.tv_sec + (double)tv.tv_usec / 1000000.0;
@@ -86,11 +86,11 @@ int main(int argc, char *argv[]) {
   roc_shmem_barrier_all();
 
   neighbor = (my_pe + 1) % npes;
-  start_time = shmemx_wtime();
+  start_time = shmem_wtime();
   for (j = 0, elapsed = 0.0; j < loops; j++) {
-    start_time = shmemx_wtime();
+    start_time = shmem_wtime();
     lval = roc_shmem_int64_atomic_fetch_inc((int64_t *)&data[1], neighbor);
-    elapsed += shmemx_wtime() - start_time;
+    elapsed += shmem_wtime() - start_time;
     if (lval != (long)j) {
       fprintf(stderr, "[%d] Test: FAIL previous val %ld != %d Exit.\n", my_pe,
               lval, j);

@@ -47,7 +47,7 @@ PrimitiveTest(int loop,
 
     int block_id = hipBlockIdx_x;
     for(int i =0; i< loop; i++){
-        roc_shmemx_ctx_putmem_nbi_wg(ctx, &r_buf[my_pe*size], &s_buf[block_id * size], size, block_id);
+        roc_shmem_ctx_putmem_nbi_wg(ctx, &r_buf[my_pe*size], &s_buf[block_id * size], size, block_id);
         if(hipThreadIdx_x==0){
             //roc_shmem_ctx_quiet(ctx);
             //roc_shmem_ctx_threadfence_system(ctx);

@@ -56,16 +56,16 @@ __global__ void WaveLevelPrimitiveTest(int loop, int skip, uint64_t *timer,
 
     switch (type) {
       case WAVEGetTestType:
-        roc_shmemx_ctx_getmem_wave(ctx, r_buf, s_buf, size, 1);
+        roc_shmem_ctx_getmem_wave(ctx, r_buf, s_buf, size, 1);
         break;
       case WAVEGetNBITestType:
-        roc_shmemx_ctx_getmem_nbi_wave(ctx, r_buf, s_buf, size, 1);
+        roc_shmem_ctx_getmem_nbi_wave(ctx, r_buf, s_buf, size, 1);
         break;
       case WAVEPutTestType:
-        roc_shmemx_ctx_putmem_wave(ctx, r_buf, s_buf, size, 1);
+        roc_shmem_ctx_putmem_wave(ctx, r_buf, s_buf, size, 1);
         break;
       case WAVEPutNBITestType:
-        roc_shmemx_ctx_putmem_nbi_wave(ctx, r_buf, s_buf, size, 1);
+        roc_shmem_ctx_putmem_nbi_wave(ctx, r_buf, s_buf, size, 1);
         break;
       default:
         break;

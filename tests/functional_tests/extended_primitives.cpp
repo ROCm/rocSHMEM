@@ -54,16 +54,16 @@ __global__ void ExtendedPrimitiveTest(int loop, int skip, uint64_t *timer,
 
     switch (type) {
       case WGGetTestType:
-        roc_shmemx_ctx_getmem_wg(ctx, r_buf, s_buf, size, 1);
+        roc_shmem_ctx_getmem_wg(ctx, r_buf, s_buf, size, 1);
         break;
       case WGGetNBITestType:
-        roc_shmemx_ctx_getmem_nbi_wg(ctx, r_buf, s_buf, size, 1);
+        roc_shmem_ctx_getmem_nbi_wg(ctx, r_buf, s_buf, size, 1);
         break;
       case WGPutTestType:
-        roc_shmemx_ctx_putmem_wg(ctx, r_buf, s_buf, size, 1);
+        roc_shmem_ctx_putmem_wg(ctx, r_buf, s_buf, size, 1);
         break;
       case WGPutNBITestType:
-        roc_shmemx_ctx_putmem_nbi_wg(ctx, r_buf, s_buf, size, 1);
+        roc_shmem_ctx_putmem_nbi_wg(ctx, r_buf, s_buf, size, 1);
         break;
       default:
         break;

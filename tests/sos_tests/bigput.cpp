@@ -83,7 +83,7 @@ static void usage(char *pgm) {
       pgm, NUM_ELEMENTS, DFLT_LOOPS);
 }
 
-static inline double shmemx_wtime(void) {
+static inline double shmem_wtime(void) {
   struct timeval tv;
   gettimeofday(&tv, 0);
   return (double)((tv.tv_usec / 1000000.0) + tv.tv_sec);
@@ -214,11 +214,11 @@ int main(int argc, char **argv) {
   roc_shmem_barrier_all();
 
   for (i = 0; i < loops; i++) {
-    start_time = shmemx_wtime();
+    start_time = shmem_wtime();
 
     roc_shmem_int_put(Target, Source, elements, target_PE);
 
-    time_taken += (shmemx_wtime() - start_time);
+    time_taken += (shmem_wtime() - start_time);
 
     if (me == 0) {
       if (Track && i > 0 && ((i % 200) == 0)) fprintf(stderr, ".%d", i);

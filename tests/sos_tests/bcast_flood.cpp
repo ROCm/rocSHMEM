@@ -45,7 +45,7 @@ using namespace rocshmem;
 static int atoi_scaled(char *s);
 static void usage(char *pgm);
 
-static double shmemx_wtime(void) {
+static double shmem_wtime(void) {
   struct timeval tv;
   gettimeofday(&tv, NULL);
   return (double)tv.tv_sec + (double)tv.tv_usec / 1000000.0;
@@ -154,14 +154,14 @@ int main(int argc, char **argv) {
   roc_shmem_barrier_all();
 
   for (time_taken = 0.0, ps = i = 0; i < loops; i++) {
-    start_time = shmemx_wtime();
+    start_time = shmem_wtime();
 
     roc_shmem_ctx_int_broadcast(ROC_SHMEM_CTX_DEFAULT, target, source, elements,
                                 0, 0, 0, npes, &pSync[ps]);
 
     if (Serialize) roc_shmem_barrier_all();
 
-    time_taken += (shmemx_wtime() - start_time);
+    time_taken += (shmem_wtime() - start_time);
 
     if (ps_cnt > 1) {
       ps += ROC_SHMEM_BCAST_SYNC_SIZE;
