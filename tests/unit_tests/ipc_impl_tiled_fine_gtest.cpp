@@ -26,15 +26,15 @@ using namespace rocshmem;
 
 //=============================================================================
 
-TEST_P(DegenerateTiledFine, ptr_check) {
+TEST_F(DegenerateTiledFine, ptr_check) {
     ASSERT_NE(heap_mem_.get_ptr(), nullptr);
 }
 
-TEST_P(DegenerateTiledFine, MPI_num_pes) {
+TEST_F(DegenerateTiledFine, MPI_num_pes) {
     ASSERT_EQ(mpi_.num_pes(), 2);
 }
 
-TEST_P(DegenerateTiledFine, IPC_bases) {
+TEST_F(DegenerateTiledFine, IPC_bases) {
     ASSERT_EQ(mpi_.num_pes(), 2);
     ASSERT_NE(ipc_impl_.ipc_bases, nullptr);
     for(int i{0}; i < mpi_.num_pes(); i++) {
@@ -42,17 +42,10 @@ TEST_P(DegenerateTiledFine, IPC_bases) {
     }
 }
 
-TEST_P(DegenerateTiledFine, golden_1048576_int) {
+TEST_F(DegenerateTiledFine, golden_1048576_int) {
     iota_golden(1048576);
     validate_golden(1048576);
 }
-
-INSTANTIATE_TEST_SUITE_P(
-    IPCImplTiledFineTestFixture,
-    DegenerateTiledFine,
-    ::testing::Values(
-        std::make_tuple(1,  1,   1))
-);
 
 //=============================================================================
 
