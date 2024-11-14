@@ -115,6 +115,10 @@ target_link_libraries(
 ###############################################################################
 # GTEST DEPENDENCY
 ###############################################################################
+# These packages are required for the unit tests
+find_package(rocprim REQUIRED CONFIG PATHS "${ROCM_PATH}/include/rocprim")
+find_package(rocthrust REQUIRED CONFIG PATHS "${ROCM_PATH}/include/rocthrust")
+
 include(FetchContent)
 
 FetchContent_Declare(
@@ -135,4 +139,5 @@ target_link_libraries(
   PRIVATE
     gtest
     gtest_main
+    roc::rocthrust
 )
