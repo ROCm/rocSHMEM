@@ -1,19 +1,23 @@
 /*
-** hipcc -c -fgpu-rdc -x hip rocshmem_getmem_test.cc -I/opt/rocm/include 
-**          -I$ROCHSMEM_INSTALL_DIR/include -I$OPENMPI_UCX_INSTALL_DIR/include/
-** hipcc -fgpu-rdc --hip-link rocshmem_getmem_test.o -o rocshmem_getmem_test 
-**       $ROCHSMEM_INSTALL_DIR/lib/librocshmem.a $OPENMPI_UCX_INSTALL_DIR/lib/libmpi.so
-**       -L/opt/rocm/lib -lamdhip64 -lhsa-runtime64
-**
-** ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 ./rocshmem_getmem_test 
+hipcc -c -fgpu-rdc -x hip rocshmem_getmem_test.cc \
+  -I/opt/rocm/include \
+  -I$ROCSHMEM_SRC_DIR/include \
+  -I$ROCHSMEM_INSTALL_DIR/include \
+  -I$OPENMPI_UCX_INSTALL_DIR/include/
+
+hipcc -fgpu-rdc --hip-link rocshmem_getmem_test.o -o rocshmem_getmem_test \
+  $ROCHSMEM_INSTALL_DIR/lib/librocshmem.a \
+  $OPENMPI_UCX_INSTALL_DIR/lib/libmpi.so \
+  -L/opt/rocm/lib -lamdhip64 -lhsa-runtime64
+
+ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 ./rocshmem_getmem_test
 */
 
 #include <iostream>
 
-#define __HIP_PLATFORM_AMD__
 #include <hip/hip_runtime_api.h>
 #include <hip/hip_runtime.h>
-#include <roc_shmem.hpp>
+#include <roc_shmem/roc_shmem.hpp>
 
 #define CHECK_HIP(condition) {                                            \
         hipError_t error = condition;                                     \
@@ -62,6 +66,8 @@ int main (int argc, char **argv)
     int *dst = (int *)roc_shmem_malloc(nelem * sizeof(int));
     if (NULL == src || NULL == dst) {
         std::cout << "Error allocating memory from symmetric heap" << std::endl;
+        std::cout << "source: " << src << ", dest: " << dst << ", size: "
+          << sizeof(int) * nelem << std::endl;
         roc_shmem_global_exit(1);
     }
 
