@@ -2086,39 +2086,39 @@ TEST_API_GEN(unsigned long long, ulonglong)  // NOLINT(runtime/int)
  *****************************************************************************/
 
 /*
- * MACRO DECLARE SHMEMX_PUT APIs
+ * MACRO DECLARE SHMEM_PUT APIs
  */
 #define PUT_API_EXT_GEN(GRAN, T, TNAME)                                      \
-  __device__ ATTR_NO_INLINE void roc_shmemx_ctx_##TNAME##_put_##GRAN(        \
+  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_put_##GRAN(         \
       roc_shmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
-  __device__ ATTR_NO_INLINE void roc_shmemx_##TNAME##_put_##GRAN(            \
+  __device__ ATTR_NO_INLINE void roc_shmem_##TNAME##_put_##GRAN(             \
       T *dest, const T *source, size_t nelems, int pe);
 
 /*
- * MACRO DECLARE SHMEMX_GET APIs
+ * MACRO DECLARE SHMEM_GET APIs
  */
 #define GET_API_EXT_GEN(GRAN, T, TNAME)                                      \
-  __device__ ATTR_NO_INLINE void roc_shmemx_ctx_##TNAME##_get_##GRAN(        \
+  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_get_##GRAN(         \
       roc_shmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
-  __device__ ATTR_NO_INLINE void roc_shmemx_##TNAME##_get_##GRAN(            \
+  __device__ ATTR_NO_INLINE void roc_shmem_##TNAME##_get_##GRAN(             \
       T *dest, const T *source, size_t nelems, int pe);
 
 /*
- * MACRO DECLARE SHMEMX_PUT_NBI APIs
+ * MACRO DECLARE SHMEM_PUT_NBI APIs
  */
 #define PUT_NBI_API_EXT_GEN(GRAN, T, TNAME)                                  \
-  __device__ ATTR_NO_INLINE void roc_shmemx_ctx_##TNAME##_put_nbi_##GRAN(    \
+  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_put_nbi_##GRAN(     \
       roc_shmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
-  __device__ ATTR_NO_INLINE void roc_shmemx_##TNAME##_put_nbi_##GRAN(        \
+  __device__ ATTR_NO_INLINE void roc_shmem_##TNAME##_put_nbi_##GRAN(         \
       T *dest, const T *source, size_t nelems, int pe);
 
 /*
- * MACRO DECLARE SHMEMX_GET_NBI APIs
+ * MACRO DECLARE SHMEM_GET_NBI APIs
  */
 #define GET_NBI_API_EXT_GEN(GRAN, T, TNAME)                                  \
-  __device__ ATTR_NO_INLINE void roc_shmemx_ctx_##TNAME##_get_nbi_##GRAN(    \
+  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_get_nbi_##GRAN(     \
       roc_shmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
-  __device__ ATTR_NO_INLINE void roc_shmemx_##TNAME##_get_nbi_##GRAN(        \
+  __device__ ATTR_NO_INLINE void roc_shmem_##TNAME##_get_nbi_##GRAN(         \
       T *dest, const T *source, size_t nelems, int pe);
 
 /**
@@ -2140,12 +2140,12 @@ TEST_API_GEN(unsigned long long, ulonglong)  // NOLINT(runtime/int)
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmemx_ctx_putmem_wave(
+__device__ ATTR_NO_INLINE void roc_shmem_ctx_putmem_wave(
     roc_shmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe);
 
-__device__ ATTR_NO_INLINE void roc_shmemx_putmem_wave(void *dest,
-                                                      const void *source,
-                                                      size_t nelems, int pe);
+__device__ ATTR_NO_INLINE void roc_shmem_putmem_wave(void *dest,
+                                                     const void *source,
+                                                     size_t nelems, int pe);
 
 /**
  * @brief Writes contiguous data of \p nelems bytes from \p source on the
@@ -2166,14 +2166,14 @@ __device__ ATTR_NO_INLINE void roc_shmemx_putmem_wave(void *dest,
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmemx_ctx_putmem_wg(roc_shmem_ctx_t ctx,
-                                                        void *dest,
-                                                        const void *source,
-                                                        size_t nelems, int pe);
+__device__ ATTR_NO_INLINE void roc_shmem_ctx_putmem_wg(roc_shmem_ctx_t ctx,
+                                                       void *dest,
+                                                       const void *source,
+                                                       size_t nelems, int pe);
 
-__device__ ATTR_NO_INLINE void roc_shmemx_putmem_wg(void *dest,
-                                                    const void *source,
-                                                    size_t nelems, int pe);
+__device__ ATTR_NO_INLINE void roc_shmem_putmem_wg(void *dest,
+                                                   const void *source,
+                                                   size_t nelems, int pe);
 
 /**
  * @brief Writes contiguous data of \p nelems elements from \p source on the
@@ -2265,12 +2265,12 @@ PUT_API_EXT_GEN(wg, unsigned long long, ulonglong)  // NOLINT(runtime/int)
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmemx_ctx_getmem_wave(
+__device__ ATTR_NO_INLINE void roc_shmem_ctx_getmem_wave(
     roc_shmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe);
 
-__device__ ATTR_NO_INLINE void roc_shmemx_getmem_wave(void *dest,
-                                                      const void *source,
-                                                      size_t nelems, int pe);
+__device__ ATTR_NO_INLINE void roc_shmem_getmem_wave(void *dest,
+                                                     const void *source,
+                                                     size_t nelems, int pe);
 
 /**
  * @brief Reads contiguous data of \p nelems bytes from \p source on \p pe
@@ -2290,14 +2290,14 @@ __device__ ATTR_NO_INLINE void roc_shmemx_getmem_wave(void *dest,
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmemx_ctx_getmem_wg(roc_shmem_ctx_t ctx,
-                                                        void *dest,
-                                                        const void *source,
-                                                        size_t nelems, int pe);
+__device__ ATTR_NO_INLINE void roc_shmem_ctx_getmem_wg(roc_shmem_ctx_t ctx,
+                                                       void *dest,
+                                                       const void *source,
+                                                       size_t nelems, int pe);
 
-__device__ ATTR_NO_INLINE void roc_shmemx_getmem_wg(void *dest,
-                                                    const void *source,
-                                                    size_t nelems, int pe);
+__device__ ATTR_NO_INLINE void roc_shmem_getmem_wg(void *dest,
+                                                   const void *source,
+                                                   size_t nelems, int pe);
 
 /**
  * @brief Reads contiguous data of \p nelems elements from \p source on \p pe
@@ -2389,13 +2389,13 @@ GET_API_EXT_GEN(wg, unsigned long long, ulonglong)  // NOLINT(runtime/int)
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmemx_ctx_putmem_nbi_wave(
+__device__ ATTR_NO_INLINE void roc_shmem_ctx_putmem_nbi_wave(
     roc_shmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe);
 
-__device__ ATTR_NO_INLINE void roc_shmemx_putmem_nbi_wave(void *dest,
-                                                          const void *source,
-                                                          size_t nelems,
-                                                          int pe);
+__device__ ATTR_NO_INLINE void roc_shmem_putmem_nbi_wave(void *dest,
+                                                         const void *source,
+                                                         size_t nelems,
+                                                         int pe);
 
 /**
  * @brief Writes contiguous data of \p nelems elements from \p source on the
@@ -2454,12 +2454,12 @@ PUT_NBI_API_EXT_GEN(wave, unsigned long long, ulonglong)  // NOLINT
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmemx_ctx_putmem_nbi_wg(
+__device__ ATTR_NO_INLINE void roc_shmem_ctx_putmem_nbi_wg(
     roc_shmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe);
 
-__device__ ATTR_NO_INLINE void roc_shmemx_putmem_nbi_wg(void *dest,
-                                                        const void *source,
-                                                        size_t nelems, int pe);
+__device__ ATTR_NO_INLINE void roc_shmem_putmem_nbi_wg(void *dest,
+                                                       const void *source,
+                                                       size_t nelems, int pe);
 
 /**
  * @brief Writes contiguous data of \p nelems elements from \p source on the
@@ -2518,13 +2518,13 @@ PUT_NBI_API_EXT_GEN(wg, unsigned long long, ulonglong)  // NOLINT(runtime/int)
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmemx_ctx_getmem_nbi_wave(
+__device__ ATTR_NO_INLINE void roc_shmem_ctx_getmem_nbi_wave(
     roc_shmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe);
 
-__device__ ATTR_NO_INLINE void roc_shmemx_getmem_nbi_wave(void *dest,
-                                                          const void *source,
-                                                          size_t nelems,
-                                                          int pe);
+__device__ ATTR_NO_INLINE void roc_shmem_getmem_nbi_wave(void *dest,
+                                                         const void *source,
+                                                         size_t nelems,
+                                                         int pe);
 
 /**
  * @brief Reads contiguous data of \p nelems elements from \p source on \p pe
@@ -2583,12 +2583,12 @@ GET_NBI_API_EXT_GEN(wave, unsigned long long, ulonglong)  // NOLINT
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmemx_ctx_getmem_nbi_wg(
+__device__ ATTR_NO_INLINE void roc_shmem_ctx_getmem_nbi_wg(
     roc_shmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe);
 
-__device__ ATTR_NO_INLINE void roc_shmemx_getmem_nbi_wg(void *dest,
-                                                        const void *source,
-                                                        size_t nelems, int pe);
+__device__ ATTR_NO_INLINE void roc_shmem_getmem_nbi_wg(void *dest,
+                                                       const void *source,
+                                                       size_t nelems, int pe);
 
 /**
  * @brief Reads contiguous data of \p nelems elements from \p source on \p pe
