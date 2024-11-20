@@ -556,6 +556,27 @@ __device__ void Context::amo_cas(void *dst, T value, T cond, int pe) {
   DISPATCH(amo_cas(dst, value, cond, pe));
 }
 
+#define CONTEXT_PUT_SIGNAL_DEF(SUFFIX, STATS_SUFFIX)                                           \
+  template <typename T>                                                                        \
+  __device__ void Context::put_signal##SUFFIX(T *dest, const T *source, size_t nelems,         \
+                                              uint64_t *sig_addr, uint64_t signal, int sig_op, \
+                                              int pe) {                                        \
+    if (nelems == 0) {                                                                         \
+      return;                                                                                  \
+    }                                                                                          \
+                                                                                               \
+    ctxStats.incStat(NUM_PUT_SIGNAL##STATS_SUFFIX);                                            \
+                                                                                               \
+    DISPATCH(put_signal##SUFFIX(dest, source, nelems, sig_addr, signal, sig_op, pe));          \
+  }
+
+CONTEXT_PUT_SIGNAL_DEF(,)
+CONTEXT_PUT_SIGNAL_DEF(_wg, _WG)
+CONTEXT_PUT_SIGNAL_DEF(_wave, _WAVE)
+CONTEXT_PUT_SIGNAL_DEF(_nbi, _NBI)
+CONTEXT_PUT_SIGNAL_DEF(_nbi_wg, _NBI_WG)
+CONTEXT_PUT_SIGNAL_DEF(_nbi_wave, _NBI_WAVE)
+
 }  // namespace rocshmem
 
 #endif  // LIBRARY_SRC_CONTEXT_TMPL_DEVICE_HPP_

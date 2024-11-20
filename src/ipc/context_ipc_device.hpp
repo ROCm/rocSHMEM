@@ -186,6 +186,27 @@ class IPCContext : public Context {
   template <typename T>
   __device__ void get_nbi_wave(T *dest, const T *source, size_t nelems, int pe);
 
+#define IPC_CONTEXT_PUT_SIGNAL_DEC(SUFFIX)                                               \
+  template <typename T>                                                                  \
+  __device__ void put_signal##SUFFIX(T *dest, const T *source, size_t nelems,            \
+                                     uint64_t *sig_addr, uint64_t signal, int sig_op,    \
+                                     int pe);                                            \
+                                                                                         \
+  __device__ void putmem_signal##SUFFIX(void *dest, const void *source, size_t nelems,   \
+                                        uint64_t *sig_addr, uint64_t signal, int sig_op, \
+                                        int pe);
+
+  IPC_CONTEXT_PUT_SIGNAL_DEC()
+  IPC_CONTEXT_PUT_SIGNAL_DEC(_wg)
+  IPC_CONTEXT_PUT_SIGNAL_DEC(_wave)
+  IPC_CONTEXT_PUT_SIGNAL_DEC(_nbi)
+  IPC_CONTEXT_PUT_SIGNAL_DEC(_nbi_wg)
+  IPC_CONTEXT_PUT_SIGNAL_DEC(_nbi_wave)
+
+  __device__ uint64_t signal_fetch(const uint64_t *sig_addr);
+  __device__ uint64_t signal_fetch_wg(const uint64_t *sig_addr);
+  __device__ uint64_t signal_fetch_wave(const uint64_t *sig_addr);
+
  private:
 
   //context class has IpcImpl object (ipcImpl_)

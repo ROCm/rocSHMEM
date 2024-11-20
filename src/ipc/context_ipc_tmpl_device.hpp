@@ -578,6 +578,25 @@ __device__ void IPCContext::get_nbi_wave(T *dest, const T *source,
   getmem_nbi_wave(dest, source, nelems * sizeof(T), pe);
 }
 
+#define IPC_CONTEXT_PUT_SIGNAL_DEF(SUFFIX)                                                            \
+  template <typename T>                                                                               \
+  __device__ void IPCContext::put_signal##SUFFIX(T *dest, const T *source, size_t nelems,             \
+                                                 uint64_t *sig_addr, uint64_t signal, int sig_op,     \
+                                                 int pe) {                                            \
+    putmem_signal##SUFFIX(dest, source, nelems * sizeof(T), sig_addr, signal, sig_op, pe);            \
+  }                                                                                                   \
+                                                                                                      \
+  template <typename T>                                                                               \
+  __device__ void IPCContext::put_signal_nbi##SUFFIX(T *dest, const T *source, size_t nelems,         \
+                                                     uint64_t *sig_addr, uint64_t signal, int sig_op, \
+                                                     int pe) {                                        \
+    putmem_signal##SUFFIX(dest, source, nelems * sizeof(T), sig_addr, signal, sig_op, pe);            \
+  }
+
+IPC_CONTEXT_PUT_SIGNAL_DEF()
+IPC_CONTEXT_PUT_SIGNAL_DEF(_wg)
+IPC_CONTEXT_PUT_SIGNAL_DEF(_wave)
+
 }  // namespace rocshmem
 
 #endif  // LIBRARY_SRC_IPC_CONTEXT_TMPL_DEVICE_HPP_

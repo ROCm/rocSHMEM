@@ -248,4 +248,34 @@ __device__ void Context::getmem_nbi_wave(void* dest, const void* source,
   DISPATCH(getmem_nbi_wave(dest, source, size, pe));
 }
 
+#define CONTEXT_PUTMEM_SIGNAL_DEF(SUFFIX, STATS_SUFFIX)                                           \
+  __device__ void Context::putmem_signal##SUFFIX(void *dest, const void *source, size_t nelems,   \
+                                                 uint64_t *sig_addr, uint64_t signal, int sig_op, \
+                                                 int pe) {                                        \
+    if (nelems == 0) {                                                                            \
+      return;                                                                                     \
+    }                                                                                             \
+                                                                                                  \
+    ctxStats.incStat(NUM_PUT_SIGNAL##STATS_SUFFIX);                                               \
+                                                                                                  \
+    DISPATCH(putmem_signal##SUFFIX(dest, source, nelems, sig_addr, signal, sig_op, pe));          \
+  }
+
+CONTEXT_PUTMEM_SIGNAL_DEF(,)
+CONTEXT_PUTMEM_SIGNAL_DEF(_wg, _WG)
+CONTEXT_PUTMEM_SIGNAL_DEF(_wave, _WAVE)
+CONTEXT_PUTMEM_SIGNAL_DEF(_nbi, _NBI)
+CONTEXT_PUTMEM_SIGNAL_DEF(_nbi_wg, _NBI_WG)
+CONTEXT_PUTMEM_SIGNAL_DEF(_nbi_wave, _NBI_WAVE)
+
+#define CONTEXT_SIGNAL_FETCH_DEF(SUFFIX)                                    \
+__device__ uint64_t Context::signal_fetch##SUFFIX(const uint64_t *sig_addr) \
+{                                                                           \
+    DISPATCH_RET(signal_fetch##SUFFIX(sig_addr));                           \
+}
+
+CONTEXT_SIGNAL_FETCH_DEF()
+CONTEXT_SIGNAL_FETCH_DEF(_wg)
+CONTEXT_SIGNAL_FETCH_DEF(_wave)
+
 }  // namespace rocshmem
