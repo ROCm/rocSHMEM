@@ -28,17 +28,18 @@ set(EXAMPLE_SOURCES
   rocshmem_alltoall_test.cc
   rocshmem_broadcast_test.cc
   rocshmem_getmem_test.cc
+  rocshmem_put_signal_test.cc
 )
 
 foreach(SOURCE_FILE IN LISTS EXAMPLE_SOURCES)
   get_filename_component(EXECUTABLE_NAME ${SOURCE_FILE} NAME_WE)
-  
+
   add_executable(${EXECUTABLE_NAME} ${SOURCE_FILE})
 
   target_include_directories(
     ${EXECUTABLE_NAME}
     PRIVATE
-      rocshmem::rocshmem  
+      rocshmem::rocshmem
   )
 
   target_link_libraries(
