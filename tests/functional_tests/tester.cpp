@@ -44,6 +44,7 @@
 #include "primitive_tester.hpp"
 #include "random_access_tester.hpp"
 #include "shmem_ptr_tester.hpp"
+#include "signaling_operations_tester.hpp"
 #include "swarm_tester.hpp"
 #include "sync_tester.hpp"
 #include "team_broadcast_tester.hpp"
@@ -418,6 +419,42 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
         else std::cout << "Non-Blocking WAVE level Puts ###" << std::endl;
       }
       testers.push_back(new WaveLevelPrimitiveTester(args));
+      return testers;
+    case PutSignalTestType:
+      if (rank == 0) std::cout << "Putmem Signal ###" << std::endl;
+      testers.push_back(new SignalingOperationsTester(args));
+      return testers;
+    case WGPutSignalTestType:
+      if (rank == 0) std::cout << "WG Putmem Signal ###" << std::endl;
+      testers.push_back(new SignalingOperationsTester(args));
+      return testers;
+    case WAVEPutSignalTestType:
+      if (rank == 0) std::cout << "Wave Putmem Signal ###" << std::endl;
+      testers.push_back(new SignalingOperationsTester(args));
+      return testers;
+    case PutSignalNBITestType:
+      if (rank == 0) std::cout << "Non-Blocking Putmem Signal ###" << std::endl;
+      testers.push_back(new SignalingOperationsTester(args));
+      return testers;
+    case WGPutSignalNBITestType:
+      if (rank == 0) std::cout << "Non-Blocking WG Putmem Signal ###" << std::endl;
+      testers.push_back(new SignalingOperationsTester(args));
+      return testers;
+    case WAVEPutSignalNBITestType:
+      if (rank == 0) std::cout << "Non-Blocking Wave Putmem Signal ###" << std::endl;
+      testers.push_back(new SignalingOperationsTester(args));
+      return testers;
+    case SignalFetchTestType:
+      if (rank == 0) std::cout << "Signal Fetch ###" << std::endl;
+      testers.push_back(new SignalingOperationsTester(args));
+      return testers;
+    case WGSignalFetchTestType:
+      if (rank == 0) std::cout << "WG Signal Fetch ###" << std::endl;
+      testers.push_back(new SignalingOperationsTester(args));
+      return testers;
+    case WAVESignalFetchTestType:
+      if (rank == 0) std::cout << "Wave Signal Fetch ###" << std::endl;
+      testers.push_back(new SignalingOperationsTester(args));
       return testers;
     default:
       if (rank == 0) std::cout << "Unknown ###" << std::endl;
