@@ -2,11 +2,11 @@
 hipcc -c -fgpu-rdc -x hip rocshmem_broadcast_test.cc \
   -I/opt/rocm/include \
   -I$ROCSHMEM_SRC_DIR/include \
-  -I$ROCHSMEM_INSTALL_DIR/include \
+  -I$ROCSHMEM_INSTALL_DIR/include \
   -I$OPENMPI_UCX_INSTALL_DIR/include/
 
 hipcc -fgpu-rdc --hip-link rocshmem_broadcast_test.o -o rocshmem_broadcast_test \
-  $ROCHSMEM_INSTALL_DIR/lib/librocshmem.a \
+  $ROCSHMEM_INSTALL_DIR/lib/librocshmem.a \
   $OPENMPI_UCX_INSTALL_DIR/lib/libmpi.so \
   -L/opt/rocm/lib -lamdhip64 -lhsa-runtime64
 
@@ -121,7 +121,7 @@ int main(int argc, char **argv)
         bool pass = check_recvbuf(dest, nelem, my_pe, npes);
         printf("Test %s \t nelem %d %s\n", argv[0], nelem, pass ? "[PASS]" : "[FAIL]");
     }
-    
+
     roc_shmem_free(source);
     roc_shmem_free(dest);
 

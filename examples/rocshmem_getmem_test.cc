@@ -2,11 +2,11 @@
 hipcc -c -fgpu-rdc -x hip rocshmem_getmem_test.cc \
   -I/opt/rocm/include \
   -I$ROCSHMEM_SRC_DIR/include \
-  -I$ROCHSMEM_INSTALL_DIR/include \
+  -I$ROCSHMEM_INSTALL_DIR/include \
   -I$OPENMPI_UCX_INSTALL_DIR/include/
 
 hipcc -fgpu-rdc --hip-link rocshmem_getmem_test.o -o rocshmem_getmem_test \
-  $ROCHSMEM_INSTALL_DIR/lib/librocshmem.a \
+  $ROCSHMEM_INSTALL_DIR/lib/librocshmem.a \
   $OPENMPI_UCX_INSTALL_DIR/lib/libmpi.so \
   -L/opt/rocm/lib -lamdhip64 -lhsa-runtime64
 
