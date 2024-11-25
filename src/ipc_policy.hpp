@@ -123,7 +123,7 @@ class IpcOffImpl {
 
   __device__ bool isIpcAvailable(int my_pe, int target_pe) { return false; }
 
-  __device__ void ipcGpuInit(Backend *roc_shmem_handle, Context *ctx,
+  __device__ void ipcGpuInit(Backend *rocshmem_handle, Context *ctx,
                              int thread_id) {}
 
   __device__ void ipcCopy(void *dst, void *src, size_t size) {}

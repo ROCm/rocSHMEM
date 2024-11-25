@@ -25,7 +25,7 @@
 
 #include <climits>
 #include <cstdint>
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 #include <string>
 
 class TesterArguments {
@@ -34,7 +34,7 @@ class TesterArguments {
 
   /**
    * Initialize rocshmem members
-   * Valid after roc_shmem_init function called.
+   * Valid after rocshmem_init function called.
    */
   void get_rocshmem_arguments();
 
@@ -57,7 +57,7 @@ class TesterArguments {
   unsigned thread_access = 64;
   unsigned coal_coef = 64;
   unsigned op_type = 0;
-  unsigned shmem_context = rocshmem::ROC_SHMEM_CTX_WG_PRIVATE;
+  unsigned shmem_context = rocshmem::ROCSHMEM_CTX_WG_PRIVATE;
 
   /**
    * Arguments obtained from rocshmem

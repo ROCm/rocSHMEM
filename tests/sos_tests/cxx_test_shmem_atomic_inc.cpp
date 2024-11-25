@@ -35,7 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -51,98 +51,98 @@ enum op {
 };
 
 #ifdef ENABLE_DEPRECATED_TESTS
-#define DEPRECATED_INC(TYPENAME, ...) roc_shmem_##TYPENAME##_inc(__VA_ARGS__)
-#define DEPRECATED_FINC(TYPENAME, ...) roc_shmem_##TYPENAME##_finc(__VA_ARGS__)
+#define DEPRECATED_INC(TYPENAME, ...) rocshmem_##TYPENAME##_inc(__VA_ARGS__)
+#define DEPRECATED_FINC(TYPENAME, ...) rocshmem_##TYPENAME##_finc(__VA_ARGS__)
 #else
 #define DEPRECATED_INC(TYPENAME, ...) \
-  roc_shmem_##TYPENAME##_atomic_inc(__VA_ARGS__)
+  rocshmem_##TYPENAME##_atomic_inc(__VA_ARGS__)
 #define DEPRECATED_FINC(TYPENAME, ...) \
-  roc_shmem_##TYPENAME##_atomic_fetch_inc(__VA_ARGS__)
+  rocshmem_##TYPENAME##_atomic_fetch_inc(__VA_ARGS__)
 #endif /* ENABLE_DEPRECATED_TESTS */
 
-#define SHMEM_NBI_OPS_CASES(OP, TYPE, TYPENAME)                             \
-  case ATOMIC_FETCH_INC_NBI:                                                \
-    roc_shmem_##TYPENAME##_atomic_fetch_inc_nbi(&old, remote, i);           \
-    roc_shmem_quiet();                                                      \
-    if (old > (TYPE)npes) {                                                 \
-      printf("PE %i error inconsistent value of old (%s, %s)\n", mype, #OP, \
-             #TYPE);                                                        \
-      rc = EXIT_FAILURE;                                                    \
-    }                                                                       \
-    break;                                                                  \
-  case CTX_ATOMIC_FETCH_INC_NBI:                                            \
-    roc_shmem_ctx_##TYPENAME##_atomic_fetch_inc_nbi(ROC_SHMEM_CTX_DEFAULT,  \
-                                                    &old, remote, i);       \
-    roc_shmem_quiet();                                                      \
-    if (old > (TYPE)npes) {                                                 \
-      printf("PE %i error inconsistent value of old (%s, %s)\n", mype, #OP, \
-             #TYPE);                                                        \
-      rc = EXIT_FAILURE;                                                    \
-    }                                                                       \
+#define SHMEM_NBI_OPS_CASES(OP, TYPE, TYPENAME)                               \
+  case ATOMIC_FETCH_INC_NBI:                                                  \
+    rocshmem_##TYPENAME##_atomic_fetch_inc_nbi(&old, remote, i);              \
+    rocshmem_quiet();                                                         \
+    if (old > (TYPE)npes) {                                                   \
+      printf("PE %i error inconsistent value of old (%s, %s)\n", mype, #OP,   \
+             #TYPE);                                                          \
+      rc = EXIT_FAILURE;                                                      \
+    }                                                                         \
+    break;                                                                    \
+  case CTX_ATOMIC_FETCH_INC_NBI:                                              \
+    rocshmem_ctx_##TYPENAME##_atomic_fetch_inc_nbi(ROCSHMEM_CTX_DEFAULT,      \
+                                                    &old, remote, i);         \
+    rocshmem_quiet();                                                         \
+    if (old > (TYPE)npes) {                                                   \
+      printf("PE %i error inconsistent value of old (%s, %s)\n", mype, #OP,   \
+             #TYPE);                                                          \
+      rc = EXIT_FAILURE;                                                      \
+    }                                                                         \
     break;
 
-#define TEST_SHMEM_INC(OP, TYPE, TYPENAME)                                     \
-  do {                                                                         \
-    TYPE *remote;                                                              \
-    TYPE old;                                                                  \
-    const int mype = roc_shmem_my_pe();                                        \
-    const int npes = roc_shmem_n_pes();                                        \
-    remote = (TYPE *)roc_shmem_malloc(sizeof(TYPE));                           \
-    *remote = (TYPE)0;                                                         \
-    roc_shmem_barrier_all();                                                   \
-    for (int i = 0; i < npes; i++) switch (OP) {                               \
-        case INC:                                                              \
-          DEPRECATED_INC(TYPENAME, remote, i);                                 \
-          break;                                                               \
-        case ATOMIC_INC:                                                       \
-          roc_shmem_##TYPENAME##_atomic_inc(remote, i);                        \
-          break;                                                               \
-        case CTX_ATOMIC_INC:                                                   \
-          roc_shmem_ctx_##TYPENAME##_atomic_inc(ROC_SHMEM_CTX_DEFAULT, remote, \
-                                                i);                            \
-          break;                                                               \
-        case FINC:                                                             \
-          old = DEPRECATED_FINC(TYPENAME, remote, i);                          \
-          if (old > (TYPE)npes) {                                              \
-            printf("PE %i error inconsistent value of old (%s, %s)\n", mype,   \
-                   #OP, #TYPE);                                                \
-            rc = EXIT_FAILURE;                                                 \
-          }                                                                    \
-          break;                                                               \
-        case ATOMIC_FETCH_INC:                                                 \
-          old = roc_shmem_##TYPENAME##_atomic_fetch_inc(remote, i);            \
-          if (old > (TYPE)npes) {                                              \
-            printf("PE %i error inconsistent value of old (%s, %s)\n", mype,   \
-                   #OP, #TYPE);                                                \
-            rc = EXIT_FAILURE;                                                 \
-          }                                                                    \
-          break;                                                               \
-        case CTX_ATOMIC_FETCH_INC:                                             \
-          old = roc_shmem_ctx_##TYPENAME##_atomic_fetch_inc(                   \
-              ROC_SHMEM_CTX_DEFAULT, remote, i);                               \
-          if (old > (TYPE)npes) {                                              \
-            printf("PE %i error inconsistent value of old (%s, %s)\n", mype,   \
-                   #OP, #TYPE);                                                \
-            rc = EXIT_FAILURE;                                                 \
-          }                                                                    \
-          break;                                                               \
-        /*SHMEM_NBI_OPS_CASES(OP, TYPE, TYPENAME)*/                            \
-        default:                                                               \
-          printf("Invalid operation (%d)\n", OP);                              \
-          roc_shmem_global_exit(1);                                            \
-      }                                                                        \
-    roc_shmem_barrier_all();                                                   \
-    if ((*remote) != (TYPE)npes) {                                             \
-      printf("PE %i observed error with TEST_SHMEM_INC(%s, %s)\n", mype, #OP,  \
-             #TYPE);                                                           \
-      rc = EXIT_FAILURE;                                                       \
-    }                                                                          \
-    roc_shmem_free(remote);                                                    \
-    if (rc == EXIT_FAILURE) roc_shmem_global_exit(1);                          \
+#define TEST_SHMEM_INC(OP, TYPE, TYPENAME)                                    \
+  do {                                                                        \
+    TYPE *remote;                                                             \
+    TYPE old;                                                                 \
+    const int mype = rocshmem_my_pe();                                        \
+    const int npes = rocshmem_n_pes();                                        \
+    remote = (TYPE *)rocshmem_malloc(sizeof(TYPE));                           \
+    *remote = (TYPE)0;                                                        \
+    rocshmem_barrier_all();                                                   \
+    for (int i = 0; i < npes; i++) switch (OP) {                              \
+        case INC:                                                             \
+          DEPRECATED_INC(TYPENAME, remote, i);                                \
+          break;                                                              \
+        case ATOMIC_INC:                                                      \
+          rocshmem_##TYPENAME##_atomic_inc(remote, i);                        \
+          break;                                                              \
+        case CTX_ATOMIC_INC:                                                  \
+          rocshmem_ctx_##TYPENAME##_atomic_inc(ROCSHMEM_CTX_DEFAULT, remote,  \
+                                                i);                           \
+          break;                                                              \
+        case FINC:                                                            \
+          old = DEPRECATED_FINC(TYPENAME, remote, i);                         \
+          if (old > (TYPE)npes) {                                             \
+            printf("PE %i error inconsistent value of old (%s, %s)\n", mype,  \
+                   #OP, #TYPE);                                               \
+            rc = EXIT_FAILURE;                                                \
+          }                                                                   \
+          break;                                                              \
+        case ATOMIC_FETCH_INC:                                                \
+          old = rocshmem_##TYPENAME##_atomic_fetch_inc(remote, i);            \
+          if (old > (TYPE)npes) {                                             \
+            printf("PE %i error inconsistent value of old (%s, %s)\n", mype,  \
+                   #OP, #TYPE);                                               \
+            rc = EXIT_FAILURE;                                                \
+          }                                                                   \
+          break;                                                              \
+        case CTX_ATOMIC_FETCH_INC:                                            \
+          old = rocshmem_ctx_##TYPENAME##_atomic_fetch_inc(                   \
+              ROCSHMEM_CTX_DEFAULT, remote, i);                               \
+          if (old > (TYPE)npes) {                                             \
+            printf("PE %i error inconsistent value of old (%s, %s)\n", mype,  \
+                   #OP, #TYPE);                                               \
+            rc = EXIT_FAILURE;                                                \
+          }                                                                   \
+          break;                                                              \
+        /*SHMEM_NBI_OPS_CASES(OP, TYPE, TYPENAME)*/                           \
+        default:                                                              \
+          printf("Invalid operation (%d)\n", OP);                             \
+          rocshmem_global_exit(1);                                            \
+      }                                                                       \
+    rocshmem_barrier_all();                                                   \
+    if ((*remote) != (TYPE)npes) {                                            \
+      printf("PE %i observed error with TEST_SHMEM_INC(%s, %s)\n", mype, #OP, \
+             #TYPE);                                                          \
+      rc = EXIT_FAILURE;                                                      \
+    }                                                                         \
+    rocshmem_free(remote);                                                    \
+    if (rc == EXIT_FAILURE) rocshmem_global_exit(1);                          \
   } while (false)
 
 int main(int argc, char *argv[]) {
-  roc_shmem_init();
+  rocshmem_init();
 
   int rc = EXIT_SUCCESS;
 
@@ -254,6 +254,6 @@ int main(int argc, char *argv[]) {
   TEST_SHMEM_INC(CTX_ATOMIC_FETCH_INC_NBI, ptrdiff_t, ptrdiff);
   */
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
   return rc;
 }

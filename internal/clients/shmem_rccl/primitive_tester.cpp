@@ -22,7 +22,7 @@
 
 #include "primitive_tester.hpp"
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 #include <debug.hpp>
 
 #include <unistd.h>
@@ -41,26 +41,26 @@ PrimitiveTest(int loop,
               int my_pe,
               ShmemContextType ctx_type)
 {
-    __shared__ roc_shmem_ctx_t ctx;
-    roc_shmem_wg_init();
-    roc_shmem_wg_ctx_create(ctx_type, &ctx);
+    __shared__ rocshmem_ctx_t ctx;
+    rocshmem_wg_init();
+    rocshmem_wg_ctx_create(ctx_type, &ctx);
 
     int block_id = hipBlockIdx_x;
     for(int i =0; i< loop; i++){
-        roc_shmem_ctx_putmem_nbi_wg(ctx, &r_buf[my_pe*size], &s_buf[block_id * size], size, block_id);
+        rocshmem_ctx_putmem_nbi_wg(ctx, &r_buf[my_pe*size], &s_buf[block_id * size], size, block_id);
         if(hipThreadIdx_x==0){
-            //roc_shmem_ctx_quiet(ctx);
-            //roc_shmem_ctx_threadfence_system(ctx);
-            roc_shmem_ctx_int_p(ctx, &flag[my_pe], i+1, block_id);
-            //roc_shmem_ctx_quiet(ctx);
-            roc_shmem_int_wait_until(&flag[block_id], ROC_SHMEM_CMP_EQ, i+1);
+            //rocshmem_ctx_quiet(ctx);
+            //rocshmem_ctx_threadfence_system(ctx);
+            rocshmem_ctx_int_p(ctx, &flag[my_pe], i+1, block_id);
+            //rocshmem_ctx_quiet(ctx);
+            rocshmem_int_wait_until(&flag[block_id], ROCSHMEM_CMP_EQ, i+1);
 
         }
         __syncthreads();
     }
 
-    roc_shmem_wg_ctx_destroy(ctx);
-    roc_shmem_wg_finalize();
+    rocshmem_wg_ctx_destroy(ctx);
+    rocshmem_wg_finalize();
 }
 
 /******************************************************************************
@@ -69,16 +69,16 @@ PrimitiveTest(int loop,
 PrimitiveTester::PrimitiveTester(TesterArguments args)
     : Tester(args)
 {
-    flag = (int*) roc_shmem_malloc(args.numprocs);
+    flag = (int*) rocshmem_malloc(args.numprocs);
     memset(flag, 0, args.numprocs*sizeof(int));
-   // s_buf = (char *)roc_shmem_malloc(args.max_msg_size * args.wg_size);
-   // r_buf = (char *)roc_shmem_malloc(args.max_msg_size * args.wg_size);
+   // s_buf = (char *)rocshmem_malloc(args.max_msg_size * args.wg_size);
+   // r_buf = (char *)rocshmem_malloc(args.max_msg_size * args.wg_size);
 }
 
 PrimitiveTester::~PrimitiveTester()
 {
-    roc_shmem_free(s_buf);
-    roc_shmem_free(r_buf);
+    rocshmem_free(s_buf);
+    rocshmem_free(r_buf);
 }
 
 void
@@ -99,8 +99,8 @@ PrimitiveTester::launchKernel(dim3 gridSize,
     void* sendBuf = malloc(64);
     void* recvBuf = malloc(64 * nproc);
 
-    s_buf = (char *)roc_shmem_malloc(size * nproc);
-    r_buf = (char *)roc_shmem_malloc(size * nproc);
+    s_buf = (char *)rocshmem_malloc(size * nproc);
+    r_buf = (char *)rocshmem_malloc(size * nproc);
     resetBuffers(size);
 
     MPI_Allgather(sendBuf, 64, MPI_CHAR,
@@ -108,7 +108,7 @@ PrimitiveTester::launchKernel(dim3 gridSize,
                   MPI_COMM_WORLD);
 
     size_t shared_bytes;
-    roc_shmem_dynamic_shared(&shared_bytes);
+    rocshmem_dynamic_shared(&shared_bytes);
 
     hipLaunchKernelGGL(PrimitiveTest,
                        gridSize,

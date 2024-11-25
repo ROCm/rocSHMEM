@@ -321,11 +321,11 @@ pipeline {
                     steps {
                         dir("clients/functional_tests") {
                             sh 'mkdir -p ${build_dir}/RO_NET_BASIC'
-                            sh 'ROC_SHMEM_RO=1 RO_NET_CPU_QUEUE=1 UCX_TLS=rc ./driver.sh ${build_dir}/RC_MULTI/rocshmem_example_driver ro ${build_dir}/RO_NET_BASIC'
+                            sh 'ROCSHMEM_RO=1 RO_NET_CPU_QUEUE=1 UCX_TLS=rc ./driver.sh ${build_dir}/RC_MULTI/rocshmem_example_driver ro ${build_dir}/RO_NET_BASIC'
                         }
                         dir("internal/clients/spts") {
                             sh 'mkdir -p ${build_dir}/RO_NET_BASIC'
-                            sh 'ROC_SHMEM_RO=1 RO_NET_CPU_QUEUE=1 UCX_TLS=rc ./driver.sh ${build_dir}/RC_MULTI/spts multi_thread ${build_dir}/RO_NET_BASIC'
+                            sh 'ROCSHMEM_RO=1 RO_NET_CPU_QUEUE=1 UCX_TLS=rc ./driver.sh ${build_dir}/RC_MULTI/spts multi_thread ${build_dir}/RO_NET_BASIC'
                         }
                     }
                 }

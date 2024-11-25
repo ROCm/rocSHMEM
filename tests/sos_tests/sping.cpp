@@ -53,7 +53,7 @@ void printStats(int, int, int, int, double);
 
 int Verbose = 0;
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -99,7 +99,7 @@ void usage(char *name) {
 }
 
 void help(char *name) {
-  if (roc_shmem_my_pe() == 0) {
+  if (rocshmem_my_pe() == 0) {
     printf("Usage: %s [flags] nwords [maxWords] [incWords]\n\n", name);
     printf(" Flags may be any of\n");
     printf(" -n number repititions\n");
@@ -107,7 +107,7 @@ void help(char *name) {
     printf(" -h print this info\n\n");
     printf(" Numbers may be postfixed with 'k' or 'm'\n\n");
   }
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
   exit(0);
 }
 
@@ -128,12 +128,12 @@ int main(int argc, char *argv[]) {
   long *rbuf; /* remote buffer - sink */
   long *tbuf; /* transmit buffer - src */
 
-  roc_shmem_init();
-  proc = roc_shmem_my_pe();
-  nproc = roc_shmem_n_pes();
+  rocshmem_init();
+  proc = rocshmem_my_pe();
+  nproc = rocshmem_n_pes();
   if (nproc == 1) {
     fprintf(stderr, "ERR - Requires > 1 Processing Elements\n");
-    roc_shmem_finalize();
+    rocshmem_finalize();
     return 0;
   }
 
@@ -172,13 +172,13 @@ int main(int argc, char *argv[]) {
   else if ((incWords = getSize(argv[optind++])) < 0)
     usage(progName);
 
-  if (!(rbuf = (long *)roc_shmem_malloc(maxWords * sizeof(long)))) {
+  if (!(rbuf = (long *)rocshmem_malloc(maxWords * sizeof(long)))) {
     perror("Failed memory allocation");
     exit(1);
   }
   memset(rbuf, 0, maxWords * sizeof(long));
 
-  if (!(tbuf = (long *)roc_shmem_malloc(maxWords * sizeof(long)))) {
+  if (!(tbuf = (long *)rocshmem_malloc(maxWords * sizeof(long)))) {
     perror("Failed memory allocation");
     exit(1);
   }
@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
 
   dprint("[%d] rbuf: %ld\n", proc, (unsigned long)rbuf);
 
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   peer = proc ^ 1;
   if (peer >= nproc) doprint = 0;
@@ -201,37 +201,37 @@ int main(int argc, char *argv[]) {
   for (nwords = minWords; nwords <= maxWords;
        nwords = incWords ? nwords + incWords : nwords ? 2 * nwords : 1) {
     r = reps;
-    roc_shmem_barrier_all();
+    rocshmem_barrier_all();
     tv[0] = gettime();
     if (peer < nproc) {
       if (proc & 1) {
         r--;
-        roc_shmem_long_wait_until(&rbuf[nwords - 1], ROC_SHMEM_CMP_NE, 0);
+        rocshmem_long_wait_until(&rbuf[nwords - 1], ROCSHMEM_CMP_NE, 0);
         rbuf[nwords - 1] = 0;
       }
 
       while (r-- > 0) {
-        roc_shmem_long_put(rbuf, tbuf, nwords, peer);
-        roc_shmem_long_wait_until(&rbuf[nwords - 1], ROC_SHMEM_CMP_NE, 0);
+        rocshmem_long_put(rbuf, tbuf, nwords, peer);
+        rocshmem_long_wait_until(&rbuf[nwords - 1], ROCSHMEM_CMP_NE, 0);
         rbuf[nwords - 1] = 0;
       }
 
       if (proc & 1) {
-        roc_shmem_long_put(rbuf, tbuf, nwords, peer);
+        rocshmem_long_put(rbuf, tbuf, nwords, peer);
       }
     }
     tv[1] = gettime();
     t = dt(&tv[1], &tv[0]) / (2 * reps);
 
-    roc_shmem_barrier_all();
+    rocshmem_barrier_all();
 
     printStats(proc, peer, doprint, nwords, t);
   }
 
-  roc_shmem_free(rbuf);
-  roc_shmem_free(tbuf);
+  rocshmem_free(rbuf);
+  rocshmem_free(tbuf);
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
 
   return 0;
 }

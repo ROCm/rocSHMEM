@@ -108,8 +108,8 @@ struct GetROType<long double> {
  ********************************* DEVICE API *********************************
  *****************************************************************************/
 
-template <typename T, ROC_SHMEM_OP Op>
-__device__ void ROContext::to_all(roc_shmem_team_t team, T *dest,
+template <typename T, ROCSHMEM_OP Op>
+__device__ void ROContext::to_all(rocshmem_team_t team, T *dest,
                                   const T *source, int nreduce) {
   if (!is_thread_zero_in_block()) {
     __syncthreads();
@@ -125,7 +125,7 @@ __device__ void ROContext::to_all(roc_shmem_team_t team, T *dest,
   __syncthreads();
 }
 
-template <typename T, ROC_SHMEM_OP Op>
+template <typename T, ROCSHMEM_OP Op>
 __device__ void ROContext::to_all(T *dest, const T *source, int nreduce,
                                   int PE_start, int logPE_stride, int PE_size,
                                   T *pWrk, long *pSync) {
@@ -210,7 +210,7 @@ __device__ T ROContext::amo_fetch_cas(void *dst, T value, T cond, int pe) {
                       value, pe, 0, 0, 0,
                       reinterpret_cast<void *>(static_cast<long long>(cond)),
                       nullptr, (MPI_Comm)NULL, ro_net_win_id, block_handle, true,
-                      ROC_SHMEM_SUM, GetROType<T>::Type);
+                      ROCSHMEM_SUM, GetROType<T>::Type);
   __threadfence();
   return *source;
 }
@@ -225,7 +225,7 @@ __device__ T ROContext::amo_fetch_add(void *dst, T value, int pe) {
   auto source{get_unused_atomic()};
   build_queue_element(RO_NET_AMO_FOP, dst, reinterpret_cast<T *>(source), value,
                       pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
-                      ro_net_win_id, block_handle, true, ROC_SHMEM_SUM,
+                      ro_net_win_id, block_handle, true, ROCSHMEM_SUM,
                       GetROType<T>::Type);
   __threadfence();
   return *source;
@@ -241,7 +241,7 @@ __device__ T ROContext::amo_swap(void *dst, T value, int pe) {
   auto source{get_unused_atomic()};
   build_queue_element(RO_NET_AMO_FOP, dst, reinterpret_cast<void *>(source),
                       value, pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
-                      ro_net_win_id, block_handle, true, ROC_SHMEM_REPLACE,
+                      ro_net_win_id, block_handle, true, ROCSHMEM_REPLACE,
                       GetROType<T>::Type);
   __threadfence();
   return *source;
@@ -257,7 +257,7 @@ __device__ T ROContext::amo_fetch_and(void *dst, T value, int pe) {
   auto source{get_unused_atomic()};
   build_queue_element(RO_NET_AMO_FOP, dst, reinterpret_cast<void *>(source),
                       value, pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
-                      ro_net_win_id, block_handle, true, ROC_SHMEM_AND,
+                      ro_net_win_id, block_handle, true, ROCSHMEM_AND,
                       GetROType<T>::Type);
   __threadfence();
   return *source;
@@ -273,7 +273,7 @@ __device__ T ROContext::amo_fetch_or(void *dst, T value, int pe) {
   auto source{get_unused_atomic()};
   build_queue_element(RO_NET_AMO_FOP, dst, reinterpret_cast<void *>(source),
                       value, pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
-                      ro_net_win_id, block_handle, true, ROC_SHMEM_OR,
+                      ro_net_win_id, block_handle, true, ROCSHMEM_OR,
                       GetROType<T>::Type);
   __threadfence();
   return *source;
@@ -289,7 +289,7 @@ __device__ T ROContext::amo_fetch_xor(void *dst, T value, int pe) {
   auto source{get_unused_atomic()};
   build_queue_element(RO_NET_AMO_FOP, dst, reinterpret_cast<void *>(source),
                       value, pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
-                      ro_net_win_id, block_handle, true, ROC_SHMEM_XOR,
+                      ro_net_win_id, block_handle, true, ROCSHMEM_XOR,
                       GetROType<T>::Type);
   __threadfence();
   return *source;
@@ -301,7 +301,7 @@ __device__ void ROContext::amo_xor(void *dst, T value, int pe) {
 }
 
 template <typename T>
-__device__ void ROContext::broadcast(roc_shmem_team_t team, T *dest,
+__device__ void ROContext::broadcast(rocshmem_team_t team, T *dest,
                                      const T *source, int nelems, int pe_root) {
   if (!is_thread_zero_in_block()) {
     __syncthreads();
@@ -313,7 +313,7 @@ __device__ void ROContext::broadcast(roc_shmem_team_t team, T *dest,
   build_queue_element(RO_NET_TEAM_BROADCAST, dest, const_cast<T *>(source),
                       nelems, 0, 0, 0, pe_root, nullptr, nullptr,
                       team_obj->mpi_comm, ro_net_win_id, block_handle, true,
-                      ROC_SHMEM_SUM, GetROType<T>::Type);
+                      ROCSHMEM_SUM, GetROType<T>::Type);
 
   __syncthreads();
 }
@@ -331,13 +331,13 @@ __device__ void ROContext::broadcast(T *dest, const T *source, int nelems,
   build_queue_element(RO_NET_BROADCAST, dest, const_cast<T *>(source), nelems,
                       pe_start, log_pe_stride, pe_size, pe_root, nullptr,
                       p_sync, (MPI_Comm)NULL, ro_net_win_id, block_handle, true,
-                      ROC_SHMEM_SUM, GetROType<T>::Type);
+                      ROCSHMEM_SUM, GetROType<T>::Type);
 
   __syncthreads();
 }
 
 template <typename T>
-__device__ void ROContext::alltoall(roc_shmem_team_t team, T *dest,
+__device__ void ROContext::alltoall(rocshmem_team_t team, T *dest,
                                     const T *source, int nelems) {
   if (!is_thread_zero_in_block()) {
     __syncthreads();
@@ -349,13 +349,13 @@ __device__ void ROContext::alltoall(roc_shmem_team_t team, T *dest,
   build_queue_element(RO_NET_ALLTOALL, dest, const_cast<T *>(source), nelems, 0,
                       0, 0, 0, team_obj->ata_buffer, nullptr,
                       team_obj->mpi_comm, ro_net_win_id, block_handle, true,
-                      ROC_SHMEM_SUM, GetROType<T>::Type);
+                      ROCSHMEM_SUM, GetROType<T>::Type);
 
   __syncthreads();
 }
 
 template <typename T>
-__device__ void ROContext::fcollect(roc_shmem_team_t team, T *dest,
+__device__ void ROContext::fcollect(rocshmem_team_t team, T *dest,
                                     const T *source, int nelems) {
   if (!is_thread_zero_in_block()) {
     __syncthreads();
@@ -367,7 +367,7 @@ __device__ void ROContext::fcollect(roc_shmem_team_t team, T *dest,
   build_queue_element(RO_NET_FCOLLECT, dest, const_cast<T *>(source), nelems, 0,
                       0, 0, 0, team_obj->ata_buffer, nullptr,
                       team_obj->mpi_comm, ro_net_win_id, block_handle, true,
-                      ROC_SHMEM_SUM, GetROType<T>::Type);
+                      ROCSHMEM_SUM, GetROType<T>::Type);
 
   __syncthreads();
 }

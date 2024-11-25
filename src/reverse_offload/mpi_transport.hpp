@@ -49,18 +49,18 @@ class MPITransport : public Transport {
                        TeamInfo *team_info_wrt_parent,
                        TeamInfo *team_info_wrt_world, int num_pes,
                        int my_pe_in_new_team, MPI_Comm team_comm,
-                       roc_shmem_team_t *new_team) override;
+                       rocshmem_team_t *new_team) override;
 
   void barrier(int blockId, int threadId, bool blocking,
                  MPI_Comm team) override;
 
   void reduction(void *dst, void *src, int size, int pe, int win_id,
                    int blockId, int start, int logPstride, int sizePE, void *pWrk,
-                   long *pSync, ROC_SHMEM_OP op, ro_net_types type,
+                   long *pSync, ROCSHMEM_OP op, ro_net_types type,
                    int threadId, bool blocking) override;
 
   void team_reduction(void *dst, void *src, int size, int win_id, int blockId,
-                        MPI_Comm team, ROC_SHMEM_OP op, ro_net_types type,
+                        MPI_Comm team, ROCSHMEM_OP op, ro_net_types type,
                         int threadId, bool blocking) override;
 
   void broadcast(void *dst, void *src, int size, int pe, int win_id,
@@ -116,7 +116,7 @@ class MPITransport : public Transport {
                 int threadId, bool blocking, bool inline_data = false) override;
 
   void amoFOP(void *dst, void *src, void *val, int pe, int win_id, int blockId,
-                int threadId, bool blocking, ROC_SHMEM_OP op,
+                int threadId, bool blocking, ROCSHMEM_OP op,
                 ro_net_types type) override;
 
   void amoFCAS(void *dst, void *src, void *val, int pe, int win_id, int blockId,
@@ -193,7 +193,7 @@ class MPITransport : public Transport {
 
   void submitRequestsToMPI();
 
-  MPI_Op get_mpi_op(ROC_SHMEM_OP op);
+  MPI_Op get_mpi_op(ROCSHMEM_OP op);
 
   Queue *queue{nullptr};
 

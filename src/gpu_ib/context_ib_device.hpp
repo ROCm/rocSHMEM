@@ -69,7 +69,7 @@ class GPUIBContext : public Context {
 
   __device__ void sync_all();
 
-  __device__ void sync(roc_shmem_team_t team);
+  __device__ void sync(rocshmem_team_t team);
 
   template <typename T>
   __device__ void amo_add(void *dst, T value, int pe);
@@ -113,13 +113,13 @@ class GPUIBContext : public Context {
   template <typename T>
   __device__ T g(const T *source, int pe);
 
-  template <typename T, ROC_SHMEM_OP Op>
+  template <typename T, ROCSHMEM_OP Op>
   __device__ void to_all(T *dest, const T *source, int nreduce, int PE_start,
                          int logPE_stride, int PE_size, T *pWrk,
                          long *pSync);  // NOLINT(runtime/int)
 
-  template <typename T, ROC_SHMEM_OP Op>
-  __device__ void to_all(roc_shmem_team_t team, T *dest, const T *source,
+  template <typename T, ROCSHMEM_OP Op>
+  __device__ void to_all(rocshmem_team_t team, T *dest, const T *source,
                          int nreduce);
 
   template <typename T>
@@ -135,7 +135,7 @@ class GPUIBContext : public Context {
   __device__ void get_nbi(T *dest, const T *source, size_t nelems, int pe);
 
   template <typename T>
-  __device__ void broadcast(roc_shmem_team_t team, T *dest, const T *source,
+  __device__ void broadcast(rocshmem_team_t team, T *dest, const T *source,
                             int nelems, int pe_root);
 
   template <typename T>
@@ -144,43 +144,43 @@ class GPUIBContext : public Context {
                             long *p_sync);  // NOLINT(runtime/int)
 
   template <typename T>
-  __device__ void alltoall(roc_shmem_team_t team, T *dest, const T *source,
+  __device__ void alltoall(rocshmem_team_t team, T *dest, const T *source,
                            int nelems);
 
   template <typename T>
-  __device__ void alltoall_broadcast(roc_shmem_team_t team, T *dest,
+  __device__ void alltoall_broadcast(rocshmem_team_t team, T *dest,
                                      const T *source, int nelems);
 
   template <typename T>
-  __device__ void alltoall_brucks(roc_shmem_team_t team, T *dest,
+  __device__ void alltoall_brucks(rocshmem_team_t team, T *dest,
                                   const T *source, int nelems);
 
   template <typename T>
-  __device__ void alltoall_gcen(roc_shmem_team_t team, T *dest, const T *source,
+  __device__ void alltoall_gcen(rocshmem_team_t team, T *dest, const T *source,
                                 int nelems);
 
   template <typename T>
-  __device__ void alltoall_gcen2(roc_shmem_team_t team, T *dest,
+  __device__ void alltoall_gcen2(rocshmem_team_t team, T *dest,
                                  const T *source, int nelems);
 
   template <typename T>
-  __device__ void fcollect(roc_shmem_team_t team, T *dest, const T *source,
+  __device__ void fcollect(rocshmem_team_t team, T *dest, const T *source,
                            int nelems);
 
   template <typename T>
-  __device__ void fcollect_broadcast(roc_shmem_team_t team, T *dest,
+  __device__ void fcollect_broadcast(rocshmem_team_t team, T *dest,
                                      const T *source, int nelems);
 
   template <typename T>
-  __device__ void fcollect_brucks(roc_shmem_team_t team, T *dest,
+  __device__ void fcollect_brucks(rocshmem_team_t team, T *dest,
                                   const T *source, int nelems);
 
   template <typename T>
-  __device__ void fcollect_gcen(roc_shmem_team_t team, T *dest, const T *source,
+  __device__ void fcollect_gcen(rocshmem_team_t team, T *dest, const T *source,
                                 int nelems);
 
   template <typename T>
-  __device__ void fcollect_gcen2(roc_shmem_team_t team, T *dest,
+  __device__ void fcollect_gcen2(rocshmem_team_t team, T *dest,
                                  const T *source, int nelems);
 
   __device__ void putmem_wg(void *dest, const void *source, size_t nelems,
@@ -232,13 +232,13 @@ class GPUIBContext : public Context {
   __device__ void get_nbi_wave(T *dest, const T *source, size_t nelems, int pe);
 
  private:
-  template <typename T, ROC_SHMEM_OP Op>
+  template <typename T, ROCSHMEM_OP Op>
   __device__ void internal_direct_allreduce(
       T *dst, const T *src, int nelems, int PE_start, int logPE_stride,
       int PE_size, T *pWrk,
       long *pSync);  // NOLINT(runtime/int)
 
-  template <typename T, ROC_SHMEM_OP Op>
+  template <typename T, ROCSHMEM_OP Op>
   __device__ void internal_ring_allreduce(T *dst, const T *src, int nelems,
                                           int PE_start, int logPE_stride,
                                           int PE_size, T *pWrk,

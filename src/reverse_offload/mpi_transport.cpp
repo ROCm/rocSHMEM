@@ -142,7 +142,7 @@ void MPITransport::submitRequestsToMPI() {
              const_cast<unsigned long long *>(&next_element.ol1.atomic_value),
              next_element.PE, next_element.ro_net_win_id, queue_idx,
              next_element.threadId, true,
-             static_cast<ROC_SHMEM_OP>(next_element.op),
+             static_cast<ROCSHMEM_OP>(next_element.op),
              static_cast<ro_net_types>(next_element.datatype));
       DPRINTF("Received AMO dst %p src %p Val %llu pe %d\n", next_element.dst,
               next_element.src, next_element.ol1.atomic_value, next_element.PE);
@@ -163,7 +163,7 @@ void MPITransport::submitRequestsToMPI() {
       team_reduction(next_element.dst, next_element.src, next_element.ol1.size,
                      next_element.ro_net_win_id, queue_idx,
                      next_element.team_comm,
-                     static_cast<ROC_SHMEM_OP>(next_element.op),
+                     static_cast<ROCSHMEM_OP>(next_element.op),
                      static_cast<ro_net_types>(next_element.datatype),
                      next_element.threadId, true);
       DPRINTF("Received FLOAT_SUM_TEAM_TO_ALL dst %p src %p size %lu team %d\n",
@@ -175,7 +175,7 @@ void MPITransport::submitRequestsToMPI() {
                 next_element.PE, next_element.ro_net_win_id, queue_idx,
                 next_element.PE, next_element.logPE_stride,
                 next_element.PE_size, next_element.ol2.pWrk, next_element.pSync,
-                static_cast<ROC_SHMEM_OP>(next_element.op),
+                static_cast<ROCSHMEM_OP>(next_element.op),
                 static_cast<ro_net_types>(next_element.datatype),
                 next_element.threadId, true);
       DPRINTF(
@@ -275,15 +275,15 @@ void MPITransport::finalizeTransport() {
   delete host_interface;
 }
 
-roc_shmem_team_t get_external_team(ROTeam *team) {
-  return reinterpret_cast<roc_shmem_team_t>(team);
+rocshmem_team_t get_external_team(ROTeam *team) {
+  return reinterpret_cast<rocshmem_team_t>(team);
 }
 
 void MPITransport::createNewTeam(ROBackend *backend, Team *parent_team,
                                    TeamInfo *team_info_wrt_parent,
                                    TeamInfo *team_info_wrt_world, int num_pes,
                                    int my_pe_in_new_team, MPI_Comm team_comm,
-                                   roc_shmem_team_t *new_team) {
+                                   rocshmem_team_t *new_team) {
   ROTeam *new_team_obj{nullptr};
 
   CHECK_HIP(hipMalloc(&new_team_obj, sizeof(ROTeam)));
@@ -342,26 +342,26 @@ void MPITransport::barrier(int blockId, int threadId, bool blocking,
   outstanding[blockId]++;
 }
 
-MPI_Op MPITransport::get_mpi_op(ROC_SHMEM_OP op) {
+MPI_Op MPITransport::get_mpi_op(ROCSHMEM_OP op) {
   switch (op) {
-    case ROC_SHMEM_SUM:
+    case ROCSHMEM_SUM:
       return MPI_SUM;
-    case ROC_SHMEM_MAX:
+    case ROCSHMEM_MAX:
       return MPI_MAX;
-    case ROC_SHMEM_MIN:
+    case ROCSHMEM_MIN:
       return MPI_MIN;
-    case ROC_SHMEM_PROD:
+    case ROCSHMEM_PROD:
       return MPI_PROD;
-    case ROC_SHMEM_AND:
+    case ROCSHMEM_AND:
       return MPI_BAND;
-    case ROC_SHMEM_OR:
+    case ROCSHMEM_OR:
       return MPI_BOR;
-    case ROC_SHMEM_XOR:
+    case ROCSHMEM_XOR:
       return MPI_BXOR;
-    case ROC_SHMEM_REPLACE:
+    case ROCSHMEM_REPLACE:
       return MPI_REPLACE;
     default:
-      fprintf(stderr, "Unknown ROC_SHMEM op MPI conversion %d\n", op);
+      fprintf(stderr, "Unknown rocSHMEM op MPI conversion %d\n", op);
       abort();
   }
 }
@@ -383,7 +383,7 @@ static MPI_Datatype convertType(ro_net_types type) {
     case RO_NET_LONG_DOUBLE:
       return MPI_LONG_DOUBLE;
     default:
-      fprintf(stderr, "Unknown ROC_SHMEM type MPI conversion %d\n", type);
+      fprintf(stderr, "Unknown rocSHMEM type MPI conversion %d\n", type);
       abort();
   }
 }
@@ -391,7 +391,7 @@ static MPI_Datatype convertType(ro_net_types type) {
 void MPITransport::reduction(void *dst, void *src, int size, int pe,
                                int win_id, int blockId, int start, int logPstride,
                                int sizePE, void *pWrk, long *pSync,
-                               ROC_SHMEM_OP op, ro_net_types type, int threadId,
+                               ROCSHMEM_OP op, ro_net_types type, int threadId,
                                bool blocking) {
   MPI_Request request{};
   MPI_Op mpi_op{get_mpi_op(op)};
@@ -435,7 +435,7 @@ void MPITransport::broadcast(void *dst, void *src, int size, int pe,
 }
 
 void MPITransport::team_reduction(void *dst, void *src, int size, int win_id,
-                                    int blockId, MPI_Comm team, ROC_SHMEM_OP op,
+                                    int blockId, MPI_Comm team, ROCSHMEM_OP op,
                                     ro_net_types type, int threadId,
                                     bool blocking) {
   MPI_Request request{};
@@ -1046,7 +1046,7 @@ void MPITransport::putMem(void *dst, void *src, int size, int pe, int win_id,
 
 void MPITransport::amoFOP(void *dst, void *src, void *val, int pe, int win_id,
                             int blockId, int threadId, bool blocking,
-                            ROC_SHMEM_OP op, ro_net_types type) {
+                            ROCSHMEM_OP op, ro_net_types type) {
   queue->flush_hdp();
 
   auto *bp{backend_proxy->get()};

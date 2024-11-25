@@ -83,13 +83,13 @@ int HostInterface::find_win_info_in_pool(WindowInfo* window_info) {
 }
 
 __host__ HostInterface::HostInterface(HdpPolicy* hdp_policy,
-                                      MPI_Comm roc_shmem_comm,
+                                      MPI_Comm rocshmem_comm,
                                       SymmetricHeap* heap) {
   /*
    * Duplicate a communicator from roc_shem's comm
    * world for the host interface
    */
-  MPI_Comm_dup(roc_shmem_comm, &host_comm_world_);
+  MPI_Comm_dup(rocshmem_comm, &host_comm_world_);
   MPI_Comm_rank(host_comm_world_, &my_pe_);
   MPI_Comm_rank(host_comm_world_, &num_pes_);
 
@@ -103,7 +103,7 @@ __host__ HostInterface::HostInterface(HdpPolicy* hdp_policy,
    * Allocate and initialize pool of windows for contexts
    */
   char* value{nullptr};
-  if ((value = getenv("ROC_SHMEM_MAX_NUM_HOST_CONTEXTS"))) {
+  if ((value = getenv("ROCSHMEM_MAX_NUM_HOST_CONTEXTS"))) {
     max_num_ctxs_ = atoi(value);
   }
 

@@ -67,7 +67,7 @@ class Context {
    * just removing the dispatch implementations.
    *
    * No comments for these guys since its basically the same as in the
-   * roc_shmem.hpp public header.
+   * rocshmem.hpp public header.
    */
 
   /**************************************************************************
@@ -139,7 +139,7 @@ class Context {
 
   __device__ void sync_all();
 
-  __device__ void sync(roc_shmem_team_t team);
+  __device__ void sync(rocshmem_team_t team);
 
   template <typename T>
   __device__ T amo_fetch(void* dst, T value, T cond, int pe, uint8_t atomic_op);
@@ -186,13 +186,13 @@ class Context {
   template <typename T>
   __device__ T g(T* source, int pe);
 
-  template <typename T, ROC_SHMEM_OP Op>
+  template <typename T, ROCSHMEM_OP Op>
   __device__ void to_all(T* dest, const T* source, int nreduce, int PE_start,
                          int logPE_stride, int PE_size, T* pWrk,
                          long* pSync);  // NOLINT(runtime/int)
 
-  template <typename T, ROC_SHMEM_OP Op>
-  __device__ int reduce(roc_shmem_team_t team, T* dest, const T* source, int nreduce);
+  template <typename T, ROCSHMEM_OP Op>
+  __device__ int reduce(rocshmem_team_t team, T* dest, const T* source, int nreduce);
 
   template <typename T>
   __device__ void put(T* dest, const T* source, size_t nelems, int pe);
@@ -207,15 +207,15 @@ class Context {
   __device__ void get_nbi(T* dest, const T* source, size_t nelems, int pe);
 
   template <typename T>
-  __device__ void alltoall(roc_shmem_team_t team, T* dest, const T* source,
+  __device__ void alltoall(rocshmem_team_t team, T* dest, const T* source,
                            int nelems);
 
   template <typename T>
-  __device__ void fcollect(roc_shmem_team_t team, T* dest, const T* source,
+  __device__ void fcollect(rocshmem_team_t team, T* dest, const T* source,
                            int nelems);
 
   template <typename T>
-  __device__ void broadcast(roc_shmem_team_t team, T* dest, const T* source,
+  __device__ void broadcast(rocshmem_team_t team, T* dest, const T* source,
                             int nelems, int pe_root);
 
   template <typename T>
@@ -351,16 +351,16 @@ class Context {
                           long* p_sync);  // NOLINT(runtime/int)
 
   template <typename T>
-  __host__ void broadcast(roc_shmem_team_t team, T* dest, const T* source,
+  __host__ void broadcast(rocshmem_team_t team, T* dest, const T* source,
                           int nelems, int pe_root);
 
-  template <typename T, ROC_SHMEM_OP Op>
+  template <typename T, ROCSHMEM_OP Op>
   __host__ void to_all(T* dest, const T* source, int nreduce, int PE_start,
                        int logPE_stride, int PE_size, T* pWrk,
                        long* pSync);  // NOLINT(runtime/int)
 
-  template <typename T, ROC_SHMEM_OP Op>
-  __host__ int reduce(roc_shmem_team_t team, T* dest, const T* source, int nreduce);
+  template <typename T, ROCSHMEM_OP Op>
+  __host__ int reduce(rocshmem_team_t team, T* dest, const T* source, int nreduce);
 
   template <typename T>
   __host__ void wait_until(T *ivars, int cmp, T val);

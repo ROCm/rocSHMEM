@@ -33,7 +33,7 @@ ${BUILD}/sort_mpi: ${BUILD}/sort_mpi.o
 ${BUILD}/sort_mpi.o: ${SRC}/sort_mpi.cu
 	${HIPCC} $^ -I${MPI_HOME}/include -fgpu-rdc -o $@ -c
 
-RO_FLAGS=ROC_SHMEM_RO=1 RO_NET_CPU_QUEUE=1
+RO_FLAGS=ROCSHMEM_RO=1 RO_NET_CPU_QUEUE=1
 ITERS?=0 1 2 3 4 5 6 7 8 9
 TIMEOUT=1m
 HOSTS=sv-pdp-0,sv-pdp-1,sv-pdp-2,sv-pdp-3

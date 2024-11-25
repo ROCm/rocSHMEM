@@ -30,7 +30,7 @@
 
 #include <vector>
 
-#include "roc_shmem/roc_shmem.hpp"
+#include "rocshmem/rocshmem.hpp"
 
 namespace rocshmem {
 
@@ -55,7 +55,7 @@ class TeamTracker {
    *
    * @param void
    */
-  void track(roc_shmem_team_t team);
+  void track(rocshmem_team_t team);
 
   /**
    * @brief Remove team from the list of user-created teams
@@ -64,7 +64,7 @@ class TeamTracker {
    *
    * @return void
    */
-  void untrack(roc_shmem_team_t team);
+  void untrack(rocshmem_team_t team);
 
   /**
    * @brief Remove all teams from the list of user-created teams
@@ -113,7 +113,7 @@ class TeamTracker {
   /**
    * @brief List of teams created by the user.
    */
-  std::vector<roc_shmem_team_t> teams_{};
+  std::vector<rocshmem_team_t> teams_{};
 
   /**
    * @brief The maximum number of teams the user can create.
@@ -125,7 +125,7 @@ class TeamTracker {
   int max_num_teams_{40};
 
   /**
-   * @brief Pointer to implementation of ROC_SHMEM_TEAM_WORLD
+   * @brief Pointer to implementation of ROCSHMEM_TEAM_WORLD
    */
   Team* team_world_{nullptr};
 };

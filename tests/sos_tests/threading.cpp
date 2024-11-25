@@ -29,7 +29,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -48,27 +48,27 @@ static void *roundrobin(void *tparam) {
   int offset = tid * N_ELEMS;
   /* fprintf(stderr,"Starting thread %lu with offset %d\n",tid,offset); */
 
-  int nextpe = (roc_shmem_my_pe() + 1) % roc_shmem_n_pes();
-  int prevpe = (roc_shmem_my_pe() - 1 + roc_shmem_n_pes()) % roc_shmem_n_pes();
-  roc_shmem_long_put(target + offset, source + offset, N_ELEMS, nextpe);
+  int nextpe = (rocshmem_my_pe() + 1) % rocshmem_n_pes();
+  int prevpe = (rocshmem_my_pe() - 1 + rocshmem_n_pes()) % rocshmem_n_pes();
+  rocshmem_long_put(target + offset, source + offset, N_ELEMS, nextpe);
 
   /* fprintf(stderr,"Thread %lu done first put\n",tid); */
   pthread_barrier_wait(&fencebar);
-  if (tid == 0) roc_shmem_barrier_all();
+  if (tid == 0) rocshmem_barrier_all();
   pthread_barrier_wait(&fencebar);
 
-  roc_shmem_long_get(source + offset, target + offset, N_ELEMS, prevpe);
+  rocshmem_long_get(source + offset, target + offset, N_ELEMS, prevpe);
 
   /* fprintf(stderr,"Thread %lu done first get\n",tid); */
   pthread_barrier_wait(&fencebar);
-  if (tid == 0) roc_shmem_barrier_all();
+  if (tid == 0) rocshmem_barrier_all();
   pthread_barrier_wait(&fencebar);
 
-  roc_shmem_long_get(target + offset, source + offset, N_ELEMS, nextpe);
+  rocshmem_long_get(target + offset, source + offset, N_ELEMS, nextpe);
 
   /* fprintf(stderr,"Thread %lu done second get\n",tid); */
   pthread_barrier_wait(&fencebar);
-  if (tid == 0) roc_shmem_barrier_all();
+  if (tid == 0) rocshmem_barrier_all();
   pthread_barrier_wait(&fencebar);
   /* fprintf(stderr,"Done thread %lu\n",tid); */
 
@@ -79,22 +79,22 @@ int main(int argc, char *argv[]) {
   int i;
 
   int tl;
-  roc_shmem_init_thread(ROC_SHMEM_THREAD_MULTIPLE, &tl);
+  rocshmem_init_thread(ROCSHMEM_THREAD_MULTIPLE, &tl);
 
-  if (tl != ROC_SHMEM_THREAD_MULTIPLE) {
+  if (tl != ROCSHMEM_THREAD_MULTIPLE) {
     printf("Init failed (requested thread level %d, got %d)\n",
-           ROC_SHMEM_THREAD_MULTIPLE, tl);
-    roc_shmem_global_exit(1);
+           ROCSHMEM_THREAD_MULTIPLE, tl);
+    rocshmem_global_exit(1);
   }
 
-  if (roc_shmem_n_pes() == 1) {
+  if (rocshmem_n_pes() == 1) {
     printf("%s: Requires number of PEs > 1\n", argv[0]);
-    roc_shmem_finalize();
+    rocshmem_finalize();
     return 0;
   }
 
-  source = (long *)roc_shmem_malloc(N_THREADS * N_ELEMS * sizeof(long));
-  target = (long *)roc_shmem_malloc(N_THREADS * N_ELEMS * sizeof(long));
+  source = (long *)rocshmem_malloc(N_THREADS * N_ELEMS * sizeof(long));
+  target = (long *)rocshmem_malloc(N_THREADS * N_ELEMS * sizeof(long));
 
   for (i = 0; i < N_THREADS * N_ELEMS; ++i) {
     source[i] = i + 1;
@@ -117,18 +117,18 @@ int main(int argc, char *argv[]) {
   pthread_barrier_destroy(&fencebar);
 
   if (0 != memcmp(source, target, sizeof(long) * N_THREADS * N_ELEMS)) {
-    fprintf(stderr, "[%d] Src & Target mismatch?\n", roc_shmem_my_pe());
+    fprintf(stderr, "[%d] Src & Target mismatch?\n", rocshmem_my_pe());
     for (i = 0; i < 10; ++i) {
       printf("%ld,%ld ", source[i], target[i]);
     }
     printf("\n");
-    roc_shmem_global_exit(1);
+    rocshmem_global_exit(1);
   }
 
-  roc_shmem_free(source);
-  roc_shmem_free(target);
+  rocshmem_free(source);
+  rocshmem_free(target);
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
 
   return 0;
 }

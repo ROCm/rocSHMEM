@@ -35,34 +35,34 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
 #define TEST_SHMEM_P(USE_CTX, TYPE, TYPENAME)                                 \
   do {                                                                        \
     TYPE* remote;                                                             \
-    remote = (TYPE*)roc_shmem_malloc(sizeof(TYPE));                           \
-    const int mype = roc_shmem_my_pe();                                       \
-    const int npes = roc_shmem_n_pes();                                       \
+    remote = (TYPE*)rocshmem_malloc(sizeof(TYPE));                            \
+    const int mype = rocshmem_my_pe();                                        \
+    const int npes = rocshmem_n_pes();                                        \
     if (USE_CTX)                                                              \
-      roc_shmem_ctx_##TYPENAME##_p(ROC_SHMEM_CTX_DEFAULT, remote, (TYPE)mype, \
+      rocshmem_ctx_##TYPENAME##_p(ROCSHMEM_CTX_DEFAULT, remote, (TYPE)mype,   \
                                    (mype + 1) % npes);                        \
     else                                                                      \
-      roc_shmem_##TYPENAME##_p(remote, (TYPE)mype, (mype + 1) % npes);        \
-    roc_shmem_barrier_all();                                                  \
+      rocshmem_##TYPENAME##_p(remote, (TYPE)mype, (mype + 1) % npes);         \
+    rocshmem_barrier_all();                                                   \
     if ((*remote) != (TYPE)((mype + npes - 1) % npes)) {                      \
       printf(                                                                 \
           "PE %i received incorrect value with "                              \
           "TEST_SHMEM_P(%d, %s)\n",                                           \
           mype, (int)(USE_CTX), #TYPE);                                       \
       rc = EXIT_FAILURE;                                                      \
-      roc_shmem_global_exit(1);                                               \
+      rocshmem_global_exit(1);                                                \
     }                                                                         \
   } while (false)
 
 int main(int argc, char* argv[]) {
-  roc_shmem_init();
+  rocshmem_init();
 
   int rc = EXIT_SUCCESS;
   TEST_SHMEM_P(0, float, float);
@@ -115,6 +115,6 @@ int main(int argc, char* argv[]) {
   // TEST_SHMEM_P(1, size_t, size);
   // TEST_SHMEM_P(1, ptrdiff_t, ptrdiff);
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
   return rc;
 }

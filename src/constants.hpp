@@ -26,7 +26,7 @@
 /**
  * @file constants.hpp
  *
- * @brief Contains global constants for ROCSHMEM library
+ * @brief Contains global constants for rocSHMEM library
  */
 
 namespace rocshmem {

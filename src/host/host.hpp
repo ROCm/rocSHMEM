@@ -36,7 +36,7 @@
 
 #include <map>
 
-#include "roc_shmem/roc_shmem.hpp"
+#include "rocshmem/rocshmem.hpp"
 #include "../hdp_policy.hpp"
 #include "../memory/symmetric_heap.hpp"
 #include "../memory/window_info.hpp"
@@ -104,7 +104,7 @@ class HostInterface {
   /**
    * @brief Primary constructor
    */
-  __host__ HostInterface(HdpPolicy* hdp_policy, MPI_Comm roc_shmem_comm,
+  __host__ HostInterface(HdpPolicy* hdp_policy, MPI_Comm rocshmem_comm,
                          SymmetricHeap* heap);
 
   /**
@@ -198,16 +198,16 @@ class HostInterface {
                           long* p_sync);  // NOLINT(runtime/int)
 
   template <typename T>
-  __host__ void broadcast(roc_shmem_team_t team, T* dest, const T* source,
+  __host__ void broadcast(rocshmem_team_t team, T* dest, const T* source,
                           int nelems, int pe_root);
 
-  template <typename T, ROC_SHMEM_OP Op>
+  template <typename T, ROCSHMEM_OP Op>
   __host__ void to_all(T* dest, const T* source, int nreduce, int pe_start,
                        int log_pe_stride, int pe_size, T* p_wrk,
                        long* p_sync);  // NOLINT(runtime/int)
 
-  template <typename T, ROC_SHMEM_OP Op>
-  __host__ int reduce(roc_shmem_team_t team, T* dest, const T* source, int nreduce);
+  template <typename T, ROCSHMEM_OP Op>
+  __host__ int reduce(rocshmem_team_t team, T* dest, const T* source, int nreduce);
 
   template <typename T>
   __host__ void wait_until(T *ivars, int cmp, T val,
@@ -288,7 +288,7 @@ class HostInterface {
 
   __host__ MPI_Comm get_mpi_comm(int pe_start, int log_pe_stride, int pe_size);
 
-  __host__ MPI_Op get_mpi_op(ROC_SHMEM_OP Op);
+  __host__ MPI_Op get_mpi_op(ROCSHMEM_OP Op);
 
   template <typename T>
   __host__ MPI_Datatype get_mpi_type();
@@ -300,7 +300,7 @@ class HostInterface {
   __host__ int test_and_compare(MPI_Aint offset, MPI_Datatype mpi_type,
                                 int cmp, T val, MPI_Win win);
 
-  template <typename T, ROC_SHMEM_OP Op>
+  template <typename T, ROCSHMEM_OP Op>
   __host__ void to_all_internal(MPI_Comm mpi_comm, T* dest, const T* source,
                                 int nreduce);
 

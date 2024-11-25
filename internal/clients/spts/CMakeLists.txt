@@ -55,7 +55,7 @@ project(spts VERSION 1.1.0 LANGUAGES CXX)
 # CONFIGURATION OPTIONS
 ###############################################################################
 option(USE_HIP "Build HIP version of the solver" OFF)
-option(USE_ROCSHMEM "Build ROC_SHMEM enabled version of the solver" OFF)
+option(USE_ROCSHMEM "Build rocSHMEM enabled version of the solver" OFF)
 option(ALL_ANALYZE "Build analyze and solve algorithm" OFF)
 option(USE_DOUBLE "Use double precision floats for the data" OFF)
 option(ALL_LEVELSET "Build levelset algorithm" OFF)
@@ -84,7 +84,7 @@ target_sources(
 )
 
 ###############################################################################
-# HIP / HIP + ROC_SHMEM
+# HIP / HIP + rocSHMEM
 ###############################################################################
 if(USE_HIP)
   find_package(hip REQUIRED)
@@ -95,7 +95,7 @@ if(USE_HIP)
       HIPHelper.cpp
   )
 
-  if(USE_ROC_SHMEM)
+  if(USE_ROCSHMEM)
     find_package(rocshmem CONFIG REQUIRED)
 
     target_include_directories(
@@ -118,8 +118,8 @@ if(USE_HIP)
 ###############################################################################
 else()
 
-  if(USE_ROC_SHMEM)
-    message(FATAL_ERROR "Cannot use ROC_SHMEM without USE_HIP")
+  if(USE_ROCSHMEM)
+    message(FATAL_ERROR "Cannot use rocSHMEM without USE_HIP")
   endif()
 
   target_sources(

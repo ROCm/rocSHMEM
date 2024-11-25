@@ -27,7 +27,7 @@
 namespace rocshmem {
 
 SingleHeap::SingleHeap() {
-  if (auto heap_size_cstr = getenv("ROC_SHMEM_HEAP_SIZE")) {
+  if (auto heap_size_cstr = getenv("ROCSHMEM_HEAP_SIZE")) {
     std::stringstream sstream(heap_size_cstr);
     size_t heap_size;
     sstream >> heap_size;

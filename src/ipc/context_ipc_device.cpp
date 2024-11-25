@@ -31,7 +31,7 @@
 #include <cstdlib>
 
 #include "config.h"  // NOLINT(build/include_subdir)
-#include "roc_shmem/roc_shmem.hpp"
+#include "rocshmem/rocshmem.hpp"
 #include "backend_ipc.hpp"
 
 namespace rocshmem {

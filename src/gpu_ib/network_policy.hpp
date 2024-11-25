@@ -27,7 +27,7 @@
 #include <mpi.h>
 
 #include "config.h"  // NOLINT(build/include_subdir)
-#include "roc_shmem/roc_shmem.hpp"
+#include "rocshmem/rocshmem.hpp"
 #include "connection_policy.hpp"
 #include "queue_pair.hpp"
 #include "../hdp_policy.hpp"
@@ -154,7 +154,7 @@ class NetworkOnImpl {
    * @brief Allocate and initialize device-side memory that will be used for
    * the return of g shmem ops (eg: shmem_int_g)
    */
-  void roc_shmem_g_init(SymmetricHeap *heap_handle, MPI_Comm thread_comm);
+  void rocshmem_g_init(SymmetricHeap *heap_handle, MPI_Comm thread_comm);
 
   /**
    * @brief The backend delegates some InfiniBand connection setup to

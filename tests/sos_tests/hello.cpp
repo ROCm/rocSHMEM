@@ -32,7 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -41,22 +41,22 @@ int main(int argc, char* argv[], char* envp[]) {
   /*
   ** Starts/Initializes SHMEM/OpenSHMEM
   */
-  roc_shmem_init();
+  rocshmem_init();
   /*
   ** Fetch the number or processes
   ** Some implementations use num_pes();
   */
-  myshmem_n_pes = roc_shmem_n_pes();
+  myshmem_n_pes = rocshmem_n_pes();
   /*
   ** Assign my process ID to me
   */
-  me = roc_shmem_my_pe();
+  me = rocshmem_my_pe();
 
   if (NULL == getenv("MAKELEVEL")) {
     printf("Hello World from %d of %d\n", me, myshmem_n_pes);
   }
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
 
   return 0;
 }

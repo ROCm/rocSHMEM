@@ -82,10 +82,10 @@ do
       # test exeuction based on lib
       if [ "$libnm" == "ro_net" ]
       then
-        ROC_SHMEM_RO=1
+        ROCSHMEM_RO=1
         ROC_NET_CPU_QUEUE=1
         UCX_TLS=rc
-        #echo $ROC_SHMEM_RO"--"$ROC_NET_CPU_QUEUE "--"$UCX_TLS
+        #echo $ROCSHMEM_RO"--"$ROC_NET_CPU_QUEUE "--"$UCX_TLS
         ../scripts/functional_tests/driver.sh tests/functional_tests/rocshmem_example_driver $threadType .
       else
         ../scripts/functional_tests/driver.sh tests/functional_tests/rocshmem_example_driver $threadType .

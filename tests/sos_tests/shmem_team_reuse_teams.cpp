@@ -27,7 +27,7 @@
 
 #include <stdio.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -35,15 +35,15 @@ int main(void) {
   int i, me, npes;
   int ret = 0, errors = 0;
 
-  roc_shmem_init();
+  rocshmem_init();
 
-  me = roc_shmem_my_pe();
-  npes = roc_shmem_n_pes();
+  me = rocshmem_my_pe();
+  npes = rocshmem_n_pes();
 
   if (me == 0) printf("Reuse teams test\n");
 
-  roc_shmem_team_t old_team, new_team;
-  ret = roc_shmem_team_split_strided(ROC_SHMEM_TEAM_WORLD, 0, 1, npes, NULL, 0,
+  rocshmem_team_t old_team, new_team;
+  ret = rocshmem_team_split_strided(ROCSHMEM_TEAM_WORLD, 0, 1, npes, NULL, 0,
                                      &old_team);
   if (ret) ++errors;
 
@@ -53,20 +53,20 @@ int main(void) {
   for (i = 1; i < npes; i++) {
     if (me == i) {
       printf("%3d: creating new team (start, stride, size): %3d, %3d, %3d\n",
-             me, roc_shmem_team_translate_pe(old_team, 1, ROC_SHMEM_TEAM_WORLD),
-             1, roc_shmem_team_n_pes(old_team) - 1);
+             me, rocshmem_team_translate_pe(old_team, 1, ROCSHMEM_TEAM_WORLD),
+             1, rocshmem_team_n_pes(old_team) - 1);
     }
 
-    ret = roc_shmem_team_split_strided(
-        old_team, 1, 1, roc_shmem_team_n_pes(old_team) - 1, NULL, 0, &new_team);
-    if (old_team != ROC_SHMEM_TEAM_INVALID && ret) ++errors;
+    ret = rocshmem_team_split_strided(
+        old_team, 1, 1, rocshmem_team_n_pes(old_team) - 1, NULL, 0, &new_team);
+    if (old_team != ROCSHMEM_TEAM_INVALID && ret) ++errors;
 
-    roc_shmem_team_destroy(old_team);
+    rocshmem_team_destroy(old_team);
     old_team = new_team;
   }
 
-  roc_shmem_team_destroy(old_team);
-  roc_shmem_finalize();
+  rocshmem_team_destroy(old_team);
+  rocshmem_finalize();
 
   return errors != 0;
 }

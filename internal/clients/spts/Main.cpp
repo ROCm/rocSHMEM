@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
     else
         printf("%lf )", ((double)ns_per_levelsync_iter/1000000.));
 
-#ifdef USE_ROC_SHMEM
+#ifdef USE_ROCSHMEM
     MPI_Allreduce(MPI_IN_PLACE, (void *) &ns_per_analysis_iter, 1,
                   MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 

@@ -24,16 +24,16 @@
 #define LIBRARY_SRC_GPU_IB_CONTEXT_IB_TMPL_DEVICE_HPP_
 
 #include "config.h"  // NOLINT(build/include_subdir)
-#include "roc_shmem/roc_shmem.hpp"
+#include "rocshmem/rocshmem.hpp"
 #include "context_ib_device.hpp"
 #include "gpu_ib_team.hpp"
 #include "queue_pair.hpp"
 #include "../util.hpp"
-#include "../roc_shmem_calc.hpp"
+#include "../rocshmem_calc.hpp"
 
 namespace rocshmem {
 
-template <typename T, ROC_SHMEM_OP Op>
+template <typename T, ROCSHMEM_OP Op>
 __device__ void compute_reduce(T *src, T *dst, int size, int wg_id,
                                int wg_size) {
   for (size_t i = wg_id; i < size; i += wg_size) {
@@ -47,7 +47,7 @@ __device__ void GPUIBContext::p(T *dest, T value, int pe) {
   putmem_nbi(dest, &value, sizeof(T), pe);
 }
 
-template <typename T, ROC_SHMEM_OP Op>
+template <typename T, ROCSHMEM_OP Op>
 __device__ void GPUIBContext::internal_ring_allreduce(
     T *dst, const T *src, int nelems, [[maybe_unused]] int PE_start,
     [[maybe_unused]] int logPE_stride, [[maybe_unused]] int PE_size, T *pWrk,
@@ -81,7 +81,7 @@ __device__ void GPUIBContext::internal_ring_allreduce(
         wait_val = seg + 100;
         p(&pSync[round], wait_val, send_pe);
 
-        wait_until(&pSync[round], ROC_SHMEM_CMP_EQ, wait_val);
+        wait_until(&pSync[round], ROCSHMEM_CMP_EQ, wait_val);
         __threadfence();
       }
       __syncthreads();
@@ -99,19 +99,19 @@ __device__ void GPUIBContext::internal_ring_allreduce(
         fence();
         wait_val = seg + 100;
         p(&pSync[round], wait_val, send_pe);
-        wait_until(&pSync[round], ROC_SHMEM_CMP_EQ, wait_val);
+        wait_until(&pSync[round], ROCSHMEM_CMP_EQ, wait_val);
       }
       __syncthreads();
     }
   }
   __syncthreads();
   for (size_t i = wg_id; i < 2 * num_pes - 2; i += wg_size) {
-    pSync[i] = ROC_SHMEM_SYNC_VALUE;
+    pSync[i] = ROCSHMEM_SYNC_VALUE;
   }
   __syncthreads();
 }
 
-template <typename T, ROC_SHMEM_OP Op>
+template <typename T, ROCSHMEM_OP Op>
 __device__ void GPUIBContext::internal_direct_allreduce(
     T *dst, const T *src, int nelems, int PE_start, int logPE_stride,
     int PE_size, T *pWrk,
@@ -147,7 +147,7 @@ __device__ void GPUIBContext::internal_direct_allreduce(
     if (i != pe) {
       // Wait for leader thread to see that the buffer is ready.
       if (is_thread_zero_in_block()) {
-        wait_until(&pSync[i], ROC_SHMEM_CMP_EQ, 1L);
+        wait_until(&pSync[i], ROCSHMEM_CMP_EQ, 1L);
       }
       __syncthreads();
 
@@ -159,14 +159,14 @@ __device__ void GPUIBContext::internal_direct_allreduce(
   __syncthreads();
 
   for (int i = wg_id; i < num_pes; i += wg_size) {
-    pSync[i] = ROC_SHMEM_SYNC_VALUE;
+    pSync[i] = ROCSHMEM_SYNC_VALUE;
   }
 
   __syncthreads();
 }
 
-template <typename T, ROC_SHMEM_OP Op>
-__device__ void GPUIBContext::to_all(roc_shmem_team_t team, T *dest,
+template <typename T, ROCSHMEM_OP Op>
+__device__ void GPUIBContext::to_all(rocshmem_team_t team, T *dest,
                                      const T *source, int nreduce) {
   GPUIBTeam *team_obj = reinterpret_cast<GPUIBTeam *>(team);
 
@@ -189,7 +189,7 @@ __device__ void GPUIBContext::to_all(roc_shmem_team_t team, T *dest,
                 p_sync);
 }
 
-template <typename T, ROC_SHMEM_OP Op>
+template <typename T, ROCSHMEM_OP Op>
 __device__ void GPUIBContext::to_all(T *dest, const T *source, int nreduce,
                                      int PE_start, int logPE_stride,
                                      int PE_size, T *pWrk,
@@ -200,8 +200,8 @@ __device__ void GPUIBContext::to_all(T *dest, const T *source, int nreduce,
   size_t ring_pSync = 2 * num_pes;
 
   size_t provided_pWrk =
-      max(nreduce / 2 + 1, ROC_SHMEM_REDUCE_MIN_WRKDATA_SIZE);
-  size_t provided_pSync = ROC_SHMEM_REDUCE_SYNC_SIZE;
+      max(nreduce / 2 + 1, ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE);
+  size_t provided_pSync = ROCSHMEM_REDUCE_SYNC_SIZE;
 
   // TODO(bpotter):
   // We basically do a direct reduce if pWrk is big enough, else we
@@ -212,12 +212,12 @@ __device__ void GPUIBContext::to_all(T *dest, const T *source, int nreduce,
     internal_direct_allreduce<T, Op>(dest, source, nreduce, PE_start,
                                      logPE_stride, PE_size, pWrk, pSync);
   } else {
-    if (ring_pSync <= ROC_SHMEM_REDUCE_SYNC_SIZE) {
+    if (ring_pSync <= ROCSHMEM_REDUCE_SYNC_SIZE) {
       int chunk_size = 1024;
       size_t ring_pWrk = chunk_size * num_pes;
       if (provided_pWrk < ring_pWrk) {
         ring_pWrk = max(nreduce / 2,  // NOLINT
-                        ROC_SHMEM_REDUCE_MIN_WRKDATA_SIZE);
+                        ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE);
         chunk_size = ring_pWrk / num_pes;
       }
       int seg_size = ring_pWrk;
@@ -434,7 +434,7 @@ __device__ void GPUIBContext::internal_get_broadcast(
 }
 
 template <typename T>
-__device__ void GPUIBContext::broadcast(roc_shmem_team_t team, T *dst,
+__device__ void GPUIBContext::broadcast(rocshmem_team_t team, T *dst,
                                         const T *src, int nelems, int pe_root) {
   GPUIBTeam *team_obj = reinterpret_cast<GPUIBTeam *>(team);
 
@@ -475,14 +475,14 @@ __device__ void GPUIBContext::broadcast(T *dst, const T *src, int nelems,
 }
 
 template <typename T>
-__device__ void GPUIBContext::alltoall(roc_shmem_team_t team, T *dst,
+__device__ void GPUIBContext::alltoall(rocshmem_team_t team, T *dst,
                                        const T *src, int nelems) {
   // Currently broadcast implementation performs the best
   alltoall_broadcast(team, dst, src, nelems);
 }
 
 template <typename T>
-__device__ void GPUIBContext::alltoall_broadcast(roc_shmem_team_t team, T *dst,
+__device__ void GPUIBContext::alltoall_broadcast(rocshmem_team_t team, T *dst,
                                                  const T *src, int nelems) {
   // Broadcast implementation of alltoall collective
   GPUIBTeam *team_obj = reinterpret_cast<GPUIBTeam *>(team);
@@ -514,7 +514,7 @@ __device__ void GPUIBContext::alltoall_broadcast(roc_shmem_team_t team, T *dst,
 }
 
 template <typename T>
-__device__ void GPUIBContext::alltoall_brucks(roc_shmem_team_t team, T *dst,
+__device__ void GPUIBContext::alltoall_brucks(rocshmem_team_t team, T *dst,
                                               const T *src, int nelems) {
   // Brucks implementation of alltoall collective
   GPUIBTeam *team_obj = reinterpret_cast<GPUIBTeam *>(team);
@@ -537,7 +537,7 @@ __device__ void GPUIBContext::alltoall_brucks(roc_shmem_team_t team, T *dst,
   int blk_size = get_flat_block_size();
 
   // Check if we have enough buffer space. If not, fail.
-  if (pe_size * nelems * 2 > ROC_SHMEM_ATA_MAX_WRKDATA_SIZE) {
+  if (pe_size * nelems * 2 > ROCSHMEM_ATA_MAX_WRKDATA_SIZE) {
     GPU_DPRINTF("Unsupported alltoall size for gpu_ib.\n");
     assert(false);
   }
@@ -612,7 +612,7 @@ __device__ void GPUIBContext::alltoall_brucks(roc_shmem_team_t team, T *dst,
 }
 
 template <typename T>
-__device__ void GPUIBContext::alltoall_gcen(roc_shmem_team_t team, T *dst,
+__device__ void GPUIBContext::alltoall_gcen(rocshmem_team_t team, T *dst,
                                             const T *src, int nelems) {
   // GPU-centric implementation of alltoall collective
   GPUIBTeam *team_obj = reinterpret_cast<GPUIBTeam *>(team);
@@ -629,12 +629,12 @@ __device__ void GPUIBContext::alltoall_gcen(roc_shmem_team_t team, T *dst,
   int stride = 1 << log_pe_stride;
 
   long *pSync = team_obj->alltoall_pSync;
-  int64_t *pSync2 = &team_obj->alltoall_pSync[ROC_SHMEM_BARRIER_SYNC_SIZE];
+  int64_t *pSync2 = &team_obj->alltoall_pSync[ROCSHMEM_BARRIER_SYNC_SIZE];
   int my_pe_in_team = team_obj->my_pe;
 
   // Check if we have enough buffer space. If not, fail.
   T *pAta = reinterpret_cast<T *>(team_obj->pAta);
-  if (pe_size * nelems > ROC_SHMEM_ATA_MAX_WRKDATA_SIZE) {
+  if (pe_size * nelems > ROCSHMEM_ATA_MAX_WRKDATA_SIZE) {
     GPU_DPRINTF("Unsupported alltoall size for gpu_ib.\n");
     assert(false);
   }
@@ -677,29 +677,29 @@ __device__ void GPUIBContext::alltoall_gcen(roc_shmem_team_t team, T *dst,
     if (dest_pe2 != my_pe) amo_add<int64_t>(&pSync[0], flag_val, dest_pe2);
 
     if (my_pe == dest_pe) {
-      wait_until(pSync2, ROC_SHMEM_CMP_EQ, flag_val * (clust_size - 1));
-      pSync2[0] = ROC_SHMEM_SYNC_VALUE;
+      wait_until(pSync2, ROCSHMEM_CMP_EQ, flag_val * (clust_size - 1));
+      pSync2[0] = ROCSHMEM_SYNC_VALUE;
       __threadfence_system();
       for (int i = 1; i < clust_size; ++i)
         put_nbi(&pSync2[0], &flag_val, 1,
                 team_obj->get_pe_in_world(my_pe_in_team + i));
     } else {
-      wait_until(pSync2, ROC_SHMEM_CMP_EQ, flag_val);
-      pSync2[0] = ROC_SHMEM_SYNC_VALUE;
+      wait_until(pSync2, ROCSHMEM_CMP_EQ, flag_val);
+      pSync2[0] = ROCSHMEM_SYNC_VALUE;
       __threadfence_system();
     }
 
     if (my_pe == dest_pe2) {
-      wait_until(&pSync[0], ROC_SHMEM_CMP_EQ, (int64_t)(num_clust - 1));
-      pSync[0] = ROC_SHMEM_SYNC_VALUE;
+      wait_until(&pSync[0], ROCSHMEM_CMP_EQ, (int64_t)(num_clust - 1));
+      pSync[0] = ROCSHMEM_SYNC_VALUE;
       threadfence_system();
       for (size_t i = 1, j = dest_pe2 + clust_size * stride; i < num_clust;
            ++i, j += clust_size * stride) {
         put_nbi(&pSync[0], &flag_val, 1, j);
       }
     } else {
-      wait_until(&pSync[0], ROC_SHMEM_CMP_EQ, flag_val);
-      pSync[0] = ROC_SHMEM_SYNC_VALUE;
+      wait_until(&pSync[0], ROCSHMEM_CMP_EQ, flag_val);
+      pSync[0] = ROCSHMEM_SYNC_VALUE;
       threadfence_system();
     }
   }
@@ -707,7 +707,7 @@ __device__ void GPUIBContext::alltoall_gcen(roc_shmem_team_t team, T *dst,
 }
 
 template <typename T>
-__device__ void GPUIBContext::alltoall_gcen2(roc_shmem_team_t team, T *dst,
+__device__ void GPUIBContext::alltoall_gcen2(rocshmem_team_t team, T *dst,
                                              const T *src, int nelems) {
   // GPU-centric implementation of alltoall collective
   // Uses in-place blocking sync
@@ -725,12 +725,12 @@ __device__ void GPUIBContext::alltoall_gcen2(roc_shmem_team_t team, T *dst,
   int stride = 1 << log_pe_stride;
 
   long *pSync = team_obj->alltoall_pSync;
-  int64_t *pSync2 = &team_obj->alltoall_pSync[ROC_SHMEM_BARRIER_SYNC_SIZE];
+  int64_t *pSync2 = &team_obj->alltoall_pSync[ROCSHMEM_BARRIER_SYNC_SIZE];
   int my_pe_in_team = team_obj->my_pe;
 
   // Check if we have enough buffer space. If not, fail.
   T *pAta = reinterpret_cast<T *>(team_obj->pAta);
-  if (pe_size * nelems > ROC_SHMEM_ATA_MAX_WRKDATA_SIZE) {
+  if (pe_size * nelems > ROCSHMEM_ATA_MAX_WRKDATA_SIZE) {
     GPU_DPRINTF("Unsupported alltoall size for gpu_ib.\n");
     assert(false);
   }
@@ -771,15 +771,15 @@ __device__ void GPUIBContext::alltoall_gcen2(roc_shmem_team_t team, T *dst,
   if (is_thread_zero_in_block()) {
     quiet();
     if ((my_pe_in_team % clust_size) == 0) {
-      wait_until(pSync2, ROC_SHMEM_CMP_EQ, flag_val * (clust_size - 1));
-      pSync2[0] = ROC_SHMEM_SYNC_VALUE;
+      wait_until(pSync2, ROCSHMEM_CMP_EQ, flag_val * (clust_size - 1));
+      pSync2[0] = ROCSHMEM_SYNC_VALUE;
       __threadfence_system();
       for (int i = 1; i < clust_size; ++i)
         put_nbi(&pSync2[0], &flag_val, 1,
                 team_obj->get_pe_in_world(my_pe_in_team + i));
     } else {
-      wait_until(pSync2, ROC_SHMEM_CMP_EQ, flag_val);
-      pSync2[0] = ROC_SHMEM_SYNC_VALUE;
+      wait_until(pSync2, ROCSHMEM_CMP_EQ, flag_val);
+      pSync2[0] = ROCSHMEM_SYNC_VALUE;
       __threadfence_system();
     }
   }
@@ -790,7 +790,7 @@ __device__ void GPUIBContext::alltoall_gcen2(roc_shmem_team_t team, T *dst,
 }
 
 template <typename T>
-__device__ void GPUIBContext::fcollect(roc_shmem_team_t team, T *dst,
+__device__ void GPUIBContext::fcollect(rocshmem_team_t team, T *dst,
                                        const T *src, int nelems) {
   // Main function for fcollect
   // Broadcast version performs moderately well
@@ -799,7 +799,7 @@ __device__ void GPUIBContext::fcollect(roc_shmem_team_t team, T *dst,
 }
 
 template <typename T>
-__device__ void GPUIBContext::fcollect_broadcast(roc_shmem_team_t team, T *dst,
+__device__ void GPUIBContext::fcollect_broadcast(rocshmem_team_t team, T *dst,
                                                  const T *src, int nelems) {
   // Broadcast implementation of fcollect collective
   GPUIBTeam *team_obj = reinterpret_cast<GPUIBTeam *>(team);
@@ -832,7 +832,7 @@ __device__ void GPUIBContext::fcollect_broadcast(roc_shmem_team_t team, T *dst,
 }
 
 template <typename T>
-__device__ void GPUIBContext::fcollect_brucks(roc_shmem_team_t team, T *dst,
+__device__ void GPUIBContext::fcollect_brucks(rocshmem_team_t team, T *dst,
                                               const T *src, int nelems) {
   // Brucks implementation of fcollect collective
   GPUIBTeam *team_obj = reinterpret_cast<GPUIBTeam *>(team);
@@ -855,7 +855,7 @@ __device__ void GPUIBContext::fcollect_brucks(roc_shmem_team_t team, T *dst,
   int blk_size = get_flat_block_size();
 
   // Check if we have enough buffer space. If not, fail.
-  if (pe_size * nelems > ROC_SHMEM_ATA_MAX_WRKDATA_SIZE) {
+  if (pe_size * nelems > ROCSHMEM_ATA_MAX_WRKDATA_SIZE) {
     GPU_DPRINTF("Unsupported fcollect size for gpu_ib.\n");
     assert(false);
   }
@@ -895,7 +895,7 @@ __device__ void GPUIBContext::fcollect_brucks(roc_shmem_team_t team, T *dst,
 }
 
 template <typename T>
-__device__ void GPUIBContext::fcollect_gcen(roc_shmem_team_t team, T *dst,
+__device__ void GPUIBContext::fcollect_gcen(rocshmem_team_t team, T *dst,
                                             const T *src, int nelems) {
   // GPU-centric implementation of fcollect collective
   GPUIBTeam *team_obj = reinterpret_cast<GPUIBTeam *>(team);
@@ -912,12 +912,12 @@ __device__ void GPUIBContext::fcollect_gcen(roc_shmem_team_t team, T *dst,
   int stride = 1 << log_pe_stride;
 
   long *pSync = team_obj->alltoall_pSync;
-  long *pSync2 = &team_obj->alltoall_pSync[ROC_SHMEM_BARRIER_SYNC_SIZE];
+  long *pSync2 = &team_obj->alltoall_pSync[ROCSHMEM_BARRIER_SYNC_SIZE];
   int my_pe_in_team = team_obj->my_pe;
 
   // Check if we have enough buffer space. If not, fail.
   T *pAta = reinterpret_cast<T *>(team_obj->pAta);
-  if (pe_size * nelems > ROC_SHMEM_ATA_MAX_WRKDATA_SIZE) {
+  if (pe_size * nelems > ROCSHMEM_ATA_MAX_WRKDATA_SIZE) {
     GPU_DPRINTF("Unsupported fcollect size for gpu_ib.\n");
     assert(false);
   }
@@ -957,15 +957,15 @@ __device__ void GPUIBContext::fcollect_gcen(roc_shmem_team_t team, T *dst,
   if (is_thread_zero_in_block()) {
     quiet();
     if ((my_pe_in_team % clust_size) == 0) {
-      wait_until(pSync2, ROC_SHMEM_CMP_EQ, flag_val * (clust_size - 1));
-      pSync2[0] = ROC_SHMEM_SYNC_VALUE;
+      wait_until(pSync2, ROCSHMEM_CMP_EQ, flag_val * (clust_size - 1));
+      pSync2[0] = ROCSHMEM_SYNC_VALUE;
       threadfence_system();
       for (int i = 1; i < clust_size; ++i)
         put_nbi(&pSync2[0], &flag_val, 1,
                 team_obj->get_pe_in_world(my_pe_in_team + i));
     } else {
-      wait_until(pSync2, ROC_SHMEM_CMP_EQ, flag_val);
-      pSync2[0] = ROC_SHMEM_SYNC_VALUE;
+      wait_until(pSync2, ROCSHMEM_CMP_EQ, flag_val);
+      pSync2[0] = ROCSHMEM_SYNC_VALUE;
       threadfence_system();
     }
   }
@@ -976,7 +976,7 @@ __device__ void GPUIBContext::fcollect_gcen(roc_shmem_team_t team, T *dst,
 }
 
 template <typename T>
-__device__ void GPUIBContext::fcollect_gcen2(roc_shmem_team_t team, T *dst,
+__device__ void GPUIBContext::fcollect_gcen2(rocshmem_team_t team, T *dst,
                                              const T *src, int nelems) {
   // GPU-centric implementation of fcollect collective
   // Uses in-place blocking sync
@@ -998,7 +998,7 @@ __device__ void GPUIBContext::fcollect_gcen2(roc_shmem_team_t team, T *dst,
 
   // Check if we have enough buffer space. If not, fail.
   T *pAta = reinterpret_cast<T *>(team_obj->pAta);
-  if (pe_size * nelems > ROC_SHMEM_ATA_MAX_WRKDATA_SIZE) {
+  if (pe_size * nelems > ROCSHMEM_ATA_MAX_WRKDATA_SIZE) {
     GPU_DPRINTF("Unsupported fcollect size for gpu_ib.\n");
     assert(false);
   }

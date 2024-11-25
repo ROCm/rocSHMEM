@@ -32,7 +32,7 @@ class QueuePair;
 
 /*
  * GPU single-thread policy class. Only a single work-item per work-group
- * is allowed to call into a ROC_SHMEM function (unless it is specifically
+ * is allowed to call into a rocSHMEM function (unless it is specifically
  * called out as a collective API. This thread policy is the fastest but
  * is not as flexible.
  */
@@ -59,7 +59,7 @@ class SingleThreadImpl {
 
 /*
  * GPU multi-thread policy class. Multiple work-items per work-group are
- * allowed to call into a ROC_SHMEM function.  A bit slower than its
+ * allowed to call into a rocSHMEM function.  A bit slower than its
  * single-thread counterpart but it enables a much more flexible user-facing
  * API.
  */

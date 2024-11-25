@@ -28,7 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 #define NUM_CTX 32
 
@@ -37,42 +37,42 @@ using namespace rocshmem;
 int main(int argc, char **argv) {
   int me, npes, i;
   int errors = 0;
-  roc_shmem_ctx_t ctx[NUM_CTX];
+  rocshmem_ctx_t ctx[NUM_CTX];
 
-  roc_shmem_init();
+  rocshmem_init();
 
-  me = roc_shmem_my_pe();
-  npes = roc_shmem_n_pes();
+  me = rocshmem_my_pe();
+  npes = rocshmem_n_pes();
 
-  int64_t *data = (int64_t *)roc_shmem_malloc(sizeof(int64_t));
+  int64_t *data = (int64_t *)rocshmem_malloc(sizeof(int64_t));
 
   /* Initialize the counter */
   memset(data, 0, sizeof(int64_t));
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   for (i = 0; i < NUM_CTX; i++) {
-    int err = roc_shmem_ctx_create(0, &ctx[i]);
+    int err = rocshmem_ctx_create(0, &ctx[i]);
 
     if (err) {
       printf("%d: Warning, could not create context %d (%d)\n", me, i, err);
-      ctx[i] = ROC_SHMEM_CTX_DEFAULT;
+      ctx[i] = ROCSHMEM_CTX_DEFAULT;
     }
   }
 
   for (i = 0; i < NUM_CTX; i++)
-    roc_shmem_ctx_int64_atomic_inc(ctx[i], data, (me + 1) % npes);
+    rocshmem_ctx_int64_atomic_inc(ctx[i], data, (me + 1) % npes);
 
-  for (i = 0; i < NUM_CTX; i++) roc_shmem_ctx_quiet(ctx[i]);
+  for (i = 0; i < NUM_CTX; i++) rocshmem_ctx_quiet(ctx[i]);
 
-  roc_shmem_sync_all();
+  rocshmem_sync_all();
 
   if ((*data) != NUM_CTX) {
     printf("%d: error expected %d, got %ld\n", me, NUM_CTX, (*data));
     ++errors;
   }
 
-  roc_shmem_free(data);
+  rocshmem_free(data);
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
   return errors;
 }

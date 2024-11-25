@@ -28,7 +28,7 @@
  *
  * @section DESCRIPTION
  * An IB QueuePair (SQ and CQ) that the device can use to perform network
- * operations. Most important ROC_SHMEM operations are performed by this
+ * operations. Most important rocSHMEM operations are performed by this
  * class.
  */
 

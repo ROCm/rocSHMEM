@@ -62,7 +62,7 @@ __device__ T Context::g(T *source, int pe) {
 }
 
 // The only way to get multi-arg templates to feed into a macro
-template <typename T, ROC_SHMEM_OP Op>
+template <typename T, ROCSHMEM_OP Op>
 __device__ void Context::to_all(T *dest, const T *source, int nreduce,
                                 int PE_start, int logPE_stride, int PE_size,
                                 T *pWrk,
@@ -79,11 +79,11 @@ __device__ void Context::to_all(T *dest, const T *source, int nreduce,
                                PE_size, pWrk, pSync));
 }
 
-template <typename T, ROC_SHMEM_OP Op>
-__device__ int Context::reduce(roc_shmem_team_t team, T *dest, const T *source,
+template <typename T, ROCSHMEM_OP Op>
+__device__ int Context::reduce(rocshmem_team_t team, T *dest, const T *source,
                                 int nreduce) {
   if (nreduce == 0) {
-    return ROC_SHMEM_SUCCESS;
+    return ROCSHMEM_SUCCESS;
   }
 
   if (is_thread_zero_in_block()) {
@@ -140,7 +140,7 @@ __device__ void Context::get_nbi(T *dest, const T *source, size_t nelems,
 }
 
 template <typename T>
-__device__ void Context::alltoall(roc_shmem_team_t team, T *dest,
+__device__ void Context::alltoall(rocshmem_team_t team, T *dest,
                                   const T *source, int nelems) {
   if (nelems == 0) {
     return;
@@ -154,7 +154,7 @@ __device__ void Context::alltoall(roc_shmem_team_t team, T *dest,
 }
 
 template <typename T>
-__device__ void Context::fcollect(roc_shmem_team_t team, T *dest,
+__device__ void Context::fcollect(rocshmem_team_t team, T *dest,
                                   const T *source, int nelems) {
   if (nelems == 0) {
     return;
@@ -168,7 +168,7 @@ __device__ void Context::fcollect(roc_shmem_team_t team, T *dest,
 }
 
 template <typename T>
-__device__ void Context::broadcast(roc_shmem_team_t team, T *dest,
+__device__ void Context::broadcast(rocshmem_team_t team, T *dest,
                                    const T *source, int nelems, int pe_root) {
   if (nelems == 0) {
     return;
@@ -340,32 +340,32 @@ __device__ __forceinline__ int Context::test(T *ivars, int cmp,
   int ret = 0;
   volatile T *vol_ivars = reinterpret_cast<T *>(ivars);
   switch (cmp) {
-    case ROC_SHMEM_CMP_EQ:
+    case ROCSHMEM_CMP_EQ:
       if (uncached_load(vol_ivars) == val) {
         ret = 1;
       }
       break;
-    case ROC_SHMEM_CMP_NE:
+    case ROCSHMEM_CMP_NE:
       if (uncached_load(vol_ivars) != val) {
         ret = 1;
       }
       break;
-    case ROC_SHMEM_CMP_GT:
+    case ROCSHMEM_CMP_GT:
       if (uncached_load(vol_ivars) > val) {
         ret = 1;
       }
       break;
-    case ROC_SHMEM_CMP_GE:
+    case ROCSHMEM_CMP_GE:
       if (uncached_load(vol_ivars) >= val) {
         ret = 1;
       }
       break;
-    case ROC_SHMEM_CMP_LT:
+    case ROCSHMEM_CMP_LT:
       if (uncached_load(vol_ivars) < val) {
         ret = 1;
       }
       break;
-    case ROC_SHMEM_CMP_LE:
+    case ROCSHMEM_CMP_LE:
       if (uncached_load(vol_ivars) <= val) {
         ret = 1;
       }

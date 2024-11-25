@@ -38,17 +38,17 @@ GPUIBTeam::GPUIBTeam(Backend *backend, TeamInfo *team_info_parent,
   pool_index_ = pool_index;
 
   barrier_pSync =
-      &(b->barrier_pSync_pool[pool_index * ROC_SHMEM_BARRIER_SYNC_SIZE]);
+      &(b->barrier_pSync_pool[pool_index * ROCSHMEM_BARRIER_SYNC_SIZE]);
   reduce_pSync =
-      &(b->reduce_pSync_pool[pool_index * ROC_SHMEM_REDUCE_SYNC_SIZE]);
-  bcast_pSync = &(b->bcast_pSync_pool[pool_index * ROC_SHMEM_BCAST_SYNC_SIZE]);
+      &(b->reduce_pSync_pool[pool_index * ROCSHMEM_REDUCE_SYNC_SIZE]);
+  bcast_pSync = &(b->bcast_pSync_pool[pool_index * ROCSHMEM_BCAST_SYNC_SIZE]);
   alltoall_pSync =
-      &(b->alltoall_pSync_pool[pool_index * ROC_SHMEM_ALLTOALL_SYNC_SIZE]);
+      &(b->alltoall_pSync_pool[pool_index * ROCSHMEM_ALLTOALL_SYNC_SIZE]);
 
   pWrk = reinterpret_cast<char *>(b->pWrk_pool) +
-         ROC_SHMEM_REDUCE_MIN_WRKDATA_SIZE * sizeof(double) * pool_index;
+         ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE * sizeof(double) * pool_index;
   pAta = reinterpret_cast<char *>(b->pAta_pool) +
-         ROC_SHMEM_ATA_MAX_WRKDATA_SIZE * sizeof(double) * pool_index;
+         ROCSHMEM_ATA_MAX_WRKDATA_SIZE * sizeof(double) * pool_index;
 }
 
 GPUIBTeam::~GPUIBTeam() {}

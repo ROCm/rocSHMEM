@@ -39,19 +39,19 @@ int Connection::coherent_cq = 0;
 Connection::Connection(GPUIBBackend* b, int k) : backend(b), key_offset(k) {
   char* value = nullptr;
 
-  if ((value = getenv("ROC_SHMEM_USE_IB_HCA"))) {
+  if ((value = getenv("ROCSHMEM_USE_IB_HCA"))) {
     requested_dev = value;
   }
 
-  if ((value = getenv("ROC_SHMEM_SQ_SIZE"))) {
+  if ((value = getenv("ROCSHMEM_SQ_SIZE"))) {
     sq_size = atoi(value);
   }
 
-  if ((value = getenv("ROC_SHMEM_USE_CQ_GPU_MEM")) != nullptr) {
+  if ((value = getenv("ROCSHMEM_USE_CQ_GPU_MEM")) != nullptr) {
     cq_use_gpu_mem = atoi(value);
   }
 
-  if ((value = getenv("ROC_SHMEM_USE_SQ_GPU_MEM")) != nullptr) {
+  if ((value = getenv("ROCSHMEM_USE_SQ_GPU_MEM")) != nullptr) {
     sq_use_gpu_mem = atoi(value);
   }
 }

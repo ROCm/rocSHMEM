@@ -29,7 +29,7 @@
 namespace rocshmem {
 
 SlabHeap::SlabHeap() {
-  if (auto slab_size_cstr = getenv("ROC_SHMEM_SLAB_SIZE")) {
+  if (auto slab_size_cstr = getenv("ROCSHMEM_SLAB_SIZE")) {
     std::stringstream sstream(slab_size_cstr);
     size_t slab_size;
     sstream >> slab_size;

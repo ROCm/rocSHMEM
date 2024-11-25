@@ -24,11 +24,11 @@
 #define LIBRARY_SRC_IPC_CONTEXT_TMPL_DEVICE_HPP_
 
 #include "config.h"  // NOLINT(build/include_subdir)
-#include "roc_shmem/roc_shmem.hpp"
+#include "rocshmem/rocshmem.hpp"
 #include "context_ipc_device.hpp"
 #include "../util.hpp"
 #include "ipc_team.hpp"
-#include "../roc_shmem_calc.hpp"
+#include "../rocshmem_calc.hpp"
 
 namespace rocshmem {
 
@@ -153,7 +153,7 @@ __device__ T IPCContext::amo_fetch_cas(void *dest, T value, T cond, int pe) {
 }
 
 // Collectives
-template <typename T, ROC_SHMEM_OP Op>
+template <typename T, ROCSHMEM_OP Op>
 __device__ void compute_reduce(T *src, T *dst, int size, int wg_id,
                                int wg_size) {
   for (size_t i = wg_id; i < size; i += wg_size) {
@@ -162,7 +162,7 @@ __device__ void compute_reduce(T *src, T *dst, int size, int wg_id,
   __syncthreads();
 }
 
-template <typename T, ROC_SHMEM_OP Op>
+template <typename T, ROCSHMEM_OP Op>
 __device__ void IPCContext::internal_direct_allreduce(
     T *dst, const T *src, int nelems, IPCTeam *team_obj) {  // NOLINT(runtime/int)
 
@@ -203,7 +203,7 @@ __device__ void IPCContext::internal_direct_allreduce(
     if (i != pe) {
       // Wait for leader thread to see that the buffer is ready.
       if (is_thread_zero_in_block()) {
-        wait_until(&pSync[i], ROC_SHMEM_CMP_EQ, flag_val);
+        wait_until(&pSync[i], ROCSHMEM_CMP_EQ, flag_val);
       }
       __syncthreads();
 
@@ -216,7 +216,7 @@ __device__ void IPCContext::internal_direct_allreduce(
   __syncthreads();
 
   for (int i = wg_id; i < num_pes; i += wg_size) {
-    pSync[i] = ROC_SHMEM_SYNC_VALUE;
+    pSync[i] = ROCSHMEM_SYNC_VALUE;
   }
   threadfence_system();
   __syncthreads();
@@ -278,7 +278,7 @@ __device__ void IPCContext::internal_direct_allreduce(
  *        [02+12+22+32]  [02+12+22+32] [02+12+22+32]  [02+12+22+32]
  *        [03+13+23+33]  [03+13+23+33] [03+13+23+33]  [03+13+23+33]
  */
-template <typename T, ROC_SHMEM_OP Op>
+template <typename T, ROCSHMEM_OP Op>
 __device__ void IPCContext::internal_ring_allreduce(
     T *dst, const T *src, int nelems, IPCTeam *team_obj,  // NOLINT(runtime/int)
     int n_seg, int seg_size, int chunk_size) {
@@ -323,7 +323,7 @@ __device__ void IPCContext::internal_ring_allreduce(
 #if defined(__gfx90a__)
         __threadfence_system();
 #endif /* __gfx90a__ */
-        wait_until(&pSync[iter], ROC_SHMEM_CMP_EQ, wait_val);
+        wait_until(&pSync[iter], ROCSHMEM_CMP_EQ, wait_val);
       }
       __syncthreads();
       compute_reduce<T, Op>(&pWrk[off_recv], &dst[off_seg + off_recv],
@@ -344,7 +344,7 @@ __device__ void IPCContext::internal_ring_allreduce(
 #if defined(__gfx90a__)
         __threadfence_system();
 #endif /* __gfx90a__ */
-        wait_until(&pSync[iter], ROC_SHMEM_CMP_EQ, wait_val);
+        wait_until(&pSync[iter], ROCSHMEM_CMP_EQ, wait_val);
       }
       __syncthreads();
     }
@@ -352,13 +352,13 @@ __device__ void IPCContext::internal_ring_allreduce(
   __syncthreads();
 
   for (size_t i = wg_id; i < 2 * num_pes - 2; i += wg_size) {
-    pSync[i] = ROC_SHMEM_SYNC_VALUE;
+    pSync[i] = ROCSHMEM_SYNC_VALUE;
   }
   __syncthreads();
 }
 
-template <typename T, ROC_SHMEM_OP Op>
-__device__ int IPCContext::reduce(roc_shmem_team_t team, T *dest,
+template <typename T, ROCSHMEM_OP Op>
+__device__ int IPCContext::reduce(rocshmem_team_t team, T *dest,
                                   const T *source, int nreduce) {
   IPCTeam *team_obj = reinterpret_cast<IPCTeam *>(team);
 
@@ -367,14 +367,14 @@ __device__ int IPCContext::reduce(roc_shmem_team_t team, T *dest,
   size_t direct_pWrk = PE_size * nreduce;
   size_t direct_pSync = PE_size;
   size_t ring_pSync = 2 * PE_size;
-  size_t provided_pWrk = max(nreduce / 2 + 1, ROC_SHMEM_REDUCE_MIN_WRKDATA_SIZE);
-  size_t provided_pSync = ROC_SHMEM_REDUCE_SYNC_SIZE;
+  size_t provided_pWrk = max(nreduce / 2 + 1, ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE);
+  size_t provided_pSync = ROCSHMEM_REDUCE_SYNC_SIZE;
 
   if (provided_pWrk >= direct_pWrk && provided_pSync >= direct_pSync) {
     internal_direct_allreduce<T, Op>(dest, source, nreduce, team_obj);
   } else {
-    if (ring_pSync <= ROC_SHMEM_REDUCE_SYNC_SIZE) {
-      size_t ring_pWrk = ROC_SHMEM_REDUCE_MIN_WRKDATA_SIZE;
+    if (ring_pSync <= ROCSHMEM_REDUCE_SYNC_SIZE) {
+      size_t ring_pWrk = ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE;
       // integer division truncating value
       int chunk_size = ring_pWrk / PE_size;
       int seg_size = chunk_size * PE_size;
@@ -410,10 +410,10 @@ __device__ int IPCContext::reduce(roc_shmem_team_t team, T *dest,
       }
     } else {
       GPU_DPRINTF("Unsupported reduction size for IPC conduit.\n");
-      return ROC_SHMEM_ERROR;
+      return ROCSHMEM_ERROR;
     }
   }
-  return ROC_SHMEM_SUCCESS;
+  return ROCSHMEM_SUCCESS;
 }
 
 template <typename T>
@@ -439,7 +439,7 @@ __device__ void IPCContext::internal_get_broadcast(
 }
 
 template <typename T>
-__device__ void IPCContext::broadcast(roc_shmem_team_t team, T *dst,
+__device__ void IPCContext::broadcast(rocshmem_team_t team, T *dst,
 				      const T *src, int nelems, int pe_root) {
   IPCTeam *team_obj = reinterpret_cast<IPCTeam *>(team);
 
@@ -471,13 +471,13 @@ __device__ void IPCContext::internal_broadcast(T *dst, const T *src, int nelems,
 }
 
 template <typename T>
-__device__ void IPCContext::alltoall(roc_shmem_team_t team, T *dst,
+__device__ void IPCContext::alltoall(rocshmem_team_t team, T *dst,
 				     const T *src, int nelems) {
   alltoall_linear(team, dst, src, nelems);
 }
 
 template <typename T>
-__device__ void IPCContext::alltoall_linear(roc_shmem_team_t team, T *dst,
+__device__ void IPCContext::alltoall_linear(rocshmem_team_t team, T *dst,
                                             const T *src, int nelems) {
   IPCTeam *team_obj = reinterpret_cast<IPCTeam *>(team);
 
@@ -500,13 +500,13 @@ __device__ void IPCContext::alltoall_linear(roc_shmem_team_t team, T *dst,
 }
 
 template <typename T>
-__device__ void IPCContext::fcollect(roc_shmem_team_t team, T *dst,
+__device__ void IPCContext::fcollect(rocshmem_team_t team, T *dst,
 				     const T *src, int nelems) {
   fcollect_linear(team, dst, src, nelems);
 }
 
 template <typename T>
-__device__ void IPCContext::fcollect_linear(roc_shmem_team_t team, T *dst,
+__device__ void IPCContext::fcollect_linear(rocshmem_team_t team, T *dst,
                                             const T *src, int nelems) {
   IPCTeam *team_obj = reinterpret_cast<IPCTeam *>(team);
 

@@ -35,36 +35,36 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
-#define TEST_SHMEM_G(USE_CTX, TYPE, TYPENAME)                           \
-  do {                                                                  \
-    TYPE* remote;                                                       \
-    remote = (TYPE*)roc_shmem_malloc(sizeof(TYPE));                     \
-    TYPE val;                                                           \
-    const int mype = roc_shmem_my_pe();                                 \
-    const int npes = roc_shmem_n_pes();                                 \
-    *remote = (TYPE)mype;                                               \
-    roc_shmem_barrier_all();                                            \
-    if (USE_CTX)                                                        \
-      val = roc_shmem_ctx_##TYPENAME##_g(ROC_SHMEM_CTX_DEFAULT, remote, \
-                                         (mype + 1) % npes);            \
-    else                                                                \
-      val = roc_shmem_##TYPENAME##_g(remote, (mype + 1) % npes);        \
-    if (val != (TYPE)((mype + 1) % npes)) {                             \
-      printf(                                                           \
-          "PE %i received incorrect value with"                         \
-          "TEST_SHMEM_G(%d, %s)\n",                                     \
-          mype, (int)(USE_CTX), #TYPE);                                 \
-      rc = EXIT_FAILURE;                                                \
-      roc_shmem_global_exit(1);                                         \
-    }                                                                   \
+#define TEST_SHMEM_G(USE_CTX, TYPE, TYPENAME)                                 \
+  do {                                                                        \
+    TYPE* remote;                                                             \
+    remote = (TYPE*)rocshmem_malloc(sizeof(TYPE));                            \
+    TYPE val;                                                                 \
+    const int mype = rocshmem_my_pe();                                        \
+    const int npes = rocshmem_n_pes();                                        \
+    *remote = (TYPE)mype;                                                     \
+    rocshmem_barrier_all();                                                   \
+    if (USE_CTX)                                                              \
+      val = rocshmem_ctx_##TYPENAME##_g(ROCSHMEM_CTX_DEFAULT, remote,         \
+                                         (mype + 1) % npes);                  \
+    else                                                                      \
+      val = rocshmem_##TYPENAME##_g(remote, (mype + 1) % npes);               \
+    if (val != (TYPE)((mype + 1) % npes)) {                                   \
+      printf(                                                                 \
+          "PE %i received incorrect value with"                               \
+          "TEST_SHMEM_G(%d, %s)\n",                                           \
+          mype, (int)(USE_CTX), #TYPE);                                       \
+      rc = EXIT_FAILURE;                                                      \
+      rocshmem_global_exit(1);                                                \
+    }                                                                         \
   } while (false)
 
 int main(int argc, char* argv[]) {
-  roc_shmem_init();
+  rocshmem_init();
 
   int rc = EXIT_SUCCESS;
   TEST_SHMEM_G(0, float, float);
@@ -117,6 +117,6 @@ int main(int argc, char* argv[]) {
   // TEST_SHMEM_G(1, size_t, size);
   // TEST_SHMEM_G(1, ptrdiff_t, ptrdiff);
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
   return rc;
 }

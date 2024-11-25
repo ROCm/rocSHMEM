@@ -36,7 +36,7 @@
 #include <vector>
 
 #include "config.h"  // NOLINT(build/include_subdir)
-#include "roc_shmem/roc_shmem.hpp"
+#include "rocshmem/rocshmem.hpp"
 #include "backend_type.hpp"
 #include "ipc_policy.hpp"
 #include "memory/symmetric_heap.hpp"
@@ -56,7 +56,7 @@ class TeamInfo;
  * It uses this state to populate Context objects which the GPU may use to
  * perform networking operations.
  *
- * The roc_shmem.cpp implementation file wraps many the Backend public
+ * The rocshmem.cpp implementation file wraps many the Backend public
  * members to implement the library's public API.
  */
 class Backend {
@@ -74,8 +74,8 @@ class Backend {
    */
   virtual ~Backend();
 
-  __device__ bool create_ctx(int64_t option, roc_shmem_ctx_t* ctx);
-  __device__ void destroy_ctx(roc_shmem_ctx_t* ctx);
+  __device__ bool create_ctx(int64_t option, rocshmem_ctx_t* ctx);
+  __device__ void destroy_ctx(rocshmem_ctx_t* ctx);
 
   /**
    * @brief Create a new team object and initialize it.
@@ -93,14 +93,14 @@ class Backend {
                                TeamInfo* team_info_wrt_parent,
                                TeamInfo* team_info_wrt_world, int num_pes,
                                int my_pe_in_new_team, MPI_Comm team_comm,
-                               roc_shmem_team_t* new_team) = 0;
+                               rocshmem_team_t* new_team) = 0;
 
   /**
    * @brief Destruct a team
    *
    * @param[in] team Handle to the team to destroy.
    */
-  virtual void team_destroy(roc_shmem_team_t team) = 0;
+  virtual void team_destroy(rocshmem_team_t team) = 0;
 
   /**
    * @brief Reports processing element number id.

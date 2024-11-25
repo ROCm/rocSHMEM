@@ -34,7 +34,7 @@ __device__ void build_queue_element(
     ro_net_cmds type, void *dst, void *src, size_t size, int pe,
     int logPE_stride, int PE_size, int PE_root, void *pWrk, long *pSync,
     MPI_Comm team_comm, int ro_net_win_id, BlockHandle *handle,
-    bool blocking, ROC_SHMEM_OP op = ROC_SHMEM_SUM,
+    bool blocking, ROCSHMEM_OP op = ROCSHMEM_SUM,
     ro_net_types datatype = RO_NET_INT);
 
 class ROContext : public Context {
@@ -67,7 +67,7 @@ class ROContext : public Context {
 
   __device__ void sync_all();
 
-  __device__ void sync(roc_shmem_team_t team);
+  __device__ void sync(rocshmem_team_t team);
 
   template <typename T>
   __device__ void p(T *dest, T value, int pe);
@@ -75,13 +75,13 @@ class ROContext : public Context {
   template <typename T>
   __device__ T g(const T *source, int pe);
 
-  template <typename T, ROC_SHMEM_OP Op>
+  template <typename T, ROCSHMEM_OP Op>
   __device__ void to_all(T *dest, const T *source, int nreduce, int PE_start,
                          int logPE_stride, int PE_size, T *pWrk,
                          long *pSync);  // NOLINT(runtime/int)
 
-  template <typename T, ROC_SHMEM_OP Op>
-  __device__ void to_all(roc_shmem_team_t team, T *dest, const T *source,
+  template <typename T, ROCSHMEM_OP Op>
+  __device__ void to_all(rocshmem_team_t team, T *dest, const T *source,
                          int nreduce);
 
   template <typename T>
@@ -133,7 +133,7 @@ class ROContext : public Context {
   __device__ void amo_xor(void *dst, T value, int pe);
 
   template <typename T>
-  __device__ void broadcast(roc_shmem_team_t team, T *dest, const T *source,
+  __device__ void broadcast(rocshmem_team_t team, T *dest, const T *source,
                             int nelems, int pe_root);
 
   template <typename T>
@@ -142,43 +142,43 @@ class ROContext : public Context {
                             long *p_sync);  // NOLINT(runtime/int)
 
   template <typename T>
-  __device__ void alltoall(roc_shmem_team_t team, T *dest, const T *source,
+  __device__ void alltoall(rocshmem_team_t team, T *dest, const T *source,
                            int nelems);
 
   template <typename T>
-  __device__ void alltoall_broadcast(roc_shmem_team_t team, T *dest,
+  __device__ void alltoall_broadcast(rocshmem_team_t team, T *dest,
                                      const T *source, int nelems);
 
   template <typename T>
-  __device__ void alltoall_mpi(roc_shmem_team_t team, T *dest, const T *source,
+  __device__ void alltoall_mpi(rocshmem_team_t team, T *dest, const T *source,
                                int nelems);
 
   template <typename T>
-  __device__ void alltoall_gcen(roc_shmem_team_t team, T *dest, const T *source,
+  __device__ void alltoall_gcen(rocshmem_team_t team, T *dest, const T *source,
                                 int nelems);
 
   template <typename T>
-  __device__ void alltoall_gcen2(roc_shmem_team_t team, T *dest,
+  __device__ void alltoall_gcen2(rocshmem_team_t team, T *dest,
                                  const T *source, int nelems);
 
   template <typename T>
-  __device__ void fcollect(roc_shmem_team_t team, T *dest, const T *source,
+  __device__ void fcollect(rocshmem_team_t team, T *dest, const T *source,
                            int nelems);
 
   template <typename T>
-  __device__ void fcollect_broadcast(roc_shmem_team_t team, T *dest,
+  __device__ void fcollect_broadcast(rocshmem_team_t team, T *dest,
                                      const T *source, int nelems);
 
   template <typename T>
-  __device__ void fcollect_mpi(roc_shmem_team_t team, T *dest, const T *source,
+  __device__ void fcollect_mpi(rocshmem_team_t team, T *dest, const T *source,
                                int nelems);
 
   template <typename T>
-  __device__ void fcollect_gcen(roc_shmem_team_t team, T *dest, const T *source,
+  __device__ void fcollect_gcen(rocshmem_team_t team, T *dest, const T *source,
                                 int nelems);
 
   template <typename T>
-  __device__ void fcollect_gcen2(roc_shmem_team_t team, T *dest,
+  __device__ void fcollect_gcen2(rocshmem_team_t team, T *dest,
                                  const T *source, int nelems);
 
   __device__ void putmem_wg(void *dest, const void *source, size_t nelems,

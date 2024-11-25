@@ -22,7 +22,7 @@
 
 #include "wave_level_primitives.hpp"
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 #include <numeric>
 
@@ -35,9 +35,9 @@ __global__ void WaveLevelPrimitiveTest(int loop, int skip, uint64_t *timer,
                                       char *s_buf, char *r_buf, int size,
                                       TestType type, ShmemContextType ctx_type,
                                       int wf_size) {
-  __shared__ roc_shmem_ctx_t ctx;
-  roc_shmem_wg_init();
-  roc_shmem_wg_ctx_create(ctx_type, &ctx);
+  __shared__ rocshmem_ctx_t ctx;
+  rocshmem_wg_init();
+  rocshmem_wg_ctx_create(ctx_type, &ctx);
 
   /**
    * Calculate start index for each wavefront for tiled version
@@ -52,34 +52,34 @@ __global__ void WaveLevelPrimitiveTest(int loop, int skip, uint64_t *timer,
   r_buf += idx;
 
   for (int i = 0; i < loop + skip; i++) {
-    if (i == skip) start = roc_shmem_timer();
+    if (i == skip) start = rocshmem_timer();
 
     switch (type) {
       case WAVEGetTestType:
-        roc_shmem_ctx_getmem_wave(ctx, r_buf, s_buf, size, 1);
+        rocshmem_ctx_getmem_wave(ctx, r_buf, s_buf, size, 1);
         break;
       case WAVEGetNBITestType:
-        roc_shmem_ctx_getmem_nbi_wave(ctx, r_buf, s_buf, size, 1);
+        rocshmem_ctx_getmem_nbi_wave(ctx, r_buf, s_buf, size, 1);
         break;
       case WAVEPutTestType:
-        roc_shmem_ctx_putmem_wave(ctx, r_buf, s_buf, size, 1);
+        rocshmem_ctx_putmem_wave(ctx, r_buf, s_buf, size, 1);
         break;
       case WAVEPutNBITestType:
-        roc_shmem_ctx_putmem_nbi_wave(ctx, r_buf, s_buf, size, 1);
+        rocshmem_ctx_putmem_nbi_wave(ctx, r_buf, s_buf, size, 1);
         break;
       default:
         break;
     }
   }
 
-  roc_shmem_ctx_quiet(ctx);
+  rocshmem_ctx_quiet(ctx);
 
   if (hipThreadIdx_x == 0) {
-    timer[hipBlockIdx_x] = roc_shmem_timer() - start;
+    timer[hipBlockIdx_x] = rocshmem_timer() - start;
   }
 
-  roc_shmem_wg_ctx_destroy(&ctx);
-  roc_shmem_wg_finalize();
+  rocshmem_wg_ctx_destroy(&ctx);
+  rocshmem_wg_finalize();
 }
 
 /******************************************************************************
@@ -88,14 +88,14 @@ __global__ void WaveLevelPrimitiveTest(int loop, int skip, uint64_t *timer,
 WaveLevelPrimitiveTester::WaveLevelPrimitiveTester(TesterArguments args)
     : Tester(args) {
   s_buf = static_cast<int*>(
-      roc_shmem_malloc(args.max_msg_size * args.num_wgs * num_warps));
+      rocshmem_malloc(args.max_msg_size * args.num_wgs * num_warps));
   r_buf = static_cast<int*>(
-      roc_shmem_malloc(args.max_msg_size * args.num_wgs * num_warps));
+      rocshmem_malloc(args.max_msg_size * args.num_wgs * num_warps));
 }
 
 WaveLevelPrimitiveTester::~WaveLevelPrimitiveTester() {
-  roc_shmem_free(s_buf);
-  roc_shmem_free(r_buf);
+  rocshmem_free(s_buf);
+  rocshmem_free(r_buf);
 }
 
 void WaveLevelPrimitiveTester::resetBuffers(uint64_t size) {

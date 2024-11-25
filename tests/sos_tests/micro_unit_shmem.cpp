@@ -38,7 +38,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -54,7 +54,7 @@ int debug;
 static inline void wait_until(long *wait_var, int iterations, int pe) {
   if (debug) printf("PE %d waiting...%ld\n", pe, *wait_var);
 
-  roc_shmem_long_wait_until(wait_var, ROC_SHMEM_CMP_EQ, iterations);
+  rocshmem_long_wait_until(wait_var, ROCSHMEM_CMP_EQ, iterations);
 
   if (debug) printf("PE %d wait_until passed\n", pe);
 }
@@ -71,7 +71,7 @@ static inline void post_op_check(const char *op, int check_var, int iterations,
   if (check_var != iterations) {
     fprintf(stderr, "%s ERR: PE %d source = %d != %d\n", op, pe, check_var,
             iterations);
-    roc_shmem_global_exit(EXIT_FAILURE);
+    rocshmem_global_exit(EXIT_FAILURE);
   }
 }
 
@@ -82,11 +82,11 @@ static inline void putfence(int me, int iterations, int T) {
 
   if (me == 0) {
     for (i = 1; i < iterations; i++) {
-      roc_shmem_long_p(&target[T], i, 1);
-      roc_shmem_fence();
+      rocshmem_long_p(&target[T], i, 1);
+      rocshmem_fence();
     }
 
-    roc_shmem_long_p(&target[T], i, 1);
+    rocshmem_long_p(&target[T], i, 1);
 
   } else
     wait_until(&target[T], iterations, 1);
@@ -101,13 +101,13 @@ static inline void gettest(int me, int iterations, int T, int S, int P) {
   if (me == 1) {
     pre_op_check(__func__, target[T], iterations, 1);
 
-    roc_shmem_long_p(&source[S], iterations, 0);
-    roc_shmem_fence();
+    rocshmem_long_p(&source[S], iterations, 0);
+    rocshmem_fence();
 
     for (i = 0; i < iterations; i++)
-      target[T] = roc_shmem_long_g(&source[S], 0);
+      target[T] = rocshmem_long_g(&source[S], 0);
 
-    roc_shmem_long_p(&sync_pes[P], iterations, 0);
+    rocshmem_long_p(&sync_pes[P], iterations, 0);
 
     post_op_check("get", target[T], iterations, 1);
 
@@ -125,14 +125,14 @@ static inline void atomic_inc(int me, int iterations, int T) {
   if (me == 1) pre_op_check(__func__, target[T], iterations, 1);
 
   target[T] = 0;
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   if (me == 0) {
     for (i = 0; i < iterations; i++) {
-      roc_shmem_int64_atomic_inc((int64_t *)&target[T], 1);
-      roc_shmem_fence();
+      rocshmem_int64_atomic_inc((int64_t *)&target[T], 1);
+      rocshmem_fence();
     }
-    roc_shmem_int64_atomic_inc((int64_t *)&target[T], 1);
+    rocshmem_int64_atomic_inc((int64_t *)&target[T], 1);
 
     if (debug) printf("PE 0 done with operation\n");
 
@@ -150,14 +150,14 @@ static inline void atomic_add(int me, int iterations, int T) {
   if (me == 0) pre_op_check(__func__, target[T], iterations, 0);
 
   target[T] = 0;
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   if (me == 1) {
     for (i = 0; i < iterations; i++) {
-      roc_shmem_int64_atomic_add((int64_t *)&target[T], 1, 0);
-      roc_shmem_fence();
+      rocshmem_int64_atomic_add((int64_t *)&target[T], 1, 0);
+      rocshmem_fence();
     }
-    roc_shmem_int64_atomic_add((int64_t *)&target[T], 1, 0);
+    rocshmem_int64_atomic_add((int64_t *)&target[T], 1, 0);
 
     if (debug) printf("PE 1 done with operation\n");
 
@@ -178,7 +178,7 @@ static inline void swaptest(int me, int iterations, int T, int S, int P)
     target[T] = tswap;
     source[S] = sswap;
 
-    roc_shmem_barrier_all(); /* Ensure target/source initialization completed */
+    rocshmem_barrier_all(); /* Ensure target/source initialization completed */
 /*
 
     if (me == 0)
@@ -186,9 +186,9 @@ static inline void swaptest(int me, int iterations, int T, int S, int P)
 
     if (me == 0) {
         for (i = 0; i < iterations; i++)
-            source[S] = roc_shmem_long_atomic_swap(&target[T], source[S], 1);
+            source[S] = rocshmem_long_atomic_swap(&target[T], source[S], 1);
 
-        roc_shmem_long_p(&sync_pes[P], i, 1);
+        rocshmem_long_p(&sync_pes[P], i, 1);
 
         if (debug)
             printf("AFTER flag PE 0 value of source is %d"
@@ -199,7 +199,7 @@ static inline void swaptest(int me, int iterations, int T, int S, int P)
              (source[S] != sswap))) {
             fprintf(stderr, "swap ERR: PE 0 source = %d\n",
                     source[S]);
-            roc_shmem_global_exit(EXIT_FAILURE);
+            rocshmem_global_exit(EXIT_FAILURE);
         }
 
     } else {
@@ -210,7 +210,7 @@ static inline void swaptest(int me, int iterations, int T, int S, int P)
              (target[T] != tswap))) {
             fprintf(stderr, "swap ERR: PE 0 target = %d \n",
                     target[T]);
-            roc_shmem_global_exit(EXIT_FAILURE);
+            rocshmem_global_exit(EXIT_FAILURE);
         }
 
     }
@@ -227,16 +227,16 @@ static inline void cswaptest(int me, int iterations, int T, int S, int P) {
   source[S] = -100;
 
   target[T] = 0;
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   if (me == 1) {
     pre_op_check(__func__, source[S], iterations, 1);
 
     for (i = 0; i < iterations; i++)
-      source[S] = roc_shmem_int64_atomic_compare_swap((int64_t *)&(target[T]),
+      source[S] = rocshmem_int64_atomic_compare_swap((int64_t *)&(target[T]),
                                                       i, (i + 1), 0);
 
-    roc_shmem_long_p(&sync_pes[P], i, 0);
+    rocshmem_long_p(&sync_pes[P], i, 0);
 
     post_op_check("compare_swap", source[S], (iterations - 1), 1);
 
@@ -246,7 +246,7 @@ static inline void cswaptest(int me, int iterations, int T, int S, int P) {
     if (target[T] != iterations) {
       fprintf(stderr, "compare_swap ERR: PE 1 target = %ld != %d\n", target[T],
               iterations);
-      roc_shmem_global_exit(EXIT_FAILURE);
+      rocshmem_global_exit(EXIT_FAILURE);
     }
   }
 
@@ -261,7 +261,7 @@ static inline void fetchatomic_add(int me, int iterations, int T, int S) {
   if (me == 1) pre_op_check(__func__, target[T], iterations, 1);
 
   target[T] = 0;
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   if (me == 0) {
     if (debug) {
@@ -272,10 +272,10 @@ static inline void fetchatomic_add(int me, int iterations, int T, int S) {
     }
 
     for (i = 0; i < iterations; i++) {
-      source[S] = roc_shmem_int64_atomic_fetch_add((int64_t *)&target[T], 1, 1);
-      roc_shmem_fence();
+      source[S] = rocshmem_int64_atomic_fetch_add((int64_t *)&target[T], 1, 1);
+      rocshmem_fence();
     }
-    source[S] = roc_shmem_int64_atomic_fetch_add((int64_t *)&target[T], 1, 1);
+    source[S] = rocshmem_int64_atomic_fetch_add((int64_t *)&target[T], 1, 1);
 
     post_op_check("fetch_add", source[S], iterations, 0);
 
@@ -293,7 +293,7 @@ static inline void fetchatomic_inc(int me, int iterations, int T, int S) {
   if (me == 0) pre_op_check(__func__, target[T], iterations, 0);
 
   target[T] = 0;
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   if (me == 1) {
     if (debug) {
@@ -301,8 +301,8 @@ static inline void fetchatomic_inc(int me, int iterations, int T, int S) {
     }
 
     for (i = 0; i < iterations; i++) {
-      source[S] = roc_shmem_int64_atomic_fetch_inc((int64_t *)&target[T], 0);
-      roc_shmem_fence();
+      source[S] = rocshmem_int64_atomic_fetch_inc((int64_t *)&target[T], 0);
+      rocshmem_fence();
     }
 
     post_op_check("fetch_inc", source[S], (iterations - 1), 1);
@@ -321,20 +321,20 @@ int main(int argc, char **argv) {
   const int DEFAULT_ITR = 7;
   int iterations = DEFAULT_ITR;
 
-  roc_shmem_init();
+  rocshmem_init();
 
-  me = roc_shmem_my_pe();
-  nproc = roc_shmem_n_pes();
+  me = rocshmem_my_pe();
+  nproc = rocshmem_n_pes();
 
-  target = (long *)roc_shmem_malloc(NUM_WRITE * sizeof(long));
-  source = (long *)roc_shmem_malloc(NUM_READ * sizeof(long));
-  sync_pes = (long *)roc_shmem_malloc(NUM_SYNC * sizeof(long));
+  target = (long *)rocshmem_malloc(NUM_WRITE * sizeof(long));
+  source = (long *)rocshmem_malloc(NUM_READ * sizeof(long));
+  sync_pes = (long *)rocshmem_malloc(NUM_SYNC * sizeof(long));
 
   memset(target, -1, NUM_WRITE * sizeof(int));
   memset(source, -1, NUM_READ * sizeof(int));
   memset(sync_pes, -1, NUM_SYNC * sizeof(int));
 
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   if (nproc != 2) {
     if (me == 0) {
@@ -344,7 +344,7 @@ int main(int argc, char **argv) {
               " are using %d\n",
               nproc);
     }
-    roc_shmem_finalize();
+    rocshmem_finalize();
     return 0;
   }
 
@@ -402,7 +402,7 @@ int main(int argc, char **argv) {
                   "to run individual tests:  -i <iterations>, -v"
                   ", -d, -p, -g, -a, -A, -s, -c, -f, -F, -h\n");
         }
-        roc_shmem_finalize();
+        rocshmem_finalize();
         return 1;
     }
   }
@@ -425,11 +425,11 @@ int main(int argc, char **argv) {
       printf("PE 0 Successful exit\n");
   }
 
-  roc_shmem_free(target);
-  roc_shmem_free(source);
-  roc_shmem_free(sync_pes);
+  rocshmem_free(target);
+  rocshmem_free(source);
+  rocshmem_free(sync_pes);
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
 
   return 0;
 }

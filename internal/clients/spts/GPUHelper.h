@@ -34,7 +34,7 @@
 
 static int SPTS_BLOCK_SIZE = 0;
 
-#ifdef USE_ROC_SHMEM
+#ifdef USE_ROCSHMEM
 #define WF_PER_WG 1
 #else
 #define WF_PER_WG 16

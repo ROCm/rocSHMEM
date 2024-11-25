@@ -31,7 +31,7 @@
 
 /* circular shift bbb into aaa */
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -40,24 +40,24 @@ int main(int argc, char* argv[]) {
   int ret = 0;
   int aaa, *bbb;
 
-  roc_shmem_init();
+  rocshmem_init();
 
-  bbb = (int*)roc_shmem_malloc(sizeof(int));
+  bbb = (int*)rocshmem_malloc(sizeof(int));
 
-  *bbb = me = roc_shmem_my_pe();
-  neighbor = (me + 1) % roc_shmem_n_pes();
+  *bbb = me = rocshmem_my_pe();
+  neighbor = (me + 1) % rocshmem_n_pes();
 
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
-  roc_shmem_int_get(&aaa, bbb, 1, neighbor);
+  rocshmem_int_get(&aaa, bbb, 1, neighbor);
 
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   if (aaa != neighbor) ret = 1;
 
-  roc_shmem_free(bbb);
+  rocshmem_free(bbb);
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
 
   return ret;
 }

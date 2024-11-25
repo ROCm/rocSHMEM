@@ -29,22 +29,22 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
 int main(int argc, char* argv[]) {
-  roc_shmem_init();
+  rocshmem_init();
 
-  if (roc_shmem_my_pe() == 0) {
-    roc_shmem_global_exit(0);
+  if (rocshmem_my_pe() == 0) {
+    rocshmem_global_exit(0);
     abort();
   }
 
   /* All other PEs wait in this barrier */
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
 
   return 0;
 }

@@ -32,7 +32,7 @@
 #include <memory>
 #include <thread>  // NOLINT
 
-#include "roc_shmem/roc_shmem.hpp"
+#include "rocshmem/rocshmem.hpp"
 #include "../atomic_return.hpp"
 #include "../backend_type.hpp"
 #include "../context_incl.hpp"
@@ -42,13 +42,13 @@
 
 namespace rocshmem {
 
-extern roc_shmem_ctx_t ROC_SHMEM_HOST_CTX_DEFAULT;
+extern rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
 ROBackend::ROBackend(MPI_Comm comm)
     : profiler_proxy_(MAX_NUM_BLOCKS), Backend() {
   type = BackendType::RO_BACKEND;
 
-  if (auto maximum_num_contexts_str = getenv("ROC_SHMEM_MAX_NUM_CONTEXTS")) {
+  if (auto maximum_num_contexts_str = getenv("ROCSHMEM_MAX_NUM_CONTEXTS")) {
     std::stringstream sstream(maximum_num_contexts_str);
     sstream >> maximum_num_contexts_;
   }
@@ -83,14 +83,14 @@ ROBackend::ROBackend(MPI_Comm comm)
 
   default_host_ctx = std::make_unique<ROHostContext>(this, 0);
 
-  ROC_SHMEM_HOST_CTX_DEFAULT.ctx_opaque = default_host_ctx.get();
+  ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque = default_host_ctx.get();
 
   team_world_proxy_ = new ROTeamProxy<HIPAllocator>(
       this, transport_->get_world_comm(), my_pe, num_pes);
   team_tracker.set_team_world(team_world_proxy_->get());
 
-  ROC_SHMEM_TEAM_WORLD =
-      reinterpret_cast<roc_shmem_team_t>(team_world_proxy_->get());
+  ROCSHMEM_TEAM_WORLD =
+      reinterpret_cast<rocshmem_team_t>(team_world_proxy_->get());
 
   default_block_handle_proxy_ = DefaultBlockHandleProxyT(
       bp->g_ret, bp->atomic_ret, &queue_, &ipcImpl, hdp_proxy_.get());
@@ -120,7 +120,7 @@ ROBackend::~ROBackend() {
   CHECK_HIP(hipFree(ctx_array));
 }
 
-__device__ bool ROBackend::create_ctx(int64_t options, roc_shmem_ctx_t *ctx) {
+__device__ bool ROBackend::create_ctx(int64_t options, rocshmem_ctx_t *ctx) {
   ROContext *ctx_;
 
   auto pop_result = ctx_free_list.get()->pop_front();
@@ -133,11 +133,11 @@ __device__ bool ROBackend::create_ctx(int64_t options, roc_shmem_ctx_t *ctx) {
   return true;
 }
 
-__device__ void ROBackend::destroy_ctx(roc_shmem_ctx_t *ctx) {
+__device__ void ROBackend::destroy_ctx(rocshmem_ctx_t *ctx) {
   ctx_free_list.get()->push_back(static_cast<ROContext *>(ctx->ctx_opaque));
 }
 
-void ROBackend::team_destroy(roc_shmem_team_t team) {
+void ROBackend::team_destroy(rocshmem_team_t team) {
   ROTeam *team_obj{get_internal_ro_team(team)};
 
   team_obj->~ROTeam();
@@ -148,7 +148,7 @@ void ROBackend::create_new_team(Team *parent_team,
                                 TeamInfo *team_info_wrt_parent,
                                 TeamInfo *team_info_wrt_world, int num_pes,
                                 int my_pe_in_new_team, MPI_Comm team_comm,
-                                roc_shmem_team_t *new_team) {
+                                rocshmem_team_t *new_team) {
   transport_->createNewTeam(this, parent_team, team_info_wrt_parent,
                             team_info_wrt_world, num_pes, my_pe_in_new_team,
                             team_comm, new_team);

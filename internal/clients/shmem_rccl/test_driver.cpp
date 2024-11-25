@@ -22,7 +22,7 @@
 
 #include <vector>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 #include "tester.hpp"
 #include "tester_arguments.hpp"
@@ -39,7 +39,7 @@ int main(int argc, char * argv[])
     /***
      * Select a GPU
      */
-    int rank = roc_shmem_my_pe();
+    int rank = rocshmem_my_pe();
     int ndevices, my_device=0;
     hipGetDeviceCount (&ndevices);
     my_device = rank % ndevices;
@@ -48,7 +48,7 @@ int main(int argc, char * argv[])
     /**
      * Must initialize rocshmem to access arguments needed by the tester.
      */
-    roc_shmem_init(args.num_wgs);
+    rocshmem_init(args.num_wgs);
 
     /**
      * Now grab the arguments from rocshmem.
@@ -78,7 +78,7 @@ int main(int argc, char * argv[])
      * The rocshmem library needs to be cleaned up with this call. It pairs
      * with the init function above.
      */
-    roc_shmem_finalize();
+    rocshmem_finalize();
 
     return 0;
 }

@@ -31,7 +31,7 @@
 /******************************************************************************
  * HOST TESTER CLASS
  *****************************************************************************/
-template <typename T1, ROC_SHMEM_OP T2>
+template <typename T1, ROCSHMEM_OP T2>
 class TeamReductionTester : public Tester {
  public:
   explicit TeamReductionTester(

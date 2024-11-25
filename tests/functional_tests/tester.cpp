@@ -27,7 +27,7 @@
 
 #include <functional>
 #include <iostream>
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 #include <vector>
 
 #include "alltoall_tester.hpp"
@@ -140,7 +140,7 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
     case TeamReductionTestType:
       if (rank == 0)
         std::cout << "All-to-All Team-based Reduction ###" << std::endl;
-      testers.push_back(new TeamReductionTester<float, ROC_SHMEM_SUM>(
+      testers.push_back(new TeamReductionTester<float, ROCSHMEM_SUM>(
           args,
           [](float& f1, float& f2) {
             f1 = 1;
@@ -480,8 +480,8 @@ void Tester::execute() {
         printf("error = %d \n", err);
       }
 
-      //            roc_shmem_dump_stats();
-      roc_shmem_reset_stats();
+      //            rocshmem_dump_stats();
+      rocshmem_reset_stats();
     }
 
     barrier();

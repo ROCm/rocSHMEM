@@ -22,7 +22,7 @@
 
 #include "swarm_tester.hpp"
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -31,13 +31,13 @@ using namespace rocshmem;
  *****************************************************************************/
 __global__ void GetSwarmTest(int loop, int skip, uint64_t *timer, char *s_buf,
                              char *r_buf, int size, ShmemContextType ctx_type) {
-  __shared__ roc_shmem_ctx_t ctx;
+  __shared__ rocshmem_ctx_t ctx;
 
   int provided;
-  roc_shmem_wg_init_thread(ROC_SHMEM_THREAD_MULTIPLE, &provided);
-  assert(provided == ROC_SHMEM_THREAD_MULTIPLE);
+  rocshmem_wg_init_thread(ROCSHMEM_THREAD_MULTIPLE, &provided);
+  assert(provided == ROCSHMEM_THREAD_MULTIPLE);
 
-  roc_shmem_wg_ctx_create(ctx_type, &ctx);
+  rocshmem_wg_ctx_create(ctx_type, &ctx);
 
   __syncthreads();
 
@@ -45,18 +45,18 @@ __global__ void GetSwarmTest(int loop, int skip, uint64_t *timer, char *s_buf,
   uint64_t start = 0;
 
   for (int i = 0; i < loop + skip; i++) {
-    if (i == skip) start = roc_shmem_timer();
+    if (i == skip) start = rocshmem_timer();
 
-    roc_shmem_ctx_getmem(ctx, &r_buf[index], &s_buf[index], size, 1);
+    rocshmem_ctx_getmem(ctx, &r_buf[index], &s_buf[index], size, 1);
 
     __syncthreads();
   }
 
   atomicAdd((unsigned long long *)&timer[hipBlockIdx_x],
-            roc_shmem_timer() - start);
+            rocshmem_timer() - start);
 
-  roc_shmem_wg_ctx_destroy(&ctx);
-  roc_shmem_wg_finalize();
+  rocshmem_wg_ctx_destroy(&ctx);
+  rocshmem_wg_finalize();
 }
 
 /******************************************************************************

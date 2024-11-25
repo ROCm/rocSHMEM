@@ -33,20 +33,20 @@
 /*
  *  usage: shmalloc [-p] [nWords] [loops] [incWords-per-loop]
  *    where: -p == power-of-two allocation bump per loop
- *      [nWords] # of longs to roc_shmem_malloc()\n"
+ *      [nWords] # of longs to rocshmem_malloc()\n"
  *      [loops(1)]  # of loops\n"
  *      [incWords(2)] nWords += incWords per loop\n");
  * Loop:
- *  PE* roc_shmem_malloc(nWords)
+ *  PE* rocshmem_malloc(nWords)
  *   set *DataType = 1
- *  PE* roc_shmem_malloc(nWords)
+ *  PE* rocshmem_malloc(nWords)
  *   set *DataType = 2
- *  PE* roc_shmem_malloc(nWords)
+ *  PE* rocshmem_malloc(nWords)
  *   set *DataType = 3
  *
  *  for(1...3) allocated ranges
  *    verify
- *    roc_shmem_free()
+ *    rocshmem_free()
  * end-loop
  */
 
@@ -56,7 +56,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -80,17 +80,17 @@ void usage(void);
 int getSize(char *);
 
 void usage(void) {
-  if (roc_shmem_my_pe() == 0) {
+  if (rocshmem_my_pe() == 0) {
     fprintf(stderr, "Usage: %s [-p]  [nWords(%d)] [loops(%d)] [incWords(%d)]\n",
             pgm, DFLT_NWORDS, DFLT_LOOPS, DFLT_INCR);
     fprintf(stderr,
-            "  -p  == (2**0 ... 2**22) roc_shmem_malloc(), other args ignored\n"
+            "  -p  == (2**0 ... 2**22) rocshmem_malloc(), other args ignored\n"
             "  -v == Verbose output\n"
-            "  [nWords] # of longs to roc_shmem_malloc()\n"
+            "  [nWords] # of longs to rocshmem_malloc()\n"
             "  [loops]  # of loops\n"
             "  [incWords] nWords += incWords per loop\n");
   }
-  roc_shmem_finalize();
+  rocshmem_finalize();
   exit(1);
 }
 
@@ -133,9 +133,9 @@ int main(int argc, char **argv) {
   else
     pgm = argv[0];
 
-  roc_shmem_init();
-  me = roc_shmem_my_pe();
-  nProcs = roc_shmem_n_pes();
+  rocshmem_init();
+  me = rocshmem_my_pe();
+  nProcs = rocshmem_n_pes();
 
   while ((c = getopt(argc, argv, "hpv")) != -1) switch (c) {
       case 'p':
@@ -181,61 +181,61 @@ int main(int argc, char **argv) {
 
   for (l = 0; l < loops; l++) {
     /*
-    result = (DataType *)roc_shmem_malloc(0);
+    result = (DataType *)rocshmem_malloc(0);
     if (result != NULL) {
         perror ("Zero-length memory allocation has non-null result");
-        roc_shmem_finalize();
+        rocshmem_finalize();
         exit (1);
     }
     */
 
     result_sz = nProcs * (nWords * sizeof(DataType));
-    result = (DataType *)roc_shmem_malloc(result_sz);
+    result = (DataType *)rocshmem_malloc(result_sz);
     if (!result) {
       perror("Failed result memory allocation");
-      roc_shmem_finalize();
+      rocshmem_finalize();
       exit(1);
     }
     for (dp = result; dp < &result[(result_sz / sizeof(DataType))];) *dp++ = 1;
 
     target_sz = nWords * sizeof(DataType);
-    if (!(target = (DataType *)roc_shmem_malloc(target_sz))) {
+    if (!(target = (DataType *)rocshmem_malloc(target_sz))) {
       perror("Failed target memory allocation");
-      roc_shmem_finalize();
+      rocshmem_finalize();
       exit(1);
     }
     for (dp = target; dp < &target[(target_sz / sizeof(DataType))];) *dp++ = 2;
 
     source_sz = 2 * nWords * sizeof(DataType);
-    if (!(source = (DataType *)roc_shmem_malloc(source_sz))) {
+    if (!(source = (DataType *)rocshmem_malloc(source_sz))) {
       perror("Failed source memory allocation");
-      roc_shmem_finalize();
+      rocshmem_finalize();
       exit(1);
     }
     for (dp = source; dp < &source[(source_sz / sizeof(DataType))];) *dp++ = 3;
 
-    roc_shmem_barrier_all(); /* sync sender and receiver */
+    rocshmem_barrier_all(); /* sync sender and receiver */
 
     for (dp = source; dp < &source[(source_sz / sizeof(DataType))]; dp++)
       if (*dp != 3) {
         printf("source not consistent @ 3?\n");
         break;
       }
-    roc_shmem_free(source);
+    rocshmem_free(source);
 
     for (dp = target; dp < &target[(target_sz / sizeof(DataType))]; dp++)
       if (*dp != 2) {
         printf("target not consistent @ 2?\n");
         break;
       }
-    roc_shmem_free(target);
+    rocshmem_free(target);
 
     for (dp = result; dp < &result[(result_sz / sizeof(DataType))]; dp++)
       if (*dp != 1) {
         printf("result not consistent @ 1?\n");
         break;
       }
-    roc_shmem_free(result);
+    rocshmem_free(result);
 
     if (loops > 1) {
       if (Verbose && me == 0) {
@@ -249,7 +249,7 @@ int main(int argc, char **argv) {
     }
   }
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
 
   return 0;
 }

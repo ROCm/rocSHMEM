@@ -35,7 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -49,68 +49,68 @@ enum op {
 
 #ifdef ENABLE_DEPRECATED_TESTS
 #define DEPRECATED_CSWAP(TYPENAME, ...) \
-  roc_shmem_##TYPENAME##_cswap(__VA_ARGS__)
+  rocshmem_##TYPENAME##_cswap(__VA_ARGS__)
 #else
 #define DEPRECATED_CSWAP(TYPENAME, ...) \
-  roc_shmem_##TYPENAME##_atomic_compare_swap(__VA_ARGS__)
+  rocshmem_##TYPENAME##_atomic_compare_swap(__VA_ARGS__)
 #endif /* ENABLE_DEPRECATED_TESTS */
 
-#define SHMEM_NBI_OPS_CASES(OP, TYPE, TYPENAME)                      \
-  case ATOMIC_COMPARE_SWAP_NBI:                                      \
-    roc_shmem_##TYPENAME##_atomic_compare_swap_nbi(                  \
-        &old, remote, (TYPE)npes, (TYPE)mype, (mype + 1) % npes);    \
-    break;                                                           \
-  case CTX_ATOMIC_COMPARE_SWAP_NBI:                                  \
-    roc_shmem_ctx_##TYPENAME##_atomic_compare_swap_nbi(              \
-        ROC_SHMEM_CTX_DEFAULT, &old, remote, (TYPE)npes, (TYPE)mype, \
-        (mype + 1) % npes);                                          \
+#define SHMEM_NBI_OPS_CASES(OP, TYPE, TYPENAME)                               \
+  case ATOMIC_COMPARE_SWAP_NBI:                                               \
+    rocshmem_##TYPENAME##_atomic_compare_swap_nbi(                            \
+        &old, remote, (TYPE)npes, (TYPE)mype, (mype + 1) % npes);             \
+    break;                                                                    \
+  case CTX_ATOMIC_COMPARE_SWAP_NBI:                                           \
+    rocshmem_ctx_##TYPENAME##_atomic_compare_swap_nbi(                        \
+        ROCSHMEM_CTX_DEFAULT, &old, remote, (TYPE)npes, (TYPE)mype,           \
+        (mype + 1) % npes);                                                   \
     break;
 
-#define TEST_SHMEM_CSWAP(OP, TYPE, TYPENAME)                                \
-  do {                                                                      \
-    TYPE *remote;                                                           \
-    TYPE old;                                                               \
-    const int mype = roc_shmem_my_pe();                                     \
-    const int npes = roc_shmem_n_pes();                                     \
-    remote = (TYPE *)roc_shmem_malloc(sizeof(TYPE));                        \
-    *remote = npes;                                                         \
-    roc_shmem_barrier_all();                                                \
-    switch (OP) {                                                           \
-      case CSWAP:                                                           \
-        old = DEPRECATED_CSWAP(TYPENAME, remote, (TYPE)npes, (TYPE)mype,    \
-                               (mype + 1) % npes);                          \
-        break;                                                              \
-      case ATOMIC_COMPARE_SWAP:                                             \
-        old = roc_shmem_##TYPENAME##_atomic_compare_swap(                   \
-            remote, (TYPE)npes, (TYPE)mype, (mype + 1) % npes);             \
-        break;                                                              \
-      case CTX_ATOMIC_COMPARE_SWAP:                                         \
-        old = roc_shmem_ctx_##TYPENAME##_atomic_compare_swap(               \
-            ROC_SHMEM_CTX_DEFAULT, remote, (TYPE)npes, (TYPE)mype,          \
-            (mype + 1) % npes);                                             \
-        break;                                                              \
-      /* SHMEM_NBI_OPS_CASES(OP, TYPE, TYPENAME)  */                        \
-      default:                                                              \
-        printf("invalid operation (%d)\n", OP);                             \
-        roc_shmem_global_exit(1);                                           \
-    }                                                                       \
-    roc_shmem_barrier_all();                                                \
-    if ((*remote) != (TYPE)((mype + npes - 1) % npes)) {                    \
-      printf("PE %i observed error with TEST_SHMEM_CSWAP(%s, %s)\n", mype,  \
-             #OP, #TYPE);                                                   \
-      rc = EXIT_FAILURE;                                                    \
-    }                                                                       \
-    if (old != (TYPE)npes) {                                                \
-      printf("PE %i error inconsistent value of old (%s, %s)\n", mype, #OP, \
-             #TYPE);                                                        \
-      rc = EXIT_FAILURE;                                                    \
-    }                                                                       \
-    roc_shmem_free(remote);                                                 \
-    if (rc == EXIT_FAILURE) roc_shmem_global_exit(1);                       \
+#define TEST_SHMEM_CSWAP(OP, TYPE, TYPENAME)                                  \
+  do {                                                                        \
+    TYPE *remote;                                                             \
+    TYPE old;                                                                 \
+    const int mype = rocshmem_my_pe();                                        \
+    const int npes = rocshmem_n_pes();                                        \
+    remote = (TYPE *)rocshmem_malloc(sizeof(TYPE));                           \
+    *remote = npes;                                                           \
+    rocshmem_barrier_all();                                                   \
+    switch (OP) {                                                             \
+      case CSWAP:                                                             \
+        old = DEPRECATED_CSWAP(TYPENAME, remote, (TYPE)npes, (TYPE)mype,      \
+                               (mype + 1) % npes);                            \
+        break;                                                                \
+      case ATOMIC_COMPARE_SWAP:                                               \
+        old = rocshmem_##TYPENAME##_atomic_compare_swap(                      \
+            remote, (TYPE)npes, (TYPE)mype, (mype + 1) % npes);               \
+        break;                                                                \
+      case CTX_ATOMIC_COMPARE_SWAP:                                           \
+        old = rocshmem_ctx_##TYPENAME##_atomic_compare_swap(                  \
+            ROCSHMEM_CTX_DEFAULT, remote, (TYPE)npes, (TYPE)mype,             \
+            (mype + 1) % npes);                                               \
+        break;                                                                \
+      /* SHMEM_NBI_OPS_CASES(OP, TYPE, TYPENAME)  */                          \
+      default:                                                                \
+        printf("invalid operation (%d)\n", OP);                               \
+        rocshmem_global_exit(1);                                              \
+    }                                                                         \
+    rocshmem_barrier_all();                                                   \
+    if ((*remote) != (TYPE)((mype + npes - 1) % npes)) {                      \
+      printf("PE %i observed error with TEST_SHMEM_CSWAP(%s, %s)\n", mype,    \
+             #OP, #TYPE);                                                     \
+      rc = EXIT_FAILURE;                                                      \
+    }                                                                         \
+    if (old != (TYPE)npes) {                                                  \
+      printf("PE %i error inconsistent value of old (%s, %s)\n", mype, #OP,   \
+             #TYPE);                                                          \
+      rc = EXIT_FAILURE;                                                      \
+    }                                                                         \
+    rocshmem_free(remote);                                                    \
+    if (rc == EXIT_FAILURE) rocshmem_global_exit(1);                          \
   } while (false)
 
 int main(int argc, char *argv[]) {
-  roc_shmem_init();
+  rocshmem_init();
 
   int rc = EXIT_SUCCESS;
 
@@ -181,6 +181,6 @@ int main(int argc, char *argv[]) {
   // TEST_SHMEM_CSWAP(CTX_ATOMIC_COMPARE_SWAP_NBI, size_t, size);
   // TEST_SHMEM_CSWAP(CTX_ATOMIC_COMPARE_SWAP_NBI, ptrdiff_t, ptrdiff);
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
   return rc;
 }

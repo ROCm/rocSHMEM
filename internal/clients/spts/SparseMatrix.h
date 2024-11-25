@@ -77,8 +77,8 @@ class SparseMatrix
         d_vals = NULL;
         d_row_ptrs = NULL;
 
-        this_pe = -1;//roc_shmem_my_pe(handle); // this pe
-        total_pes = -1;//roc_shmem_n_pes(handle);  // total number of pes
+        this_pe = -1;//rocshmem_my_pe(handle); // this pe
+        total_pes = -1;//rocshmem_n_pes(handle);  // total number of pes
 
     }
 	void AllocateSparseMatrix(MatrixMarketReader<FloatType> &mm_reader,

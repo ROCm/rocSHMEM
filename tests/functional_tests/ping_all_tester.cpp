@@ -22,7 +22,7 @@
 
 #include "ping_all_tester.hpp"
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -31,13 +31,13 @@ using namespace rocshmem;
  *****************************************************************************/
 __global__ void PingAllTest(int loop, int skip, uint64_t *timer, int *r_buf,
                             ShmemContextType ctx_type) {
-  __shared__ roc_shmem_ctx_t ctx;
+  __shared__ rocshmem_ctx_t ctx;
 
-  roc_shmem_wg_init();
-  roc_shmem_wg_ctx_create(ctx_type, &ctx);
+  rocshmem_wg_init();
+  rocshmem_wg_ctx_create(ctx_type, &ctx);
 
-  int pe = roc_shmem_ctx_my_pe(ctx);
-  int num_pe = roc_shmem_ctx_n_pes(ctx);
+  int pe = rocshmem_ctx_my_pe(ctx);
+  int num_pe = rocshmem_ctx_n_pes(ctx);
   int status[1024];
   for (int j{0}; j < num_pe; j++) {
     status[j] = 0;
@@ -49,32 +49,32 @@ __global__ void PingAllTest(int loop, int skip, uint64_t *timer, int *r_buf,
 
     for (int i = 0; i < loop + skip; i++) {
       if (i == skip) {
-        start = roc_shmem_timer();
+        start = rocshmem_timer();
       }
 
       for (int j{0}; j < num_pe; j++) {
-        roc_shmem_ctx_int_p(ctx, &r_buf[blk_pe_off + pe], 1, j);
+        rocshmem_ctx_int_p(ctx, &r_buf[blk_pe_off + pe], 1, j);
       }
-      roc_shmem_int_wait_until_all(&r_buf[blk_pe_off], num_pe, status, ROC_SHMEM_CMP_EQ, 1);
+      rocshmem_int_wait_until_all(&r_buf[blk_pe_off], num_pe, status, ROCSHMEM_CMP_EQ, 1);
     }
-    timer[hipBlockIdx_x] = roc_shmem_timer() - start;
+    timer[hipBlockIdx_x] = rocshmem_timer() - start;
   }
-  roc_shmem_wg_ctx_destroy(&ctx);
-  roc_shmem_wg_finalize();
+  rocshmem_wg_ctx_destroy(&ctx);
+  rocshmem_wg_finalize();
 }
 
 /******************************************************************************
  * HOST TESTER CLASS METHODS
  *****************************************************************************/
 PingAllTester::PingAllTester(TesterArguments args) : Tester(args) {
-  int num_pes {roc_shmem_n_pes()};
-  r_buf = (int *)roc_shmem_malloc(sizeof(int) * args.wg_size * num_pes);
+  int num_pes {rocshmem_n_pes()};
+  r_buf = (int *)rocshmem_malloc(sizeof(int) * args.wg_size * num_pes);
 }
 
-PingAllTester::~PingAllTester() { roc_shmem_free(r_buf); }
+PingAllTester::~PingAllTester() { rocshmem_free(r_buf); }
 
 void PingAllTester::resetBuffers(uint64_t size) {
-  int num_pes {roc_shmem_n_pes()};
+  int num_pes {rocshmem_n_pes()};
   memset(r_buf, 0, sizeof(int) * args.wg_size * num_pes);
 }
 

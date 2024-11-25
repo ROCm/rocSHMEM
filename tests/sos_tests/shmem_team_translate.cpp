@@ -21,38 +21,38 @@
  *****************************************************************************/
 
 /*
- * ROC_SHMEM roc_shmem_team_translate example to verify the team formed by even
- * ranked PEs from ROC_SHMEM_TEAM_WORLD using the team created from
- * roc_shmem_team_split_stride operation
+ * rocSHMEM rocshmem_team_translate example to verify the team formed by even
+ * ranked PEs from ROCSHMEM_TEAM_WORLD using the team created from
+ * rocshmem_team_split_stride operation
  */
 
 #include <stdio.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
 int main(void) {
   int my_pe, npes, errors = 0;
   int t_pe_2, t_pe_3, t_pe_2_to_3, t_pe_3_to_2;
-  roc_shmem_team_t team_2s;
-  roc_shmem_team_t team_3s;
-  roc_shmem_team_config_t *config;
+  rocshmem_team_t team_2s;
+  rocshmem_team_t team_3s;
+  rocshmem_team_config_t *config;
 
-  roc_shmem_init();
+  rocshmem_init();
   config = NULL;
-  my_pe = roc_shmem_my_pe();
-  npes = roc_shmem_n_pes();
+  my_pe = rocshmem_my_pe();
+  npes = rocshmem_n_pes();
 
-  roc_shmem_team_split_strided(ROC_SHMEM_TEAM_WORLD, 0, 2, ((npes - 1) / 2) + 1,
+  rocshmem_team_split_strided(ROCSHMEM_TEAM_WORLD, 0, 2, ((npes - 1) / 2) + 1,
                                config, 0, &team_2s);
-  roc_shmem_team_split_strided(ROC_SHMEM_TEAM_WORLD, 0, 3, ((npes - 1) / 3) + 1,
+  rocshmem_team_split_strided(ROCSHMEM_TEAM_WORLD, 0, 3, ((npes - 1) / 3) + 1,
                                config, 0, &team_3s);
 
-  t_pe_3 = roc_shmem_team_my_pe(team_3s);
-  t_pe_2 = roc_shmem_team_my_pe(team_2s);
-  t_pe_3_to_2 = roc_shmem_team_translate_pe(team_3s, t_pe_3, team_2s);
-  t_pe_2_to_3 = roc_shmem_team_translate_pe(team_2s, t_pe_2, team_3s);
+  t_pe_3 = rocshmem_team_my_pe(team_3s);
+  t_pe_2 = rocshmem_team_my_pe(team_2s);
+  t_pe_3_to_2 = rocshmem_team_translate_pe(team_3s, t_pe_3, team_2s);
+  t_pe_2_to_3 = rocshmem_team_translate_pe(team_2s, t_pe_2, team_3s);
 
   if (my_pe % 2 == 0 && my_pe % 3 == 0) {
     if (t_pe_2 == -1 || t_pe_3 == -1 || t_pe_2_to_3 == -1 ||
@@ -92,6 +92,6 @@ int main(void) {
     }
   }
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
   return errors != 0;
 }

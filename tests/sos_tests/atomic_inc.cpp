@@ -30,10 +30,10 @@
  */
 
 /*
- * test roc_shmem_int_atomic_inc() atomic_inc {-v|q}
+ * test rocshmem_int_atomic_inc() atomic_inc {-v|q}
  * {loop-cnt(default=10)(default=10)} where: -q == quiet, -v == verbose/debug
  *  Loop for loop-cnt
- *   all PEs call roc_shmem_int_atomic_inc(), PE-0 totals
+ *   all PEs call rocshmem_int_atomic_inc(), PE-0 totals
  *
  */
 
@@ -44,18 +44,18 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
 #define Rfprintf \
-  if (roc_shmem_my_pe() == 0) fprintf
+  if (rocshmem_my_pe() == 0) fprintf
 #define Rprintf \
-  if (roc_shmem_my_pe() == 0) printf
+  if (rocshmem_my_pe() == 0) printf
 #define RDfprintf \
-  if (Verbose && roc_shmem_my_pe() == 0) fprintf
+  if (Verbose && rocshmem_my_pe() == 0) fprintf
 #define RDprintf \
-  if (Verbose && roc_shmem_my_pe() == 0) printf
+  if (Verbose && rocshmem_my_pe() == 0) printf
 #define Vprintf \
   if (Verbose) printf
 #define Vfprintf \
@@ -69,12 +69,12 @@ int main(int argc, char *argv[]) {
   int Announce = (NULL == getenv("MAKELEVEL")) ? 1 : 0;
   int *lock_cnt;
 
-  roc_shmem_init();
-  my_rank = roc_shmem_my_pe();
-  num_ranks = roc_shmem_n_pes();
+  rocshmem_init();
+  my_rank = rocshmem_my_pe();
+  num_ranks = rocshmem_n_pes();
   if (num_ranks == 1) {
     fprintf(stderr, "ERR - Requires > 1 PEs\n");
-    roc_shmem_finalize();
+    rocshmem_finalize();
     return 0;
   }
 
@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
         break;
       default:
         Rfprintf(stderr, "ERR - unknown -%c ?\n", c);
-        roc_shmem_finalize();
+        rocshmem_finalize();
         return 1;
     }
   }
@@ -99,30 +99,30 @@ int main(int argc, char *argv[]) {
     loops = atoi(argv[optind++]);
     if (loops <= 0 || loops > 1000000) {
       Rfprintf(stderr, "ERR - loops arg out of bounds '%d'?\n", loops);
-      roc_shmem_finalize();
+      rocshmem_finalize();
       return 1;
     }
   }
 
-  lock_cnt = (int *)roc_shmem_malloc(sizeof(int));
+  lock_cnt = (int *)rocshmem_malloc(sizeof(int));
 
   for (cloop = 1; cloop <= loops; cloop++) {
     *lock_cnt = 0;
-    roc_shmem_barrier_all(); /* sync all ranks */
+    rocshmem_barrier_all(); /* sync all ranks */
 
     for (c = 0; c < num_ranks; c++)
-      roc_shmem_int64_atomic_inc((int64_t *)lock_cnt, c);
+      rocshmem_int64_atomic_inc((int64_t *)lock_cnt, c);
 
     Vprintf("[%d] locked: lock_cnt(%d)\n", my_rank, *lock_cnt);
 
-    roc_shmem_int_wait_until(lock_cnt, ROC_SHMEM_CMP_GE, num_ranks);
+    rocshmem_int_wait_until(lock_cnt, ROCSHMEM_CMP_GE, num_ranks);
 
-    roc_shmem_barrier_all(); /* sync all ranks */
+    rocshmem_barrier_all(); /* sync all ranks */
 
     if ((*lock_cnt) != num_ranks) {
       printf("[%d] loop %d: bad lock_cnt %d, expected %d?\n", my_rank, cloop,
              *lock_cnt, num_ranks);
-      roc_shmem_global_exit(1);
+      rocshmem_global_exit(1);
     }
 
     if ((cloop % 10) == 0) {
@@ -133,9 +133,9 @@ int main(int argc, char *argv[]) {
 
   Vprintf("[%d] of %d, Exit: lock_cnt %d\n", my_rank, num_ranks, *lock_cnt);
 
-  roc_shmem_free(lock_cnt);
+  rocshmem_free(lock_cnt);
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
 
   return 0;
 }

@@ -25,7 +25,7 @@
 
 #include <vector>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 #include "tester_arguments.hpp"
 

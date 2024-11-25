@@ -35,7 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -49,47 +49,47 @@ enum op {
 
 #ifdef ENABLE_DEPRECATED_TESTS
 #define DEPRECATED_FETCH(TYPENAME, ...) \
-  roc_shmem_##TYPENAME##_fetch(__VA_ARGS__)
+  rocshmem_##TYPENAME##_fetch(__VA_ARGS__)
 #else
 #define DEPRECATED_FETCH(TYPENAME, ...) \
-  roc_shmem_##TYPENAME##_atomic_fetch(__VA_ARGS__)
+  rocshmem_##TYPENAME##_atomic_fetch(__VA_ARGS__)
 #endif /* ENABLE_DEPRECATED_TESTS */
 
 #define SHMEM_NBI_OPS_CASES(OP, TYPE, TYPENAME)                               \
   case ATOMIC_FETCH_NBI:                                                      \
-    roc_shmem_##TYPENAME##_atomic_fetch_nbi(&val, remote, (mype + 1) % npes); \
-    roc_shmem_quiet();                                                        \
+    rocshmem_##TYPENAME##_atomic_fetch_nbi(&val, remote, (mype + 1) % npes);  \
+    rocshmem_quiet();                                                         \
     break;                                                                    \
   case CTX_ATOMIC_FETCH_NBI:                                                  \
-    roc_shmem_ctx_##TYPENAME##_atomic_fetch_nbi(ROC_SHMEM_CTX_DEFAULT, &val,  \
+    rocshmem_ctx_##TYPENAME##_atomic_fetch_nbi(ROCSHMEM_CTX_DEFAULT, &val,    \
                                                 remote, (mype + 1) % npes);   \
-    roc_shmem_quiet();                                                        \
+    rocshmem_quiet();                                                         \
     break;
 
 #define TEST_SHMEM_FETCH(OP, TYPE, TYPENAME)                                  \
   do {                                                                        \
     TYPE *remote;                                                             \
     TYPE val;                                                                 \
-    const int mype = roc_shmem_my_pe();                                       \
-    const int npes = roc_shmem_n_pes();                                       \
-    remote = (TYPE *)roc_shmem_malloc(sizeof(TYPE));                          \
+    const int mype = rocshmem_my_pe();                                        \
+    const int npes = rocshmem_n_pes();                                        \
+    remote = (TYPE *)rocshmem_malloc(sizeof(TYPE));                           \
     *remote = (TYPE)mype;                                                     \
-    roc_shmem_barrier_all();                                                  \
+    rocshmem_barrier_all();                                                   \
     switch (OP) {                                                             \
       case FETCH:                                                             \
         val = DEPRECATED_FETCH(TYPENAME, remote, (mype + 1) % npes);          \
         break;                                                                \
       case ATOMIC_FETCH:                                                      \
-        val = roc_shmem_##TYPENAME##_atomic_fetch(remote, (mype + 1) % npes); \
+        val = rocshmem_##TYPENAME##_atomic_fetch(remote, (mype + 1) % npes);  \
         break;                                                                \
       case CTX_ATOMIC_FETCH:                                                  \
-        val = roc_shmem_ctx_##TYPENAME##_atomic_fetch(                        \
-            ROC_SHMEM_CTX_DEFAULT, remote, (mype + 1) % npes);                \
+        val = rocshmem_ctx_##TYPENAME##_atomic_fetch(                         \
+            ROCSHMEM_CTX_DEFAULT, remote, (mype + 1) % npes);                 \
         break;                                                                \
       /* SHMEM_NBI_OPS_CASES(OP, TYPE, TYPENAME) */                           \
       default:                                                                \
         printf("Invalid operation (%d)\n", OP);                               \
-        roc_shmem_global_exit(1);                                             \
+        rocshmem_global_exit(1);                                              \
     }                                                                         \
     if (val != (TYPE)((mype + 1) % npes)) {                                   \
       printf(                                                                 \
@@ -98,12 +98,12 @@ enum op {
           mype, #OP, #TYPE);                                                  \
       rc = EXIT_FAILURE;                                                      \
     }                                                                         \
-    roc_shmem_free(remote);                                                   \
-    if (rc == EXIT_FAILURE) roc_shmem_global_exit(1);                         \
+    rocshmem_free(remote);                                                    \
+    if (rc == EXIT_FAILURE) rocshmem_global_exit(1);                          \
   } while (false)
 
 int main(int argc, char *argv[]) {
-  roc_shmem_init();
+  rocshmem_init();
 
   int rc = EXIT_SUCCESS;
 
@@ -186,6 +186,6 @@ int main(int argc, char *argv[]) {
   TEST_SHMEM_FETCH(CTX_ATOMIC_FETCH_NBI, ptrdiff_t, ptrdiff);
   */
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
   return rc;
 }
