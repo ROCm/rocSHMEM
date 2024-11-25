@@ -25,15 +25,15 @@
 using namespace rocshmem;
 
 
-TEST_P(Degenerate, ptr_check) {
+TEST_P(DegenerateSimpleCoarse, ptr_check) {
     ASSERT_NE(heap_mem_.get_ptr(), nullptr);
 }
 
-TEST_P(Degenerate, MPI_num_pes) {
+TEST_P(DegenerateSimpleCoarse, MPI_num_pes) {
     ASSERT_EQ(mpi_.num_pes(), 2);
 }
 
-TEST_P(Degenerate, IPC_bases) {
+TEST_P(DegenerateSimpleCoarse, IPC_bases) {
     ASSERT_EQ(mpi_.num_pes(), 2);
     ASSERT_NE(ipc_impl_.ipc_bases, nullptr);
     for(int i{0}; i < mpi_.num_pes(); i++) {
@@ -41,28 +41,28 @@ TEST_P(Degenerate, IPC_bases) {
     }
 }
 
-TEST_P(Degenerate, golden_1048576_int) {
+TEST_P(DegenerateSimpleCoarse, golden_1048576_int) {
     iota_golden(1048576);
     validate_golden(1048576);
 }
 
 INSTANTIATE_TEST_SUITE_P(
     IPCImplSimpleCoarseTestFixture,
-    Degenerate,
+    DegenerateSimpleCoarse,
     ::testing::Values(
         std::make_tuple(1,  1,   1))
 );
 
 //=============================================================================
 
-TEST_P(ParameterizedBlock, write) {
+TEST_P(ParameterizedBlockSimpleCoarse, write) {
     dim3 grid = dim3(std::get<0>(GetParam()), 1, 1);
     dim3 block = dim3(std::get<1>(GetParam()), 1, 1);
     size_t size = std::get<2>(GetParam());
     write(grid, block, size);
 }
 
-TEST_P(ParameterizedBlock, read) {
+TEST_P(ParameterizedBlockSimpleCoarse, read) {
     dim3 grid = dim3(std::get<0>(GetParam()), 1, 1);
     dim3 block = dim3(std::get<1>(GetParam()), 1, 1);
     size_t size = std::get<2>(GetParam());
@@ -71,7 +71,7 @@ TEST_P(ParameterizedBlock, read) {
 
 INSTANTIATE_TEST_SUITE_P(
     IPCImplSimpleCoarseTestFixture,
-    ParameterizedBlock,
+    ParameterizedBlockSimpleCoarse,
     ::testing::Values(
         std::make_tuple(1, 1024, 32),      // 0
         std::make_tuple(1, 1,    1048576), // 1
@@ -90,14 +90,14 @@ INSTANTIATE_TEST_SUITE_P(
 
 //=============================================================================
 
-TEST_P(ParameterizedWarp, write) {
+TEST_P(ParameterizedWarpSimpleCoarse, write) {
     dim3 grid = dim3(std::get<0>(GetParam()), 1, 1);
     dim3 block = dim3(std::get<1>(GetParam()), 1, 1);
     size_t size = std::get<2>(GetParam());
     write(grid, block, size);
 }
 
-TEST_P(ParameterizedWarp, read) {
+TEST_P(ParameterizedWarpSimpleCoarse, read) {
     dim3 grid = dim3(std::get<0>(GetParam()), 1, 1);
     dim3 block = dim3(std::get<1>(GetParam()), 1, 1);
     size_t size = std::get<2>(GetParam());
@@ -106,7 +106,7 @@ TEST_P(ParameterizedWarp, read) {
 
 INSTANTIATE_TEST_SUITE_P(
     IPCImplSimpleCoarseTestFixture,
-    ParameterizedWarp,
+    ParameterizedWarpSimpleCoarse,
     ::testing::Values(
         std::make_tuple(1, 64,   1),       // 0
         std::make_tuple(1, 64,   32),      // 1
@@ -179,14 +179,14 @@ INSTANTIATE_TEST_SUITE_P(
 
 //=============================================================================
 
-TEST_P(ParameterizedThread, write) {
+TEST_P(ParameterizedThreadSimpleCoarse, write) {
     dim3 grid = dim3(std::get<0>(GetParam()), 1, 1);
     dim3 block = dim3(std::get<1>(GetParam()), 1, 1);
     size_t size = std::get<2>(GetParam());
     write(grid, block, size);
 }
 
-TEST_P(ParameterizedThread, read) {
+TEST_P(ParameterizedThreadSimpleCoarse, read) {
     dim3 grid = dim3(std::get<0>(GetParam()), 1, 1);
     dim3 block = dim3(std::get<1>(GetParam()), 1, 1);
     size_t size = std::get<2>(GetParam());
@@ -195,7 +195,7 @@ TEST_P(ParameterizedThread, read) {
 
 INSTANTIATE_TEST_SUITE_P(
     IPCImplSimpleCoarseTestFixture,
-    ParameterizedThread,
+    ParameterizedThreadSimpleCoarse,
     ::testing::Values(
         std::make_tuple(1,  1,   1048576))
 );
