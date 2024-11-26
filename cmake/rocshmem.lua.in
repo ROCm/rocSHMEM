@@ -12,7 +12,7 @@ whatis("Name: rocshmem")
 whatis("Version: @ROCSHMEM_FULL_VERSION@")
 whatis("Keywords: GPU, PGAS, RMA, HPC")
 whatis("Description: tool for GPU initiated networking")
-whatis("URL: https://github.com/ROCm-Developer-Tools/rocSHMEM")
+whatis("URL: https://github.com/ROCm/rocSHMEM")
 
 -- Export environmental variables
 local topDir="@CMAKE_INSTALL_PREFIX@"

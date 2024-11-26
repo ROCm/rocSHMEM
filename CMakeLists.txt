@@ -138,7 +138,7 @@ set(
     VERSION ${ROCSHMEM_VERSION}
     LANGUAGES CXX
     DESCRIPTION "rocSHMEM"
-    HOMEPAGE_URL "https://github.com/ROCm-Developer-Tools/rocSHMEM")
+    HOMEPAGE_URL "https://github.com/ROCm/rocSHMEM")
 
 ###############################################################################
 # DEFAULT BUILD TYPE
