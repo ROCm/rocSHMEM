@@ -49,8 +49,9 @@ function run_mpirun {
 # Processing modes
 case $mode in
     all)
-        run_mpirun 4 "-IPCImplSimpleCoarseTestFixture/*:IPCImplSimpleFineTestFixture.*"
-        run_mpirun 2 "IPCImplSimpleCoarseTestFixture/*:IPCImplSimpleFineTestFixture.*"
+        test_with_two_pes="IPCImplSimpleCoarseTestFixture/*:IPCImplSimpleFineTestFixture/*:IPCImplTiledFineTestFixture/*:DegenerateTiledFine.*"
+        run_mpirun 4 "-$test_with_two_pes"
+        run_mpirun 2 "$test_with_two_pes"
         ;;
     custom)
         # Check if ranks is a positive integer
