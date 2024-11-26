@@ -220,6 +220,33 @@ case $2 in
         echo "amoset_n2_w8_z1"
         ROC_SHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 44 > $3/amoset_n2_w8_z1.log
         check amoset_n2_w8_z1
+        echo "putsignal_n2_w1_z1"
+        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 53 > $3/putsignal_n2_w1_z1.log
+        check putsignal_n2_w1_z1
+        echo "putsignalwg_n2_w2_z32"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 32 -s 1048576 -a 55 > $3/putsignalwg_n2_w2_z32.log
+        check putsignalwg_n2_w2_z32
+        echo "putsignalwave_n2_w1_z32"
+        mpirun -np 2 $1 -w 1 -z 32 -s 1048576 -a 55 > $3/putsignalwave_n2_w1_z32.log
+        check putsignalwave_n2_w1_z32
+        echo "putsignalnbi"
+        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 56 > $3/putsignalnbi_n2_w1_z1.log
+        check putsignalnbi_n2_w1_z1
+        echo "putsignalnbiwg"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 32 -s 1048576 -a 57 > $3/putsignalnbiwg_n2_w2_z32.log
+        check putsignalnbiwg_n2_w2_z32
+        echo "putsignalnbiwave"
+        mpirun -np 2 $1 -w 1 -z 32 -s 1048576 -a 58 > $3/putsignalnbiwave_n2_w1_z32.log
+        check putsignalnbiwave_n2_w1_z32
+        echo "signalfetch"
+        mpirun -np 2 $1 -w 1 -z 1 -a 59 > $3/signalfetch_n2_w1_z1.log
+        check signalfetch_n2_w1_z1
+        echo "signalfetchwg"
+        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 32 -a 60 > $3/signalfetchwg_n2_w2_z32.log
+        check signalfetchwg_n2_w2_z32
+        echo "signalfetchwave"
+        mpirun -np 2 $1 -w 1 -z 32 -a 60 > $3/signalfetchwave_n2_w2_z32.log
+        check signalfetchwave_n2_w2_z32
         ;;
 
     ###########################################################################
@@ -575,6 +602,33 @@ case $2 in
         ;;
     *"amoxor")
         mpirun -np 2 $1 -w 1 -z 1 -a 51
+        ;;
+    *"putsignal")
+        mpirun -np 2 $1 -w 1 -z 1 -a 53
+        ;;
+    *"putsignalwg")
+        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 32 -a 55
+        ;;
+    *"putsignalwave")
+        mpirun -np 2 $1 -w 1 -z 32 -a 55
+        ;;
+    *"putsignalnbi")
+        mpirun -np 2 $1 -w 1 -z 1 -a 56
+        ;;
+    *"putsignalnbiwg")
+        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 32 -a 57
+        ;;
+    *"putsignalnbiwave")
+        mpirun -np 2 $1 -w 1 -z 32 -a 58
+        ;;
+    *"signalfetch")
+        mpirun -np 2 $1 -w 1 -z 1 -a 59
+        ;;
+    *"signalfetchwg")
+        ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 32 -a 60
+        ;;
+    *"signalfetchwave")
+        mpirun -np 2 $1 -w 1 -z 32 -a 60
         ;;
     *)
         echo "UNKNOWN TEST TYPE: $2"

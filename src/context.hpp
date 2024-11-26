@@ -271,6 +271,33 @@ class Context {
   template <typename T>
   __device__ void get_nbi_wave(T* dest, const T* source, size_t nelems, int pe);
 
+#define CONTEXT_PUTMEM_SIGNAL_DEC(SUFFIX)                                              \
+  __device__ void putmem_signal##SUFFIX(void *dest, const void *source, size_t nelems, \
+                                        uint64_t *sig_addr, uint64_t signal, int sig_op, int pe);
+
+  CONTEXT_PUTMEM_SIGNAL_DEC()
+  CONTEXT_PUTMEM_SIGNAL_DEC(_wg)
+  CONTEXT_PUTMEM_SIGNAL_DEC(_wave)
+  CONTEXT_PUTMEM_SIGNAL_DEC(_nbi)
+  CONTEXT_PUTMEM_SIGNAL_DEC(_nbi_wg)
+  CONTEXT_PUTMEM_SIGNAL_DEC(_nbi_wave)
+
+#define CONTEXT_PUT_SIGNAL_DEC(SUFFIX)                                        \
+  template <typename T>                                                       \
+  __device__ void put_signal##SUFFIX(T *dest, const T *source, size_t nelems, \
+                                     uint64_t *sig_addr, uint64_t signal, int sig_op, int pe);
+
+  CONTEXT_PUT_SIGNAL_DEC()
+  CONTEXT_PUT_SIGNAL_DEC(_wg)
+  CONTEXT_PUT_SIGNAL_DEC(_wave)
+  CONTEXT_PUT_SIGNAL_DEC(_nbi)
+  CONTEXT_PUT_SIGNAL_DEC(_nbi_wg)
+  CONTEXT_PUT_SIGNAL_DEC(_nbi_wave)
+
+  __device__ uint64_t signal_fetch(const uint64_t *sig_addr);
+  __device__ uint64_t signal_fetch_wg(const uint64_t *sig_addr);
+  __device__ uint64_t signal_fetch_wave(const uint64_t *sig_addr);
+
   /**************************************************************************
    ****************************** HOST METHODS ******************************
    *************************************************************************/

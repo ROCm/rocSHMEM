@@ -66,6 +66,11 @@ enum ROC_SHMEM_OP {
   ROC_SHMEM_REPLACE
 };
 
+enum ROC_SHMEM_SIGNAL_OPS {
+  ROC_SHMEM_SIGNAL_SET,
+  ROC_SHMEM_SIGNAL_ADD,
+};
+
 /**
  * @brief Types defined for roc_shmem_wait() operations.
  */
@@ -2626,6 +2631,70 @@ GET_NBI_API_EXT_GEN(wg, unsigned int, uint)
 GET_NBI_API_EXT_GEN(wg, unsigned long, ulong)           // NOLINT(runtime/int)
 GET_NBI_API_EXT_GEN(wg, unsigned long long, ulonglong)  // NOLINT(runtime/int)
 ///@}
+
+
+/*
+ * ROC_SHMEM Signalling Operations
+ */
+#define PUTMEM_SIGNAL_DEC(SUFFIX)                                                         \
+  __device__ ATTR_NO_INLINE void roc_shmem_putmem_signal##SUFFIX(void *dest,              \
+                                                                 const void *source,      \
+                                                                 size_t nelems,           \
+                                                                 uint64_t *sig_addr,      \
+                                                                 uint64_t signal,         \
+                                                                 int sig_op, int pe);     \
+  __device__ ATTR_NO_INLINE void roc_shmem_ctx_putmem_signal##SUFFIX(roc_shmem_ctx_t ctx, \
+                                                                     void *dest,          \
+                                                                     const void *source,  \
+                                                                     size_t nelems,       \
+                                                                     uint64_t *sig_addr,  \
+                                                                     uint64_t signal,     \
+                                                                     int sig_op, int pe);
+
+#define PUT_SIGNAL_TYPED_DEC(T, TNAME, SUFFIX)                                                   \
+  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_put_signal##SUFFIX(roc_shmem_ctx_t ctx, \
+                                                                            T *dest,             \
+                                                                            const T *source,     \
+                                                                            size_t nelems,       \
+                                                                            uint64_t *sig_addr,  \
+                                                                            uint64_t signal,     \
+                                                                            int sig_op, int pe); \
+  __device__ ATTR_NO_INLINE void roc_shmem_##TNAME##_put_signal##SUFFIX(T *dest,                 \
+                                                                        const T *source,         \
+                                                                        size_t nelems,           \
+                                                                        uint64_t *sig_addr,      \
+                                                                        uint64_t signal,         \
+                                                                        int sig_op, int pe);
+
+#define PUT_SIGNAL_DEC(SUFFIX)                         \
+  PUT_SIGNAL_TYPED_DEC(float, float, SUFFIX)           \
+  PUT_SIGNAL_TYPED_DEC(double, double, SUFFIX)         \
+  PUT_SIGNAL_TYPED_DEC(char, char, SUFFIX)             \
+  PUT_SIGNAL_TYPED_DEC(signed char, schar, SUFFIX)     \
+  PUT_SIGNAL_TYPED_DEC(short, short, SUFFIX)           \
+  PUT_SIGNAL_TYPED_DEC(int, int, SUFFIX)               \
+  PUT_SIGNAL_TYPED_DEC(long, long, SUFFIX)             \
+  PUT_SIGNAL_TYPED_DEC(long long, longlong, SUFFIX)    \
+  PUT_SIGNAL_TYPED_DEC(unsigned char, uchar, SUFFIX)   \
+  PUT_SIGNAL_TYPED_DEC(unsigned short, ushort, SUFFIX) \
+  PUT_SIGNAL_TYPED_DEC(unsigned int, uint, SUFFIX)     \
+  PUT_SIGNAL_TYPED_DEC(unsigned long, ulong, SUFFIX)   \
+  PUT_SIGNAL_TYPED_DEC(unsigned long long, ulonglong, SUFFIX)
+
+#define SIGNALING_API_DEC(SUFFIX) \
+  PUTMEM_SIGNAL_DEC(SUFFIX)       \
+  PUT_SIGNAL_DEC(SUFFIX)
+
+SIGNALING_API_DEC()
+SIGNALING_API_DEC(_wg)
+SIGNALING_API_DEC(_wave)
+SIGNALING_API_DEC(_nbi)
+SIGNALING_API_DEC(_nbi_wg)
+SIGNALING_API_DEC(_nbi_wave)
+
+__device__ ATTR_NO_INLINE uint64_t roc_shmem_signal_fetch(const uint64_t *sig_addr);
+__device__ ATTR_NO_INLINE uint64_t roc_shmem_signal_fetch_wg(const uint64_t *sig_addr);
+__device__ ATTR_NO_INLINE uint64_t roc_shmem_signal_fetch_wave(const uint64_t *sig_addr);
 
 }  // namespace rocshmem
 

@@ -222,4 +222,109 @@ __device__ void IPCContext::internal_getmem_wave(void *dest,
   ipcImpl_.ipcFence();
 }
 
+__device__ void IPCContext::putmem_signal(void *dest, const void *source, size_t nelems,
+                                          uint64_t *sig_addr, uint64_t signal, int sig_op,
+                                          int pe) {
+  putmem(dest, source, nelems, pe);
+  fence();
+
+  switch (sig_op) {
+  case ROC_SHMEM_SIGNAL_SET:
+    amo_set<uint64_t>(static_cast<void*>(sig_addr), signal, pe);
+    break;
+  case ROC_SHMEM_SIGNAL_ADD:
+    amo_add<uint64_t>(static_cast<void*>(dest), signal, pe);
+    break;
+  default:
+    DPRINTF("[%s] Invalid sig_op value (%d)\n", __func__, sig_op);
+    break;
+  }
+}
+
+__device__ void IPCContext::putmem_signal_wg(void *dest, const void *source, size_t nelems,
+                                             uint64_t *sig_addr, uint64_t signal, int sig_op,
+                                             int pe) {
+  putmem_wg(dest, source, nelems, pe);
+  fence();
+
+  if (is_thread_zero_in_block()) {
+    switch (sig_op) {
+    case ROC_SHMEM_SIGNAL_SET:
+      amo_set<uint64_t>(static_cast<void*>(sig_addr), signal, pe);
+      break;
+    case ROC_SHMEM_SIGNAL_ADD:
+      amo_add<uint64_t>(static_cast<void*>(dest), signal, pe);
+      break;
+    default:
+      DPRINTF("[%s] Invalid sig_op value (%d)\n", __func__, sig_op);
+      break;
+    }
+  }
+}
+
+__device__ void IPCContext::putmem_signal_wave(void *dest, const void *source, size_t nelems,
+                                               uint64_t *sig_addr, uint64_t signal, int sig_op,
+                                               int pe) {
+  putmem_wave(dest, source, nelems, pe);
+  fence();
+
+  if (is_thread_zero_in_wave()) {
+    switch (sig_op) {
+    case ROC_SHMEM_SIGNAL_SET:
+      amo_set<uint64_t>(static_cast<void*>(sig_addr), signal, pe);
+      break;
+    case ROC_SHMEM_SIGNAL_ADD:
+      amo_add<uint64_t>(static_cast<void*>(dest), signal, pe);
+      break;
+    default:
+      DPRINTF("[%s] Invalid sig_op value (%d)\n", __func__, sig_op);
+      break;
+    }
+  }
+}
+
+__device__ void IPCContext::putmem_signal_nbi(void *dest, const void *source, size_t nelems,
+                                              uint64_t *sig_addr, uint64_t signal, int sig_op,
+                                              int pe) {
+  putmem_signal(dest, source, nelems, sig_addr, signal, sig_op, pe);
+}
+
+__device__ void IPCContext::putmem_signal_nbi_wg(void *dest, const void *source, size_t nelems,
+                                                 uint64_t *sig_addr, uint64_t signal, int sig_op,
+                                                 int pe) {
+  putmem_signal_wg(dest, source, nelems, sig_addr, signal, sig_op, pe);
+}
+
+__device__ void IPCContext::putmem_signal_nbi_wave(void *dest, const void *source, size_t nelems,
+                                                   uint64_t *sig_addr, uint64_t signal, int sig_op,
+                                                   int pe) {
+    putmem_signal_wave(dest, source, nelems, sig_addr, signal, sig_op, pe);
+}
+
+__device__ uint64_t IPCContext::signal_fetch(const uint64_t *sig_addr) {
+  uint64_t *dst = const_cast<uint64_t*>(sig_addr);
+  return amo_fetch_add<uint64_t>(static_cast<void*>(dst), 0, my_pe);
+}
+
+__device__ uint64_t IPCContext::signal_fetch_wg(const uint64_t *sig_addr) {
+  __shared__ uint64_t value;
+  if (is_thread_zero_in_block()) {
+    uint64_t *dst = const_cast<uint64_t*>(sig_addr);
+    value = amo_fetch_add<uint64_t>(static_cast<void*>(dst), 0, my_pe);
+  }
+  __threadfence_block();
+  return value;
+}
+
+__device__ uint64_t IPCContext::signal_fetch_wave(const uint64_t *sig_addr) {
+  uint64_t value;
+  if (is_thread_zero_in_wave()) {
+    uint64_t *dst = const_cast<uint64_t*>(sig_addr);
+    value = amo_fetch_add<uint64_t>(static_cast<void*>(dst), 0, my_pe);
+  }
+  __threadfence_block();
+  value = __shfl(value, 0);
+  return value;
+}
+
 }  // namespace rocshmem

@@ -235,6 +235,31 @@ __device__ void roc_shmem_atomic_xor(T *dest, T value, int pe) {
   roc_shmem_atomic_xor(ROC_SHMEM_CTX_DEFAULT, dest, value, pe);
 }
 
+#define ROC_SHMEM_PUTMEM_SIGNAL_DEF(SUFFIX)                                                      \
+  __device__ void roc_shmem_putmem_signal##SUFFIX(void *dest, const void *source, size_t nelems, \
+                                                  uint64_t *sig_addr, uint64_t signal,           \
+                                                  int sig_op, int pe) {                          \
+    roc_shmem_ctx_putmem_signal##SUFFIX(ROC_SHMEM_CTX_DEFAULT,                                   \
+                                        dest, source, nelems,                                    \
+                                        sig_addr, signal, sig_op, pe);                           \
+  }                                                                                              \
+                                                                                                 \
+  template <typename T>                                                                          \
+  __device__ void roc_shmem_put_signal##SUFFIX(T *dest, const T *source, size_t nelems,          \
+                                               uint64_t *sig_addr, uint64_t signal,              \
+                                               int sig_op, int pe) {                             \
+    roc_shmem_ctx_put_signal##SUFFIX(ROC_SHMEM_CTX_DEFAULT,                                      \
+                                     dest, source, nelems,                                       \
+                                     sig_addr, signal, sig_op, pe);                              \
+  }
+
+ROC_SHMEM_PUTMEM_SIGNAL_DEF()
+ROC_SHMEM_PUTMEM_SIGNAL_DEF(_wg)
+ROC_SHMEM_PUTMEM_SIGNAL_DEF(_wave)
+ROC_SHMEM_PUTMEM_SIGNAL_DEF(_nbi)
+ROC_SHMEM_PUTMEM_SIGNAL_DEF(_nbi_wg)
+ROC_SHMEM_PUTMEM_SIGNAL_DEF(_nbi_wave)
+
 /******************************************************************************
  ************************* Private Context Interfaces *************************
  *****************************************************************************/
@@ -846,6 +871,47 @@ __device__ void roc_shmem_get_nbi_wave(roc_shmem_ctx_t ctx, T *dest,
   get_internal_ctx(ctx)->get_nbi_wave(dest, source, nelems, pe);
 }
 
+#define ROC_SHMEM_CTX_PUTMEM_SIGNAL_DEF(SUFFIX)                                            \
+  __device__ void roc_shmem_ctx_putmem_signal##SUFFIX(roc_shmem_ctx_t ctx,                 \
+                                                      void *dest, const void *source,      \
+                                                      size_t nelems,                       \
+                                                      uint64_t *sig_addr, uint64_t signal, \
+                                                      int sig_op,                          \
+                                                      int pe) {                            \
+    GPU_DPRINTF("Function: roc_shmem_ctx_putmem_signal##SUFFIX\n");                        \
+                                                                                           \
+    get_internal_ctx(ctx)->putmem_signal##SUFFIX(dest, source, nelems,                     \
+                                                 sig_addr, signal, sig_op, pe);            \
+  }                                                                                        \
+                                                                                           \
+  template <typename T>                                                                    \
+  __device__ void roc_shmem_ctx_put_signal##SUFFIX(roc_shmem_ctx_t ctx,                    \
+                                                   T *dest, const T *source,               \
+                                                   size_t nelems,                          \
+                                                   uint64_t *sig_addr, uint64_t signal,    \
+                                                   int sig_op, int pe) {                   \
+    GPU_DPRINTF("Function: roc_shmem_ctx_put_signal##SUFFIX\n");                           \
+                                                                                           \
+    get_internal_ctx(ctx)->put_signal##SUFFIX(dest, source, nelems,                        \
+                                              sig_addr, signal, sig_op, pe);               \
+  }
+
+ROC_SHMEM_CTX_PUTMEM_SIGNAL_DEF()
+ROC_SHMEM_CTX_PUTMEM_SIGNAL_DEF(_wg)
+ROC_SHMEM_CTX_PUTMEM_SIGNAL_DEF(_wave)
+ROC_SHMEM_CTX_PUTMEM_SIGNAL_DEF(_nbi)
+ROC_SHMEM_CTX_PUTMEM_SIGNAL_DEF(_nbi_wg)
+ROC_SHMEM_CTX_PUTMEM_SIGNAL_DEF(_nbi_wave)
+
+#define ROC_SHMEM_SIGNAL_FETCH_DEF(SUFFIX)                                          \
+  __device__ uint64_t roc_shmem_signal_fetch##SUFFIX(const uint64_t *sig_addr) {    \
+    return get_internal_ctx(ROC_SHMEM_CTX_DEFAULT)->signal_fetch##SUFFIX(sig_addr); \
+  }
+
+ROC_SHMEM_SIGNAL_FETCH_DEF()
+ROC_SHMEM_SIGNAL_FETCH_DEF(_wg)
+ROC_SHMEM_SIGNAL_FETCH_DEF(_wave)
+
 /******************************************************************************
  ****************************** Teams Interface *******************************
  *****************************************************************************/
@@ -1383,6 +1449,67 @@ __device__ int roc_shmem_team_translate_pe(roc_shmem_team_t src_team,
   __device__ int roc_shmem_##TNAME##_test(T *ivars, int cmp, T val) {        \
     return roc_shmem_test<T>(ivars, cmp, val);                               \
   }
+
+#define RMA_SIGNAL_SUFFIX_DEC(SUFFIX)                                                    \
+  template <typename T>                                                                  \
+  __device__ void roc_shmem__ctx_put_signal##SUFFIX(roc_shmem_ctx_t ctx,                 \
+                                                    T *dest, const T *source,            \
+                                                    size_t nelems,                       \
+                                                    uint64_t *sig_addr, uint64_t signal, \
+                                                    int sig_op, int pe);                 \
+                                                                                         \
+  template <typename T>                                                                  \
+  __device__ void roc_shmem__put_signal##SUFFIX(T *dest, const T *source, size_t nelems, \
+                                                uint64_t *sig_addr, uint64_t signal,     \
+                                                int sig_op, int pe);                     \
+
+#define RMA_SIGNAL_SUFFIX_DEF(T, TNAME, SUFFIX)                                                   \
+  __device__ void roc_shmem_ctx_##TNAME##_put_signal##SUFFIX(roc_shmem_ctx_t ctx,                 \
+                                                             T *dest, const T *source,            \
+                                                             size_t nelems,                       \
+                                                             uint64_t *sig_addr, uint64_t signal, \
+                                                             int sig_op, int pe) {                \
+    roc_shmem_ctx_put_signal##SUFFIX<T>(ctx, dest, source, nelems, sig_addr, signal, sig_op, pe); \
+  }                                                                                               \
+                                                                                                  \
+  __device__ void roc_shmem_##TNAME##_put_signal##SUFFIX(T *dest, const T *source, size_t nelems, \
+                                                         uint64_t *sig_addr, uint64_t signal,     \
+                                                         int sig_op, int pe) {                    \
+    roc_shmem_put_signal##SUFFIX(dest, source, nelems, sig_addr, signal, sig_op, pe);             \
+  }
+
+#define RMA_SIGNAL_GEN(SUFFIX)                                 \
+  RMA_SIGNAL_SUFFIX_DEC(SUFFIX)                                \
+  RMA_SIGNAL_SUFFIX_DEF(float, float, SUFFIX)                  \
+  RMA_SIGNAL_SUFFIX_DEF(double, double, SUFFIX)                \
+  RMA_SIGNAL_SUFFIX_DEF(char, char, SUFFIX)                    \
+  RMA_SIGNAL_SUFFIX_DEF(signed char, schar, SUFFIX)            \
+  RMA_SIGNAL_SUFFIX_DEF(short, short, SUFFIX)                  \
+  RMA_SIGNAL_SUFFIX_DEF(int, int, SUFFIX)                      \
+  RMA_SIGNAL_SUFFIX_DEF(long, long, SUFFIX)                    \
+  RMA_SIGNAL_SUFFIX_DEF(long long, longlong, SUFFIX)           \
+  RMA_SIGNAL_SUFFIX_DEF(unsigned char, uchar, SUFFIX)          \
+  RMA_SIGNAL_SUFFIX_DEF(unsigned short, ushort, SUFFIX)        \
+  RMA_SIGNAL_SUFFIX_DEF(unsigned int, uint, SUFFIX)            \
+  RMA_SIGNAL_SUFFIX_DEF(unsigned long, ulong, SUFFIX)          \
+  RMA_SIGNAL_SUFFIX_DEF(unsigned long long, ulonglong, SUFFIX) \
+  RMA_SIGNAL_SUFFIX_DEF(int8_t, int8, SUFFIX)                  \
+  RMA_SIGNAL_SUFFIX_DEF(int16_t, int16, SUFFIX)                \
+  RMA_SIGNAL_SUFFIX_DEF(int32_t, int32, SUFFIX)                \
+  RMA_SIGNAL_SUFFIX_DEF(int64_t, int64, SUFFIX)                \
+  RMA_SIGNAL_SUFFIX_DEF(uint8_t, uint8, SUFFIX)                \
+  RMA_SIGNAL_SUFFIX_DEF(uint16_t, uint16, SUFFIX)              \
+  RMA_SIGNAL_SUFFIX_DEF(uint32_t, uint32, SUFFIX)              \
+  RMA_SIGNAL_SUFFIX_DEF(uint64_t, uint64, SUFFIX)              \
+  RMA_SIGNAL_SUFFIX_DEF(size_t, size, SUFFIX)                  \
+  RMA_SIGNAL_SUFFIX_DEF(ptrdiff_t, ptrdiff, SUFFIX)
+
+RMA_SIGNAL_GEN(_wg)
+RMA_SIGNAL_GEN()
+RMA_SIGNAL_GEN(_wave)
+RMA_SIGNAL_GEN(_nbi)
+RMA_SIGNAL_GEN(_nbi_wg)
+RMA_SIGNAL_GEN(_nbi_wave)
 
 /******************************************************************************
  ************************* Macro Invocation Per Type **************************

@@ -84,7 +84,16 @@ enum TestType {
   AMO_AndTestType = 49,
   AMO_OrTestType = 50,
   AMO_XorTestType = 51,
-  PingAllTestType = 52
+  PingAllTestType = 52,
+  PutSignalTestType = 53,
+  WGPutSignalTestType = 54,
+  WAVEPutSignalTestType = 55,
+  PutSignalNBITestType = 56,
+  WGPutSignalNBITestType = 57,
+  WAVEPutSignalNBITestType = 58,
+  SignalFetchTestType = 59,
+  WGSignalFetchTestType = 60,
+  WAVESignalFetchTestType = 61,
 };
 
 enum OpType { PutType = 0, GetType = 1 };
