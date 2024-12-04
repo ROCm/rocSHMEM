@@ -36,7 +36,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -47,39 +47,39 @@ int main(int argc, char *argv[]) {
   int failed = 0;
   long *source;
 
-  roc_shmem_init();
+  rocshmem_init();
 
-  source = (long *)roc_shmem_malloc(10 * sizeof(long));
+  source = (long *)rocshmem_malloc(10 * sizeof(long));
   for (i = 0; i < 10; i++) {
     source[i] = i + 1;
   }
 
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
-  if (roc_shmem_my_pe() == 0) {
-    num_pes = roc_shmem_n_pes();
+  if (rocshmem_my_pe() == 0) {
+    num_pes = rocshmem_n_pes();
 
     for (j = 0; j < num_pes; j++) {
       memset(target, 0, sizeof(long) * 10);
-      roc_shmem_long_get_nbi(target, source, 10, j);
-      roc_shmem_quiet();
+      rocshmem_long_get_nbi(target, source, 10, j);
+      rocshmem_quiet();
 
       for (i = 0; i < 10; i++) {
         if (source[i] != target[i]) {
           fprintf(stderr,
                   "[%d] get_nbi from PE %d: target[%d] = %ld, expected %ld\n",
-                  roc_shmem_my_pe(), j, i, target[i], source[i]);
+                  rocshmem_my_pe(), j, i, target[i], source[i]);
           failed = 1;
         }
       }
 
-      if (failed) roc_shmem_global_exit(1);
+      if (failed) rocshmem_global_exit(1);
     }
   }
 
-  roc_shmem_free(source);
+  rocshmem_free(source);
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
 
   return 0;
 }

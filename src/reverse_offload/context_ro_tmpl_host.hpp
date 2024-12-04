@@ -114,7 +114,7 @@ __host__ void ROHostContext::broadcast(T *dest, const T *source, int nelems,
 }
 
 template <typename T>
-__host__ void ROHostContext::broadcast(roc_shmem_team_t team, T *dest,
+__host__ void ROHostContext::broadcast(rocshmem_team_t team, T *dest,
                                        const T *source, int nelems,
                                        int pe_root) {
   DPRINTF("Function: Team-based ro_net_host_broadcast\n");
@@ -122,7 +122,7 @@ __host__ void ROHostContext::broadcast(roc_shmem_team_t team, T *dest,
   host_interface->broadcast<T>(team, dest, source, nelems, pe_root);
 }
 
-template <typename T, ROC_SHMEM_OP Op>
+template <typename T, ROCSHMEM_OP Op>
 __host__ void ROHostContext::to_all(T *dest, const T *source, int nreduce,
                                     int pe_start, int log_pe_stride,
                                     int pe_size, T *p_wrk, long *p_sync) {
@@ -132,8 +132,8 @@ __host__ void ROHostContext::to_all(T *dest, const T *source, int nreduce,
                                 pe_size, p_wrk, p_sync);
 }
 
-template <typename T, ROC_SHMEM_OP Op>
-__host__ void ROHostContext::to_all(roc_shmem_team_t team, T *dest,
+template <typename T, ROCSHMEM_OP Op>
+__host__ void ROHostContext::to_all(rocshmem_team_t team, T *dest,
                                     const T *source, int nreduce) {
   DPRINTF("Function: Team-based ro_net_host_to_all\n");
 

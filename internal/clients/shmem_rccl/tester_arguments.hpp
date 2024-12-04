@@ -35,7 +35,7 @@ class TesterArguments
 
     /**
      * Initialize rocshmem members
-     * Valid after roc_shmem_init function called.
+     * Valid after rocshmem_init function called.
      */
     void get_rocshmem_arguments();
 
@@ -54,7 +54,7 @@ class TesterArguments
     uint64_t min_msg_size = 1;
     uint64_t max_msg_size = 1 << 20;
     unsigned wg_size = 64;
-    unsigned shmem_context = 8; // ROC_SHMEM_CTX_WG_PRIVATE
+    unsigned shmem_context = 8; // ROCSHMEM_CTX_WG_PRIVATE
 
     /**
      * Arguments obtained from rocshmem

@@ -27,12 +27,12 @@
 
 #include <atomic>
 
-#include "roc_shmem/roc_shmem.hpp"
+#include "rocshmem/rocshmem.hpp"
 #include "util.hpp"
 
 namespace rocshmem {
 
-enum roc_shmem_stats {
+enum rocshmem_stats {
   NUM_PUT = 0,
   NUM_PUT_NBI,
   NUM_P,
@@ -91,7 +91,7 @@ enum roc_shmem_stats {
   NUM_STATS
 };
 
-enum roc_shmem_host_stats {
+enum rocshmem_host_stats {
   NUM_HOST_PUT = 0,
   NUM_HOST_PUT_NBI,
   NUM_HOST_P,
@@ -141,10 +141,10 @@ class Stats {
   StatType stats[I] = {0};
 
  public:
-  __device__ uint64_t startTimer() const { return roc_shmem_timer(); }
+  __device__ uint64_t startTimer() const { return rocshmem_timer(); }
 
   __device__ void endTimer(uint64_t start, int index) {
-    incStat(index, roc_shmem_timer() - start);
+    incStat(index, rocshmem_timer() - start);
   }
 
   __device__ void incStat(int index, int value = 1) {

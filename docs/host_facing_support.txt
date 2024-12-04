@@ -33,7 +33,7 @@ NIC (this does occur during MPI_Win_create), we are good.
 UCX claims to not support GPU-aware communication because they have
 not added in support for the different types of scenarios that could
 exist in a system (eg, when a system does not have GPU-direct). The
-scope of ROC_SHMEM is currenlty limited to configurations that UCX
+scope of rocSHMEM is currently limited to configurations that UCX
 already supports.
 
 ## But the main branch of MPICH does support HIP now?

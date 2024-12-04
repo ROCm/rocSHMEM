@@ -72,19 +72,19 @@ class GPUIBBackend : public Backend {
   void create_new_team(Team *parent_team, TeamInfo *team_info_wrt_parent,
                        TeamInfo *team_info_wrt_world, int num_pes,
                        int my_pe_in_new_team, MPI_Comm team_comm,
-                       roc_shmem_team_t *new_team) override;
+                       rocshmem_team_t *new_team) override;
 
   /**
-   * @copydoc Backend::team_destroy(roc_shmem_team_t)
+   * @copydoc Backend::team_destroy(rocshmem_team_t)
    */
-  void team_destroy(roc_shmem_team_t team) override;
+  void team_destroy(rocshmem_team_t team) override;
 
   /**
    * @copydoc Backend::ctx_create
    */
   void ctx_create(int64_t options, void **ctx) override;
 
-  __device__ bool create_ctx(int64_t options, roc_shmem_ctx_t *ctx);
+  __device__ bool create_ctx(int64_t options, rocshmem_ctx_t *ctx);
 
   /**
    * @copydoc Backend::ctx_destroy
@@ -94,7 +94,7 @@ class GPUIBBackend : public Backend {
   /**
    * @copydoc Backend::ctx_destroy
    */
-  __device__ void destroy_ctx(roc_shmem_ctx_t *ctx);
+  __device__ void destroy_ctx(rocshmem_ctx_t *ctx);
 
  protected:
   /**
@@ -151,10 +151,10 @@ class GPUIBBackend : public Backend {
   void initialize_ipc();
 
   /**
-   * @brief Allocate and initialize the ROC_SHMEM_CTX_DEFAULT variable.
+   * @brief Allocate and initialize the ROCSHMEM_CTX_DEFAULT variable.
    *
    * @todo The default_ctx member looks unused after it is copied into
-   * the ROC_SHMEM_CTX_DEFAULT variable.
+   * the ROCSHMEM_CTX_DEFAULT variable.
    */
   void setup_default_ctx();
   void setup_ctxs();
@@ -187,7 +187,7 @@ class GPUIBBackend : public Backend {
    * When this method completes, the barrier_sync member will be available
    * for use.
    */
-  void roc_shmem_collective_init();
+  void rocshmem_collective_init();
 
 #ifdef USE_HOST_SIDE_HDP_FLUSH
   /**
@@ -245,8 +245,8 @@ class GPUIBBackend : public Backend {
   void *pAta_pool{nullptr};
 
   /**
-   * @brief ROC_SHMEM's copy of MPI_COMM_WORLD (for interoperability
-   * with orthogonal MPI usage in an MPI+ROC_SHMEM program).
+   * @brief rocSHMEM's copy of MPI_COMM_WORLD (for interoperability
+   * with orthogonal MPI usage in an MPI+rocSHMEM program).
    */
   MPI_Comm gpu_ib_comm_world{};
   MPI_Comm backend_comm{};
@@ -334,7 +334,7 @@ class GPUIBBackend : public Backend {
    * specification).
    *
    * @todo Remove this member from the backend class. There is another
-   * copy stored in ROC_SHMEM_CTX_DEFAULT.
+   * copy stored in ROCSHMEM_CTX_DEFAULT.
    */
   GPUIBContext *default_ctx_{nullptr};
 

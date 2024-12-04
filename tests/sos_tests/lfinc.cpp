@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-/* long_finc neighbor - Perf test roc_shmem_atomic_fetch_inc(); */
+/* long_finc neighbor - Perf test rocshmem_atomic_fetch_inc(); */
 
 #include <assert.h>
 #include <errno.h>
@@ -38,7 +38,7 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -63,41 +63,41 @@ int main(int argc, char *argv[]) {
 
   if (argc > 1) loops = atoi(argv[1]);
 
-  roc_shmem_init();
+  rocshmem_init();
 
-  my_pe = roc_shmem_my_pe();
-  npes = roc_shmem_n_pes();
+  my_pe = rocshmem_my_pe();
+  npes = rocshmem_n_pes();
 
   if (loops <= 0) {
     if (my_pe == 0) printf("Error: loops must be greater than 0\n");
 
-    roc_shmem_finalize();
+    rocshmem_finalize();
     return 1;
   }
 
-  data = (long *)roc_shmem_malloc(data_sz);
+  data = (long *)rocshmem_malloc(data_sz);
   if (!data) {
-    fprintf(stderr, "[%d] roc_shmem_malloc(%ld) failure? %d\n", my_pe, data_sz,
+    fprintf(stderr, "[%d] rocshmem_malloc(%ld) failure? %d\n", my_pe, data_sz,
             errno);
-    roc_shmem_global_exit(1);
+    rocshmem_global_exit(1);
   }
   memset((void *)data, 0, data_sz);
 
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   neighbor = (my_pe + 1) % npes;
   start_time = shmem_wtime();
   for (j = 0, elapsed = 0.0; j < loops; j++) {
     start_time = shmem_wtime();
-    lval = roc_shmem_int64_atomic_fetch_inc((int64_t *)&data[1], neighbor);
+    lval = rocshmem_int64_atomic_fetch_inc((int64_t *)&data[1], neighbor);
     elapsed += shmem_wtime() - start_time;
     if (lval != (long)j) {
       fprintf(stderr, "[%d] Test: FAIL previous val %ld != %d Exit.\n", my_pe,
               lval, j);
-      roc_shmem_global_exit(1);
+      rocshmem_global_exit(1);
     }
   }
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   rc = 0;
   if (data[1] != (long)loops) {
@@ -115,13 +115,13 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "[%d] finc neighbor: PASSED.\n", my_pe);
     fprintf(
         stderr,
-        "[%d] %d loops of roc_shmem_int64_atomic_fetch_inc() in %6.4f secs\n"
-        "  %2.6f usecs per roc_shmem_int64_atomic_fetch_inc()\n",
+        "[%d] %d loops of rocshmem_int64_atomic_fetch_inc() in %6.4f secs\n"
+        "  %2.6f usecs per rocshmem_int64_atomic_fetch_inc()\n",
         my_pe, loops, elapsed, ((elapsed * 100000.0) / (double)loops));
   }
-  roc_shmem_free(data);
+  rocshmem_free(data);
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
 
   return rc;
 }

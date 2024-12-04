@@ -194,7 +194,7 @@ __host__ void Context::broadcast(T *dest, const T *source, int nelems,
 }
 
 template <typename T>
-__host__ void Context::broadcast(roc_shmem_team_t team, T *dest,
+__host__ void Context::broadcast(rocshmem_team_t team, T *dest,
                                  const T *source, int nelems,
                                  int pe_root) {  // NOLINT(runtime/int)
   if (nelems == 0) {
@@ -206,7 +206,7 @@ __host__ void Context::broadcast(roc_shmem_team_t team, T *dest,
   HOST_DISPATCH(broadcast<T>(team, dest, source, nelems, pe_root));
 }
 
-template <typename T, ROC_SHMEM_OP Op>
+template <typename T, ROCSHMEM_OP Op>
 __host__ void Context::to_all(T *dest, const T *source, int nreduce,
                               int PE_start, int logPE_stride, int PE_size,
                               T *pWrk,
@@ -221,11 +221,11 @@ __host__ void Context::to_all(T *dest, const T *source, int nreduce,
                                     logPE_stride, PE_size, pWrk, pSync));
 }
 
-template <typename T, ROC_SHMEM_OP Op>
-__host__ int Context::reduce(roc_shmem_team_t team, T *dest, const T *source,
+template <typename T, ROCSHMEM_OP Op>
+__host__ int Context::reduce(rocshmem_team_t team, T *dest, const T *source,
                              int nreduce) {  // NOLINT(runtime/int)
   if (nreduce == 0) {
-    return ROC_SHMEM_SUCCESS;
+    return ROCSHMEM_SUCCESS;
   }
 
   ctxHostStats.incStat(NUM_HOST_TO_ALL);

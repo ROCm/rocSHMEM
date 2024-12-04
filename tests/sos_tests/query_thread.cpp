@@ -27,7 +27,7 @@
 
 #include <stdio.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -35,22 +35,22 @@ int main(int argc, char* argv[]) {
   int provided;
 
   int tl, ret;
-  roc_shmem_init_thread(ROC_SHMEM_THREAD_FUNNELED, &tl);
+  rocshmem_init_thread(ROCSHMEM_THREAD_FUNNELED, &tl);
 
-  if (tl < ROC_SHMEM_THREAD_FUNNELED || ret != 0) {
+  if (tl < ROCSHMEM_THREAD_FUNNELED || ret != 0) {
     printf("Init failed (requested thread level %d, got %d)\n",
-           ROC_SHMEM_THREAD_FUNNELED, tl);
-    roc_shmem_global_exit(1);
+           ROCSHMEM_THREAD_FUNNELED, tl);
+    rocshmem_global_exit(1);
   }
 
-  roc_shmem_query_thread(&provided);
-  printf("%d: Query result for thread level %d\n", roc_shmem_my_pe(), provided);
+  rocshmem_query_thread(&provided);
+  printf("%d: Query result for thread level %d\n", rocshmem_my_pe(), provided);
 
-  if (provided < ROC_SHMEM_THREAD_FUNNELED) {
+  if (provided < ROCSHMEM_THREAD_FUNNELED) {
     printf("Error: thread support changed to an invalid level after init\n");
-    roc_shmem_global_exit(1);
+    rocshmem_global_exit(1);
   }
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
   return 0;
 }

@@ -22,11 +22,11 @@
 
 #include "team_ctx_primitive_tester.hpp"
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
-roc_shmem_team_t team_primitive_world_dup;
+rocshmem_team_t team_primitive_world_dup;
 
 /******************************************************************************
  * DEVICE TEST KERNEL
@@ -34,42 +34,42 @@ roc_shmem_team_t team_primitive_world_dup;
 __global__ void TeamCtxPrimitiveTest(int loop, int skip, uint64_t *timer,
                                      char *s_buf, char *r_buf, int size,
                                      TestType type, ShmemContextType ctx_type,
-                                     roc_shmem_team_t team) {
-  __shared__ roc_shmem_ctx_t ctx;
-  roc_shmem_wg_init();
-  roc_shmem_wg_team_create_ctx(team, ctx_type, &ctx);
+                                     rocshmem_team_t team) {
+  __shared__ rocshmem_ctx_t ctx;
+  rocshmem_wg_init();
+  rocshmem_wg_team_create_ctx(team, ctx_type, &ctx);
 
   if (hipThreadIdx_x == 0) {
     uint64_t start;
 
     for (int i = 0; i < loop + skip; i++) {
-      if (i == skip) start = roc_shmem_timer();
+      if (i == skip) start = rocshmem_timer();
 
       switch (type) {
         case TeamCtxGetTestType:
-          roc_shmem_ctx_getmem(ctx, r_buf, s_buf, size, 1);
+          rocshmem_ctx_getmem(ctx, r_buf, s_buf, size, 1);
           break;
         case TeamCtxGetNBITestType:
-          roc_shmem_ctx_getmem_nbi(ctx, r_buf, s_buf, size, 1);
+          rocshmem_ctx_getmem_nbi(ctx, r_buf, s_buf, size, 1);
           break;
         case TeamCtxPutTestType:
-          roc_shmem_ctx_putmem(ctx, r_buf, s_buf, size, 1);
+          rocshmem_ctx_putmem(ctx, r_buf, s_buf, size, 1);
           break;
         case TeamCtxPutNBITestType:
-          roc_shmem_ctx_putmem_nbi(ctx, r_buf, s_buf, size, 1);
+          rocshmem_ctx_putmem_nbi(ctx, r_buf, s_buf, size, 1);
           break;
         default:
           break;
       }
     }
 
-    roc_shmem_ctx_quiet(ctx);
+    rocshmem_ctx_quiet(ctx);
 
-    timer[hipBlockIdx_x] = roc_shmem_timer() - start;
+    timer[hipBlockIdx_x] = rocshmem_timer() - start;
   }
 
-  roc_shmem_wg_ctx_destroy(&ctx);
-  roc_shmem_wg_finalize();
+  rocshmem_wg_ctx_destroy(&ctx);
+  rocshmem_wg_finalize();
 }
 
 /******************************************************************************
@@ -77,13 +77,13 @@ __global__ void TeamCtxPrimitiveTest(int loop, int skip, uint64_t *timer,
  *****************************************************************************/
 TeamCtxPrimitiveTester::TeamCtxPrimitiveTester(TesterArguments args)
     : Tester(args) {
-  s_buf = (char *)roc_shmem_malloc(args.max_msg_size * args.wg_size);
-  r_buf = (char *)roc_shmem_malloc(args.max_msg_size * args.wg_size);
+  s_buf = (char *)rocshmem_malloc(args.max_msg_size * args.wg_size);
+  r_buf = (char *)rocshmem_malloc(args.max_msg_size * args.wg_size);
 }
 
 TeamCtxPrimitiveTester::~TeamCtxPrimitiveTester() {
-  roc_shmem_free(s_buf);
-  roc_shmem_free(r_buf);
+  rocshmem_free(s_buf);
+  rocshmem_free(r_buf);
 }
 
 void TeamCtxPrimitiveTester::resetBuffers(uint64_t size) {
@@ -92,10 +92,10 @@ void TeamCtxPrimitiveTester::resetBuffers(uint64_t size) {
 }
 
 void TeamCtxPrimitiveTester::preLaunchKernel() {
-  int n_pes = roc_shmem_team_n_pes(ROC_SHMEM_TEAM_WORLD);
+  int n_pes = rocshmem_team_n_pes(ROCSHMEM_TEAM_WORLD);
 
-  team_primitive_world_dup = ROC_SHMEM_TEAM_INVALID;
-  roc_shmem_team_split_strided(ROC_SHMEM_TEAM_WORLD, 0, 1, n_pes, nullptr, 0,
+  team_primitive_world_dup = ROCSHMEM_TEAM_INVALID;
+  rocshmem_team_split_strided(ROCSHMEM_TEAM_WORLD, 0, 1, n_pes, nullptr, 0,
                                &team_primitive_world_dup);
 }
 
@@ -112,7 +112,7 @@ void TeamCtxPrimitiveTester::launchKernel(dim3 gridSize, dim3 blockSize,
 }
 
 void TeamCtxPrimitiveTester::postLaunchKernel() {
-  roc_shmem_team_destroy(team_primitive_world_dup);
+  rocshmem_team_destroy(team_primitive_world_dup);
 }
 
 void TeamCtxPrimitiveTester::verifyResults(uint64_t size) {

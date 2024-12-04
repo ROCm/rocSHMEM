@@ -9,13 +9,13 @@ __device__ uint64_t timers[TIMERS] = {0};
 __device__ uint64_t time_start;
 #define TIMERS_START() \
     if(threadIdx.x == 0) {\
-        time_start = roc_shmem_timer();\
+        time_start = rocshmem_timer();\
     }
 
 #define TIME(TIMER_NUM) \
     if(threadIdx.x == 0) {\
-        timers[TIMER_NUM] = roc_shmem_timer() - time_start;\
-        time_start = roc_shmem_timer();\
+        timers[TIMER_NUM] = rocshmem_timer() - time_start;\
+        time_start = rocshmem_timer();\
     }
 
 #define OUTPUT_TIME() \
@@ -282,14 +282,14 @@ void initGPU(ncclComm_t &comms)
     MPI_Barrier(MPI_COMM_WORLD);
 }
 
-void *roc_shmem_malloc(size_t size)
+void *rocshmem_malloc(size_t size)
 {
     void *v;
     hipMalloc((void **)&v, size);
     return v;
 }
 
-int roc_shmem_free(void *v)
+int rocshmem_free(void *v)
 {
     return hipFree(v);
 }
@@ -331,14 +331,14 @@ int main(int argc, char *argv[])
 
     // Init buffers
     int *keyBuffer1, *keyBuffer2;
-    keyBuffer1 = (int*)roc_shmem_malloc(sizeof(int) * size);
-    keyBuffer2 = (int*)roc_shmem_malloc(sizeof(int) * size * 4);
+    keyBuffer1 = (int*)rocshmem_malloc(sizeof(int) * size);
+    keyBuffer2 = (int*)rocshmem_malloc(sizeof(int) * size * 4);
     
     int *sendCount = 0, *recvCount = 0, *sendOffset = 0, *recvOffset = 0;
-    sendCount = (int*)roc_shmem_malloc(sizeof(int) * MAX_PES);
-    recvCount = (int*)roc_shmem_malloc(sizeof(int) * MAX_PES);
-    sendOffset = (int*)roc_shmem_malloc(sizeof(int) * MAX_PES);
-    recvOffset = (int*)roc_shmem_malloc(sizeof(int) * MAX_PES);
+    sendCount = (int*)rocshmem_malloc(sizeof(int) * MAX_PES);
+    recvCount = (int*)rocshmem_malloc(sizeof(int) * MAX_PES);
+    sendOffset = (int*)rocshmem_malloc(sizeof(int) * MAX_PES);
+    recvOffset = (int*)rocshmem_malloc(sizeof(int) * MAX_PES);
 
     printf("Begin untimed run\n");
     // Untimed run
@@ -382,12 +382,12 @@ int main(int argc, char *argv[])
     // Clean up
     hipFree(keys);
     hipFree(outputKeys);
-    roc_shmem_free(keyBuffer1);
-    roc_shmem_free(keyBuffer2);
-    roc_shmem_free(sendCount);
-    roc_shmem_free(recvCount);
-    roc_shmem_free(sendOffset);
-    roc_shmem_free(recvOffset);
+    rocshmem_free(keyBuffer1);
+    rocshmem_free(keyBuffer2);
+    rocshmem_free(sendCount);
+    rocshmem_free(recvCount);
+    rocshmem_free(sendOffset);
+    rocshmem_free(recvOffset);
     ncclCommDestroy(comms);
     MPI_Finalize();
     return 0;

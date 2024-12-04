@@ -23,7 +23,7 @@
 #ifndef LIBRARY_SRC_FENCE_POLICY_HPP_
 #define LIBRARY_SRC_FENCE_POLICY_HPP_
 
-#include "roc_shmem/roc_shmem.hpp"
+#include "rocshmem/rocshmem.hpp"
 
 namespace rocshmem {
 
@@ -43,7 +43,7 @@ class Fence {
    * @param[in] options interpreted as a bitfield using bitwise operations
    */
   __host__ __device__ Fence(long option) {
-    if (option & ROC_SHMEM_CTX_NOSTORE) {
+    if (option & ROCSHMEM_CTX_NOSTORE) {
       flush_ = false;
     }
   }

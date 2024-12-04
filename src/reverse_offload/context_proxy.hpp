@@ -23,7 +23,7 @@
 #ifndef LIBRARY_SRC_REVERSE_OFFLOAD_CONTEXT_PROXY_HPP_
 #define LIBRARY_SRC_REVERSE_OFFLOAD_CONTEXT_PROXY_HPP_
 
-#include "roc_shmem/roc_shmem.hpp"
+#include "rocshmem/rocshmem.hpp"
 #include "../device_proxy.hpp"
 #include "../memory/hip_allocator.hpp"
 #include "context_ro_device.hpp"
@@ -46,7 +46,7 @@ class DefaultContextProxy {
   : constructed_{true} {
     auto ctx{proxy_.get()};
     new (ctx) ROContext(reinterpret_cast<Backend*>(backend), -1);
-    roc_shmem_ctx_t local{ctx, tinfo};
+    rocshmem_ctx_t local{ctx, tinfo};
     set_internal_ctx(&local);
   }
 

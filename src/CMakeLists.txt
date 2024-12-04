@@ -31,8 +31,8 @@ target_sources(
     context_host.cpp
     context_device.cpp
     mpi_init_singleton.cpp
-    roc_shmem_gpu.cpp
-    roc_shmem.cpp
+    rocshmem_gpu.cpp
+    rocshmem.cpp
     team.cpp
     team_tracker.cpp
     util.cpp

@@ -20,7 +20,7 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "roc_shmem/roc_shmem.hpp"
+#include "rocshmem/rocshmem.hpp"
 #include "../context_incl.hpp"
 #include "context_ipc_tmpl_device.hpp"
 #include "../util.hpp"
@@ -39,8 +39,8 @@ __device__ void IPCContext::internal_direct_barrier(int pe, int PE_start,
     __threadfence_system();
 #endif /* __gfx90a__ */
     for (size_t i = 1; i < n_pes; i++) {
-      wait_until(&pSync[i], ROC_SHMEM_CMP_EQ, flag_val);
-      pSync[i] = ROC_SHMEM_SYNC_VALUE;
+      wait_until(&pSync[i], ROCSHMEM_CMP_EQ, flag_val);
+      pSync[i] = ROCSHMEM_SYNC_VALUE;
     }
     threadfence_system();
 
@@ -58,8 +58,8 @@ __device__ void IPCContext::internal_direct_barrier(int pe, int PE_start,
 #if defined(__gfx90a__)
     __threadfence_system();
 #endif /* __gfx90a__ */
-    wait_until(&pSync[0], ROC_SHMEM_CMP_EQ, flag_val);
-    pSync[0] = ROC_SHMEM_SYNC_VALUE;
+    wait_until(&pSync[0], ROCSHMEM_CMP_EQ, flag_val);
+    pSync[0] = ROCSHMEM_SYNC_VALUE;
     threadfence_system();
   }
 }
@@ -69,8 +69,8 @@ __device__ void IPCContext::internal_atomic_barrier(int pe, int PE_start,
                                                       int64_t *pSync) {
   int64_t flag_val = 1;
   if (pe == PE_start) {
-    wait_until(&pSync[0], ROC_SHMEM_CMP_EQ, (int64_t)(n_pes - 1));
-    pSync[0] = ROC_SHMEM_SYNC_VALUE;
+    wait_until(&pSync[0], ROCSHMEM_CMP_EQ, (int64_t)(n_pes - 1));
+    pSync[0] = ROCSHMEM_SYNC_VALUE;
     threadfence_system();
 
     for (size_t i = 1, j = PE_start + stride; i < n_pes; ++i, j += stride) {
@@ -78,8 +78,8 @@ __device__ void IPCContext::internal_atomic_barrier(int pe, int PE_start,
     }
   } else {
     amo_add<int64_t>(&pSync[0], flag_val, PE_start);
-    wait_until(&pSync[0], ROC_SHMEM_CMP_EQ, flag_val);
-    pSync[0] = ROC_SHMEM_SYNC_VALUE;
+    wait_until(&pSync[0], ROCSHMEM_CMP_EQ, flag_val);
+    pSync[0] = ROCSHMEM_SYNC_VALUE;
     threadfence_system();
   }
 }
@@ -98,7 +98,7 @@ __device__ void IPCContext::internal_sync(int pe, int PE_start, int stride,
   __syncthreads();
 }
 
-__device__ void IPCContext::sync(roc_shmem_team_t team) {
+__device__ void IPCContext::sync(rocshmem_team_t team) {
   IPCTeam *team_obj = reinterpret_cast<IPCTeam *>(team);
 
   int pe = team_obj->my_pe_in_world;

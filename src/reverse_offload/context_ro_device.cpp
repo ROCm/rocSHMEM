@@ -30,7 +30,7 @@
 #include <cstdlib>
 
 #include "config.h"  // NOLINT(build/include_subdir)
-#include "roc_shmem/roc_shmem.hpp"
+#include "rocshmem/rocshmem.hpp"
 #include "../backend_type.hpp"
 #include "../hdp_policy.hpp"
 #include "backend_proxy.hpp"
@@ -176,7 +176,7 @@ __device__ void ROContext::sync_all() {
   __syncthreads();
 }
 
-__device__ void ROContext::sync(roc_shmem_team_t team) {
+__device__ void ROContext::sync(rocshmem_team_t team) {
   ROTeam *team_obj = reinterpret_cast<ROTeam *>(team);
   if (is_thread_zero_in_block()) {
     build_queue_element(RO_NET_SYNC, nullptr, nullptr, 0, 0, 0, 0, 0, nullptr,
@@ -472,7 +472,7 @@ __device__ void build_queue_element(
     ro_net_cmds type, void *dst, void *src, size_t size, int pe,
     int logPE_stride, int PE_size, int PE_root, void *pWrk, long *pSync,
     MPI_Comm team_comm, int ro_net_win_id, BlockHandle *handle,
-    bool blocking, ROC_SHMEM_OP op, ro_net_types datatype) {
+    bool blocking, ROCSHMEM_OP op, ro_net_types datatype) {
   auto write_slot{next_write_slot(handle)};
   auto queue_element = &handle->queue[write_slot];
 

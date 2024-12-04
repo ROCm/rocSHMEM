@@ -35,7 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -57,17 +57,17 @@ static void *thread_main(void *arg) {
   /* TEST CONCURRENT ATOMICS */
   val = me;
   for (i = 1; i <= npes; i++)
-    roc_shmem_int64_atomic_add(&dest[tid], val, (me + i) % npes);
+    rocshmem_int64_atomic_add(&dest[tid], val, (me + i) % npes);
 
   /* Ensure that fence does not overlap with communication calls */
   pthread_barrier_wait(&fencebar);
-  if (tid == 0) roc_shmem_fence();
+  if (tid == 0) rocshmem_fence();
   pthread_barrier_wait(&fencebar);
 
   for (i = 1; i <= npes; i++)
-    roc_shmem_int64_atomic_inc(&flag[tid], (me + i) % npes);
+    rocshmem_int64_atomic_inc(&flag[tid], (me + i) % npes);
 
-  roc_shmem_long_wait_until(&flag[tid], ROC_SHMEM_CMP_EQ, npes);
+  rocshmem_long_wait_until(&flag[tid], ROCSHMEM_CMP_EQ, npes);
 
   expected = (npes - 1) * npes / 2;
   if (dest[tid] != expected || flag[tid] != npes) {
@@ -81,21 +81,21 @@ static void *thread_main(void *arg) {
   }
 
   pthread_barrier_wait(&fencebar);
-  if (0 == tid) roc_shmem_barrier_all();
+  if (0 == tid) rocshmem_barrier_all();
   pthread_barrier_wait(&fencebar);
 
   /* TEST CONCURRENT PUTS */
   val = -1;
-  roc_shmem_long_put(&dest[tid], &val, 1, (me + 1) % npes);
+  rocshmem_long_put(&dest[tid], &val, 1, (me + 1) % npes);
 
   /* Ensure that all puts are issued before the shmem barrier is called. */
   pthread_barrier_wait(&fencebar);
-  if (0 == tid) roc_shmem_barrier_all();
+  if (0 == tid) rocshmem_barrier_all();
   pthread_barrier_wait(&fencebar);
 
   /* TEST CONCURRENT GETS */
   for (i = 1; i <= npes; i++) {
-    roc_shmem_long_get(&val, &dest[tid], 1, (me + i) % npes);
+    rocshmem_long_get(&val, &dest[tid], 1, (me + i) % npes);
 
     expected = -1;
     if (val != expected) {
@@ -110,7 +110,7 @@ static void *thread_main(void *arg) {
   }
 
   pthread_barrier_wait(&fencebar);
-  if (0 == tid) roc_shmem_barrier_all();
+  if (0 == tid) rocshmem_barrier_all();
 
   return NULL;
 }
@@ -120,21 +120,21 @@ int main(int argc, char **argv) {
   pthread_t threads[T];
   int t_arg[T];
 
-  roc_shmem_init_thread(ROC_SHMEM_THREAD_MULTIPLE, &tl);
+  rocshmem_init_thread(ROCSHMEM_THREAD_MULTIPLE, &tl);
 
-  if (tl != ROC_SHMEM_THREAD_MULTIPLE) {
+  if (tl != ROCSHMEM_THREAD_MULTIPLE) {
     printf("Init failed (requested thread level %d, got %d)\n",
-           ROC_SHMEM_THREAD_MULTIPLE, tl);
-    roc_shmem_global_exit(1);
+           ROCSHMEM_THREAD_MULTIPLE, tl);
+    rocshmem_global_exit(1);
   }
 
-  me = roc_shmem_my_pe();
-  npes = roc_shmem_n_pes();
+  me = rocshmem_my_pe();
+  npes = rocshmem_n_pes();
 
   pthread_barrier_init(&fencebar, NULL, T);
 
-  dest = (long *)roc_shmem_malloc(sizeof(long) * T);
-  flag = (long *)roc_shmem_malloc(sizeof(long) * T);
+  dest = (long *)rocshmem_malloc(sizeof(long) * T);
+  flag = (long *)rocshmem_malloc(sizeof(long) * T);
 
   if (me == 0)
     printf("Starting multithreaded test on %d PEs, %d threads/PE\n", npes, T);
@@ -163,9 +163,9 @@ int main(int argc, char **argv) {
       printf("Success\n");
   }
 
-  roc_shmem_free(dest);
-  roc_shmem_free(flag);
+  rocshmem_free(dest);
+  rocshmem_free(flag);
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
   return (errors == 0) ? 0 : 1;
 }

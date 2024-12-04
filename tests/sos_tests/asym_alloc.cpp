@@ -35,7 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -45,44 +45,44 @@ int main(int argc, char **argv) {
   int *buf, *buf_in;
   int me, npes, i, target;
 
-  roc_shmem_init();
-  me = roc_shmem_my_pe();
-  npes = roc_shmem_n_pes();
+  rocshmem_init();
+  me = rocshmem_my_pe();
+  npes = rocshmem_n_pes();
 
   /* Each PE allocates space for "me + 1" integers */
   bufsize = me + 1;
-  buf = (int *)roc_shmem_malloc(sizeof(int) * bufsize);
+  buf = (int *)rocshmem_malloc(sizeof(int) * bufsize);
 
-  if (NULL == buf) roc_shmem_global_exit(1);
+  if (NULL == buf) rocshmem_global_exit(1);
 
   for (i = 0; i < bufsize; i++) buf[i] = -1;
 
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   /* Write to neighbor's buffer */
   target = (me + 1) % npes;
   buf_in = (int *)malloc(sizeof(int) * (target + 1));
   if (!buf_in) {
     fprintf(stderr, "ERR - null buf_in pointer\n");
-    roc_shmem_global_exit(1);
+    rocshmem_global_exit(1);
   }
 
   for (i = 0; i < target + 1; i++) buf_in[i] = target;
 
-  roc_shmem_int_put(buf, buf_in, target + 1, target);
+  rocshmem_int_put(buf, buf_in, target + 1, target);
 
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   /* Validate data was written correctly */
   for (i = 0; i < me + 1; i++) {
     if (buf[i] != me) {
       printf("Error [%3d]: buf[%d] == %d, expected %d\n", me, i, buf[i], me);
-      roc_shmem_global_exit(2);
+      rocshmem_global_exit(2);
     }
   }
 
   free(buf_in);
-  roc_shmem_free(buf);
-  roc_shmem_finalize();
+  rocshmem_free(buf);
+  rocshmem_finalize();
   return 0;
 }

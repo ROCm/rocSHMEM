@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -16,7 +16,7 @@ using namespace rocshmem;
 #define LARGE_MSG_TH 16384
 #define DEF_LARGE_NUM_MESSAGES 64000
 
-/* An ROC_SHMEM+threads put message-rate
+/* An rocSHMEM+threads put message-rate
  * and bandwidth benchmark.
  *
  * Always with 2 processes
@@ -46,7 +46,7 @@ int run_bench(int rank, int size) {
   size_t buffer_size, contig_buffer_size;
   double *t_elapsed;
   double msg_rate, my_msg_rate, bandwidth, my_bandwidth;
-  roc_shmem_ctx_t *ctx;
+  rocshmem_ctx_t *ctx;
   char *dest_buf, *source_buf;
 
   num_messages = WINDOW_SIZE * (num_messages / num_threads / WINDOW_SIZE);
@@ -54,7 +54,7 @@ int run_bench(int rank, int size) {
   t_elapsed = (double *)calloc(num_threads, sizeof(double));
 
   /* Allocate array of ctxs */
-  ctx = (roc_shmem_ctx_t *)malloc(sizeof(roc_shmem_ctx_t) * num_threads);
+  ctx = (rocshmem_ctx_t *)malloc(sizeof(rocshmem_ctx_t) * num_threads);
 
   /**
    * Allocate contiguous buffer for all the threads on the target.
@@ -63,17 +63,17 @@ int run_bench(int rank, int size) {
   buffer_size = (message_size + CACHE_LINE_SIZE) * sizeof(char);
   contig_buffer_size = buffer_size * num_threads;
 
-  dest_buf = (char *)roc_shmem_malloc(contig_buffer_size);
+  dest_buf = (char *)rocshmem_malloc(contig_buffer_size);
   memset(dest_buf, 0, sizeof(contig_buffer_size));
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   /* Create windows */
   for (i = 0; i < num_threads; i++) {
-    int err = roc_shmem_ctx_create(0, &ctx[i]);
+    int err = rocshmem_ctx_create(0, &ctx[i]);
     if (err) {
       printf("PE %d: Warning, could not create context %d (%d)\n", rank, i,
              err);
-      ctx[i] = ROC_SHMEM_CTX_DEFAULT;
+      ctx[i] = ROCSHMEM_CTX_DEFAULT;
     }
   }
 
@@ -87,7 +87,7 @@ int run_bench(int rank, int size) {
     int tid;
     int win_i, win_post_i, win_posts;
     int my_message_size;
-    roc_shmem_ctx_t my_ctx;
+    rocshmem_ctx_t my_ctx;
 
     tid = omp_get_thread_num();
     my_message_size = message_size;
@@ -107,14 +107,14 @@ int run_bench(int rank, int size) {
       /* Warmup */
       for (win_post_i = 0; win_post_i < win_posts; win_post_i++) {
         for (win_i = 0; win_i < WINDOW_SIZE; win_i++) {
-          roc_shmem_ctx_putmem_nbi(my_ctx, my_dest_buf, my_source_buf,
+          rocshmem_ctx_putmem_nbi(my_ctx, my_dest_buf, my_source_buf,
                                    my_message_size, rank + 1);
         }
-        roc_shmem_ctx_quiet(my_ctx);
+        rocshmem_ctx_quiet(my_ctx);
       }
 
 #pragma omp master
-      { roc_shmem_barrier_all(); }
+      { rocshmem_barrier_all(); }
 #pragma omp barrier
 
       /* Benchmark */
@@ -122,10 +122,10 @@ int run_bench(int rank, int size) {
 
       for (win_post_i = 0; win_post_i < win_posts; win_post_i++) {
         for (win_i = 0; win_i < WINDOW_SIZE; win_i++) {
-          roc_shmem_ctx_putmem_nbi(my_ctx, my_dest_buf, my_source_buf,
+          rocshmem_ctx_putmem_nbi(my_ctx, my_dest_buf, my_source_buf,
                                    my_message_size, rank + 1);
         }
-        roc_shmem_ctx_quiet(my_ctx);
+        rocshmem_ctx_quiet(my_ctx);
       }
 
       t_end = get_time();
@@ -138,14 +138,14 @@ int run_bench(int rank, int size) {
       /* Warmup */
 
 #pragma omp master
-      { roc_shmem_barrier_all(); }
+      { rocshmem_barrier_all(); }
 #pragma omp barrier
 
       /* Benchmark */
     }
   }
 
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   if (rank % 2 == 0) {
     int thread_i;
@@ -169,9 +169,9 @@ int run_bench(int rank, int size) {
     printf("%f\n", bandwidth);
   }
 
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
-  for (i = 0; i < num_threads; i++) roc_shmem_ctx_destroy(ctx[i]);
+  for (i = 0; i < num_threads; i++) rocshmem_ctx_destroy(ctx[i]);
   free(ctx);
   free(t_elapsed);
   hipFree(source_buf);
@@ -227,17 +227,17 @@ int main(int argc, char *argv[]) {
     if (num_messages == DEF_NUM_MESSAGES) num_messages = DEF_LARGE_NUM_MESSAGES;
   }
 
-  roc_shmem_init();
+  rocshmem_init();
 
-  size = roc_shmem_n_pes();
+  size = rocshmem_n_pes();
   if (size != 2) {
     printf("Run with only two processes.\n");
-    roc_shmem_finalize();
+    rocshmem_finalize();
   }
 
   omp_set_num_threads(num_threads);
 
-  rank = roc_shmem_my_pe();
+  rank = rocshmem_my_pe();
 
   ret = run_bench(rank, size);
   if (ret) {
@@ -245,7 +245,7 @@ int main(int argc, char *argv[]) {
     ret = EXIT_FAILURE;
   }
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
 
   return ret;
 }

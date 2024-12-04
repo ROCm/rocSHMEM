@@ -31,11 +31,11 @@ namespace rocshmem {
 DynamicConnection::DynamicConnection(GPUIBBackend* b) : Connection(b, 4) {
   char* value = nullptr;
 
-  if ((value = getenv("ROC_SHMEM_NUM_DCIs"))) {
+  if ((value = getenv("ROCSHMEM_NUM_DCIs"))) {
     num_dcis = atoi(value);
   }
 
-  if ((value = getenv("ROC_SHMEM_NUM_DCT"))) {
+  if ((value = getenv("ROCSHMEM_NUM_DCT"))) {
     num_dct = atoi(value);
   }
 }

@@ -31,32 +31,32 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
 #define NUM_POINTS 10000
 
 int main(int argc, char *argv[], char *envp[]) {
-  int me, myroc_shmem_n_pes;
+  int me, myrocshmem_n_pes;
   long long *inside, *total;
 
   /*
   ** Starts/Initializes SHMEM/OpenSHMEM
   */
-  roc_shmem_init();
+  rocshmem_init();
   /*
   ** Fetch the number or processes
   ** Some implementations use num_pes();
   */
-  myroc_shmem_n_pes = roc_shmem_n_pes();
+  myrocshmem_n_pes = rocshmem_n_pes();
   /*
   ** Assign my process ID to me
   */
-  me = roc_shmem_my_pe();
+  me = rocshmem_my_pe();
 
-  inside = (long long *)roc_shmem_malloc(sizeof(long long));
-  total = (long long *)roc_shmem_malloc(sizeof(long long));
+  inside = (long long *)rocshmem_malloc(sizeof(long long));
+  total = (long long *)rocshmem_malloc(sizeof(long long));
   *inside = *total = 0;
 
   srand(1 + me);
@@ -71,15 +71,15 @@ int main(int argc, char *argv[], char *envp[]) {
     }
   }
 
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   int errors = 0;
 
   if (me == 0) {
-    for (int i = 1; i < myroc_shmem_n_pes; ++i) {
+    for (int i = 1; i < myrocshmem_n_pes; ++i) {
       long long remoteInside, remoteTotal;
-      roc_shmem_longlong_get(&remoteInside, inside, 1, i);
-      roc_shmem_longlong_get(&remoteTotal, total, 1, i);
+      rocshmem_longlong_get(&remoteInside, inside, 1, i);
+      rocshmem_longlong_get(&remoteTotal, total, 1, i);
       (*total) += remoteTotal;
       (*inside) += remoteInside;
     }
@@ -91,15 +91,15 @@ int main(int argc, char *argv[], char *envp[]) {
     }
 
     if (NULL == getenv("MAKELEVEL")) {
-      printf("Pi from %llu points on %d PEs: %lf\n", *total, myroc_shmem_n_pes,
+      printf("Pi from %llu points on %d PEs: %lf\n", *total, myrocshmem_n_pes,
              approx_pi);
     }
   }
 
-  roc_shmem_free(inside);
-  roc_shmem_free(total);
+  rocshmem_free(inside);
+  rocshmem_free(total);
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
 
   return errors;
 }

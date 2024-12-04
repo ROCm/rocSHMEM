@@ -31,7 +31,7 @@
 #include <cstdlib>
 
 #include "config.h"  // NOLINT(build/include_subdir)
-#include "roc_shmem/roc_shmem.hpp"
+#include "rocshmem/rocshmem.hpp"
 #include "backend_ipc.hpp"
 
 namespace rocshmem {
@@ -229,10 +229,10 @@ __device__ void IPCContext::putmem_signal(void *dest, const void *source, size_t
   fence();
 
   switch (sig_op) {
-  case ROC_SHMEM_SIGNAL_SET:
+  case ROCSHMEM_SIGNAL_SET:
     amo_set<uint64_t>(static_cast<void*>(sig_addr), signal, pe);
     break;
-  case ROC_SHMEM_SIGNAL_ADD:
+  case ROCSHMEM_SIGNAL_ADD:
     amo_add<uint64_t>(static_cast<void*>(dest), signal, pe);
     break;
   default:
@@ -249,10 +249,10 @@ __device__ void IPCContext::putmem_signal_wg(void *dest, const void *source, siz
 
   if (is_thread_zero_in_block()) {
     switch (sig_op) {
-    case ROC_SHMEM_SIGNAL_SET:
+    case ROCSHMEM_SIGNAL_SET:
       amo_set<uint64_t>(static_cast<void*>(sig_addr), signal, pe);
       break;
-    case ROC_SHMEM_SIGNAL_ADD:
+    case ROCSHMEM_SIGNAL_ADD:
       amo_add<uint64_t>(static_cast<void*>(dest), signal, pe);
       break;
     default:
@@ -270,10 +270,10 @@ __device__ void IPCContext::putmem_signal_wave(void *dest, const void *source, s
 
   if (is_thread_zero_in_wave()) {
     switch (sig_op) {
-    case ROC_SHMEM_SIGNAL_SET:
+    case ROCSHMEM_SIGNAL_SET:
       amo_set<uint64_t>(static_cast<void*>(sig_addr), signal, pe);
       break;
-    case ROC_SHMEM_SIGNAL_ADD:
+    case ROCSHMEM_SIGNAL_ADD:
       amo_add<uint64_t>(static_cast<void*>(dest), signal, pe);
       break;
     default:

@@ -1,7 +1,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <mpi.h>
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 #include <unistd.h>
 using namespace std;
 using namespace rocshmem;
@@ -16,13 +16,13 @@ __device__ uint64_t timers[TIMERS] = {0};
 __device__ uint64_t time_start;
 #define TIMERS_START() \
     if(threadIdx.x == 0) {\
-        time_start = roc_shmem_timer();\
+        time_start = rocshmem_timer();\
     }
 
 #define TIME(TIMER_NUM) \
     if(threadIdx.x == 0) {\
-        timers[TIMER_NUM] = roc_shmem_timer() - time_start;\
-        time_start = roc_shmem_timer();\
+        timers[TIMER_NUM] = rocshmem_timer() - time_start;\
+        time_start = rocshmem_timer();\
     }
 
 #define OUTPUT_TIME() \
@@ -41,11 +41,11 @@ __device__ uint64_t time_start;
 #define OUTPUT_TIME() 
 #endif
 
-__device__ __inline__ void alltoall(roc_shmem_ctx_t &ctx, 
-                                    roc_shmem_team_t team, 
+__device__ __inline__ void alltoall(rocshmem_ctx_t &ctx, 
+                                    rocshmem_team_t team, 
                                     int *dst, int *src) {
     // Perform alltoall
-    roc_shmem_ctx_int_wg_alltoall(ctx,
+    rocshmem_ctx_int_wg_alltoall(ctx,
                 team,
                 dst,    // T* dest
                 src,  // const T* source
@@ -56,18 +56,18 @@ __global__ void sort(volatile int *keys, int *keyBuffer1,
                      int *keyBuffer2, int *sendCount, 
                      int *recvCount, int *sendOffset,
                      int *recvOffset, int *outputKeys, 
-                     size_t size, roc_shmem_team_t team, 
+                     size_t size, rocshmem_team_t team, 
                      int max_iters) {
-    __shared__ roc_shmem_ctx_t ctx;
+    __shared__ rocshmem_ctx_t ctx;
     __shared__ int bucketCounter[MAX_PES];
     __shared__ int bucketPtr[MAX_PES];
     __shared__ int total_size;
 
-    roc_shmem_wg_init();
-    roc_shmem_wg_ctx_create(ROC_SHMEM_CTX_WG_PRIVATE, &ctx);
+    rocshmem_wg_init();
+    rocshmem_wg_ctx_create(ROCSHMEM_CTX_WG_PRIVATE, &ctx);
 
-    int n_pes = roc_shmem_ctx_n_pes(ctx);
-    int my_pe = roc_shmem_my_pe();
+    int n_pes = rocshmem_ctx_n_pes(ctx);
+    int my_pe = rocshmem_my_pe();
     int buckets = n_pes;
 
     int tid = threadIdx.x; // + blockDim.x * blockIdx.x;
@@ -116,9 +116,9 @@ __global__ void sort(volatile int *keys, int *keyBuffer1,
             int loc = atomicAdd(&bucketPtr[keys[i] / K_PER_BUCK], -1) - 1;
             keyBuffer1[loc] = keys[i];
         }
-        roc_shmem_ctx_threadfence_system(ctx);
+        rocshmem_ctx_threadfence_system(ctx);
         // Force sync to wait for all PEs to update bucket sizes
-        roc_shmem_ctx_wg_team_sync(ctx, team);
+        rocshmem_ctx_wg_team_sync(ctx, team);
         TIME(3)
         // Let all PEs know how many keys you wish to send
         alltoall(ctx, team, recvCount, sendCount);
@@ -129,11 +129,11 @@ __global__ void sort(volatile int *keys, int *keyBuffer1,
         if(threadIdx.x == 0) {
             total_size = 0;
             for(int i = 0; i < buckets; ++i) {
-                roc_shmem_int_get_nbi(&keyBuffer2[total_size], 
+                rocshmem_int_get_nbi(&keyBuffer2[total_size], 
                     &keyBuffer1[recvOffset[i]], recvCount[i], i);
                 total_size += recvCount[i];
             }
-            roc_shmem_quiet();
+            rocshmem_quiet();
         }
         for(int i = threadIdx.x; i < K_PER_BUCK; i += blockDim.x)
             outputKeys[i] = 0;
@@ -163,14 +163,14 @@ __global__ void sort(volatile int *keys, int *keyBuffer1,
         TIME(7)
     }
     OUTPUT_TIME()
-    roc_shmem_wg_ctx_destroy(ctx);
-    roc_shmem_wg_finalize();
+    rocshmem_wg_ctx_destroy(ctx);
+    rocshmem_wg_finalize();
 }
 
 bool verify(int *outputKeys, int *keyBuffer2, size_t size)
 {   
-    int num_pes = roc_shmem_n_pes();
-    int my_pe = roc_shmem_my_pe();
+    int num_pes = rocshmem_n_pes();
+    int my_pe = rocshmem_my_pe();
 
     MPI_Status  status;
     MPI_Request request;
@@ -228,8 +228,8 @@ void initGPU()
 {
     // Calculation for local rank, taken from rccl-tests
     int localRank = 0;
-    int proc = roc_shmem_my_pe();
-    int nProcs = roc_shmem_n_pes();
+    int proc = rocshmem_my_pe();
+    int nProcs = rocshmem_n_pes();
     char hostname[1024];
     gethostname(hostname, 1024);
     for (int i=0; i< 1024; i++) {
@@ -261,12 +261,12 @@ void initGPU()
 
 int main(int argc, char *argv[])
 {
-    // Init roc_shmem stuff
+    // Init rocshmem stuff
     initGPU();
-    roc_shmem_init(NUM_WGS);
-    int n_pes = roc_shmem_team_n_pes(ROC_SHMEM_TEAM_WORLD);
-    roc_shmem_team_t team_world_dup = ROC_SHMEM_TEAM_INVALID;
-    roc_shmem_team_split_strided(ROC_SHMEM_TEAM_WORLD,
+    rocshmem_init(NUM_WGS);
+    int n_pes = rocshmem_team_n_pes(ROCSHMEM_TEAM_WORLD);
+    rocshmem_team_t team_world_dup = ROCSHMEM_TEAM_INVALID;
+    rocshmem_team_split_strided(ROCSHMEM_TEAM_WORLD,
                                  0,
                                  1,
                                  n_pes,
@@ -278,8 +278,8 @@ int main(int argc, char *argv[])
     if(argc > 1)
         iterations = atoi(argv[1]);
     
-    int num_pes = roc_shmem_n_pes();
-    int my_pe = roc_shmem_my_pe();
+    int num_pes = rocshmem_n_pes();
+    int my_pe = rocshmem_my_pe();
 
     // Configure input and outputs
     size_t size = 1024; //atoi(argv[2]);
@@ -298,17 +298,17 @@ int main(int argc, char *argv[])
 
     // Init buffers
     int *keyBuffer1, *keyBuffer2;
-    keyBuffer1 = (int*)roc_shmem_malloc(sizeof(int) * size);
-    keyBuffer2 = (int*)roc_shmem_malloc(sizeof(int) * size * 4);
+    keyBuffer1 = (int*)rocshmem_malloc(sizeof(int) * size);
+    keyBuffer2 = (int*)rocshmem_malloc(sizeof(int) * size * 4);
     
     int *sendCount, *recvCount, *sendOffset, *recvOffset;
-    sendCount = (int*)roc_shmem_malloc(sizeof(int) * MAX_PES);
-    recvCount = (int*)roc_shmem_malloc(sizeof(int) * MAX_PES);
-    sendOffset = (int*)roc_shmem_malloc(sizeof(int) * MAX_PES);
-    recvOffset = (int*)roc_shmem_malloc(sizeof(int) * MAX_PES);
+    sendCount = (int*)rocshmem_malloc(sizeof(int) * MAX_PES);
+    recvCount = (int*)rocshmem_malloc(sizeof(int) * MAX_PES);
+    sendOffset = (int*)rocshmem_malloc(sizeof(int) * MAX_PES);
+    recvOffset = (int*)rocshmem_malloc(sizeof(int) * MAX_PES);
 
     // Untimed run
-    roc_shmem_barrier_all();
+    rocshmem_barrier_all();
     sort<<<1, WG_SIZE>>>((int*)keys, keyBuffer1, keyBuffer2, 
         sendCount, recvCount, sendOffset, recvOffset, 
         outputKeys, size, team_world_dup, 1);
@@ -321,7 +321,7 @@ int main(int argc, char *argv[])
     }
 
     // Timed run
-    roc_shmem_barrier_all();
+    rocshmem_barrier_all();
     auto time_start = TIME_NOW;
     sort<<<1, WG_SIZE>>>((int*)keys, keyBuffer1, keyBuffer2, 
         sendCount, recvCount, sendOffset, recvOffset, 
@@ -347,12 +347,12 @@ int main(int argc, char *argv[])
     // Clean up
     hipFree(keys);
     hipFree(outputKeys);
-    roc_shmem_free(keyBuffer1);
-    roc_shmem_free(keyBuffer2);
-    roc_shmem_free(sendCount);
-    roc_shmem_free(recvCount);
-    roc_shmem_free(sendOffset);
-    roc_shmem_free(recvOffset);
-    roc_shmem_finalize();
+    rocshmem_free(keyBuffer1);
+    rocshmem_free(keyBuffer2);
+    rocshmem_free(sendCount);
+    rocshmem_free(recvCount);
+    rocshmem_free(sendOffset);
+    rocshmem_free(recvOffset);
+    rocshmem_finalize();
     return 0;
 }

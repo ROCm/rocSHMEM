@@ -39,7 +39,7 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -78,8 +78,8 @@ static void usage(char *pgm) {
       "    -v              be verbose, multiple 'v' more verbose\n"
       "    -e element-cnt (%d)  # of int sized elements to get\n"
       "    -l loops (%d)  loop count.\n"
-      "    -s             synchronize: barrier after each roc_shmem_get()\n"
-      "    -t             track: output '.' for every 200 roc_shmem_get()s\n",
+      "    -s             synchronize: barrier after each rocshmem_get()\n"
+      "    -t             track: output '.' for every 200 rocshmem_get()s\n",
       pgm, NUM_ELEMENTS, DFLT_LOOPS);
 }
 
@@ -99,9 +99,9 @@ int main(int argc, char **argv) {
   long bytes;
   double time_taken = 0.0, start_time;
 
-  roc_shmem_init();
-  me = roc_shmem_my_pe();
-  npes = roc_shmem_n_pes();
+  rocshmem_init();
+  me = rocshmem_my_pe();
+  npes = rocshmem_n_pes();
 
   if ((pgm = strrchr(argv[0], '/')))
     pgm++;
@@ -116,14 +116,14 @@ int main(int argc, char **argv) {
       case 'e':
         if ((elements = atoi_scaled(optarg)) <= 0) {
           fprintf(stderr, "ERR: Bad elements count %d\n", elements);
-          roc_shmem_finalize();
+          rocshmem_finalize();
           return 1;
         }
         break;
       case 'l':
         if ((loops = atoi_scaled(optarg)) <= 0) {
           fprintf(stderr, "ERR: Bad loop count %d\n", loops);
-          roc_shmem_finalize();
+          rocshmem_finalize();
           return 1;
         }
         break;
@@ -141,35 +141,35 @@ int main(int argc, char **argv) {
           fprintf(stderr, "%s: unknown switch '-%c'?\n", pgm, i);
           usage(pgm);
         }
-        roc_shmem_finalize();
+        rocshmem_finalize();
         return 1;
     }
   }
 
   target_pe = (me + 1) % npes;
 
-  total_time = (double *)roc_shmem_malloc(npes * sizeof(double));
+  total_time = (double *)rocshmem_malloc(npes * sizeof(double));
   if (!total_time) {
-    fprintf(stderr, "ERR: bad total_time roc_shmem_malloc(%ld)\n",
+    fprintf(stderr, "ERR: bad total_time rocshmem_malloc(%ld)\n",
             (elements * sizeof(double)));
-    roc_shmem_global_exit(1);
+    rocshmem_global_exit(1);
   }
 
-  Source = (int *)roc_shmem_malloc(elements * sizeof(*Source));
+  Source = (int *)rocshmem_malloc(elements * sizeof(*Source));
   if (!Source) {
-    fprintf(stderr, "ERR: bad Source roc_shmem_malloc(%ld)\n",
+    fprintf(stderr, "ERR: bad Source rocshmem_malloc(%ld)\n",
             (elements * sizeof(*Target)));
-    roc_shmem_free(total_time);
-    roc_shmem_global_exit(1);
+    rocshmem_free(total_time);
+    rocshmem_global_exit(1);
   }
 
-  Target = (int *)roc_shmem_malloc(elements * sizeof(*Target));
+  Target = (int *)rocshmem_malloc(elements * sizeof(*Target));
   if (!Target) {
-    fprintf(stderr, "ERR: bad Target roc_shmem_malloc(%ld)\n",
+    fprintf(stderr, "ERR: bad Target rocshmem_malloc(%ld)\n",
             (elements * sizeof(*Target)));
-    roc_shmem_free(Source);
-    roc_shmem_free(total_time);
-    roc_shmem_global_exit(1);
+    rocshmem_free(Source);
+    rocshmem_free(total_time);
+    rocshmem_global_exit(1);
   }
 
   for (i = 0; i < elements; i++) {
@@ -183,31 +183,31 @@ int main(int argc, char **argv) {
     fprintf(stderr, "%s: INFO - %d loops, get %d (int) elements from PE+1\n",
             pgm, loops, elements);
 
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   for (i = 0; i < loops; i++) {
     start_time = shmem_wtime();
 
-    roc_shmem_int_get(Target, Source, elements, target_pe);
+    rocshmem_int_get(Target, Source, elements, target_pe);
 
     time_taken += shmem_wtime() - start_time;
 
     if (me == 0) {
       if (Track && i > 0 && ((i % 200) == 0)) fprintf(stderr, ".%d", i);
     }
-    if (Sync) roc_shmem_barrier_all();
+    if (Sync) rocshmem_barrier_all();
   }
 
   // collect time per node elapsed time.
-  roc_shmem_double_put(&total_time[me], &time_taken, 1, 0);
+  rocshmem_double_put(&total_time[me], &time_taken, 1, 0);
 
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   for (i = 0; i < elements; i++) {
     if (Target[i] != i + 1) {
       printf("%d: Error Target[%d] = %d, expected %d\n", me, i, Target[i],
              i + 1);
-      roc_shmem_global_exit(1);
+      rocshmem_global_exit(1);
     }
   }
 
@@ -224,11 +224,11 @@ int main(int argc, char **argv) {
            secs);
   }
 
-  roc_shmem_free(total_time);
-  roc_shmem_free(Target);
-  roc_shmem_free(Source);
+  rocshmem_free(total_time);
+  rocshmem_free(Target);
+  rocshmem_free(Source);
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
 
   return 0;
 }

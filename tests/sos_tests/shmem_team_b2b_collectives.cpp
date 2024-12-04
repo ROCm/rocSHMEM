@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -68,33 +68,33 @@ static void error_check(int *errors, int *total_errors, char *routine, int me) {
 
 int main(void) {
   int errors = 0, total_errors = 0;
-  roc_shmem_init();
-  int me = roc_shmem_my_pe();
+  rocshmem_init();
+  int me = rocshmem_my_pe();
 
-  long *dest = (long *)roc_shmem_malloc(NELEMS * sizeof(long));
-  long *src = (long *)roc_shmem_malloc(NELEMS * sizeof(long));
+  long *dest = (long *)rocshmem_malloc(NELEMS * sizeof(long));
+  long *src = (long *)rocshmem_malloc(NELEMS * sizeof(long));
 
   size_t i;
   for (i = 0; i < NELEMS; i++) {
     src[i] = me;
   }
 
-  TEST_B2B_COLLECTIVE("broadcast", roc_shmem_ctx_long_broadcast,
-                      ROC_SHMEM_CTX_DEFAULT, ROC_SHMEM_TEAM_WORLD, dest, src,
+  TEST_B2B_COLLECTIVE("broadcast", rocshmem_ctx_long_broadcast,
+                      ROCSHMEM_CTX_DEFAULT, ROCSHMEM_TEAM_WORLD, dest, src,
                       NELEMS, 0);
-  TEST_B2B_COLLECTIVE("reduce", roc_shmem_ctx_long_sum_to_all,
-                      ROC_SHMEM_CTX_DEFAULT, ROC_SHMEM_TEAM_WORLD, dest, src,
+  TEST_B2B_COLLECTIVE("reduce", rocshmem_ctx_long_sum_to_all,
+                      ROCSHMEM_CTX_DEFAULT, ROCSHMEM_TEAM_WORLD, dest, src,
                       NELEMS);
-  // TEST_B2B_COLLECTIVE("collect", roc_shmem_long_collect, SHMEM_TEAM_WORLD,
-  // dest, src, NELEMS); TEST_B2B_COLLECTIVE("fcollect", roc_shmem_long_fcollect,
+  // TEST_B2B_COLLECTIVE("collect", rocshmem_long_collect, SHMEM_TEAM_WORLD,
+  // dest, src, NELEMS); TEST_B2B_COLLECTIVE("fcollect", rocshmem_long_fcollect,
   // SHMEM_TEAM_WORLD, dest, src, NELEMS); TEST_B2B_COLLECTIVE("alltoall",
-  // roc_shmem_long_alltoall, SHMEM_TEAM_WORLD, dest, src, NELEMS);
-  // TEST_B2B_COLLECTIVE("alltoalls", roc_shmem_long_alltoalls,
+  // rocshmem_long_alltoall, SHMEM_TEAM_WORLD, dest, src, NELEMS);
+  // TEST_B2B_COLLECTIVE("alltoalls", rocshmem_long_alltoalls,
   // SHMEM_TEAM_WORLD, dest, src, 1, 1, NELEMS);
 
-  roc_shmem_free(dest);
-  roc_shmem_free(src);
+  rocshmem_free(dest);
+  rocshmem_free(src);
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
   return total_errors;
 }

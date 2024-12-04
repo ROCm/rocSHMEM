@@ -23,7 +23,7 @@
 #ifndef _TESTER_HPP_
 #define _TESTER_HPP_
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 #include <vector>
 
 #include "tester_arguments.hpp"

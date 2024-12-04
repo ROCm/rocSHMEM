@@ -26,8 +26,8 @@
 #include <hip/math_functions.h>
 #include <hip/device_functions.h>
 
-#ifdef USE_ROC_SHMEM
-#include "roc_shmem.hpp"
+#ifdef USE_ROCSHMEM
+#include "rocshmem.hpp"
 using namespace rocshmem;
 #endif
 
@@ -991,7 +991,7 @@ inline FPTYPE cross_lane_reduction_three(FPTYPE temp_sum, unsigned int *row_max_
 __global__ void __launch_bounds__(WF_SIZE * WF_PER_WG, 1)
 amd_spts_analyze_and_solve(
                             const size_t global_work_size,
-#ifdef USE_ROC_SHMEM
+#ifdef USE_ROCSHMEM
                             const int this_pe,
                             const int total_pes,
                             unsigned int * __restrict__ shadowDoneArray,
@@ -1002,9 +1002,9 @@ amd_spts_analyze_and_solve(
 			    // 1: Naive gets
 			    // 2: blocked puts
 			    // 3: put/get hybrid
-                            int roc_shmem_algorithm,
-							int roc_shmem_put_block_size,
-							int roc_shmem_get_backoff_factor,
+                            int rocshmem_algorithm,
+							int rocshmem_put_block_size,
+							int rocshmem_get_backoff_factor,
                             int spts_block_size,
 #endif
                             const FPTYPE * __restrict__ vals,
@@ -1043,13 +1043,13 @@ amd_spts_analyze_and_solve(
     const unsigned int wg_lid = hipThreadIdx_x;
     const unsigned int lid = wg_lid % WF_SIZE;
 
-#ifdef USE_ROC_SHMEM
-    __shared__ roc_shmem_ctx_t ctx;
+#ifdef USE_ROCSHMEM
+    __shared__ rocshmem_ctx_t ctx;
 
 
     //if (wg_lid == OUTPUT_THREAD) {
-    roc_shmem_wg_init();
-    roc_shmem_wg_ctx_create(ROC_SHMEM_CTX_WG_PRIVATE, &ctx);
+    rocshmem_wg_init();
+    rocshmem_wg_ctx_create(ROCSHMEM_CTX_WG_PRIVATE, &ctx);
     __syncthreads();
 #endif
 
@@ -1061,7 +1061,7 @@ amd_spts_analyze_and_solve(
     // Actual row this wavefront will work on.
     const unsigned int local_row = local_first_row + local_offset;
 
-#ifdef USE_ROC_SHMEM
+#ifdef USE_ROCSHMEM
     // Get the global row for this wavefront assuming a row-cyclic
     // decomposition.  Basically we need to account for other PEs here.
     int local_block_id = local_row / spts_block_size;
@@ -1144,7 +1144,7 @@ amd_spts_analyze_and_solve(
         // While there are threads in this workgroup that have been unable to
         // get their input, loop and wait for the flag to exist.
         __asm__ volatile ("s_setprio 0");
-#ifdef USE_ROC_SHMEM
+#ifdef USE_ROCSHMEM
         int target_pe = (local_col / spts_block_size) % total_pes;
         int backoff_counter = 0;
         bool need_remote_notify = true;
@@ -1179,8 +1179,8 @@ amd_spts_analyze_and_solve(
 
             spin_times++;
 
-#ifdef USE_ROC_SHMEM
-            if ((total_pes > 1) && (target_pe != this_pe) && (roc_shmem_algorithm == 1)) {
+#ifdef USE_ROCSHMEM
+            if ((total_pes > 1) && (target_pe != this_pe) && (rocshmem_algorithm == 1)) {
 				if (first_time) {
                     if (atomicCAS(&remoteInProgressArray[local_col], 0, 1) != 0)
                         need_comm = false;
@@ -1188,12 +1188,12 @@ amd_spts_analyze_and_solve(
 				first_time = false;
 				if (need_comm)
 					{
-                    for (int i = 0; i < (backoff_counter * roc_shmem_get_backoff_factor); i++)
+                    for (int i = 0; i < (backoff_counter * rocshmem_get_backoff_factor); i++)
                         __asm__ volatile("s_sleep 127");
 
 
-                    roc_shmem_ctx_getmem_nbi(ctx, &shadowDoneArray[local_col], &doneArray[local_col], sizeof(int), target_pe);
-		        	//roc_shmem_ctx_quiet(ctx);
+                    rocshmem_ctx_getmem_nbi(ctx, &shadowDoneArray[local_col], &doneArray[local_col], sizeof(int), target_pe);
+		        	//rocshmem_ctx_quiet(ctx);
 
                 	__asm__ volatile (MEM_PREFIX"_load_dword %0 %1 " OFF_MODIFIER " glc slc\n"
                     	"s_waitcnt vmcnt(0)"
@@ -1203,7 +1203,7 @@ amd_spts_analyze_and_solve(
 
                 	if (local_done)
                 	{
-                        roc_shmem_ctx_getmem_nbi(ctx, &out_y[local_col], &out_y[local_col], sizeof(FPTYPE), target_pe);
+                        rocshmem_ctx_getmem_nbi(ctx, &out_y[local_col], &out_y[local_col], sizeof(FPTYPE), target_pe);
 
                     	__asm__ volatile (MEM_PREFIX"_store_dword %0 %1 " OFF_MODIFIER " glc\n" WAKEUP
 		        			:
@@ -1217,19 +1217,19 @@ amd_spts_analyze_and_solve(
             	}
 			}
 
-            if ((total_pes > 1) && (target_pe != this_pe) && (roc_shmem_algorithm == 3)) {
+            if ((total_pes > 1) && (target_pe != this_pe) && (rocshmem_algorithm == 3)) {
                 if (need_remote_notify) {
                     need_remote_notify = false;
                     //if (atomicCAS(&remoteInProgressArray[local_col], 0, 1) != 0)
                     //if (atomicCAS(&remoteInProgressArray[local_col], 0, 1) == 0)
 		            {
-                        roc_shmem_ctx_putmem_nbi(ctx, &reqUpdateArray[local_col], oneBuf, sizeof(int), target_pe);
+                        rocshmem_ctx_putmem_nbi(ctx, &reqUpdateArray[local_col], oneBuf, sizeof(int), target_pe);
 					   //printf("Put 111 blockIDx %d threadID %d target_pe  %d   local_col %d  oneBuf[0]= %d \n", hipBlockIdx_x, hipThreadIdx_x, target_pe, local_col, oneBuf[0]);
 
-                        roc_shmem_ctx_fence(ctx);
+                        rocshmem_ctx_fence(ctx);
 					   //printf("fence 222 blockIDx %d threadID %d target_pe  %d   local_col %d \n", hipBlockIdx_x, hipThreadIdx_x, target_pe, local_col);
-                        roc_shmem_ctx_getmem_nbi(ctx, &shadowDoneArray[local_col], &doneArray[local_col], sizeof(int), target_pe);
-                        roc_shmem_ctx_quiet(ctx);
+                        rocshmem_ctx_getmem_nbi(ctx, &shadowDoneArray[local_col], &doneArray[local_col], sizeof(int), target_pe);
+                        rocshmem_ctx_quiet(ctx);
 					   //printf("Get 333  blockIDx %d threadID %d target_pe  %d   local_col %d shadowDone %d \n \n", hipBlockIdx_x, hipThreadIdx_x, target_pe, local_col, shadowDoneArray[local_col]);
 
                         __asm__ volatile (MEM_PREFIX"_load_dword %0 %1 " OFF_MODIFIER " glc slc\n"
@@ -1239,8 +1239,8 @@ amd_spts_analyze_and_solve(
 
                         if (local_done)
                         {
-                            roc_shmem_ctx_getmem_nbi(ctx, &out_y[local_col], &out_y[local_col], sizeof(FPTYPE), target_pe);
-			    			roc_shmem_ctx_quiet(ctx);
+                            rocshmem_ctx_getmem_nbi(ctx, &out_y[local_col], &out_y[local_col], sizeof(FPTYPE), target_pe);
+			    			rocshmem_ctx_quiet(ctx);
                             __asm__ volatile (MEM_PREFIX"_store_dword %0 %1 " OFF_MODIFIER " glc\n" WAKEUP
                                     :
                                     : "v"(&doneArray[local_col]),
@@ -1313,34 +1313,34 @@ amd_spts_analyze_and_solve(
         __asm__ volatile (MEM_PREFIX"_store_dword %0 %1 " OFF_MODIFIER " glc\n" WAKEUP : : "v"(&doneArray[row]), "v"(row_max_depth));
         asm volatile ("s_waitcnt vmcnt(0)\n\t");
 
-#ifdef USE_ROC_SHMEM
-    if (roc_shmem_algorithm == 2 && total_pes > 1) {
-        int CHUNK = roc_shmem_put_block_size;
+#ifdef USE_ROCSHMEM
+    if (rocshmem_algorithm == 2 && total_pes > 1) {
+        int CHUNK = rocshmem_put_block_size;
         bool sendTime = true;
         int row_base = (row / CHUNK) * CHUNK;
         int num_done = atomicAdd(&shadowDoneArray[row_base], 1);
         sendTime = (num_done == (CHUNK - 1));
         for(int p=0; p<total_pes; p++){
             if(p != this_pe && sendTime){
-                roc_shmem_ctx_putmem_nbi(ctx, &out_y[row_base], &out_y[row_base], sizeof(FPTYPE) * CHUNK, p);
-                roc_shmem_ctx_fence(ctx);
-                roc_shmem_ctx_putmem_nbi(ctx, &doneArray[row_base], &doneArray[row_base], sizeof(int) * CHUNK, p);
-                roc_shmem_ctx_quiet(ctx);
+                rocshmem_ctx_putmem_nbi(ctx, &out_y[row_base], &out_y[row_base], sizeof(FPTYPE) * CHUNK, p);
+                rocshmem_ctx_fence(ctx);
+                rocshmem_ctx_putmem_nbi(ctx, &doneArray[row_base], &doneArray[row_base], sizeof(int) * CHUNK, p);
+                rocshmem_ctx_quiet(ctx);
             }
         }
     }
 
-	if (roc_shmem_algorithm == 0) {
+	if (rocshmem_algorithm == 0) {
         for(int p=0; p<total_pes; p++){
             if(p != this_pe){
-                roc_shmem_ctx_putmem_nbi(ctx, &out_y[row], &out_y[row], sizeof(FPTYPE), p);
-                roc_shmem_ctx_fence(ctx);
-                roc_shmem_ctx_putmem_nbi(ctx, &doneArray[row], &doneArray[row], sizeof(int), p);
+                rocshmem_ctx_putmem_nbi(ctx, &out_y[row], &out_y[row], sizeof(FPTYPE), p);
+                rocshmem_ctx_fence(ctx);
+                rocshmem_ctx_putmem_nbi(ctx, &doneArray[row], &doneArray[row], sizeof(int), p);
             }
         }
 	}
 
-	if (roc_shmem_algorithm == 3) {
+	if (rocshmem_algorithm == 3) {
 	    // Only broadcast update if another node explicitly registered for this row.  TODO:
 	    // Make 2D array to scale
 	    unsigned int need_broadcast;
@@ -1349,9 +1349,9 @@ amd_spts_analyze_and_solve(
 	    if (need_broadcast == 1) {
             for(int p=0; p<total_pes; p++) {
                 if (p != this_pe) {
-                    roc_shmem_ctx_putmem_nbi(ctx, &out_y[row], &out_y[row], sizeof(FPTYPE), p);
-		    		roc_shmem_ctx_fence(ctx);
-                    roc_shmem_ctx_putmem_nbi(ctx, &doneArray[row], &doneArray[row], sizeof(int), p);
+                    rocshmem_ctx_putmem_nbi(ctx, &out_y[row], &out_y[row], sizeof(FPTYPE), p);
+		    		rocshmem_ctx_fence(ctx);
+                    rocshmem_ctx_putmem_nbi(ctx, &doneArray[row], &doneArray[row], sizeof(int), p);
                 }
             }
 	    }
@@ -1373,11 +1373,11 @@ amd_spts_analyze_and_solve(
     }
     }
 
-    #ifdef USE_ROC_SHMEM
+    #ifdef USE_ROCSHMEM
     __syncthreads();
     //if (wg_lid == OUTPUT_THREAD)
-    roc_shmem_wg_ctx_destroy(ctx);
-    roc_shmem_wg_finalize();
+    rocshmem_wg_ctx_destroy(ctx);
+    rocshmem_wg_finalize();
     #endif
 }
 

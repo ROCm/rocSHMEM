@@ -40,8 +40,8 @@
 #include <unistd.h>
 
 
-#ifdef USE_ROC_SHMEM
-#include "roc_shmem.hpp"
+#ifdef USE_ROCSHMEM
+#include "rocshmem.hpp"
 #include "mpi.h"
 #endif
 
@@ -100,8 +100,8 @@ class SparseTriangularSolve :
     int nCols;
     int numBlocks;
 /*
-    #ifdef USE_ROC_SHMEM
-    roc_shmem_t* handle;
+    #ifdef USE_ROCSHMEM
+    rocshmem_t* handle;
     #endif
 */
     std::unordered_map<int, FloatType> *observed_errors;
@@ -114,15 +114,15 @@ class SparseTriangularSolve :
         x = NULL; y = NULL; y_zero = NULL, yref = NULL, observed_errors = NULL, errors_seen = NULL;
         xDev = yDev = completedRowsDev = remoteInProgressArrayDev = rowBlocksDev =  doneArrayDev = shadowDoneArrayDev = numRowsAtLevelDev = maxDepthDev = rowMapDev = totalSpinDev = oneBufDev = 0;
 
-        #ifdef USE_ROC_SHMEM
-	int roc_shmem_queues = (2560 / WF_PER_WG);
+        #ifdef USE_ROCSHMEM
+	int rocshmem_queues = (2560 / WF_PER_WG);
        	if (2560 % WF_PER_WG)
-            roc_shmem_queues++;
-	printf("roc_shmem_queues %d WF_PER_WG %d  \n",roc_shmem_queues, WF_PER_WG);
-        roc_shmem_init(roc_shmem_queues);
+            rocshmem_queues++;
+	printf("rocshmem_queues %d WF_PER_WG %d  \n",rocshmem_queues, WF_PER_WG);
+        rocshmem_init(rocshmem_queues);
 
-        this->Set_total_pes(roc_shmem_n_pes());
-        this->Set_this_pe(roc_shmem_my_pe());
+        this->Set_total_pes(rocshmem_n_pes());
+        this->Set_this_pe(rocshmem_my_pe());
         #else
         this->Set_total_pes(1);
         this->Set_this_pe(0);
@@ -173,7 +173,7 @@ class SparseTriangularSolve :
         if (remoteInProgressArrayDev != 0)
             this->GPU->FreeMem(remoteInProgressArrayDev);
 
-        #ifndef USE_ROC_SHMEM
+        #ifndef USE_ROCSHMEM
         if (yDev != 0)
             this->GPU->FreeMem(yDev);
         if (doneArrayDev != 0)
@@ -184,14 +184,14 @@ class SparseTriangularSolve :
             this->GPU->FreeMem(shadowDoneArrayDev);
         #else
         if (yDev != 0)
-            roc_shmem_free(yDev);
+            rocshmem_free(yDev);
         if (doneArrayDev != 0)
-            roc_shmem_free(doneArrayDev);
+            rocshmem_free(doneArrayDev);
         if (reqUpdateArrayDev != 0)
-            roc_shmem_free(reqUpdateArrayDev);
+            rocshmem_free(reqUpdateArrayDev);
         if (shadowDoneArrayDev != 0)
-            roc_shmem_free(shadowDoneArrayDev);
-        roc_shmem_finalize();
+            rocshmem_free(shadowDoneArrayDev);
+        rocshmem_finalize();
         #endif
     }
 };
@@ -207,8 +207,8 @@ void SparseTriangularSolve<FloatType>::AddDerivedInputFlags()
     AddInputFlag("non_symmetric", 'n', "false", "Force the program to work on non-symmetric matrices. This will ignore the upper triangular entirely. (Default=false)", "bool");
     AddInputFlag("levelsync_size", 'l', "0", "Number of rows to launch in a level-sync kernel invocation (Default = auto-tune)", "int");
     AddInputFlag("verify", 'v', "false", "Verify results", "bool");
-    AddInputFlag("rocshmem_algorithm", 'a', "0", "ROC_SHMEM algorithm type", "int");
-    AddInputFlag("block_size", 'b', "32768", "Use get-based algorithm for ROC_SHMEM", "int");
+    AddInputFlag("rocshmem_algorithm", 'a', "0", "rocSHMEM algorithm type", "int");
+    AddInputFlag("block_size", 'b', "32768", "Use get-based algorithm for rocSHMEM", "int");
 	AddInputFlag("put_block_size", 'p', "1024", "Block size for puts", "int");
 	AddInputFlag("get_backoff_factor", 'g', "128", "Backoff factor for gets", "int");
 }
@@ -241,10 +241,10 @@ void SparseTriangularSolve<FloatType>::AllocateVectors(
     }
 
     xDev = this->GPU->AllocateMem("xDev", nCols*sizeof(FloatType), GPU_MEM_READ_ONLY, NULL);
-    #ifndef USE_ROC_SHMEM
+    #ifndef USE_ROCSHMEM
     yDev = this->GPU->AllocateMem("yDev", nRows*sizeof(FloatType), GPU_MEM_READ_WRITE, NULL);
     #else
-    yDev = (memPointer) roc_shmem_malloc(nRows*sizeof(FloatType));
+    yDev = (memPointer) rocshmem_malloc(nRows*sizeof(FloatType));
     #endif
 }
 
@@ -742,10 +742,10 @@ float SparseTriangularSolve<FloatType>::CSRSpTSGPU(uint64_t &ns_per_iter, uint64
     /****** SpTS Meta-Data Setup Code ******/
     /* Set up the OpenCL buffers for the SpTS meta-data */
     // TODO -- is this +1 in doneArray nRows+1 required? Why?
-    #ifdef USE_ROC_SHMEM
-    doneArrayDev = roc_shmem_malloc((nRows+1)*sizeof(uint32_t));
-    reqUpdateArrayDev = roc_shmem_malloc((nRows+1)*sizeof(uint32_t));
-    shadowDoneArrayDev = roc_shmem_malloc((nRows+1)*sizeof(uint32_t));
+    #ifdef USE_ROCSHMEM
+    doneArrayDev = rocshmem_malloc((nRows+1)*sizeof(uint32_t));
+    reqUpdateArrayDev = rocshmem_malloc((nRows+1)*sizeof(uint32_t));
+    shadowDoneArrayDev = rocshmem_malloc((nRows+1)*sizeof(uint32_t));
     #else
     doneArrayDev = this->GPU->AllocateMem("doneArray", (nRows+1)*sizeof(uint32_t), GPU_MEM_READ_WRITE, NULL);
     reqUpdateArrayDev = this->GPU->AllocateMem("reqUpdateArray", (nRows+1)*sizeof(uint32_t), GPU_MEM_READ_WRITE, NULL);
@@ -835,7 +835,7 @@ float SparseTriangularSolve<FloatType>::CSRSpTSGPU(uint64_t &ns_per_iter, uint64
     bool syncfree_better = false;
 
     int total_workitems_per_workgroup = WF_SIZE * WF_PER_WG;
-    //bool roc_shmem_initialized = false;
+    //bool rocshmem_initialized = false;
 
     /*********************** Actual work of the benchmark *********************/
     for(int i = 0; i < iter; i++)
@@ -883,18 +883,18 @@ float SparseTriangularSolve<FloatType>::CSRSpTSGPU(uint64_t &ns_per_iter, uint64
             #else
             int num_of_workgroups = (global_work_size + total_workitems_per_workgroup - 1)
                                     / total_workitems_per_workgroup;
-            #ifdef USE_ROC_SHMEM
+            #ifdef USE_ROCSHMEM
             global_work_size = this->nRows_p * WF_SIZE;
             num_of_workgroups = (global_work_size + total_workitems_per_workgroup - 1)
                                  / total_workitems_per_workgroup;
 	   /*
-	    int roc_shmem_queues = (2560 / WF_PER_WG);
+	    int rocshmem_queues = (2560 / WF_PER_WG);
 	    if (2560 % WF_PER_WG)
-		roc_shmem_queues++;
-            if (!roc_shmem_initialized) {
+		rocshmem_queues++;
+            if (!rocshmem_initialized) {
             	int num_threads = InputFlags::GetValueInt("num_roshmem_threads");
-                roc_shmem_init(&handle, roc_shmem_queues);
-                roc_shmem_initialized = true;
+                rocshmem_init(&handle, rocshmem_queues);
+                rocshmem_initialized = true;
             }
 		*/
             int rocshmem_algorithm = InputFlags::GetValueInt("rocshmem_algorithm");
@@ -915,11 +915,11 @@ float SparseTriangularSolve<FloatType>::CSRSpTSGPU(uint64_t &ns_per_iter, uint64
                 	printf("Using put/get hybrid intra-kernel algorithm\n");
 			break;
 		default:
-			printf("Unknown ROC_SHMEM algoirthm\n");
+			printf("Unknown rocSHMEM algorithm\n");
 			exit(-1);
 	   }
             size_t LDS_size;
-            roc_shmem_dynamic_shared(&LDS_size);
+            rocshmem_dynamic_shared(&LDS_size);
             printf("Work size %zu, wg size %d num workgroups %d  LDS %zu  thisPE %d  Global %d \n", global_work_size, total_workitems_per_workgroup, num_of_workgroups, LDS_size,  this->Get_this_pe(), this->Get_total_pes());
             MPI_Barrier(MPI_COMM_WORLD);
             hipEventRecord(event_array[0], NULL);
@@ -969,7 +969,7 @@ float SparseTriangularSolve<FloatType>::CSRSpTSGPU(uint64_t &ns_per_iter, uint64
             hipEventRecord(event_array[1], NULL);
             hipEventSynchronize(event_array[1]);
 
-            #ifdef USE_ROC_SHMEM
+            #ifdef USE_ROCSHMEM
             // Wait for any outstanding network messages to finish up.  We
             // can have straggler updates to the doneArray that we don't
             // have any dependencies for but we still eed it to finish so
@@ -1000,7 +1000,7 @@ float SparseTriangularSolve<FloatType>::CSRSpTSGPU(uint64_t &ns_per_iter, uint64
             this->GPU->CopyToHost(numRowsAtLevelDev, numRowsAtLevel, nRows*sizeof(uint32_t), 0, GPU_TRUE, NULL);
             this->GPU->Flush();
 
-            #ifdef USE_ROC_SHMEM
+            #ifdef USE_ROCSHMEM
             // Combine global statistics
             MPI_Allreduce(MPI_IN_PLACE, (void *) &maxDepth, 1, MPI_UNSIGNED, MPI_MAX, MPI_COMM_WORLD);
             MPI_Allreduce(MPI_IN_PLACE, (void *) &totalSpin, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -1114,8 +1114,8 @@ float SparseTriangularSolve<FloatType>::CSRSpTSGPU(uint64_t &ns_per_iter, uint64
 
             uint32_t current_iteration = 0;
 
-            #ifdef USE_ROC_SHMEM
-            fprintf(stderr, "ROC_SHMEM not supported for selected algorithm\n");
+            #ifdef USE_ROCSHMEM
+            fprintf(stderr, "rocSHMEM not supported for selected algorithm\n");
             exit(-1);
             #endif
 
@@ -1215,8 +1215,8 @@ float SparseTriangularSolve<FloatType>::CSRSpTSGPU(uint64_t &ns_per_iter, uint64
                     level_sync_cutoff = 81920;
             }
 
-            #ifdef USE_ROC_SHMEM
-            fprintf(stderr, "ROC_SHMEM not supported for selected algorithm\n");
+            #ifdef USE_ROCSHMEM
+            fprintf(stderr, "rocSHMEM not supported for selected algorithm\n");
             exit(-1);
             #endif
 
@@ -1346,8 +1346,8 @@ float SparseTriangularSolve<FloatType>::CSRSpTSGPU(uint64_t &ns_per_iter, uint64
             // Number of levels is maxDepth. */
             levelset_iter++;
 
-            #ifdef USE_ROC_SHMEM
-            fprintf(stderr, "ROC_SHMEM not supported for selected algorithm\n");
+            #ifdef USE_ROCSHMEM
+            fprintf(stderr, "rocSHMEM not supported for selected algorithm\n");
             exit(-1);
             #endif
 

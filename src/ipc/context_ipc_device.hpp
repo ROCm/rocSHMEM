@@ -63,7 +63,7 @@ class IPCContext : public Context {
 
   __device__ void sync_all();
 
-  __device__ void sync(roc_shmem_team_t team);
+  __device__ void sync(rocshmem_team_t team);
 
   template <typename T>
   __device__ void p(T *dest, T value, int pe);
@@ -121,18 +121,18 @@ class IPCContext : public Context {
   __device__ T amo_fetch_cas(void *dst, T value, T cond, int pe);
 
   // Collectives
-  template <typename T, ROC_SHMEM_OP Op>
-  __device__ int reduce(roc_shmem_team_t team, T *dest, const T *source, int nreduce);
+  template <typename T, ROCSHMEM_OP Op>
+  __device__ int reduce(rocshmem_team_t team, T *dest, const T *source, int nreduce);
 
   template <typename T>
-  __device__ void broadcast(roc_shmem_team_t team, T *dest, const T *source,
+  __device__ void broadcast(rocshmem_team_t team, T *dest, const T *source,
                             int nelems, int pe_root);
 
   template <typename T>
-  __device__ void alltoall(roc_shmem_team_t team, T *dest, const T *source,
+  __device__ void alltoall(rocshmem_team_t team, T *dest, const T *source,
                            int nelems);
   template <typename T>
-  __device__ void fcollect(roc_shmem_team_t team, T *dest, const T *source,
+  __device__ void fcollect(rocshmem_team_t team, T *dest, const T *source,
                            int nelems);
 
 
@@ -232,11 +232,11 @@ class IPCContext : public Context {
                                          int pe_root);  // NOLINT(runtime/int)
 
   template <typename T>
-  __device__ void fcollect_linear(roc_shmem_team_t team, T *dest,
+  __device__ void fcollect_linear(rocshmem_team_t team, T *dest,
                                   const T *source, int nelems);
 
   template <typename T>
-  __device__ void alltoall_linear(roc_shmem_team_t team, T *dest,
+  __device__ void alltoall_linear(rocshmem_team_t team, T *dest,
                                   const T *source, int nelems);
 
   __device__ void internal_sync(int pe, int PE_start, int stride, int PE_size,
@@ -248,10 +248,10 @@ class IPCContext : public Context {
   __device__ void internal_atomic_barrier(int pe, int PE_start, int stride,
                                           int n_pes, int64_t *pSync);
 
-  template <typename T, ROC_SHMEM_OP Op>
+  template <typename T, ROCSHMEM_OP Op>
   __device__ void internal_direct_allreduce(T *dst, const T *src,
                                             int nelems, IPCTeam *team_obj);
-  template <typename T, ROC_SHMEM_OP Op>
+  template <typename T, ROCSHMEM_OP Op>
   __device__ void internal_ring_allreduce(T *dst, const T *src,
                                           int nelems, IPCTeam *team_obj,
 					  int n_seg, int seg_size, int chunk_size);

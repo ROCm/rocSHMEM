@@ -20,7 +20,7 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "roc_shmem/roc_shmem.hpp"
+#include "rocshmem/rocshmem.hpp"
 #include "../context_incl.hpp"
 #include "context_ib_tmpl_device.hpp"
 #include "../util.hpp"
@@ -35,8 +35,8 @@ __device__ void GPUIBContext::internal_direct_barrier(int pe, int PE_start,
     // Go through all PE offsets (except current offset = 0)
     // and wait until they all reach
     for (size_t i = 1; i < n_pes; i++) {
-      wait_until(&pSync[i], ROC_SHMEM_CMP_EQ, flag_val);
-      pSync[i] = ROC_SHMEM_SYNC_VALUE;
+      wait_until(&pSync[i], ROCSHMEM_CMP_EQ, flag_val);
+      pSync[i] = ROCSHMEM_SYNC_VALUE;
     }
     threadfence_system();
     // Announce to other PEs that all have reached
@@ -48,8 +48,8 @@ __device__ void GPUIBContext::internal_direct_barrier(int pe, int PE_start,
     // Mark current PE offset as reached
     size_t pe_offset = (pe - PE_start) / stride;
     put_nbi(&pSync[pe_offset], &flag_val, 1, PE_start);
-    wait_until(&pSync[0], ROC_SHMEM_CMP_EQ, flag_val);
-    pSync[0] = ROC_SHMEM_SYNC_VALUE;
+    wait_until(&pSync[0], ROCSHMEM_CMP_EQ, flag_val);
+    pSync[0] = ROCSHMEM_SYNC_VALUE;
     threadfence_system();
   }
 }
@@ -59,16 +59,16 @@ __device__ void GPUIBContext::internal_atomic_barrier(int pe, int PE_start,
                                                       int64_t *pSync) {
   int64_t flag_val = 1;
   if (pe == PE_start) {
-    wait_until(&pSync[0], ROC_SHMEM_CMP_EQ, (int64_t)(n_pes - 1));
-    pSync[0] = ROC_SHMEM_SYNC_VALUE;
+    wait_until(&pSync[0], ROCSHMEM_CMP_EQ, (int64_t)(n_pes - 1));
+    pSync[0] = ROCSHMEM_SYNC_VALUE;
     threadfence_system();
     for (size_t i = 1, j = PE_start + stride; i < n_pes; ++i, j += stride) {
       put_nbi(&pSync[0], &flag_val, 1, j);
     }
   } else {
     amo_add<int64_t>(&pSync[0], flag_val, PE_start);
-    wait_until(&pSync[0], ROC_SHMEM_CMP_EQ, flag_val);
-    pSync[0] = ROC_SHMEM_SYNC_VALUE;
+    wait_until(&pSync[0], ROCSHMEM_CMP_EQ, flag_val);
+    pSync[0] = ROCSHMEM_SYNC_VALUE;
     threadfence_system();
   }
 }
@@ -88,7 +88,7 @@ __device__ void GPUIBContext::internal_sync(int pe, int PE_start, int stride,
   __syncthreads();
 }
 
-__device__ void GPUIBContext::sync(roc_shmem_team_t team) {
+__device__ void GPUIBContext::sync(rocshmem_team_t team) {
   GPUIBTeam *team_obj = reinterpret_cast<GPUIBTeam *>(team);
 
   double dbl_log_pe_stride = team_obj->tinfo_wrt_world->log_stride;

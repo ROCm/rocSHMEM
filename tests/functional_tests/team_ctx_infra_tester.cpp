@@ -24,34 +24,34 @@
 
 #include <stdlib.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
-/* this constant should equal ROC_SHMEM_MAX_NUM_TEAMS-1 */
+/* this constant should equal ROCSHMEM_MAX_NUM_TEAMS-1 */
 #define NUM_TEAMS 39
 
-roc_shmem_team_t team_world_dup[NUM_TEAMS];
+rocshmem_team_t team_world_dup[NUM_TEAMS];
 
 /******************************************************************************
  * DEVICE TEST KERNEL
  *****************************************************************************/
 __global__ void TeamCtxInfraTest(ShmemContextType ctx_type,
-                                 roc_shmem_team_t *team) {
-  __shared__ roc_shmem_ctx_t ctx1, ctx2, ctx3;
-  __shared__ roc_shmem_ctx_t ctx[NUM_TEAMS];
+                                 rocshmem_team_t *team) {
+  __shared__ rocshmem_ctx_t ctx1, ctx2, ctx3;
+  __shared__ rocshmem_ctx_t ctx[NUM_TEAMS];
 
-  roc_shmem_wg_init();
+  rocshmem_wg_init();
 
   /**
    * Test 1: Assert team infos of different ctxs
    * from the same team are the same.
    */
 
-  roc_shmem_wg_team_create_ctx(team[0], ctx_type, &ctx1);
-  roc_shmem_wg_team_create_ctx(team[0], ctx_type, &ctx2);
-  roc_shmem_wg_ctx_destroy(&ctx1);
-  roc_shmem_wg_team_create_ctx(team[0], ctx_type, &ctx3);
+  rocshmem_wg_team_create_ctx(team[0], ctx_type, &ctx1);
+  rocshmem_wg_team_create_ctx(team[0], ctx_type, &ctx2);
+  rocshmem_wg_ctx_destroy(&ctx1);
+  rocshmem_wg_team_create_ctx(team[0], ctx_type, &ctx3);
 
   __syncthreads();
 
@@ -60,8 +60,8 @@ __global__ void TeamCtxInfraTest(ShmemContextType ctx_type,
     abort();
   }
 
-  roc_shmem_wg_ctx_destroy(&ctx2);
-  roc_shmem_wg_ctx_destroy(&ctx3);
+  rocshmem_wg_ctx_destroy(&ctx2);
+  rocshmem_wg_ctx_destroy(&ctx3);
 
   __syncthreads();
 
@@ -70,7 +70,7 @@ __global__ void TeamCtxInfraTest(ShmemContextType ctx_type,
    * from different teams are different.
    */
   for (int team_i = 0; team_i < NUM_TEAMS; team_i++) {
-    roc_shmem_wg_team_create_ctx(team[team_i], ctx_type, &ctx[team_i]);
+    rocshmem_wg_team_create_ctx(team[team_i], ctx_type, &ctx[team_i]);
   }
 
   if (ctx[0].team_opaque == ctx[NUM_TEAMS - 1].team_opaque) {
@@ -82,10 +82,10 @@ __global__ void TeamCtxInfraTest(ShmemContextType ctx_type,
   __syncthreads();
 
   for (int team_i = 0; team_i < NUM_TEAMS; team_i++) {
-    roc_shmem_wg_ctx_destroy(&ctx[team_i]);
+    rocshmem_wg_ctx_destroy(&ctx[team_i]);
   }
 
-  roc_shmem_wg_finalize();
+  rocshmem_wg_finalize();
 }
 
 /******************************************************************************
@@ -98,23 +98,23 @@ TeamCtxInfraTester::~TeamCtxInfraTester() {}
 void TeamCtxInfraTester::resetBuffers(uint64_t size) {}
 
 void TeamCtxInfraTester::preLaunchKernel() {
-  int n_pes = roc_shmem_team_n_pes(ROC_SHMEM_TEAM_WORLD);
+  int n_pes = rocshmem_team_n_pes(ROCSHMEM_TEAM_WORLD);
 
   for (int team_i = 0; team_i < NUM_TEAMS; team_i++) {
-    team_world_dup[team_i] = ROC_SHMEM_TEAM_INVALID;
-    roc_shmem_team_split_strided(ROC_SHMEM_TEAM_WORLD, 0, 1, n_pes, nullptr, 0,
+    team_world_dup[team_i] = ROCSHMEM_TEAM_INVALID;
+    rocshmem_team_split_strided(ROCSHMEM_TEAM_WORLD, 0, 1, n_pes, nullptr, 0,
                                  &team_world_dup[team_i]);
-    if (team_world_dup[team_i] == ROC_SHMEM_TEAM_INVALID) {
+    if (team_world_dup[team_i] == ROCSHMEM_TEAM_INVALID) {
       printf("Team %d is invalid!\n", team_i);
       abort();
     }
   }
 
   /* Assert the failure of a new team creation. */
-  roc_shmem_team_t new_team = ROC_SHMEM_TEAM_INVALID;
-  roc_shmem_team_split_strided(ROC_SHMEM_TEAM_WORLD, 0, 1, n_pes, nullptr, 0,
+  rocshmem_team_t new_team = ROCSHMEM_TEAM_INVALID;
+  rocshmem_team_split_strided(ROCSHMEM_TEAM_WORLD, 0, 1, n_pes, nullptr, 0,
                                &new_team);
-  if (new_team != ROC_SHMEM_TEAM_INVALID) {
+  if (new_team != ROCSHMEM_TEAM_INVALID) {
     printf("new team is not invalid\n");
     abort();
   }
@@ -125,10 +125,10 @@ void TeamCtxInfraTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
   size_t shared_bytes = 0;
 
   /* Copy array of teams to device */
-  roc_shmem_team_t *teams_on_device;
-  CHECK_HIP(hipMalloc(&teams_on_device, sizeof(roc_shmem_team_t) * NUM_TEAMS));
+  rocshmem_team_t *teams_on_device;
+  CHECK_HIP(hipMalloc(&teams_on_device, sizeof(rocshmem_team_t) * NUM_TEAMS));
   CHECK_HIP(hipMemcpy(teams_on_device, team_world_dup,
-            sizeof(roc_shmem_team_t) * NUM_TEAMS, hipMemcpyHostToDevice));
+            sizeof(rocshmem_team_t) * NUM_TEAMS, hipMemcpyHostToDevice));
 
   hipLaunchKernelGGL(TeamCtxInfraTest, gridSize, blockSize, shared_bytes,
 		     stream, _shmem_context, teams_on_device);
@@ -138,7 +138,7 @@ void TeamCtxInfraTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
 
 void TeamCtxInfraTester::postLaunchKernel() {
   for (int team_i = 0; team_i < NUM_TEAMS; team_i++) {
-    roc_shmem_team_destroy(team_world_dup[team_i]);
+    rocshmem_team_destroy(team_world_dup[team_i]);
   }
 }
 

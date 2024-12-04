@@ -297,7 +297,7 @@ void NetworkOnImpl::setup_gpu_qps(GPUIBBackend *B) {
   }
 }
 
-void NetworkOnImpl::roc_shmem_g_init(SymmetricHeap *heap_handle,
+void NetworkOnImpl::rocshmem_g_init(SymmetricHeap *heap_handle,
                                      MPI_Comm thread_comm) {
   init_g_ret(heap_handle, thread_comm, num_blocks, &g_ret);
 }
@@ -327,7 +327,7 @@ __host__ void NetworkOnImpl::networkHostSetup(GPUIBBackend *B) {
 
   connection->initialize_gpu_policy(&connection_policy, heap_rkey);
 
-  roc_shmem_g_init(&B->heap, B->thread_comm);
+  rocshmem_g_init(&B->heap, B->thread_comm);
 
   connection->post_wqes();
 

@@ -85,20 +85,20 @@ class ROBackend : public Backend {
   void create_new_team(Team *parent_team, TeamInfo *team_info_wrt_parent,
                        TeamInfo *team_info_wrt_world, int num_pes,
                        int my_pe_in_new_team, MPI_Comm team_comm,
-                       roc_shmem_team_t *new_team) override;
+                       rocshmem_team_t *new_team) override;
 
   /**
-   * @copydoc Backend::team_destroy(roc_shmem_team_t)
+   * @copydoc Backend::team_destroy(rocshmem_team_t)
    */
-  void team_destroy(roc_shmem_team_t team) override;
+  void team_destroy(rocshmem_team_t team) override;
 
-  __device__ bool create_ctx(int64_t options, roc_shmem_ctx_t *ctx);
+  __device__ bool create_ctx(int64_t options, rocshmem_ctx_t *ctx);
 
   /**
-   * @brief Destroy a `roc_shmem_ctx_t` context and returns it back to the
+   * @brief Destroy a `rocshmem_ctx_t` context and returns it back to the
    * context free list.
    */
-  __device__ void destroy_ctx(roc_shmem_ctx_t *ctx);
+  __device__ void destroy_ctx(rocshmem_ctx_t *ctx);
 
   /**
    * @copydoc Backend::ctx_create

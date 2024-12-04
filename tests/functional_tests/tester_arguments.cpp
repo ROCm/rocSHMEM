@@ -24,7 +24,7 @@
 
 #include <cstdlib>
 #include <iostream>
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 #include "tester.hpp"
 
@@ -120,7 +120,7 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
 
 void TesterArguments::show_usage(std::string executable_name) {
   std::cout << "Usage: " << executable_name << std::endl;
-  std::cout << "\t-t <number of roc_shmem service threads>\n";
+  std::cout << "\t-t <number of rocshmem service threads>\n";
   std::cout << "\t-w <number of workgroups>\n";
   std::cout << "\t-s <maximum message size (in bytes)>\n";
   std::cout << "\t-a <algorithm number to test>\n";
@@ -132,8 +132,8 @@ void TesterArguments::show_usage(std::string executable_name) {
 }
 
 void TesterArguments::get_rocshmem_arguments() {
-  numprocs = roc_shmem_n_pes();
-  myid = roc_shmem_my_pe();
+  numprocs = rocshmem_n_pes();
+  myid = rocshmem_my_pe();
 
   TestType type = (TestType)algorithm;
   if ((type != BarrierAllTestType) && (type != SyncAllTestType) &&

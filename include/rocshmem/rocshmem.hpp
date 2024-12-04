@@ -20,16 +20,16 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_INCLUDE_ROC_SHMEM_HPP
-#define LIBRARY_INCLUDE_ROC_SHMEM_HPP
+#ifndef LIBRARY_INCLUDE_ROCSHMEM_HPP
+#define LIBRARY_INCLUDE_ROCSHMEM_HPP
 
 #include <hip/hip_runtime.h>
 #include <mpi.h>
 
 #include "config.h"
 /**
- * @file roc_shmem.hpp
- * @brief Public header for ROC_SHMEM device and host libraries.
+ * @file rocshmem.hpp
+ * @brief Public header for rocSHMEM device and host libraries.
  *
  * This file contains all the callable functions and data structures for both
  * the device-side runtime and host-side runtime.
@@ -50,122 +50,122 @@ namespace rocshmem {
 #endif
 
 
-enum ROC_SHMEM_STATUS {
-  ROC_SHMEM_SUCCESS = 0,
-  ROC_SHMEM_ERROR = 1,
+enum ROCSHMEM_STATUS {
+  ROCSHMEM_SUCCESS = 0,
+  ROCSHMEM_ERROR = 1,
 };
 
-enum ROC_SHMEM_OP {
-  ROC_SHMEM_SUM,
-  ROC_SHMEM_MAX,
-  ROC_SHMEM_MIN,
-  ROC_SHMEM_PROD,
-  ROC_SHMEM_AND,
-  ROC_SHMEM_OR,
-  ROC_SHMEM_XOR,
-  ROC_SHMEM_REPLACE
+enum ROCSHMEM_OP {
+  ROCSHMEM_SUM,
+  ROCSHMEM_MAX,
+  ROCSHMEM_MIN,
+  ROCSHMEM_PROD,
+  ROCSHMEM_AND,
+  ROCSHMEM_OR,
+  ROCSHMEM_XOR,
+  ROCSHMEM_REPLACE
 };
 
-enum ROC_SHMEM_SIGNAL_OPS {
-  ROC_SHMEM_SIGNAL_SET,
-  ROC_SHMEM_SIGNAL_ADD,
+enum ROCSHMEM_SIGNAL_OPS {
+  ROCSHMEM_SIGNAL_SET,
+  ROCSHMEM_SIGNAL_ADD,
 };
 
 /**
- * @brief Types defined for roc_shmem_wait() operations.
+ * @brief Types defined for rocshmem_wait() operations.
  */
-enum roc_shmem_cmps {
-  ROC_SHMEM_CMP_EQ,
-  ROC_SHMEM_CMP_NE,
-  ROC_SHMEM_CMP_GT,
-  ROC_SHMEM_CMP_GE,
-  ROC_SHMEM_CMP_LT,
-  ROC_SHMEM_CMP_LE,
+enum rocshmem_cmps {
+  ROCSHMEM_CMP_EQ,
+  ROCSHMEM_CMP_NE,
+  ROCSHMEM_CMP_GT,
+  ROCSHMEM_CMP_GE,
+  ROCSHMEM_CMP_LT,
+  ROCSHMEM_CMP_LE,
 };
 
-enum roc_shmem_thread_ops {
-  ROC_SHMEM_THREAD_SINGLE,
-  ROC_SHMEM_THREAD_FUNNELED,
-  ROC_SHMEM_THREAD_WG_FUNNELED,
-  ROC_SHMEM_THREAD_SERIALIZED,
-  ROC_SHMEM_THREAD_MULTIPLE
+enum rocshmem_thread_ops {
+  ROCSHMEM_THREAD_SINGLE,
+  ROCSHMEM_THREAD_FUNNELED,
+  ROCSHMEM_THREAD_WG_FUNNELED,
+  ROCSHMEM_THREAD_SERIALIZED,
+  ROCSHMEM_THREAD_MULTIPLE
 };
 
 /**
  * @brief Bitwise flags to mask configuration parameters.
  */
-enum roc_shmem_team_configs {
-  ROC_SHMEM_TEAM_DEFAULT_CONFIGS,
-  ROC_SHMEM_TEAM_NUM_CONTEXTS
+enum rocshmem_team_configs {
+  ROCSHMEM_TEAM_DEFAULT_CONFIGS,
+  ROCSHMEM_TEAM_NUM_CONTEXTS
 };
 
 typedef struct {
   int num_contexts;
-} roc_shmem_team_config_t;
+} rocshmem_team_config_t;
 
-constexpr size_t ROC_SHMEM_REDUCE_MIN_WRKDATA_SIZE = 1024;
-constexpr size_t ROC_SHMEM_ATA_MAX_WRKDATA_SIZE = (4 * 1024 * 1024);
-constexpr size_t ROC_SHMEM_BARRIER_SYNC_SIZE = 256;
-constexpr size_t ROC_SHMEM_REDUCE_SYNC_SIZE = 256;
+constexpr size_t ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE = 1024;
+constexpr size_t ROCSHMEM_ATA_MAX_WRKDATA_SIZE = (4 * 1024 * 1024);
+constexpr size_t ROCSHMEM_BARRIER_SYNC_SIZE = 256;
+constexpr size_t ROCSHMEM_REDUCE_SYNC_SIZE = 256;
 // Internally calls sync function, which matches barrier implementation
-constexpr size_t ROC_SHMEM_BCAST_SYNC_SIZE = ROC_SHMEM_BARRIER_SYNC_SIZE;
-constexpr size_t ROC_SHMEM_ALLTOALL_SYNC_SIZE = ROC_SHMEM_BARRIER_SYNC_SIZE + 1;
-constexpr size_t ROC_SHMEM_FCOLLECT_SYNC_SIZE = ROC_SHMEM_ALLTOALL_SYNC_SIZE;
-constexpr size_t ROC_SHMEM_SYNC_VALUE = 0;
+constexpr size_t ROCSHMEM_BCAST_SYNC_SIZE = ROCSHMEM_BARRIER_SYNC_SIZE;
+constexpr size_t ROCSHMEM_ALLTOALL_SYNC_SIZE = ROCSHMEM_BARRIER_SYNC_SIZE + 1;
+constexpr size_t ROCSHMEM_FCOLLECT_SYNC_SIZE = ROCSHMEM_ALLTOALL_SYNC_SIZE;
+constexpr size_t ROCSHMEM_SYNC_VALUE = 0;
 
-const int ROC_SHMEM_CTX_ZERO = 0;
-const int ROC_SHMEM_CTX_NOSTORE = 1;
-const int ROC_SHMEM_CTX_SERIALIZED = 2;
-const int ROC_SHMEM_CTX_WG_PRIVATE = 4;
-const int ROC_SHMEM_CTX_SHARED = 8;
+const int ROCSHMEM_CTX_ZERO = 0;
+const int ROCSHMEM_CTX_NOSTORE = 1;
+const int ROCSHMEM_CTX_SERIALIZED = 2;
+const int ROCSHMEM_CTX_WG_PRIVATE = 4;
+const int ROCSHMEM_CTX_SHARED = 8;
 
 /**
  * @brief GPU side OpenSHMEM context created from each work-groups'
- * roc_shmem_wg_handle_t
+ * rocshmem_wg_handle_t
  */
 typedef struct {
   void *ctx_opaque;
   void *team_opaque;
-} roc_shmem_ctx_t;
+} rocshmem_ctx_t;
 
 /**
  * Shmem default context.
  */
-extern __constant__ roc_shmem_ctx_t ROC_SHMEM_CTX_DEFAULT;
+extern __constant__ rocshmem_ctx_t ROCSHMEM_CTX_DEFAULT;
 
 /**
  * Used internally to set default context.
  */
-void set_internal_ctx(roc_shmem_ctx_t *ctx);
+void set_internal_ctx(rocshmem_ctx_t *ctx);
 
-typedef uint64_t *roc_shmem_team_t;
-extern roc_shmem_team_t ROC_SHMEM_TEAM_WORLD;
+typedef uint64_t *rocshmem_team_t;
+extern rocshmem_team_t ROCSHMEM_TEAM_WORLD;
 
-const roc_shmem_team_t ROC_SHMEM_TEAM_INVALID = nullptr;
+const rocshmem_team_t ROCSHMEM_TEAM_INVALID = nullptr;
 
 /******************************************************************************
  **************************** HOST INTERFACE **********************************
  *****************************************************************************/
 /**
- * @brief Initialize the ROC_SHMEM runtime and underlying transport layer.
+ * @brief Initialize the rocSHMEM runtime and underlying transport layer.
  *
- * @param[in] comm      (Optional) MPI Communicator that ROC_SHMEM will be using
- *                      If MPI_COMM_NULL, ROC_SHMEM will be using MPI_COMM_WORLD
+ * @param[in] comm      (Optional) MPI Communicator that rocSHMEM will be using
+ *                      If MPI_COMM_NULL, rocSHMEM will be using MPI_COMM_WORLD
  */
-__host__ void roc_shmem_init(MPI_Comm comm = MPI_COMM_WORLD);
+__host__ void rocshmem_init(MPI_Comm comm = MPI_COMM_WORLD);
 
 /**
- * @brief Initialize the ROC_SHMEM runtime and underlying transport layer
+ * @brief Initialize the rocSHMEM runtime and underlying transport layer
  *        with an attempt to enable the requested thread support.
  *
- * @param[in] requested Requested thread mode (from roc_shmem_thread_ops)
+ * @param[in] requested Requested thread mode (from rocshmem_thread_ops)
  *                      for host-facing functions.
  * @param[out] provided Thread mode selected by the runtime. May not be equal
  *                      to requested thread mode.
- * @param[in] comm      (Optional) MPI Communicator that ROC_SHMEM will be using
- *                      If MPI_COMM_NULL, ROC_SHMEM will be using MPI_COMM_WORLD
+ * @param[in] comm      (Optional) MPI Communicator that rocSHMEM will be using
+ *                      If MPI_COMM_NULL, rocSHMEM will be using MPI_COMM_WORLD
  */
-__host__ void roc_shmem_init_thread(int requested, int *provided,
+__host__ void rocshmem_init_thread(int requested, int *provided,
                                     MPI_Comm comm = MPI_COMM_WORLD);
 
 /**
@@ -175,22 +175,22 @@ __host__ void roc_shmem_init_thread(int requested, int *provided,
  *
  * @return void.
  */
-__host__ void roc_shmem_query_thread(int *provided);
+__host__ void rocshmem_query_thread(int *provided);
 
 /**
  * @brief Function that dumps internal stats to stdout.
  */
-__host__ void roc_shmem_dump_stats();
+__host__ void rocshmem_dump_stats();
 
 /**
  * @brief Reset all internal stats.
  */
-__host__ void roc_shmem_reset_stats();
+__host__ void rocshmem_reset_stats();
 
 /**
- * @brief Finalize the ROC_SHMEM runtime.
+ * @brief Finalize the rocSHMEM runtime.
  */
-__host__ void roc_shmem_finalize();
+__host__ void rocshmem_finalize();
 
 /**
  * @brief Allocate memory of \p size bytes from the symmetric heap.
@@ -202,7 +202,7 @@ __host__ void roc_shmem_finalize();
  *
  * @todo Return error code instead of ptr.
  */
-__host__ void *roc_shmem_malloc(size_t size);
+__host__ void *rocshmem_malloc(size_t size);
 
 /**
  * @brief Free a memory allocation from the symmetric heap.
@@ -210,21 +210,21 @@ __host__ void *roc_shmem_malloc(size_t size);
  *
  * @param[in] ptr Pointer to previously allocated memory on the symmetric heap.
  */
-__host__ void roc_shmem_free(void *ptr);
+__host__ void rocshmem_free(void *ptr);
 
 /**
  * @brief Query for the number of PEs.
  *
  * @return Number of PEs.
  */
-__host__ int roc_shmem_n_pes();
+__host__ int rocshmem_n_pes();
 
 /**
  * @brief Query the PE ID of the caller.
  *
  * @return PE ID of the caller.
  */
-__host__ int roc_shmem_my_pe();
+__host__ int rocshmem_my_pe();
 
 /**
  * @brief Creates an OpenSHMEM context.
@@ -234,7 +234,7 @@ __host__ int roc_shmem_my_pe();
  *
  * @return Zero on success and nonzero otherwise.
  */
-__host__ int roc_shmem_ctx_create(int64_t options, roc_shmem_ctx_t *ctx);
+__host__ int rocshmem_ctx_create(int64_t options, rocshmem_ctx_t *ctx);
 
 /**
  * @brief Destroys an OpenSHMEM context.
@@ -243,7 +243,7 @@ __host__ int roc_shmem_ctx_create(int64_t options, roc_shmem_ctx_t *ctx);
  *
  * @return void.
  */
-__host__ void roc_shmem_ctx_destroy(roc_shmem_ctx_t ctx);
+__host__ void rocshmem_ctx_destroy(rocshmem_ctx_t ctx);
 
 /**
  * @brief Translate the PE in src_team to that in dest_team.
@@ -256,8 +256,8 @@ __host__ void roc_shmem_ctx_destroy(roc_shmem_ctx_t ctx);
  *         or if src_pe is not in both source and destination
  *         teams, a value of -1 is returned.
  */
-__host__ int roc_shmem_team_translate_pe(roc_shmem_team_t src_team, int src_pe,
-                                         roc_shmem_team_t dest_team);
+__host__ int rocshmem_team_translate_pe(rocshmem_team_t src_team, int src_pe,
+                                         rocshmem_team_t dest_team);
 
 /**
  * @brief Query the number of PEs in a team.
@@ -266,7 +266,7 @@ __host__ int roc_shmem_team_translate_pe(roc_shmem_team_t src_team, int src_pe,
  *
  * @return Number of PEs in the provided team.
  */
-__host__ int roc_shmem_team_n_pes(roc_shmem_team_t team);
+__host__ int rocshmem_team_n_pes(rocshmem_team_t team);
 
 /**
  * @brief Query the PE ID of the caller in a team.
@@ -275,7 +275,7 @@ __host__ int roc_shmem_team_n_pes(roc_shmem_team_t team);
  *
  * @return PE ID of the caller in the provided team.
  */
-__host__ int roc_shmem_team_my_pe(roc_shmem_team_t team);
+__host__ int rocshmem_team_my_pe(rocshmem_team_t team);
 
 /**
  * @brief Create a new a team of PEs. Must be called by all PEs
@@ -296,15 +296,15 @@ __host__ int roc_shmem_team_my_pe(roc_shmem_team_t team);
  * @param[out] new_team   Pointer to the newly created team. If an error
  *                        occurs during team creation, or if the PE in
  *                        the parent team is not in the new team, the
- *                        value will be ROC_SHMEM_TEAM_INVALID.
+ *                        value will be ROCSHMEM_TEAM_INVALID.
  *
  * @return Zero upon successful team creation; non-zero if erroneous.
  */
-__host__ int roc_shmem_team_split_strided(roc_shmem_team_t parent_team,
+__host__ int rocshmem_team_split_strided(rocshmem_team_t parent_team,
                                           int start, int stride, int size,
-                                          const roc_shmem_team_config_t *config,
+                                          const rocshmem_team_config_t *config,
                                           long config_mask,
-                                          roc_shmem_team_t *new_team);
+                                          rocshmem_team_t *new_team);
 
 /**
  * @brief Destroy a team. Must be called by all PEs in the team.
@@ -314,19 +314,19 @@ __host__ int roc_shmem_team_split_strided(roc_shmem_team_t parent_team,
  * created from the referenced team.
  *
  * @param[in] team The team to destroy. The behavior is undefined if
- *                 the input team is ROC_SHMEM_TEAM_WORLD or any other
- *                 invalid team. If the input is ROC_SHMEM_TEAM_INVALID,
+ *                 the input team is ROCSHMEM_TEAM_WORLD or any other
+ *                 invalid team. If the input is ROCSHMEM_TEAM_INVALID,
  *                 this function will not perform any operation.
  *
  * @return None.
  */
-__host__ void roc_shmem_team_destroy(roc_shmem_team_t team);
+__host__ void rocshmem_team_destroy(rocshmem_team_t team);
 
 /**
  * @brief Writes contiguous data of \p nelems bytes from \p source on the
  * calling PE to \p dest at \p pe. The caller will block until the operation
  * completes locally (it is safe to reuse \p source). The caller must
- * call into __host__ roc_shmem_quiet() if remote completion is required.
+ * call into __host__ rocshmem_quiet() if remote completion is required.
  *
  * @param[in] ctx    Context with which to perform this operation.
  * @param[in] dest   Destination address. Must be an address on the symmetric
@@ -337,17 +337,17 @@ __host__ void roc_shmem_team_destroy(roc_shmem_team_t team);
  *
  * @return void.
  */
-__host__ void roc_shmem_ctx_putmem(roc_shmem_ctx_t ctx, void *dest,
+__host__ void rocshmem_ctx_putmem(rocshmem_ctx_t ctx, void *dest,
                                    const void *source, size_t nelems, int pe);
 
-__host__ void roc_shmem_putmem(void *dest, const void *source, size_t nelems,
+__host__ void rocshmem_putmem(void *dest, const void *source, size_t nelems,
                                int pe);
 
 /**
  * @brief Writes contiguous data of \p nelems bytes from \p source on the
  * calling PE to \p dest on \p pe. The operation is not blocking. The caller
  * will return as soon as the request is posted. The caller must call
- * _host__ roc_shmem_quiet() if completion notification is required.
+ * _host__ rocshmem_quiet() if completion notification is required.
  *
  * @param[in] ctx     Context with which to perform this operation.
  * @param[in] dest    Destination address. Must be an address on the symmetric
@@ -358,11 +358,11 @@ __host__ void roc_shmem_putmem(void *dest, const void *source, size_t nelems,
  *
  * @return void.
  */
-__host__ void roc_shmem_ctx_putmem_nbi(roc_shmem_ctx_t ctx, void *dest,
+__host__ void rocshmem_ctx_putmem_nbi(rocshmem_ctx_t ctx, void *dest,
                                        const void *source, size_t nelems,
                                        int pe);
 
-__host__ void roc_shmem_putmem_nbi(void *dest, const void *source,
+__host__ void rocshmem_putmem_nbi(void *dest, const void *source,
                                    size_t nelems, int pe);
 
 /**
@@ -373,7 +373,7 @@ __host__ void roc_shmem_putmem_nbi(void *dest, const void *source,
  * This function can be called from divergent control paths at per-thread
  * granularity. However, performance may be improved if the caller can
  * coalesce contiguous messages and elect a leader thread to call into the
- * ROC_SHMEM function.
+ * rocSHMEM function.
  *
  * @param[in] ctx     Context with which to perform this operation.
  * @param[in] dest    Destination address. Must be an address on the symmetric
@@ -384,23 +384,23 @@ __host__ void roc_shmem_putmem_nbi(void *dest, const void *source,
  *
  * @return void.
  */
-__host__ void roc_shmem_ctx_getmem(roc_shmem_ctx_t ctx, void *dest,
+__host__ void rocshmem_ctx_getmem(rocshmem_ctx_t ctx, void *dest,
                                    const void *source, size_t nelems, int pe);
 
-__host__ void roc_shmem_getmem(void *dest, const void *source, size_t nelems,
+__host__ void rocshmem_getmem(void *dest, const void *source, size_t nelems,
                                int pe);
 
 /**
  * @brief Reads contiguous data of \p nelems bytes from \p source on \p pe
  * to \p dest on the calling PE. The operation is not blocking. The caller will
  * return as soon as the request is posted. The caller must call
- * __host__ roc_shmem_quiet() on the same context if completion notification is
+ * __host__ rocshmem_quiet() on the same context if completion notification is
  * required.
  *
  * This function can be called from divergent control paths at per-thread
  * granularity. However, performance may be improved if the caller can
  * coalesce contiguous messages and elect a leader thread to call into the
- * ROC_SHMEM function.
+ * rocSHMEM function.
  *
  * @param[in] ctx     Context with which to perform this operation.
  * @param[in] dest    Destination address. Must be an address on the symmetric
@@ -411,11 +411,11 @@ __host__ void roc_shmem_getmem(void *dest, const void *source, size_t nelems,
  *
  * @return void.
  */
-__host__ void roc_shmem_ctx_getmem_nbi(roc_shmem_ctx_t ctx, void *dest,
+__host__ void rocshmem_ctx_getmem_nbi(rocshmem_ctx_t ctx, void *dest,
                                        const void *source, size_t nelems,
                                        int pe);
 
-__host__ void roc_shmem_getmem_nbi(void *dest, const void *source,
+__host__ void rocshmem_getmem_nbi(void *dest, const void *source,
                                    size_t nelems, int pe);
 
 /**
@@ -426,9 +426,9 @@ __host__ void roc_shmem_getmem_nbi(void *dest, const void *source,
  *
  * @return void.
  */
-__host__ void roc_shmem_ctx_fence(roc_shmem_ctx_t ctx);
+__host__ void rocshmem_ctx_fence(rocshmem_ctx_t ctx);
 
-__host__ void roc_shmem_fence();
+__host__ void rocshmem_fence();
 
 /**
  * @brief Completes all previous operations posted on the host.
@@ -437,9 +437,9 @@ __host__ void roc_shmem_fence();
  *
  * @return void.
  */
-__host__ void roc_shmem_ctx_quiet(roc_shmem_ctx_t ctx);
+__host__ void rocshmem_ctx_quiet(rocshmem_ctx_t ctx);
 
-__host__ void roc_shmem_quiet();
+__host__ void rocshmem_quiet();
 
 /**
  * @brief perform a collective barrier between all PEs in the system.
@@ -447,7 +447,7 @@ __host__ void roc_shmem_quiet();
  *
  * @return void
  */
-__host__ void roc_shmem_barrier_all();
+__host__ void rocshmem_barrier_all();
 
 /**
  * @brief registers the arrival of a PE at a barrier.
@@ -459,7 +459,7 @@ __host__ void roc_shmem_barrier_all();
  *
  * @return void
  */
-__host__ void roc_shmem_sync_all();
+__host__ void rocshmem_sync_all();
 
 /**
  * @brief allows any PE to force the termination of an entire program.
@@ -468,39 +468,39 @@ __host__ void roc_shmem_sync_all();
  *
  * @return void
  */
-__host__ void roc_shmem_global_exit(int status);
+__host__ void rocshmem_global_exit(int status);
 
 /******************************************************************************
  **************************** DEVICE INTERFACE ********************************
  *****************************************************************************/
 
 /**
- * @brief Initializes device-side ROC_SHMEM resources. Must be called before
- * any threads in this work-group invoke other ROC_SHMEM functions.
+ * @brief Initializes device-side rocSHMEM resources. Must be called before
+ * any threads in this work-group invoke other rocSHMEM functions.
  *
  * Must be called collectively by all threads in the work-group.
  *
  * @return void.
  */
-__device__ void roc_shmem_wg_init();
+__device__ void rocshmem_wg_init();
 
 /**
- * @brief Finalizes device-side ROC_SHMEM resources. Must be called before
- * work-group completion if the work-group also called roc_shmem_wg_init().
+ * @brief Finalizes device-side rocSHMEM resources. Must be called before
+ * work-group completion if the work-group also called rocshmem_wg_init().
  *
  * Must be called collectively by all threads in the work-group.
  *
  * @return void.
  */
-__device__ void roc_shmem_wg_finalize();
+__device__ void rocshmem_wg_finalize();
 
 /**
- * @brief Initializes device-side ROC_SHMEM resources. Must be called before
- * any threads in this work-group invoke other ROC_SHMEM functions. This is
- * a variant of roc_shmem_wg_init that allows the caller to request a
+ * @brief Initializes device-side rocSHMEM resources. Must be called before
+ * any threads in this work-group invoke other rocSHMEM functions. This is
+ * a variant of rocshmem_wg_init that allows the caller to request a
  * threading mode.
  *
- * @param[in] requested Requested thread mode from roc_shmem_thread_ops.
+ * @param[in] requested Requested thread mode from rocshmem_thread_ops.
  * @param[out] provided Thread mode selected by the runtime. May not be equal
  *                      to requested thread mode.
  *
@@ -508,7 +508,7 @@ __device__ void roc_shmem_wg_finalize();
  *
  * @return void.
  */
-__device__ void roc_shmem_wg_init_thread(int requested, int *provided);
+__device__ void rocshmem_wg_init_thread(int requested, int *provided);
 
 /**
  * @brief Query the thread mode used by the runtime.
@@ -517,7 +517,7 @@ __device__ void roc_shmem_wg_init_thread(int requested, int *provided);
  *
  * @return void.
  */
-__device__ void roc_shmem_query_thread(int *provided);
+__device__ void rocshmem_query_thread(int *provided);
 
 /**
  * @brief Creates an OpenSHMEM context. By design, the context is private
@@ -530,13 +530,13 @@ __device__ void roc_shmem_query_thread(int *provided);
  *
  * @return All threads returns 0 if the context was created successfully. If any
  * thread returns non-zero value, the operation failed and a higher number of
- * `ROC_SHMEM_MAX_NUM_CONTEXTS` is required.
+ * `ROCSHMEM_MAX_NUM_CONTEXTS` is required.
  */
-__device__ ATTR_NO_INLINE int roc_shmem_wg_ctx_create(int64_t options,
-                                                      roc_shmem_ctx_t *ctx);
+__device__ ATTR_NO_INLINE int rocshmem_wg_ctx_create(int64_t options,
+                                                      rocshmem_ctx_t *ctx);
 
-__device__ ATTR_NO_INLINE int roc_shmem_wg_team_create_ctx(
-    roc_shmem_team_t team, long options, roc_shmem_ctx_t *ctx);
+__device__ ATTR_NO_INLINE int rocshmem_wg_team_create_ctx(
+    rocshmem_team_t team, long options, rocshmem_ctx_t *ctx);
 
 /**
  * @brief Destroys an OpenSHMEM context.
@@ -547,18 +547,18 @@ __device__ ATTR_NO_INLINE int roc_shmem_wg_team_create_ctx(
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmem_wg_ctx_destroy(roc_shmem_ctx_t *ctx);
+__device__ ATTR_NO_INLINE void rocshmem_wg_ctx_destroy(rocshmem_ctx_t *ctx);
 
 /**
  * @brief Writes contiguous data of \p nelems bytes from \p source on the
  * calling PE to \p dest at \p pe. The caller will block until the operation
  * completes locally (it is safe to reuse \p source). The caller must
- * call into roc_shmem_quiet() if remote completion is required.
+ * call into rocshmem_quiet() if remote completion is required.
  *
  * This function can be called from divergent control paths at per-thread
  * granularity. However, performance may be improved if the caller can
  * coalesce contiguous messages and elect a leader thread to call into the
- * ROC_SHMEM function.
+ * rocSHMEM function.
  *
  * @param[in] ctx    Context with which to perform this operation.
  * @param[in] dest   Destination address. Must be an address on the symmetric
@@ -569,12 +569,12 @@ __device__ ATTR_NO_INLINE void roc_shmem_wg_ctx_destroy(roc_shmem_ctx_t *ctx);
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmem_ctx_putmem(roc_shmem_ctx_t ctx,
+__device__ ATTR_NO_INLINE void rocshmem_ctx_putmem(rocshmem_ctx_t ctx,
                                                     void *dest,
                                                     const void *source,
                                                     size_t nelems, int pe);
 
-__device__ ATTR_NO_INLINE void roc_shmem_putmem(void *dest, const void *source,
+__device__ ATTR_NO_INLINE void rocshmem_putmem(void *dest, const void *source,
                                                 size_t nelems, int pe);
 
 /**
@@ -585,7 +585,7 @@ __device__ ATTR_NO_INLINE void roc_shmem_putmem(void *dest, const void *source,
  * This function can be called from divergent control paths at per-thread
  * granularity. However, performance may be improved if the caller can
  * coalesce contiguous messages and elect a leader thread to call into the
- * ROC_SHMEM function.
+ * rocSHMEM function.
  *
  * @param[in] ctx     Context with which to perform this operation.
  * @param[in] dest    Destination address. Must be an address on the symmetric
@@ -596,25 +596,25 @@ __device__ ATTR_NO_INLINE void roc_shmem_putmem(void *dest, const void *source,
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmem_ctx_getmem(roc_shmem_ctx_t ctx,
+__device__ ATTR_NO_INLINE void rocshmem_ctx_getmem(rocshmem_ctx_t ctx,
                                                     void *dest,
                                                     const void *source,
                                                     size_t nelems, int pe);
 
-__device__ ATTR_NO_INLINE void roc_shmem_getmem(void *dest, const void *source,
+__device__ ATTR_NO_INLINE void rocshmem_getmem(void *dest, const void *source,
                                                 size_t nelems, int pe);
 
 /**
  * @brief Writes contiguous data of \p nelems bytes from \p source on the
  * calling PE to \p dest on \p pe. The operation is not blocking. The caller
  * will return as soon as the request is posted. The caller must call
- * roc_shmem_quiet() on the same context if completion notification is
+ * rocshmem_quiet() on the same context if completion notification is
  * required.
  *
  * This function can be called from divergent control paths at per-thread
  * granularity. However, performance may be improved if the caller can
  * coalesce contiguous messages and elect a leader thread to call into the
- * ROC_SHMEM function.
+ * rocSHMEM function.
  *
  * @param[in] ctx     Context with which to perform this operation.
  * @param[in] dest    Destination address. Must be an address on the symmetric
@@ -625,12 +625,12 @@ __device__ ATTR_NO_INLINE void roc_shmem_getmem(void *dest, const void *source,
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmem_ctx_putmem_nbi(roc_shmem_ctx_t ctx,
+__device__ ATTR_NO_INLINE void rocshmem_ctx_putmem_nbi(rocshmem_ctx_t ctx,
                                                         void *dest,
                                                         const void *source,
                                                         size_t nelems, int pe);
 
-__device__ ATTR_NO_INLINE void roc_shmem_putmem_nbi(void *dest,
+__device__ ATTR_NO_INLINE void rocshmem_putmem_nbi(void *dest,
                                                     const void *source,
                                                     size_t nelems, int pe);
 
@@ -638,13 +638,13 @@ __device__ ATTR_NO_INLINE void roc_shmem_putmem_nbi(void *dest,
  * @brief Reads contiguous data of \p nelems bytes from \p source on \p pe
  * to \p dest on the calling PE. The operation is not blocking. The caller will
  * return as soon as the request is posted. The caller must call
- * roc_shmem_quiet() on the same context if completion notification is
+ * rocshmem_quiet() on the same context if completion notification is
  * required.
  *
  * This function can be called from divergent control paths at per-thread
  * granularity. However, performance may be improved if the caller can
  * coalesce contiguous messages and elect a leader thread to call into the
- * ROC_SHMEM function.
+ * rocSHMEM function.
  *
  * @param[in] ctx     Context with which to perform this operation.
  * @param[in] dest    Destination address. Must be an address on the symmetric
@@ -655,12 +655,12 @@ __device__ ATTR_NO_INLINE void roc_shmem_putmem_nbi(void *dest,
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmem_ctx_getmem_nbi(roc_shmem_ctx_t ctx,
+__device__ ATTR_NO_INLINE void rocshmem_ctx_getmem_nbi(rocshmem_ctx_t ctx,
                                                         void *dest,
                                                         const void *source,
                                                         size_t nelems, int pe);
 
-__device__ ATTR_NO_INLINE void roc_shmem_getmem_nbi(void *dest,
+__device__ ATTR_NO_INLINE void rocshmem_getmem_nbi(void *dest,
                                                     const void *source,
                                                     size_t nelems, int pe);
 
@@ -671,15 +671,15 @@ __device__ ATTR_NO_INLINE void roc_shmem_getmem_nbi(void *dest,
  * This function can be called from divergent control paths at per-thread
  * granularity. However, performance may be improved if the caller can
  * coalesce contiguous messages and elect a leader thread to call into the
- * ROC_SHMEM function.
+ * rocSHMEM function.
  *
  * @param[in] ctx Context with which to perform this operation.
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmem_ctx_fence(roc_shmem_ctx_t ctx);
+__device__ ATTR_NO_INLINE void rocshmem_ctx_fence(rocshmem_ctx_t ctx);
 
-__device__ ATTR_NO_INLINE void roc_shmem_fence();
+__device__ ATTR_NO_INLINE void rocshmem_fence();
 
 /**
  * @brief Guarantees order between messages in this context in accordance with
@@ -693,9 +693,9 @@ __device__ ATTR_NO_INLINE void roc_shmem_fence();
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmem_ctx_fence(roc_shmem_ctx_t ctx, int pe);
+__device__ ATTR_NO_INLINE void rocshmem_ctx_fence(rocshmem_ctx_t ctx, int pe);
 
-__device__ ATTR_NO_INLINE void roc_shmem_fence(int pe);
+__device__ ATTR_NO_INLINE void rocshmem_fence(int pe);
 
 /**
  * @brief Completes all previous operations posted to this context.
@@ -703,15 +703,15 @@ __device__ ATTR_NO_INLINE void roc_shmem_fence(int pe);
  * This function can be called from divergent control paths at per-thread
  * granularity. However, performance may be improved if the caller can
  * coalesce contiguous messages and elect a leader thread to call into the
- * ROC_SHMEM function.
+ * rocSHMEM function.
  *
  * @param[in] ctx Context with which to perform this operation.
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmem_ctx_quiet(roc_shmem_ctx_t ctx);
+__device__ ATTR_NO_INLINE void rocshmem_ctx_quiet(rocshmem_ctx_t ctx);
 
-__device__ ATTR_NO_INLINE void roc_shmem_quiet();
+__device__ ATTR_NO_INLINE void rocshmem_quiet();
 
 /**
  * @brief Query the total number of PEs.
@@ -722,9 +722,9 @@ __device__ ATTR_NO_INLINE void roc_shmem_quiet();
  *
  * @return Total number of PEs.
  */
-__device__ int roc_shmem_ctx_n_pes(roc_shmem_ctx_t ctx);
+__device__ int rocshmem_ctx_n_pes(rocshmem_ctx_t ctx);
 
-__device__ int roc_shmem_n_pes();
+__device__ int rocshmem_n_pes();
 
 /**
  * @brief Query the PE ID of the caller.
@@ -735,9 +735,9 @@ __device__ int roc_shmem_n_pes();
  *
  * @return PE ID of the caller.
  */
-__device__ int roc_shmem_ctx_my_pe(roc_shmem_ctx_t ctx);
+__device__ int rocshmem_ctx_my_pe(rocshmem_ctx_t ctx);
 
-__device__ int roc_shmem_my_pe();
+__device__ int rocshmem_my_pe();
 
 /**
  * @brief Translate the PE in src_team to that in dest_team.
@@ -750,9 +750,9 @@ __device__ int roc_shmem_my_pe();
  *         or if src_pe is not in both source and destination
  *         teams, a value of -1 is returned.
  */
-__device__ int roc_shmem_team_translate_pe(roc_shmem_team_t src_team,
+__device__ int rocshmem_team_translate_pe(rocshmem_team_t src_team,
                                            int src_pe,
-                                           roc_shmem_team_t dest_team);
+                                           rocshmem_team_t dest_team);
 
 /**
  * @brief perform a collective barrier between all PEs in the system.
@@ -764,10 +764,10 @@ __device__ int roc_shmem_team_translate_pe(roc_shmem_team_t src_team,
  *
  * @return void
  */
-__device__ ATTR_NO_INLINE void roc_shmem_ctx_wg_barrier_all(
-    roc_shmem_ctx_t ctx);
+__device__ ATTR_NO_INLINE void rocshmem_ctx_wg_barrier_all(
+    rocshmem_ctx_t ctx);
 
-__device__ ATTR_NO_INLINE void roc_shmem_wg_barrier_all();
+__device__ ATTR_NO_INLINE void rocshmem_wg_barrier_all();
 
 /**
  * @brief registers the arrival of a PE at a barrier.
@@ -783,9 +783,9 @@ __device__ ATTR_NO_INLINE void roc_shmem_wg_barrier_all();
  *
  * @return void
  */
-__device__ ATTR_NO_INLINE void roc_shmem_ctx_wg_sync_all(roc_shmem_ctx_t ctx);
+__device__ ATTR_NO_INLINE void rocshmem_ctx_wg_sync_all(rocshmem_ctx_t ctx);
 
-__device__ ATTR_NO_INLINE void roc_shmem_wg_sync_all();
+__device__ ATTR_NO_INLINE void rocshmem_wg_sync_all();
 
 /**
  * @brief registers the arrival of a PE at a barrier.
@@ -802,10 +802,10 @@ __device__ ATTR_NO_INLINE void roc_shmem_wg_sync_all();
  *
  * @return void
  */
-__device__ ATTR_NO_INLINE void roc_shmem_ctx_wg_team_sync(
-    roc_shmem_ctx_t ctx, roc_shmem_team_t team);
+__device__ ATTR_NO_INLINE void rocshmem_ctx_wg_team_sync(
+    rocshmem_ctx_t ctx, rocshmem_team_t team);
 
-__device__ ATTR_NO_INLINE void roc_shmem_wg_team_sync(roc_shmem_team_t team);
+__device__ ATTR_NO_INLINE void rocshmem_wg_team_sync(rocshmem_team_t team);
 
 /**
  * @brief Query a local pointer to a symmetric data object on the
@@ -814,18 +814,18 @@ __device__ ATTR_NO_INLINE void roc_shmem_wg_team_sync(roc_shmem_team_t team);
  *
  * Can be called per thread with no performance penalty.
  */
-__device__ ATTR_NO_INLINE void *roc_shmem_ptr(const void *dest, int pe);
+__device__ ATTR_NO_INLINE void *rocshmem_ptr(const void *dest, int pe);
 
 /**
  * @brief Query the current time. Similar to gettimeofday() on the CPU. To use
- * this function, ROC_SHMEM must be configured with profiling support
+ * this function, rocSHMEM must be configured with profiling support
  * (--enable-profile).
  *
  * Can be called per thread with no performance penalty.
  *
  * @return Time in micro-seconds.
  */
-__device__ uint64_t roc_shmem_timer();
+__device__ uint64_t rocshmem_timer();
 
 /**
  * @brief Make all uncacheable GPU data visible to other agents in the sytem.
@@ -839,20 +839,20 @@ __device__ uint64_t roc_shmem_timer();
  *
  * @return void
  */
-__device__ ATTR_NO_INLINE void roc_shmem_ctx_threadfence_system(
-    roc_shmem_ctx_t ctx);
+__device__ ATTR_NO_INLINE void rocshmem_ctx_threadfence_system(
+    rocshmem_ctx_t ctx);
 
-__device__ ATTR_NO_INLINE void roc_shmem_threadfence_system();
+__device__ ATTR_NO_INLINE void rocshmem_threadfence_system();
 
 /*
  * MACRO DECLARE SHMEM_REDUCTION APIs
  */
 #define REDUCTION_API_GEN(T, TNAME, Op_API)                                    \
-  __device__ ATTR_NO_INLINE int roc_shmem_ctx_##TNAME##_##Op_API##_wg_reduce(  \
-      roc_shmem_ctx_t ctx, roc_shmem_team_t team, T *dest, const T *source,    \
+  __device__ ATTR_NO_INLINE int rocshmem_ctx_##TNAME##_##Op_API##_wg_reduce(  \
+      rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source,    \
       int nreduce);                                                            \
-  __host__ int roc_shmem_ctx_##TNAME##_##Op_API##_reduce(                      \
-      roc_shmem_ctx_t ctx, roc_shmem_team_t team, T *dest, const T *source,    \
+  __host__ int rocshmem_ctx_##TNAME##_##Op_API##_reduce(                      \
+      rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source,    \
       int nreduce);
 
 #define ARITH_REDUCTION_API_GEN(T, TNAME) \
@@ -876,346 +876,346 @@ __device__ ATTR_NO_INLINE void roc_shmem_threadfence_system();
  * MACRO DECLARE SHMEM_BROADCAST APIs
  */
 #define BROADCAST_API_GEN(T, TNAME)                                          \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_wg_broadcast(       \
-      roc_shmem_ctx_t ctx, roc_shmem_team_t team, T *dest, const T *source,  \
+  __device__ ATTR_NO_INLINE void rocshmem_ctx_##TNAME##_wg_broadcast(       \
+      rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source,  \
       int nelem, int pe_root); /* NOLINT */                                  \
-  __host__ void roc_shmem_ctx_##TNAME##_broadcast(                           \
-      roc_shmem_ctx_t ctx, T *dest, const T *source, int nelem, int pe_root, \
+  __host__ void rocshmem_ctx_##TNAME##_broadcast(                           \
+      rocshmem_ctx_t ctx, T *dest, const T *source, int nelem, int pe_root, \
       int pe_start, int log_pe_stride, int pe_size,                          \
       long *p_sync); /* NOLINT */                                            \
-  __host__ void roc_shmem_ctx_##TNAME##_broadcast(                           \
-      roc_shmem_ctx_t ctx, roc_shmem_team_t team, T *dest, const T *source,  \
+  __host__ void rocshmem_ctx_##TNAME##_broadcast(                           \
+      rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source,  \
       int nelem, int pe_root); /* NOLINT */
 
 /*
  * MACRO DECLARE SHMEM_ALLTOALL APIs
  */
 #define ALLTOALL_API_GEN(T, TNAME)                                          \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_wg_alltoall(       \
-      roc_shmem_ctx_t ctx, roc_shmem_team_t team, T *dest, const T *source, \
+  __device__ ATTR_NO_INLINE void rocshmem_ctx_##TNAME##_wg_alltoall(       \
+      rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source, \
       int nelem); /* NOLINT */
 /*
  * MACRO DECLARE SHMEM_FCOLLECT APIs
  */
 #define FCOLLECT_API_GEN(T, TNAME)                                          \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_wg_fcollect(       \
-      roc_shmem_ctx_t ctx, roc_shmem_team_t team, T *dest, const T *source, \
+  __device__ ATTR_NO_INLINE void rocshmem_ctx_##TNAME##_wg_fcollect(       \
+      rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source, \
       int nelem); /* NOLINT */
 
 /*
  * MACRO DECLARE SHMEM_PUT APIs
  */
 #define PUT_API_GEN(T, TNAME)                                                \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_put(                \
-      roc_shmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
-  __device__ ATTR_NO_INLINE void roc_shmem_##TNAME##_put(                    \
+  __device__ ATTR_NO_INLINE void rocshmem_ctx_##TNAME##_put(                \
+      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
+  __device__ ATTR_NO_INLINE void rocshmem_##TNAME##_put(                    \
       T *dest, const T *source, size_t nelems, int pe);                      \
-  __host__ void roc_shmem_ctx_##TNAME##_put(                                 \
-      roc_shmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
-  __host__ void roc_shmem_##TNAME##_put(T *dest, const T *source,            \
+  __host__ void rocshmem_ctx_##TNAME##_put(                                 \
+      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
+  __host__ void rocshmem_##TNAME##_put(T *dest, const T *source,            \
                                         size_t nelems, int pe);
 
 /*
  * MACRO DECLARE SHMEM_P APIs
  */
 #define P_API_GEN(T, TNAME)                                              \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_p(              \
-      roc_shmem_ctx_t ctx, T *dest, T value, int pe);                    \
-  __device__ ATTR_NO_INLINE void roc_shmem_##TNAME##_p(T *dest, T value, \
+  __device__ ATTR_NO_INLINE void rocshmem_ctx_##TNAME##_p(              \
+      rocshmem_ctx_t ctx, T *dest, T value, int pe);                    \
+  __device__ ATTR_NO_INLINE void rocshmem_##TNAME##_p(T *dest, T value, \
                                                        int pe);          \
-  __host__ void roc_shmem_ctx_##TNAME##_p(roc_shmem_ctx_t ctx, T *dest,  \
+  __host__ void rocshmem_ctx_##TNAME##_p(rocshmem_ctx_t ctx, T *dest,  \
                                           T value, int pe);              \
-  __host__ void roc_shmem_##TNAME##_p(T *dest, T value, int pe);
+  __host__ void rocshmem_##TNAME##_p(T *dest, T value, int pe);
 
 /*
  * MACRO DECLARE SHMEM_GET APIs
  */
 #define GET_API_GEN(T, TNAME)                                                \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_get(                \
-      roc_shmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
-  __device__ ATTR_NO_INLINE void roc_shmem_##TNAME##_get(                    \
+  __device__ ATTR_NO_INLINE void rocshmem_ctx_##TNAME##_get(                \
+      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
+  __device__ ATTR_NO_INLINE void rocshmem_##TNAME##_get(                    \
       T *dest, const T *source, size_t nelems, int pe);                      \
-  __host__ void roc_shmem_ctx_##TNAME##_get(                                 \
-      roc_shmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
-  __host__ void roc_shmem_##TNAME##_get(T *dest, const T *source,            \
+  __host__ void rocshmem_ctx_##TNAME##_get(                                 \
+      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
+  __host__ void rocshmem_##TNAME##_get(T *dest, const T *source,            \
                                         size_t nelems, int pe);
 
 /*
  * MACRO DECLARE SHMEM_G APIs
  */
 #define G_API_GEN(T, TNAME)                                                   \
-  __device__ ATTR_NO_INLINE T roc_shmem_ctx_##TNAME##_g(                      \
-      roc_shmem_ctx_t ctx, const T *source, int pe);                          \
-  __device__ ATTR_NO_INLINE T roc_shmem_##TNAME##_g(const T *source, int pe); \
-  __host__ T roc_shmem_ctx_##TNAME##_g(roc_shmem_ctx_t ctx, const T *source,  \
+  __device__ ATTR_NO_INLINE T rocshmem_ctx_##TNAME##_g(                      \
+      rocshmem_ctx_t ctx, const T *source, int pe);                          \
+  __device__ ATTR_NO_INLINE T rocshmem_##TNAME##_g(const T *source, int pe); \
+  __host__ T rocshmem_ctx_##TNAME##_g(rocshmem_ctx_t ctx, const T *source,  \
                                        int pe);                               \
-  __host__ T roc_shmem_##TNAME##_g(const T *source, int pe);
+  __host__ T rocshmem_##TNAME##_g(const T *source, int pe);
 
 /*
  * MACRO DECLARE SHMEM_PUT_NBI APIs
  */
 #define PUT_NBI_API_GEN(T, TNAME)                                            \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_put_nbi(            \
-      roc_shmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
-  __device__ ATTR_NO_INLINE void roc_shmem_##TNAME##_put_nbi(                \
+  __device__ ATTR_NO_INLINE void rocshmem_ctx_##TNAME##_put_nbi(            \
+      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
+  __device__ ATTR_NO_INLINE void rocshmem_##TNAME##_put_nbi(                \
       T *dest, const T *source, size_t nelems, int pe);                      \
-  __host__ void roc_shmem_ctx_##TNAME##_put_nbi(                             \
-      roc_shmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
-  __host__ void roc_shmem_##TNAME##_put_nbi(T *dest, const T *source,        \
+  __host__ void rocshmem_ctx_##TNAME##_put_nbi(                             \
+      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
+  __host__ void rocshmem_##TNAME##_put_nbi(T *dest, const T *source,        \
                                             size_t nelems, int pe);
 
 /*
  * MACRO DECLARE SHMEM_GET_NBI APIs
  */
 #define GET_NBI_API_GEN(T, TNAME)                                            \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_get_nbi(            \
-      roc_shmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
-  __device__ ATTR_NO_INLINE void roc_shmem_##TNAME##_get_nbi(                \
+  __device__ ATTR_NO_INLINE void rocshmem_ctx_##TNAME##_get_nbi(            \
+      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
+  __device__ ATTR_NO_INLINE void rocshmem_##TNAME##_get_nbi(                \
       T *dest, const T *source, size_t nelems, int pe);                      \
-  __host__ void roc_shmem_ctx_##TNAME##_get_nbi(                             \
-      roc_shmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
-  __host__ void roc_shmem_##TNAME##_get_nbi(T *dest, const T *source,        \
+  __host__ void rocshmem_ctx_##TNAME##_get_nbi(                             \
+      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
+  __host__ void rocshmem_##TNAME##_get_nbi(T *dest, const T *source,        \
                                             size_t nelems, int pe);
 
 /*
  * MACRO DECLARE SHMEM_ATOMIC_FETCH_ADD APIs
  */
 #define ATOMIC_FETCH_ADD_API_GEN(T, TNAME)                              \
-  __device__ ATTR_NO_INLINE T roc_shmem_ctx_##TNAME##_atomic_fetch_add( \
-      roc_shmem_ctx_t ctx, T *dest, T value, int pe);                   \
-  __device__ ATTR_NO_INLINE T roc_shmem_##TNAME##_atomic_fetch_add(     \
+  __device__ ATTR_NO_INLINE T rocshmem_ctx_##TNAME##_atomic_fetch_add( \
+      rocshmem_ctx_t ctx, T *dest, T value, int pe);                   \
+  __device__ ATTR_NO_INLINE T rocshmem_##TNAME##_atomic_fetch_add(     \
       T *dest, T value, int pe);                                        \
-  __host__ ATTR_NO_INLINE T roc_shmem_ctx_##TNAME##_atomic_fetch_add(   \
-      roc_shmem_ctx_t ctx, T *dest, T value, int pe);                   \
-  __host__ ATTR_NO_INLINE T roc_shmem_##TNAME##_atomic_fetch_add(       \
+  __host__ ATTR_NO_INLINE T rocshmem_ctx_##TNAME##_atomic_fetch_add(   \
+      rocshmem_ctx_t ctx, T *dest, T value, int pe);                   \
+  __host__ ATTR_NO_INLINE T rocshmem_##TNAME##_atomic_fetch_add(       \
       T *dest, T value, int pe);
 
 /*
  * MACRO DECLARE SHMEM_ATOMIC_COMPARE_SWAP APIs
  */
 #define ATOMIC_COMPARE_SWAP_API_GEN(T, TNAME)                                  \
-  __device__ ATTR_NO_INLINE T roc_shmem_ctx_##TNAME##_atomic_compare_swap(     \
-      roc_shmem_ctx_t ctx, T *dest, T cond, T value, int pe);                  \
-  __device__ ATTR_NO_INLINE T roc_shmem_##TNAME##_atomic_compare_swap(         \
+  __device__ ATTR_NO_INLINE T rocshmem_ctx_##TNAME##_atomic_compare_swap(     \
+      rocshmem_ctx_t ctx, T *dest, T cond, T value, int pe);                  \
+  __device__ ATTR_NO_INLINE T rocshmem_##TNAME##_atomic_compare_swap(         \
       T *dest, T cond, T value, int pe);                                       \
-  __host__ T roc_shmem_ctx_##TNAME##_atomic_compare_swap(                      \
-      roc_shmem_ctx_t ctx, T *dest, T cond, T value, int pe);                  \
-  __host__ T roc_shmem_##TNAME##_atomic_compare_swap(T *dest, T cond, T value, \
+  __host__ T rocshmem_ctx_##TNAME##_atomic_compare_swap(                      \
+      rocshmem_ctx_t ctx, T *dest, T cond, T value, int pe);                  \
+  __host__ T rocshmem_##TNAME##_atomic_compare_swap(T *dest, T cond, T value, \
                                                      int pe);
 
 /*
  * MACRO DECLARE SHMEM_ATOMIC_FETCH_INC APIs
  */
 #define ATOMIC_FETCH_INC_API_GEN(T, TNAME)                                  \
-  __device__ ATTR_NO_INLINE T roc_shmem_ctx_##TNAME##_atomic_fetch_inc(     \
-      roc_shmem_ctx_t ctx, T *dest, int pe);                                \
-  __device__ ATTR_NO_INLINE T roc_shmem_##TNAME##_atomic_fetch_inc(T *dest, \
+  __device__ ATTR_NO_INLINE T rocshmem_ctx_##TNAME##_atomic_fetch_inc(     \
+      rocshmem_ctx_t ctx, T *dest, int pe);                                \
+  __device__ ATTR_NO_INLINE T rocshmem_##TNAME##_atomic_fetch_inc(T *dest, \
                                                                    int pe); \
-  __host__ T roc_shmem_ctx_##TNAME##_atomic_fetch_inc(roc_shmem_ctx_t ctx,  \
+  __host__ T rocshmem_ctx_##TNAME##_atomic_fetch_inc(rocshmem_ctx_t ctx,  \
                                                       T *dest, int pe);     \
-  __host__ T roc_shmem_##TNAME##_atomic_fetch_inc(T *dest, int pe);
+  __host__ T rocshmem_##TNAME##_atomic_fetch_inc(T *dest, int pe);
 
 /*
  * MACRO DECLARE SHMEM_ATOMIC_FETCH APIs
  */
 #define ATOMIC_FETCH_API_GEN(T, TNAME)                                  \
-  __device__ ATTR_NO_INLINE T roc_shmem_ctx_##TNAME##_atomic_fetch(     \
-      roc_shmem_ctx_t ctx, T *source, int pe);                          \
-  __device__ ATTR_NO_INLINE T roc_shmem_##TNAME##_atomic_fetch(T *source, \
+  __device__ ATTR_NO_INLINE T rocshmem_ctx_##TNAME##_atomic_fetch(     \
+      rocshmem_ctx_t ctx, T *source, int pe);                          \
+  __device__ ATTR_NO_INLINE T rocshmem_##TNAME##_atomic_fetch(T *source, \
                                                                int pe); \
-  __host__ T roc_shmem_ctx_##TNAME##_atomic_fetch(roc_shmem_ctx_t ctx,  \
+  __host__ T rocshmem_ctx_##TNAME##_atomic_fetch(rocshmem_ctx_t ctx,  \
                                                   T *source, int pe);     \
-  __host__ T roc_shmem_##TNAME##_atomic_fetch(T *source, int pe);
+  __host__ T rocshmem_##TNAME##_atomic_fetch(T *source, int pe);
 
 /*
  * MACRO DECLARE SHMEM_ATOMIC_ADD APIs
  */
 #define ATOMIC_ADD_API_GEN(T, TNAME)                                          \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_atomic_add(          \
-      roc_shmem_ctx_t ctx, T *dest, T value, int pe);                         \
-  __device__ ATTR_NO_INLINE void roc_shmem_##TNAME##_atomic_add(              \
+  __device__ ATTR_NO_INLINE void rocshmem_ctx_##TNAME##_atomic_add(          \
+      rocshmem_ctx_t ctx, T *dest, T value, int pe);                         \
+  __device__ ATTR_NO_INLINE void rocshmem_##TNAME##_atomic_add(              \
       T *dest, T value, int pe);                                              \
-  __host__ void roc_shmem_ctx_##TNAME##_atomic_add(roc_shmem_ctx_t ctx,       \
+  __host__ void rocshmem_ctx_##TNAME##_atomic_add(rocshmem_ctx_t ctx,       \
                                                    T *dest, T value, int pe); \
-  __host__ void roc_shmem_##TNAME##_atomic_add(T *dest, T value, int pe);
+  __host__ void rocshmem_##TNAME##_atomic_add(T *dest, T value, int pe);
 
 /*
  * MACRO DECLARE SHMEM_ATOMIC_SET APIs
  */
 #define ATOMIC_SET_API_GEN(T, TNAME)                                          \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_atomic_set(          \
-      roc_shmem_ctx_t ctx, T *dest, T value, int pe);                         \
-  __device__ ATTR_NO_INLINE void roc_shmem_##TNAME##_atomic_set(              \
+  __device__ ATTR_NO_INLINE void rocshmem_ctx_##TNAME##_atomic_set(          \
+      rocshmem_ctx_t ctx, T *dest, T value, int pe);                         \
+  __device__ ATTR_NO_INLINE void rocshmem_##TNAME##_atomic_set(              \
       T *dest, T value, int pe);                                              \
-  __host__ void roc_shmem_ctx_##TNAME##_atomic_set(roc_shmem_ctx_t ctx,       \
+  __host__ void rocshmem_ctx_##TNAME##_atomic_set(rocshmem_ctx_t ctx,       \
                                                    T *dest, T value, int pe); \
-  __host__ void roc_shmem_##TNAME##_atomic_set(T *dest, T value, int pe);
+  __host__ void rocshmem_##TNAME##_atomic_set(T *dest, T value, int pe);
 
 /*
  * MACRO DECLARE SHMEM_ATOMIC_SWAP APIs
  */
 #define ATOMIC_SWAP_API_GEN(T, TNAME)                                          \
-  __device__ ATTR_NO_INLINE T roc_shmem_ctx_##TNAME##_atomic_swap(             \
-      roc_shmem_ctx_t ctx, T *dest, T value, int pe);                          \
-  __device__ ATTR_NO_INLINE T roc_shmem_##TNAME##_atomic_swap(                 \
+  __device__ ATTR_NO_INLINE T rocshmem_ctx_##TNAME##_atomic_swap(             \
+      rocshmem_ctx_t ctx, T *dest, T value, int pe);                          \
+  __device__ ATTR_NO_INLINE T rocshmem_##TNAME##_atomic_swap(                 \
       T *dest, T value, int pe);                                               \
-  __host__ T roc_shmem_ctx_##TNAME##_atomic_swap(roc_shmem_ctx_t ctx, T *dest, \
+  __host__ T rocshmem_ctx_##TNAME##_atomic_swap(rocshmem_ctx_t ctx, T *dest, \
                                                  T value, int pe);             \
-  __host__ T roc_shmem_##TNAME##_atomic_swap(T *dest, T value, int pe);
+  __host__ T rocshmem_##TNAME##_atomic_swap(T *dest, T value, int pe);
 
 /*
  * MACRO DECLARE SHMEM_ATOMIC_FETCH_AND APIs
  */
 #define ATOMIC_FETCH_AND_API_GEN(T, TNAME)                              \
-  __device__ ATTR_NO_INLINE T roc_shmem_ctx_##TNAME##_atomic_fetch_and( \
-      roc_shmem_ctx_t ctx, T *dest, T value, int pe);                   \
-  __device__ ATTR_NO_INLINE T roc_shmem_##TNAME##_atomic_fetch_and(     \
+  __device__ ATTR_NO_INLINE T rocshmem_ctx_##TNAME##_atomic_fetch_and( \
+      rocshmem_ctx_t ctx, T *dest, T value, int pe);                   \
+  __device__ ATTR_NO_INLINE T rocshmem_##TNAME##_atomic_fetch_and(     \
       T *dest, T value, int pe);                                        \
-  __host__ T roc_shmem_ctx_##TNAME##_atomic_fetch_and(                  \
-      roc_shmem_ctx_t ctx, T *dest, T value, int pe);                   \
-  __host__ T roc_shmem_##TNAME##_atomic_fetch_and(T *dest, T value, int pe);
+  __host__ T rocshmem_ctx_##TNAME##_atomic_fetch_and(                  \
+      rocshmem_ctx_t ctx, T *dest, T value, int pe);                   \
+  __host__ T rocshmem_##TNAME##_atomic_fetch_and(T *dest, T value, int pe);
 
 /*
  * MACRO DECLARE SHMEM_ATOMIC_AND APIs
  */
 #define ATOMIC_AND_API_GEN(T, TNAME)                                          \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_atomic_and(          \
-      roc_shmem_ctx_t ctx, T *dest, T value, int pe);                         \
-  __device__ ATTR_NO_INLINE void roc_shmem_##TNAME##_atomic_and(              \
+  __device__ ATTR_NO_INLINE void rocshmem_ctx_##TNAME##_atomic_and(          \
+      rocshmem_ctx_t ctx, T *dest, T value, int pe);                         \
+  __device__ ATTR_NO_INLINE void rocshmem_##TNAME##_atomic_and(              \
       T *dest, T value, int pe);                                              \
-  __host__ void roc_shmem_ctx_##TNAME##_atomic_and(roc_shmem_ctx_t ctx,       \
+  __host__ void rocshmem_ctx_##TNAME##_atomic_and(rocshmem_ctx_t ctx,       \
                                                    T *dest, T value, int pe); \
-  __host__ void roc_shmem_##TNAME##_atomic_and(T *dest, T value, int pe);
+  __host__ void rocshmem_##TNAME##_atomic_and(T *dest, T value, int pe);
 
 /*
  * MACRO DECLARE SHMEM_ATOMIC_FETCH_OR APIs
  */
 #define ATOMIC_FETCH_OR_API_GEN(T, TNAME)                              \
-  __device__ ATTR_NO_INLINE T roc_shmem_ctx_##TNAME##_atomic_fetch_or( \
-      roc_shmem_ctx_t ctx, T *dest, T value, int pe);                  \
-  __device__ ATTR_NO_INLINE T roc_shmem_##TNAME##_atomic_fetch_or(     \
+  __device__ ATTR_NO_INLINE T rocshmem_ctx_##TNAME##_atomic_fetch_or( \
+      rocshmem_ctx_t ctx, T *dest, T value, int pe);                  \
+  __device__ ATTR_NO_INLINE T rocshmem_##TNAME##_atomic_fetch_or(     \
       T *dest, T value, int pe);                                       \
-  __host__ T roc_shmem_ctx_##TNAME##_atomic_fetch_or(                  \
-      roc_shmem_ctx_t ctx, T *dest, T value, int pe);                  \
-  __host__ T roc_shmem_##TNAME##_atomic_fetch_or(T *dest, T value, int pe);
+  __host__ T rocshmem_ctx_##TNAME##_atomic_fetch_or(                  \
+      rocshmem_ctx_t ctx, T *dest, T value, int pe);                  \
+  __host__ T rocshmem_##TNAME##_atomic_fetch_or(T *dest, T value, int pe);
 
 /*
  * MACRO DECLARE SHMEM_ATOMIC_OR APIs
  */
 #define ATOMIC_OR_API_GEN(T, TNAME)                                          \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_atomic_or(          \
-      roc_shmem_ctx_t ctx, T *dest, T value, int pe);                        \
-  __device__ ATTR_NO_INLINE void roc_shmem_##TNAME##_atomic_or(              \
+  __device__ ATTR_NO_INLINE void rocshmem_ctx_##TNAME##_atomic_or(          \
+      rocshmem_ctx_t ctx, T *dest, T value, int pe);                        \
+  __device__ ATTR_NO_INLINE void rocshmem_##TNAME##_atomic_or(              \
       T *dest, T value, int pe);                                             \
-  __host__ void roc_shmem_ctx_##TNAME##_atomic_or(roc_shmem_ctx_t ctx,       \
+  __host__ void rocshmem_ctx_##TNAME##_atomic_or(rocshmem_ctx_t ctx,       \
                                                   T *dest, T value, int pe); \
-  __host__ void roc_shmem_##TNAME##_atomic_or(T *dest, T value, int pe);
+  __host__ void rocshmem_##TNAME##_atomic_or(T *dest, T value, int pe);
 
 /*
  * MACRO DECLARE SHMEM_ATOMIC_FETCH_XOR APIs
  */
 #define ATOMIC_FETCH_XOR_API_GEN(T, TNAME)                              \
-  __device__ ATTR_NO_INLINE T roc_shmem_ctx_##TNAME##_atomic_fetch_xor( \
-      roc_shmem_ctx_t ctx, T *dest, T value, int pe);                   \
-  __device__ ATTR_NO_INLINE T roc_shmem_##TNAME##_atomic_fetch_xor(     \
+  __device__ ATTR_NO_INLINE T rocshmem_ctx_##TNAME##_atomic_fetch_xor( \
+      rocshmem_ctx_t ctx, T *dest, T value, int pe);                   \
+  __device__ ATTR_NO_INLINE T rocshmem_##TNAME##_atomic_fetch_xor(     \
       T *dest, T value, int pe);                                        \
-  __host__ T roc_shmem_ctx_##TNAME##_atomic_fetch_xor(                  \
-      roc_shmem_ctx_t ctx, T *dest, T value, int pe);                   \
-  __host__ T roc_shmem_##TNAME##_atomic_fetch_xor(T *dest, T value, int pe);
+  __host__ T rocshmem_ctx_##TNAME##_atomic_fetch_xor(                  \
+      rocshmem_ctx_t ctx, T *dest, T value, int pe);                   \
+  __host__ T rocshmem_##TNAME##_atomic_fetch_xor(T *dest, T value, int pe);
 
 /*
  * MACRO DECLARE SHMEM_ATOMIC_XOR APIs
  */
 #define ATOMIC_XOR_API_GEN(T, TNAME)                                          \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_atomic_xor(          \
-      roc_shmem_ctx_t ctx, T *dest, T value, int pe);                         \
-  __device__ ATTR_NO_INLINE void roc_shmem_##TNAME##_atomic_xor(              \
+  __device__ ATTR_NO_INLINE void rocshmem_ctx_##TNAME##_atomic_xor(          \
+      rocshmem_ctx_t ctx, T *dest, T value, int pe);                         \
+  __device__ ATTR_NO_INLINE void rocshmem_##TNAME##_atomic_xor(              \
       T *dest, T value, int pe);                                              \
-  __host__ void roc_shmem_ctx_##TNAME##_atomic_xor(roc_shmem_ctx_t ctx,       \
+  __host__ void rocshmem_ctx_##TNAME##_atomic_xor(rocshmem_ctx_t ctx,       \
                                                    T *dest, T value, int pe); \
-  __host__ void roc_shmem_##TNAME##_atomic_xor(T *dest, T value, int pe);
+  __host__ void rocshmem_##TNAME##_atomic_xor(T *dest, T value, int pe);
 
 /*
  * MACRO DECLARE SHMEM_ATOMIC_INC APIs
  */
 #define ATOMIC_INC_API_GEN(T, TNAME)                                     \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_atomic_inc(     \
-      roc_shmem_ctx_t ctx, T *dest, int pe);                             \
-  __device__ ATTR_NO_INLINE void roc_shmem_##TNAME##_atomic_inc(T *dest, \
+  __device__ ATTR_NO_INLINE void rocshmem_ctx_##TNAME##_atomic_inc(     \
+      rocshmem_ctx_t ctx, T *dest, int pe);                             \
+  __device__ ATTR_NO_INLINE void rocshmem_##TNAME##_atomic_inc(T *dest, \
                                                                 int pe); \
-  __host__ void roc_shmem_ctx_##TNAME##_atomic_inc(roc_shmem_ctx_t ctx,  \
+  __host__ void rocshmem_ctx_##TNAME##_atomic_inc(rocshmem_ctx_t ctx,  \
                                                    T *dest, int pe);     \
-  __host__ void roc_shmem_##TNAME##_atomic_inc(T *dest, int pe);
+  __host__ void rocshmem_##TNAME##_atomic_inc(T *dest, int pe);
 
 /*
  * MACRO DECLARE SHMEM_WAIT_UNTIL APIs
  */
 #define WAIT_UNTIL_API_GEN(T, TNAME)                                            \
-  __device__ void roc_shmem_##TNAME##_wait_until(T *ivars,                      \
+  __device__ void rocshmem_##TNAME##_wait_until(T *ivars,                      \
                                                  int cmp,                       \
                                                  T val);                        \
-  __device__ size_t roc_shmem_##TNAME##_wait_until_any(T *ivars,                \
+  __device__ size_t rocshmem_##TNAME##_wait_until_any(T *ivars,                \
                                                      size_t nelems,             \
                                                      const int* status,         \
                                                      int cmp,                   \
                                                      T val);                    \
-  __device__ void roc_shmem_##TNAME##_wait_until_all(T *ivars,                  \
+  __device__ void rocshmem_##TNAME##_wait_until_all(T *ivars,                  \
                                                      size_t nelems,             \
                                                      const int* status,         \
                                                      int cmp,                   \
                                                      T val);                    \
-  __device__ size_t roc_shmem_##TNAME##_wait_until_some(T *ivars,               \
+  __device__ size_t rocshmem_##TNAME##_wait_until_some(T *ivars,               \
                                                       size_t nelems,            \
                                                       size_t* indices,          \
                                                       const int* status,        \
                                                       int cmp,                  \
                                                       T val);                   \
-  __device__ size_t roc_shmem_##TNAME##_wait_until_any_vector(T *ivars,         \
+  __device__ size_t rocshmem_##TNAME##_wait_until_any_vector(T *ivars,         \
                                                             size_t nelems,      \
                                                             const int* status,  \
                                                             int cmp,            \
                                                             T* vals);           \
-  __device__ void roc_shmem_##TNAME##_wait_until_all_vector(T *ivars,           \
+  __device__ void rocshmem_##TNAME##_wait_until_all_vector(T *ivars,           \
                                                             size_t nelems,      \
                                                             const int* status,  \
                                                             int cmp,            \
                                                             T* vals);           \
-  __device__ size_t roc_shmem_##TNAME##_wait_until_some_vector(T *ivars,        \
+  __device__ size_t rocshmem_##TNAME##_wait_until_some_vector(T *ivars,        \
                                                              size_t nelems,     \
                                                              size_t* indices,   \
                                                              const int* status, \
                                                              int cmp,           \
                                                              T* vals);          \
-  __host__ void roc_shmem_##TNAME##_wait_until(T *ivars,                        \
+  __host__ void rocshmem_##TNAME##_wait_until(T *ivars,                        \
                                                int cmp,                         \
                                                T val);                          \
-  __host__ size_t roc_shmem_##TNAME##_wait_until_any(T *ivars,                  \
+  __host__ size_t rocshmem_##TNAME##_wait_until_any(T *ivars,                  \
                                                      size_t nelems,             \
                                                      const int* status,         \
                                                      int cmp,                   \
                                                      T val);                    \
-  __host__ void roc_shmem_##TNAME##_wait_until_all(T *ivars,                    \
+  __host__ void rocshmem_##TNAME##_wait_until_all(T *ivars,                    \
                                                    size_t nelems,               \
                                                    const int* status,           \
                                                    int cmp,                     \
                                                    T val);                      \
-  __host__ size_t roc_shmem_##TNAME##_wait_until_some(T *ivars,                 \
+  __host__ size_t rocshmem_##TNAME##_wait_until_some(T *ivars,                 \
                                                     size_t nelems,              \
                                                     size_t* indices,            \
                                                     const int* status,          \
                                                     int cmp,                    \
                                                     T val);                     \
-  __host__ size_t roc_shmem_##TNAME##_wait_until_any_vector(T *ivars,           \
+  __host__ size_t rocshmem_##TNAME##_wait_until_any_vector(T *ivars,           \
                                                             size_t nelems,      \
                                                             const int* status,  \
                                                             int cmp,            \
                                                             T* vals);           \
-  __host__ void roc_shmem_##TNAME##_wait_until_all_vector(T *ivars,             \
+  __host__ void rocshmem_##TNAME##_wait_until_all_vector(T *ivars,             \
                                                           size_t nelems,        \
                                                           const int* status,    \
                                                           int cmp,              \
                                                           T* vals);             \
-  __host__ size_t roc_shmem_##TNAME##_wait_until_some_vector(T *ivars,          \
+  __host__ size_t rocshmem_##TNAME##_wait_until_some_vector(T *ivars,          \
                                                            size_t nelems,       \
                                                            size_t* indices,     \
                                                            const int* status,   \
@@ -1226,8 +1226,8 @@ __device__ ATTR_NO_INLINE void roc_shmem_threadfence_system();
  * MACRO DECLARE SHMEM_TEST APIs
  */
 #define TEST_API_GEN(T, TNAME)                                                  \
-  __device__ int roc_shmem_##TNAME##_test(T *ivars, int cmp, T val);            \
-  __host__ int roc_shmem_##TNAME##_test(T *ivars, int cmp, T val);
+  __device__ int rocshmem_##TNAME##_test(T *ivars, int cmp, T val);            \
+  __host__ int rocshmem_##TNAME##_test(T *ivars, int cmp, T val);
 
 /**
  * @name SHMEM_REDUCTIONS
@@ -1244,11 +1244,11 @@ __device__ ATTR_NO_INLINE void roc_shmem_threadfence_system();
  * @param[in] PE_start     PE to start the reduction.
  * @param[in] logPE_stride Stride of PEs participating in the reduction.
  * @param[in] PE_size      Number PEs participating in the reduction.
- * @param[in] pWrk         Temporary work buffer provided to ROC_SHMEM. Must
+ * @param[in] pWrk         Temporary work buffer provided to rocSHMEM. Must
  *                         be of size at least max(size/2 + 1,
-                           ROC_SHMEM_REDUCE_MIN_WRKDATA_SIZE).
- * @param[in] pSync        Temporary sync buffer provided to ROC_SHMEM. Must
-                           be of size at least ROC_SHMEM_REDUCE_SYNC_SIZE.
+                           ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE).
+ * @param[in] pSync        Temporary sync buffer provided to rocSHMEM. Must
+                           be of size at least ROCSHMEM_REDUCE_SYNC_SIZE.
  * @param[in] handle       GPU side handle.
  *
  * @return void
@@ -1282,8 +1282,8 @@ FLOAT_REDUCTION_API_GEN(double, double)
  * @param[in] PE_start     PE to start the reduction.
  * @param[in] logPE_stride Stride of PEs participating in the reduction.
  * @param[in] PE_size      Number PEs participating in the reduction.
- * @param[in] pSync        Temporary sync buffer provided to ROC_SHMEM. Must
-                           be of size at least ROC_SHMEM_REDUCE_SYNC_SIZE.
+ * @param[in] pSync        Temporary sync buffer provided to rocSHMEM. Must
+                           be of size at least ROCSHMEM_REDUCE_SYNC_SIZE.
  *
  * @return void
  */
@@ -1375,12 +1375,12 @@ FCOLLECT_API_GEN(unsigned long long, ulonglong)  // NOLINT(runtime/int)
  * @brief Writes contiguous data of \p nelems elements from \p source on the
  * calling PE to \p dest at \p pe. The caller will block until the operation
  * completes locally (it is safe to reuse \p source). The caller must
- * call into roc_shmem_quiet() if remote completion is required.
+ * call into rocshmem_quiet() if remote completion is required.
  *
  * This function can be called from divergent control paths at per-thread
  * granularity. However, performance may be improved if the caller can
  * coalesce contiguous messages and elect a leader thread to call into the
- * ROC_SHMEM function.
+ * rocSHMEM function.
  *
  * @param[in] ctx    Context with which to perform this operation.
  * @param[in] dest   Destination address. Must be an address on the symmetric
@@ -1411,13 +1411,13 @@ PUT_API_GEN(unsigned long long, ulonglong)  // NOLINT(runtime/int)
 /**
  * @name SHMEM_P
  * @brief Writes a single value to \p dest at \p pe PE to \p dst at \p pe.
- * The caller must call into roc_shmem_quiet() if remote completion is
+ * The caller must call into rocshmem_quiet() if remote completion is
  * required.
  *
  * This function can be called from divergent control paths at per-thread
  * granularity. However, performance may be improved if the caller can
  * coalesce contiguous messages and elect a leader thread to call into the
- * ROC_SHMEM function.
+ * rocSHMEM function.
  *
  * @param[in] ctx    Context with which to perform this operation.
  * @param[in] dest   Destination address. Must be an address on the symmetric
@@ -1453,7 +1453,7 @@ P_API_GEN(unsigned long long, ulonglong)  // NOLINT(runtime/int)
  * This function can be called from divergent control paths at per-thread
  * granularity. However, performance may be improved if the caller can
  * coalesce contiguous messages and elect a leader thread to call into the
- * ROC_SHMEM function.
+ * rocSHMEM function.
  *
  * @param[in] ctx     Context with which to perform this operation.
  * @param[in] dest    Destination address. Must be an address on the symmetric
@@ -1489,7 +1489,7 @@ GET_API_GEN(unsigned long long, ulonglong)  // NOLINT(runtime/int)
  * This function can be called from divergent control paths at per-thread
  * granularity. However, performance may be improved if the caller can
  * coalesce contiguous messages and elect a leader thread to call into the
- * ROC_SHMEM function.
+ * rocSHMEM function.
  *
  * @param[in] ctx    Context with which to perform this operation.
  * @param[in] source sourcen address. Must be an address on the symmetric
@@ -1520,13 +1520,13 @@ G_API_GEN(unsigned long long, ulonglong)  // NOLINT(runtime/int)
  * @brief Writes contiguous data of \p nelems elements from \p source on the
  * calling PE to \p dest on \p pe. The operation is not blocking. The caller
  * will return as soon as the request is posted. The caller must call
- * roc_shmem_quiet() on the same context if completion notification is
+ * rocshmem_quiet() on the same context if completion notification is
  * required.
  *
  * This function can be called from divergent control paths at per-thread
  * granularity. However, performance may be improved if the caller can
  * coalesce contiguous messages and elect a leader thread to call into the
- * ROC_SHMEM function.
+ * rocSHMEM function.
  *
  * @param[in] ctx     Context with which to perform this operation.
  * @param[in] dest    Destination address. Must be an address on the symmetric
@@ -1559,13 +1559,13 @@ PUT_NBI_API_GEN(unsigned long long, ulonglong)  // NOLINT(runtime/int)
  * @brief Reads contiguous data of \p nelems elements from \p source on \p pe
  * to \p dest on the calling PE. The operation is not blocking. The caller will
  * return as soon as the request is posted. The caller must call
- * roc_shmem_quiet() on the same context if completion notification is
+ * rocshmem_quiet() on the same context if completion notification is
  * required.
  *
  * This function can be called from divergent control paths at per-thread
  * granularity. However, performance may be improved if the caller can
  * coalesce contiguous messages and elect a leader thread to call into the
- * ROC_SHMEM function.
+ * rocSHMEM function.
  *
  * @param[in] ctx     Context with which to perform this operation.
  * @param[in] dest    Destination address. Must be an address on the symmetric
@@ -2028,7 +2028,7 @@ ATOMIC_INC_API_GEN(ptrdiff_t, ptrdiff)
  * This function can be called from divergent control paths at per-thread
  * granularity. However, performance may be improved if the caller can
  * coalesce contiguous messages and elect a leader thread to call into the
- * ROC_SHMEM function.
+ * rocSHMEM function.
  *
  * @param[in] ivars Pointer to memory on the symmetric heap to wait for.
  * @param[in] cmp Operation for the comparison.
@@ -2061,7 +2061,7 @@ WAIT_UNTIL_API_GEN(unsigned long long, ulonglong)  // NOLINT(runtime/int)
  * This function can be called from divergent control paths at per-thread
  * granularity. However, performance may be improved if the caller can
  * coalesce contiguous messages and elect a leader thread to call into the
- * ROC_SHMEM function.
+ * rocSHMEM function.
  *
  * @param[in] ivars Pointer to memory on the symmetric heap to wait for.
  * @param[in] cmp Operation for the comparison.
@@ -2094,43 +2094,43 @@ TEST_API_GEN(unsigned long long, ulonglong)  // NOLINT(runtime/int)
  * MACRO DECLARE SHMEM_PUT APIs
  */
 #define PUT_API_EXT_GEN(GRAN, T, TNAME)                                      \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_put_##GRAN(         \
-      roc_shmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
-  __device__ ATTR_NO_INLINE void roc_shmem_##TNAME##_put_##GRAN(             \
+  __device__ ATTR_NO_INLINE void rocshmem_ctx_##TNAME##_put_##GRAN(         \
+      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
+  __device__ ATTR_NO_INLINE void rocshmem_##TNAME##_put_##GRAN(             \
       T *dest, const T *source, size_t nelems, int pe);
 
 /*
  * MACRO DECLARE SHMEM_GET APIs
  */
 #define GET_API_EXT_GEN(GRAN, T, TNAME)                                      \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_get_##GRAN(         \
-      roc_shmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
-  __device__ ATTR_NO_INLINE void roc_shmem_##TNAME##_get_##GRAN(             \
+  __device__ ATTR_NO_INLINE void rocshmem_ctx_##TNAME##_get_##GRAN(         \
+      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
+  __device__ ATTR_NO_INLINE void rocshmem_##TNAME##_get_##GRAN(             \
       T *dest, const T *source, size_t nelems, int pe);
 
 /*
  * MACRO DECLARE SHMEM_PUT_NBI APIs
  */
 #define PUT_NBI_API_EXT_GEN(GRAN, T, TNAME)                                  \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_put_nbi_##GRAN(     \
-      roc_shmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
-  __device__ ATTR_NO_INLINE void roc_shmem_##TNAME##_put_nbi_##GRAN(         \
+  __device__ ATTR_NO_INLINE void rocshmem_ctx_##TNAME##_put_nbi_##GRAN(     \
+      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
+  __device__ ATTR_NO_INLINE void rocshmem_##TNAME##_put_nbi_##GRAN(         \
       T *dest, const T *source, size_t nelems, int pe);
 
 /*
  * MACRO DECLARE SHMEM_GET_NBI APIs
  */
 #define GET_NBI_API_EXT_GEN(GRAN, T, TNAME)                                  \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_get_nbi_##GRAN(     \
-      roc_shmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
-  __device__ ATTR_NO_INLINE void roc_shmem_##TNAME##_get_nbi_##GRAN(         \
+  __device__ ATTR_NO_INLINE void rocshmem_ctx_##TNAME##_get_nbi_##GRAN(     \
+      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
+  __device__ ATTR_NO_INLINE void rocshmem_##TNAME##_get_nbi_##GRAN(         \
       T *dest, const T *source, size_t nelems, int pe);
 
 /**
  * @brief Writes contiguous data of \p nelems bytes from \p source on the
  * calling PE to \p dest at \p pe. The caller will block until the operation
  * completes locally (it is safe to reuse \p source). The caller must
- * call into roc_shmem_quiet() if remote completion is required.
+ * call into rocshmem_quiet() if remote completion is required.
  *
  * This function can be called from divergent control paths at per-wave
  * granularity. However, all threads in a wave must participate in the
@@ -2145,10 +2145,10 @@ TEST_API_GEN(unsigned long long, ulonglong)  // NOLINT(runtime/int)
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmem_ctx_putmem_wave(
-    roc_shmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe);
+__device__ ATTR_NO_INLINE void rocshmem_ctx_putmem_wave(
+    rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe);
 
-__device__ ATTR_NO_INLINE void roc_shmem_putmem_wave(void *dest,
+__device__ ATTR_NO_INLINE void rocshmem_putmem_wave(void *dest,
                                                      const void *source,
                                                      size_t nelems, int pe);
 
@@ -2156,7 +2156,7 @@ __device__ ATTR_NO_INLINE void roc_shmem_putmem_wave(void *dest,
  * @brief Writes contiguous data of \p nelems bytes from \p source on the
  * calling PE to \p dest at \p pe. The caller will block until the operation
  * completes locally (it is safe to reuse \p source). The caller must
- * call into roc_shmem_quiet() if remote completion is required.
+ * call into rocshmem_quiet() if remote completion is required.
  *
  * This function can be called from divergent control paths at per-workgroup
  * (WG) granularity. However, all threads in the workgroup must participate in
@@ -2171,12 +2171,12 @@ __device__ ATTR_NO_INLINE void roc_shmem_putmem_wave(void *dest,
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmem_ctx_putmem_wg(roc_shmem_ctx_t ctx,
+__device__ ATTR_NO_INLINE void rocshmem_ctx_putmem_wg(rocshmem_ctx_t ctx,
                                                        void *dest,
                                                        const void *source,
                                                        size_t nelems, int pe);
 
-__device__ ATTR_NO_INLINE void roc_shmem_putmem_wg(void *dest,
+__device__ ATTR_NO_INLINE void rocshmem_putmem_wg(void *dest,
                                                    const void *source,
                                                    size_t nelems, int pe);
 
@@ -2184,7 +2184,7 @@ __device__ ATTR_NO_INLINE void roc_shmem_putmem_wg(void *dest,
  * @brief Writes contiguous data of \p nelems elements from \p source on the
  * calling PE to \p dest at \p pe. The caller will block until the operation
  * completes locally (it is safe to reuse \p source). The caller must
- * call into roc_shmem_quiet() if remote completion is required.
+ * call into rocshmem_quiet() if remote completion is required.
  *
  * This function can be called from divergent control paths at per-wave
  * granularity. However, all threads in a wave must collectively participate
@@ -2220,7 +2220,7 @@ PUT_API_EXT_GEN(wave, unsigned long long, ulonglong)  // NOLINT(runtime/int)
  * @brief Writes contiguous data of \p nelems elements from \p source on the
  * calling PE to \p dest at \p pe. The caller will block until the operation
  * completes locally (it is safe to reuse \p source). The caller must
- * call into roc_shmem_quiet() if remote completion is required.
+ * call into rocshmem_quiet() if remote completion is required.
  *
  * This function can be called from divergent control paths at per-workgroub
  * (WG) granularity. However, All threads in a WG must collectively participate
@@ -2270,10 +2270,10 @@ PUT_API_EXT_GEN(wg, unsigned long long, ulonglong)  // NOLINT(runtime/int)
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmem_ctx_getmem_wave(
-    roc_shmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe);
+__device__ ATTR_NO_INLINE void rocshmem_ctx_getmem_wave(
+    rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe);
 
-__device__ ATTR_NO_INLINE void roc_shmem_getmem_wave(void *dest,
+__device__ ATTR_NO_INLINE void rocshmem_getmem_wave(void *dest,
                                                      const void *source,
                                                      size_t nelems, int pe);
 
@@ -2295,12 +2295,12 @@ __device__ ATTR_NO_INLINE void roc_shmem_getmem_wave(void *dest,
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmem_ctx_getmem_wg(roc_shmem_ctx_t ctx,
+__device__ ATTR_NO_INLINE void rocshmem_ctx_getmem_wg(rocshmem_ctx_t ctx,
                                                        void *dest,
                                                        const void *source,
                                                        size_t nelems, int pe);
 
-__device__ ATTR_NO_INLINE void roc_shmem_getmem_wg(void *dest,
+__device__ ATTR_NO_INLINE void rocshmem_getmem_wg(void *dest,
                                                    const void *source,
                                                    size_t nelems, int pe);
 
@@ -2378,7 +2378,7 @@ GET_API_EXT_GEN(wg, unsigned long long, ulonglong)  // NOLINT(runtime/int)
  * @brief Writes contiguous data of \p nelems bytes from \p source on the
  * calling PE to \p dest on \p pe. The operation is not blocking. The caller
  * will return as soon as the request is posted. The caller must call
- * roc_shmem_quiet() on the same context if completion notification is
+ * rocshmem_quiet() on the same context if completion notification is
  * required.
  *
  * This function can be called from divergent control paths at per-wave
@@ -2394,10 +2394,10 @@ GET_API_EXT_GEN(wg, unsigned long long, ulonglong)  // NOLINT(runtime/int)
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmem_ctx_putmem_nbi_wave(
-    roc_shmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe);
+__device__ ATTR_NO_INLINE void rocshmem_ctx_putmem_nbi_wave(
+    rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe);
 
-__device__ ATTR_NO_INLINE void roc_shmem_putmem_nbi_wave(void *dest,
+__device__ ATTR_NO_INLINE void rocshmem_putmem_nbi_wave(void *dest,
                                                          const void *source,
                                                          size_t nelems,
                                                          int pe);
@@ -2406,7 +2406,7 @@ __device__ ATTR_NO_INLINE void roc_shmem_putmem_nbi_wave(void *dest,
  * @brief Writes contiguous data of \p nelems elements from \p source on the
  * calling PE to \p dest on \p pe. The operation is not blocking. The caller
  * will return as soon as the request is posted. The caller must call
- * roc_shmem_quiet() on the same context if completion notification is
+ * rocshmem_quiet() on the same context if completion notification is
  * required.
  *
  * This function can be called from divergent control paths at per-wave
@@ -2443,7 +2443,7 @@ PUT_NBI_API_EXT_GEN(wave, unsigned long long, ulonglong)  // NOLINT
  * @brief Writes contiguous data of \p nelems bytes from \p source on the
  * calling PE to \p dest on \p pe. The operation is not blocking. The caller
  * will return as soon as the request is posted. The caller must call
- * roc_shmem_quiet() on the same context if completion notification is
+ * rocshmem_quiet() on the same context if completion notification is
  * required.
  *
  * This function can be called from divergent control paths at per-workgroup
@@ -2459,10 +2459,10 @@ PUT_NBI_API_EXT_GEN(wave, unsigned long long, ulonglong)  // NOLINT
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmem_ctx_putmem_nbi_wg(
-    roc_shmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe);
+__device__ ATTR_NO_INLINE void rocshmem_ctx_putmem_nbi_wg(
+    rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe);
 
-__device__ ATTR_NO_INLINE void roc_shmem_putmem_nbi_wg(void *dest,
+__device__ ATTR_NO_INLINE void rocshmem_putmem_nbi_wg(void *dest,
                                                        const void *source,
                                                        size_t nelems, int pe);
 
@@ -2470,7 +2470,7 @@ __device__ ATTR_NO_INLINE void roc_shmem_putmem_nbi_wg(void *dest,
  * @brief Writes contiguous data of \p nelems elements from \p source on the
  * calling PE to \p dest on \p pe. The operation is not blocking. The caller
  * will return as soon as the request is posted. The caller must call
- * roc_shmem_quiet() on the same context if completion notification is
+ * rocshmem_quiet() on the same context if completion notification is
  * required.
  *
  * This function can be called from divergent control paths at per-workgroup
@@ -2507,7 +2507,7 @@ PUT_NBI_API_EXT_GEN(wg, unsigned long long, ulonglong)  // NOLINT(runtime/int)
  * @brief Reads contiguous data of \p nelems bytes from \p source on \p pe
  * to \p dest on the calling PE. The operation is not blocking. The caller
  * will return as soon as the request is posted. The caller must call
- * roc_shmem_quiet() on the same context if completion notification is
+ * rocshmem_quiet() on the same context if completion notification is
  * required.
  *
  * This function can be called from divergent control paths at per-wave
@@ -2523,10 +2523,10 @@ PUT_NBI_API_EXT_GEN(wg, unsigned long long, ulonglong)  // NOLINT(runtime/int)
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmem_ctx_getmem_nbi_wave(
-    roc_shmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe);
+__device__ ATTR_NO_INLINE void rocshmem_ctx_getmem_nbi_wave(
+    rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe);
 
-__device__ ATTR_NO_INLINE void roc_shmem_getmem_nbi_wave(void *dest,
+__device__ ATTR_NO_INLINE void rocshmem_getmem_nbi_wave(void *dest,
                                                          const void *source,
                                                          size_t nelems,
                                                          int pe);
@@ -2535,7 +2535,7 @@ __device__ ATTR_NO_INLINE void roc_shmem_getmem_nbi_wave(void *dest,
  * @brief Reads contiguous data of \p nelems elements from \p source on \p pe
  * to \p dest on the calling PE. The operation is not blocking. The caller
  * will return as soon as the request is posted. The caller must call
- * roc_shmem_quiet() on the same context if completion notification is
+ * rocshmem_quiet() on the same context if completion notification is
  * required.
  *
  * This function can be called from divergent control paths at per-wave
@@ -2572,7 +2572,7 @@ GET_NBI_API_EXT_GEN(wave, unsigned long long, ulonglong)  // NOLINT
  * @brief Reads contiguous data of \p nelems bytes from \p source on \p pe
  * to \p dest on the calling PE. The operation is not blocking. The caller
  * will return as soon as the request is posted. The caller must call
- * roc_shmem_quiet() on the same context if completion notification is
+ * rocshmem_quiet() on the same context if completion notification is
  * required.
  *
  * This function can be called from divergent control paths at per-workgroup
@@ -2588,10 +2588,10 @@ GET_NBI_API_EXT_GEN(wave, unsigned long long, ulonglong)  // NOLINT
  *
  * @return void.
  */
-__device__ ATTR_NO_INLINE void roc_shmem_ctx_getmem_nbi_wg(
-    roc_shmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe);
+__device__ ATTR_NO_INLINE void rocshmem_ctx_getmem_nbi_wg(
+    rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe);
 
-__device__ ATTR_NO_INLINE void roc_shmem_getmem_nbi_wg(void *dest,
+__device__ ATTR_NO_INLINE void rocshmem_getmem_nbi_wg(void *dest,
                                                        const void *source,
                                                        size_t nelems, int pe);
 
@@ -2599,7 +2599,7 @@ __device__ ATTR_NO_INLINE void roc_shmem_getmem_nbi_wg(void *dest,
  * @brief Reads contiguous data of \p nelems elements from \p source on \p pe
  * to \p dest on the calling PE. The operation is not blocking. The caller
  * will return as soon as the request is posted. The caller must call
- * roc_shmem_quiet() on the same context if completion notification is
+ * rocshmem_quiet() on the same context if completion notification is
  * required.
  *
  * This function can be called from divergent control paths at per-workgroup
@@ -2634,16 +2634,16 @@ GET_NBI_API_EXT_GEN(wg, unsigned long long, ulonglong)  // NOLINT(runtime/int)
 
 
 /*
- * ROC_SHMEM Signalling Operations
+ * ROCSHMEM Signalling Operations
  */
 #define PUTMEM_SIGNAL_DEC(SUFFIX)                                                         \
-  __device__ ATTR_NO_INLINE void roc_shmem_putmem_signal##SUFFIX(void *dest,              \
+  __device__ ATTR_NO_INLINE void rocshmem_putmem_signal##SUFFIX(void *dest,              \
                                                                  const void *source,      \
                                                                  size_t nelems,           \
                                                                  uint64_t *sig_addr,      \
                                                                  uint64_t signal,         \
                                                                  int sig_op, int pe);     \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_putmem_signal##SUFFIX(roc_shmem_ctx_t ctx, \
+  __device__ ATTR_NO_INLINE void rocshmem_ctx_putmem_signal##SUFFIX(rocshmem_ctx_t ctx, \
                                                                      void *dest,          \
                                                                      const void *source,  \
                                                                      size_t nelems,       \
@@ -2652,14 +2652,14 @@ GET_NBI_API_EXT_GEN(wg, unsigned long long, ulonglong)  // NOLINT(runtime/int)
                                                                      int sig_op, int pe);
 
 #define PUT_SIGNAL_TYPED_DEC(T, TNAME, SUFFIX)                                                   \
-  __device__ ATTR_NO_INLINE void roc_shmem_ctx_##TNAME##_put_signal##SUFFIX(roc_shmem_ctx_t ctx, \
+  __device__ ATTR_NO_INLINE void rocshmem_ctx_##TNAME##_put_signal##SUFFIX(rocshmem_ctx_t ctx, \
                                                                             T *dest,             \
                                                                             const T *source,     \
                                                                             size_t nelems,       \
                                                                             uint64_t *sig_addr,  \
                                                                             uint64_t signal,     \
                                                                             int sig_op, int pe); \
-  __device__ ATTR_NO_INLINE void roc_shmem_##TNAME##_put_signal##SUFFIX(T *dest,                 \
+  __device__ ATTR_NO_INLINE void rocshmem_##TNAME##_put_signal##SUFFIX(T *dest,                 \
                                                                         const T *source,         \
                                                                         size_t nelems,           \
                                                                         uint64_t *sig_addr,      \
@@ -2692,10 +2692,10 @@ SIGNALING_API_DEC(_nbi)
 SIGNALING_API_DEC(_nbi_wg)
 SIGNALING_API_DEC(_nbi_wave)
 
-__device__ ATTR_NO_INLINE uint64_t roc_shmem_signal_fetch(const uint64_t *sig_addr);
-__device__ ATTR_NO_INLINE uint64_t roc_shmem_signal_fetch_wg(const uint64_t *sig_addr);
-__device__ ATTR_NO_INLINE uint64_t roc_shmem_signal_fetch_wave(const uint64_t *sig_addr);
+__device__ ATTR_NO_INLINE uint64_t rocshmem_signal_fetch(const uint64_t *sig_addr);
+__device__ ATTR_NO_INLINE uint64_t rocshmem_signal_fetch_wg(const uint64_t *sig_addr);
+__device__ ATTR_NO_INLINE uint64_t rocshmem_signal_fetch_wave(const uint64_t *sig_addr);
 
 }  // namespace rocshmem
 
-#endif  // LIBRARY_INCLUDE_ROC_SHMEM_HPP
+#endif  // LIBRARY_INCLUDE_ROCSHMEM_HPP

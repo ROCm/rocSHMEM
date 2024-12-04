@@ -22,7 +22,7 @@
 
 #include "signaling_operations_tester.hpp"
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -33,79 +33,79 @@ __global__ void SignalingOperationsTest(int loop, int skip, uint64_t *timer, cha
                               char *r_buf, int size, uint64_t *sig_addr,
                               uint64_t *fetched_value,
                               TestType type, ShmemContextType ctx_type) {
-  __shared__ roc_shmem_ctx_t ctx;
-  roc_shmem_wg_init();
-  roc_shmem_wg_ctx_create(ctx_type, &ctx);
+  __shared__ rocshmem_ctx_t ctx;
+  rocshmem_wg_init();
+  rocshmem_wg_ctx_create(ctx_type, &ctx);
 
   uint64_t start;
   uint64_t signal = 0;
-  int sig_op = ROC_SHMEM_SIGNAL_SET;
+  int sig_op = ROCSHMEM_SIGNAL_SET;
 
   for (int i = 0; i < loop + skip; i++) {
     if (i == skip) {
         __syncthreads();
-        start = roc_shmem_timer();
+        start = rocshmem_timer();
     }
 
     switch (type) {
       case PutSignalTestType:
-        roc_shmem_ctx_putmem_signal(ctx, r_buf, s_buf, size, sig_addr, signal, sig_op, 1);
+        rocshmem_ctx_putmem_signal(ctx, r_buf, s_buf, size, sig_addr, signal, sig_op, 1);
         break;
       case WGPutSignalTestType:
-        roc_shmem_ctx_putmem_signal_wg(ctx, r_buf, s_buf, size, sig_addr, signal, sig_op, 1);
+        rocshmem_ctx_putmem_signal_wg(ctx, r_buf, s_buf, size, sig_addr, signal, sig_op, 1);
         break;
       case WAVEPutSignalTestType:
-        roc_shmem_ctx_putmem_signal_wave(ctx, r_buf, s_buf, size, sig_addr, signal, sig_op, 1);
+        rocshmem_ctx_putmem_signal_wave(ctx, r_buf, s_buf, size, sig_addr, signal, sig_op, 1);
         break;
       case PutSignalNBITestType:
-        roc_shmem_ctx_putmem_signal_nbi(ctx, r_buf, s_buf, size, sig_addr, signal, sig_op, 1);
+        rocshmem_ctx_putmem_signal_nbi(ctx, r_buf, s_buf, size, sig_addr, signal, sig_op, 1);
         break;
       case WGPutSignalNBITestType:
-        roc_shmem_ctx_putmem_signal_nbi_wg(ctx, r_buf, s_buf, size, sig_addr, signal, sig_op, 1);
+        rocshmem_ctx_putmem_signal_nbi_wg(ctx, r_buf, s_buf, size, sig_addr, signal, sig_op, 1);
         break;
       case WAVEPutSignalNBITestType:
-        roc_shmem_ctx_putmem_signal_nbi_wave(ctx, r_buf, s_buf, size, sig_addr, signal, sig_op, 1);
+        rocshmem_ctx_putmem_signal_nbi_wave(ctx, r_buf, s_buf, size, sig_addr, signal, sig_op, 1);
         break;
       case SignalFetchTestType:
-        *fetched_value = roc_shmem_signal_fetch(sig_addr);
+        *fetched_value = rocshmem_signal_fetch(sig_addr);
         break;
       case WGSignalFetchTestType:
-        *fetched_value = roc_shmem_signal_fetch_wg(sig_addr);
+        *fetched_value = rocshmem_signal_fetch_wg(sig_addr);
         break;
       case WAVESignalFetchTestType:
-        *fetched_value = roc_shmem_signal_fetch_wave(sig_addr);
+        *fetched_value = rocshmem_signal_fetch_wave(sig_addr);
         break;
       default:
         break;
     }
   }
 
-  roc_shmem_ctx_quiet(ctx);
+  rocshmem_ctx_quiet(ctx);
 
   __syncthreads();
 
   if (hipThreadIdx_x == 0) {
-    timer[hipBlockIdx_x] = roc_shmem_timer() - start;
+    timer[hipBlockIdx_x] = rocshmem_timer() - start;
   }
 
-  roc_shmem_wg_ctx_destroy(&ctx);
-  roc_shmem_wg_finalize();
+  rocshmem_wg_ctx_destroy(&ctx);
+  rocshmem_wg_finalize();
 }
 
 /******************************************************************************
  * HOST TESTER CLASS METHODS
  *****************************************************************************/
 SignalingOperationsTester::SignalingOperationsTester(TesterArguments args) : Tester(args) {
-  s_buf = (char *)roc_shmem_malloc(args.max_msg_size * args.wg_size);
-  r_buf = (char *)roc_shmem_malloc(args.max_msg_size * args.wg_size);
-  sig_addr = (uint64_t *)roc_shmem_malloc(sizeof(uint64_t));
+  s_buf = (char *)rocshmem_malloc(args.max_msg_size * args.wg_size);
+  r_buf = (char *)rocshmem_malloc(args.max_msg_size * args.wg_size);
+  sig_addr = (uint64_t *)rocshmem_malloc(sizeof(uint64_t));
   CHECK_HIP(hipMallocManaged(&fetched_value, sizeof(uint64_t), hipMemAttachHost));
 }
 
 SignalingOperationsTester::~SignalingOperationsTester() {
-  roc_shmem_free(s_buf);
-  roc_shmem_free(r_buf);
-  roc_shmem_free(sig_addr);
+  rocshmem_free(s_buf);
+  rocshmem_free(r_buf);
+  rocshmem_free(sig_addr);
   CHECK_HIP(hipFree(fetched_value));
 }
 

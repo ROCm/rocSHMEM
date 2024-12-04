@@ -27,41 +27,41 @@
  */
 
 /* Each PE sends a message to every PE.  PEs wait for all messages to
- * arrive using roc_shmem_test to poll the array. */
+ * arrive using rocshmem_test to poll the array. */
 
 #include <stdio.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
 /* Wait for any entry in the given ivar array to match the wait criteria and
  * return the index of the entry that satisfied the test. */
-static int wait_any(long *ivar, int count, roc_shmem_cmps cmp, long value) {
+static int wait_any(long *ivar, int count, rocshmem_cmps cmp, long value) {
   int idx = 0;
-  while (!roc_shmem_long_test(&ivar[idx], cmp, value)) idx = (idx + 1) % count;
+  while (!rocshmem_long_test(&ivar[idx], cmp, value)) idx = (idx + 1) % count;
   return idx;
 }
 
 int main(void) {
-  roc_shmem_init();
-  const int mype = roc_shmem_my_pe();
-  const int npes = roc_shmem_n_pes();
+  rocshmem_init();
+  const int mype = rocshmem_my_pe();
+  const int npes = rocshmem_n_pes();
 
-  long *wait_vars = (long *)roc_shmem_malloc(npes * sizeof(long));
+  long *wait_vars = (long *)rocshmem_malloc(npes * sizeof(long));
   for (int i = 0; i < npes; i++) {
     wait_vars[i] = 0;
   }
 
   /* Put mype+1 to every PE */
   for (int i = 0; i < npes; i++)
-    roc_shmem_long_p(&wait_vars[mype], mype + 1, i);
+    rocshmem_long_p(&wait_vars[mype], mype + 1, i);
 
   int nrecv = 0, errors = 0;
 
   /* Wait for all messages to arrive */
   while (nrecv < npes) {
-    int who = wait_any(wait_vars, npes, ROC_SHMEM_CMP_NE, 0);
+    int who = wait_any(wait_vars, npes, ROCSHMEM_CMP_NE, 0);
     if (wait_vars[who] != who + 1) {
       printf("%d: wait_vars[%d] = %ld, expected %d\n", mype, who,
              wait_vars[who], who + 1);
@@ -71,7 +71,7 @@ int main(void) {
     nrecv++;
   }
 
-  roc_shmem_free(wait_vars);
-  roc_shmem_finalize();
+  rocshmem_free(wait_vars);
+  rocshmem_finalize();
   return errors;
 }

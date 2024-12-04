@@ -22,21 +22,21 @@
 
 using namespace rocshmem;
 
-roc_shmem_team_t team_fcollect_world_dup;
+rocshmem_team_t team_fcollect_world_dup;
 
 /* Declare the template with a generic implementation */
 template <typename T>
-__device__ void wg_fcollect(roc_shmem_ctx_t ctx, roc_shmem_team_t team, T *dest,
+__device__ void wg_fcollect(rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest,
                             const T *source, int nelems) {
   return;
 }
 
-/* Define templates to call ROC_SHMEM */
-#define FCOLLECT_DEF_GEN(T, TNAME)                                           \
-  template <>                                                                \
-  __device__ void wg_fcollect<T>(roc_shmem_ctx_t ctx, roc_shmem_team_t team, \
-                                 T * dest, const T *source, int nelem) {     \
-    roc_shmem_ctx_##TNAME##_wg_fcollect(ctx, team, dest, source, nelem);     \
+/* Define templates to call rocSHMEM */
+#define FCOLLECT_DEF_GEN(T, TNAME)                                            \
+  template <>                                                                 \
+  __device__ void wg_fcollect<T>(rocshmem_ctx_t ctx, rocshmem_team_t team,    \
+                                 T * dest, const T *source, int nelem) {      \
+    rocshmem_ctx_##TNAME##_wg_fcollect(ctx, team, dest, source, nelem);       \
   }
 
 FCOLLECT_DEF_GEN(float, float)
@@ -60,19 +60,19 @@ FCOLLECT_DEF_GEN(unsigned long long, ulonglong)
 template <typename T1>
 __global__ void FcollectTest(int loop, int skip, uint64_t *timer,
                              T1 *source_buf, T1 *dest_buf, int size,
-                             ShmemContextType ctx_type, roc_shmem_team_t team) {
-  __shared__ roc_shmem_ctx_t ctx;
+                             ShmemContextType ctx_type, rocshmem_team_t team) {
+  __shared__ rocshmem_ctx_t ctx;
 
-  roc_shmem_wg_init();
-  roc_shmem_wg_ctx_create(ctx_type, &ctx);
+  rocshmem_wg_init();
+  rocshmem_wg_ctx_create(ctx_type, &ctx);
 
-  int n_pes = roc_shmem_ctx_n_pes(ctx);
+  int n_pes = rocshmem_ctx_n_pes(ctx);
   __syncthreads();
 
   uint64_t start;
   for (int i = 0; i < loop + skip; i++) {
     if (i == skip && hipThreadIdx_x == 0) {
-      start = roc_shmem_timer();
+      start = rocshmem_timer();
     }
     wg_fcollect<T1>(ctx, team,
                     dest_buf,    // T* dest
@@ -83,11 +83,11 @@ __global__ void FcollectTest(int loop, int skip, uint64_t *timer,
   __syncthreads();
 
   if (hipThreadIdx_x == 0) {
-    timer[hipBlockIdx_x] = roc_shmem_timer() - start;
+    timer[hipBlockIdx_x] = rocshmem_timer() - start;
   }
 
-  roc_shmem_wg_ctx_destroy(&ctx);
-  roc_shmem_wg_finalize();
+  rocshmem_wg_ctx_destroy(&ctx);
+  rocshmem_wg_finalize();
 }
 
 /******************************************************************************
@@ -98,24 +98,24 @@ FcollectTester<T1>::FcollectTester(
     TesterArguments args, std::function<void(T1 &, T1 &)> f1,
     std::function<std::pair<bool, std::string>(const T1 &, T1)> f2)
     : Tester(args), init_buf{f1}, verify_buf{f2} {
-  int n_pes = roc_shmem_team_n_pes(ROC_SHMEM_TEAM_WORLD);
-  source_buf = (T1 *)roc_shmem_malloc(args.max_msg_size * sizeof(T1));
-  dest_buf = (T1 *)roc_shmem_malloc(args.max_msg_size * sizeof(T1) * n_pes);
+  int n_pes = rocshmem_team_n_pes(ROCSHMEM_TEAM_WORLD);
+  source_buf = (T1 *)rocshmem_malloc(args.max_msg_size * sizeof(T1));
+  dest_buf = (T1 *)rocshmem_malloc(args.max_msg_size * sizeof(T1) * n_pes);
 }
 
 template <typename T1>
 FcollectTester<T1>::~FcollectTester() {
-  roc_shmem_free(source_buf);
-  roc_shmem_free(dest_buf);
+  rocshmem_free(source_buf);
+  rocshmem_free(dest_buf);
 }
 
 template <typename T1>
 void FcollectTester<T1>::preLaunchKernel() {
-  int n_pes = roc_shmem_team_n_pes(ROC_SHMEM_TEAM_WORLD);
+  int n_pes = rocshmem_team_n_pes(ROCSHMEM_TEAM_WORLD);
   bw_factor = sizeof(T1) * n_pes;
 
-  team_fcollect_world_dup = ROC_SHMEM_TEAM_INVALID;
-  roc_shmem_team_split_strided(ROC_SHMEM_TEAM_WORLD, 0, 1, n_pes, nullptr, 0,
+  team_fcollect_world_dup = ROCSHMEM_TEAM_INVALID;
+  rocshmem_team_split_strided(ROCSHMEM_TEAM_WORLD, 0, 1, n_pes, nullptr, 0,
                                &team_fcollect_world_dup);
 }
 
@@ -134,12 +134,12 @@ void FcollectTester<T1>::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
 
 template <typename T1>
 void FcollectTester<T1>::postLaunchKernel() {
-  roc_shmem_team_destroy(team_fcollect_world_dup);
+  rocshmem_team_destroy(team_fcollect_world_dup);
 }
 
 template <typename T1>
 void FcollectTester<T1>::resetBuffers(uint64_t size) {
-  int n_pes = roc_shmem_team_n_pes(ROC_SHMEM_TEAM_WORLD);
+  int n_pes = rocshmem_team_n_pes(ROCSHMEM_TEAM_WORLD);
   for (int i = 0; i < n_pes; i++) {
     for (int j = 0; j < size; j++) {
       // Note: This is redundant work,
@@ -151,7 +151,7 @@ void FcollectTester<T1>::resetBuffers(uint64_t size) {
 
 template <typename T1>
 void FcollectTester<T1>::verifyResults(uint64_t size) {
-  int n_pes = roc_shmem_team_n_pes(ROC_SHMEM_TEAM_WORLD);
+  int n_pes = rocshmem_team_n_pes(ROCSHMEM_TEAM_WORLD);
   for (int i = 0; i < n_pes; i++) {
     for (int j = 0; j < size; j++) {
       auto r = verify_buf(dest_buf[i * size + j], i);

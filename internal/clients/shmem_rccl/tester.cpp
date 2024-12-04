@@ -27,7 +27,7 @@
 #include <iostream>
 #include <hip/hip_runtime.h>
 #include <mpi.h>
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 //#include "broadcast_tester.hpp"
 #include "primitive_tester.hpp"
@@ -125,8 +125,8 @@ Tester::execute()
                 printf("error = %d \n", err);
             }
 
-//            roc_shmem_dump_stats();
-      //      roc_shmem_reset_stats();
+//            rocshmem_dump_stats();
+      //      rocshmem_reset_stats();
 
 
 

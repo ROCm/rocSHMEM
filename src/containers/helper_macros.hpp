@@ -30,11 +30,11 @@
 #include <cstdio>
 #include <iostream>
 
-#include "roc_shmem/roc_shmem.hpp"
+#include "rocshmem/rocshmem.hpp"
 
-#define BARRIER() rocshmem::roc_shmem_wg_barrier_all()
-#define RANK rocshmem::roc_shmem_my_pe()
-#define NPES rocshmem::roc_shmem_n_pes()
+#define BARRIER() rocshmem::rocshmem_wg_barrier_all()
+#define RANK rocshmem::rocshmem_my_pe()
+#define NPES rocshmem::rocshmem_n_pes()
 
 #define PE_BITS ((uint64_t)ceil(log(NPES) / log(2)))
 #define PE_OF(X) ((X) >> (64 - PE_BITS))

@@ -22,7 +22,7 @@
 
 #include "extended_primitives.hpp"
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 #include <numeric>
 
@@ -35,9 +35,9 @@ __global__ void ExtendedPrimitiveTest(int loop, int skip, uint64_t *timer,
                                       char *s_buf, char *r_buf, int size,
                                       TestType type,
                                       ShmemContextType ctx_type) {
-  __shared__ roc_shmem_ctx_t ctx;
-  roc_shmem_wg_init();
-  roc_shmem_wg_ctx_create(ctx_type, &ctx);
+  __shared__ rocshmem_ctx_t ctx;
+  rocshmem_wg_init();
+  rocshmem_wg_ctx_create(ctx_type, &ctx);
 
   /**
    * Calculate start index for each work group for tiled version
@@ -50,34 +50,34 @@ __global__ void ExtendedPrimitiveTest(int loop, int skip, uint64_t *timer,
   r_buf += idx;
 
   for (int i = 0; i < loop + skip; i++) {
-    if (i == skip) start = roc_shmem_timer();
+    if (i == skip) start = rocshmem_timer();
 
     switch (type) {
       case WGGetTestType:
-        roc_shmem_ctx_getmem_wg(ctx, r_buf, s_buf, size, 1);
+        rocshmem_ctx_getmem_wg(ctx, r_buf, s_buf, size, 1);
         break;
       case WGGetNBITestType:
-        roc_shmem_ctx_getmem_nbi_wg(ctx, r_buf, s_buf, size, 1);
+        rocshmem_ctx_getmem_nbi_wg(ctx, r_buf, s_buf, size, 1);
         break;
       case WGPutTestType:
-        roc_shmem_ctx_putmem_wg(ctx, r_buf, s_buf, size, 1);
+        rocshmem_ctx_putmem_wg(ctx, r_buf, s_buf, size, 1);
         break;
       case WGPutNBITestType:
-        roc_shmem_ctx_putmem_nbi_wg(ctx, r_buf, s_buf, size, 1);
+        rocshmem_ctx_putmem_nbi_wg(ctx, r_buf, s_buf, size, 1);
         break;
       default:
         break;
     }
   }
 
-  roc_shmem_ctx_quiet(ctx);
+  rocshmem_ctx_quiet(ctx);
 
   if (hipThreadIdx_x == 0) {
-    timer[hipBlockIdx_x] = roc_shmem_timer() - start;
+    timer[hipBlockIdx_x] = rocshmem_timer() - start;
   }
 
-  roc_shmem_wg_ctx_destroy(&ctx);
-  roc_shmem_wg_finalize();
+  rocshmem_wg_ctx_destroy(&ctx);
+  rocshmem_wg_finalize();
 }
 
 /******************************************************************************
@@ -85,13 +85,13 @@ __global__ void ExtendedPrimitiveTest(int loop, int skip, uint64_t *timer,
  *****************************************************************************/
 ExtendedPrimitiveTester::ExtendedPrimitiveTester(TesterArguments args)
     : Tester(args) {
-  s_buf = static_cast<int*>(roc_shmem_malloc(args.max_msg_size * args.num_wgs));
-  r_buf = static_cast<int*>(roc_shmem_malloc(args.max_msg_size * args.num_wgs));
+  s_buf = static_cast<int*>(rocshmem_malloc(args.max_msg_size * args.num_wgs));
+  r_buf = static_cast<int*>(rocshmem_malloc(args.max_msg_size * args.num_wgs));
 }
 
 ExtendedPrimitiveTester::~ExtendedPrimitiveTester() {
-  roc_shmem_free(s_buf);
-  roc_shmem_free(r_buf);
+  rocshmem_free(s_buf);
+  rocshmem_free(r_buf);
 }
 
 void ExtendedPrimitiveTester::resetBuffers(uint64_t size) {

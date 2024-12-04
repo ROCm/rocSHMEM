@@ -202,7 +202,7 @@ void Backend::reset_stats() {
   reset_backend_stats();
 }
 
-__device__ bool Backend::create_ctx(int64_t option, roc_shmem_ctx_t* ctx) {
+__device__ bool Backend::create_ctx(int64_t option, rocshmem_ctx_t* ctx) {
 #ifdef USE_GPU_IB
   return static_cast<GPUIBBackend*>(this)->create_ctx(option, ctx);
 #elif defined(USE_RO)
@@ -212,7 +212,7 @@ __device__ bool Backend::create_ctx(int64_t option, roc_shmem_ctx_t* ctx) {
 #endif
 }
 
-__device__ void Backend::destroy_ctx(roc_shmem_ctx_t* ctx) {
+__device__ void Backend::destroy_ctx(rocshmem_ctx_t* ctx) {
 #ifdef USE_GPU_IB
   static_cast<GPUIBBackend*>(this)->destroy_ctx(ctx);
 #elif defined(USE_RO)

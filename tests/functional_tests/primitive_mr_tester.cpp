@@ -22,7 +22,7 @@
 
 #include "primitive_mr_tester.hpp"
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -32,42 +32,42 @@ using namespace rocshmem;
 __global__ void PrimitiveMRTest(int loop, uint64_t *timer, char *s_buf,
                                 char *r_buf, int size,
                                 ShmemContextType ctx_type) {
-  __shared__ roc_shmem_ctx_t ctx;
-  roc_shmem_wg_init();
-  roc_shmem_wg_ctx_create(ctx_type, &ctx);
+  __shared__ rocshmem_ctx_t ctx;
+  rocshmem_wg_init();
+  rocshmem_wg_ctx_create(ctx_type, &ctx);
 
   if (hipThreadIdx_x == 0) {
     uint64_t start;
 
-    start = roc_shmem_timer();
+    start = rocshmem_timer();
 
     for (int win_i = 0; win_i < 64 * loop; win_i++) {
       for (int i = 0; i < 64; i++) {
-        roc_shmem_ctx_putmem_nbi(ctx, r_buf, s_buf, size, 1);
+        rocshmem_ctx_putmem_nbi(ctx, r_buf, s_buf, size, 1);
       }
-      roc_shmem_ctx_quiet(ctx);
+      rocshmem_ctx_quiet(ctx);
     }
 
-    timer[hipBlockIdx_x] = roc_shmem_timer() - start;
+    timer[hipBlockIdx_x] = rocshmem_timer() - start;
   }
 
   __syncthreads();
 
-  roc_shmem_wg_ctx_destroy(&ctx);
-  roc_shmem_wg_finalize();
+  rocshmem_wg_ctx_destroy(&ctx);
+  rocshmem_wg_finalize();
 }
 
 /******************************************************************************
  * HOST TESTER CLASS METHODS
  *****************************************************************************/
 PrimitiveMRTester::PrimitiveMRTester(TesterArguments args) : Tester(args) {
-  s_buf = (char *)roc_shmem_malloc(args.max_msg_size * args.wg_size);
-  r_buf = (char *)roc_shmem_malloc(args.max_msg_size * args.wg_size);
+  s_buf = (char *)rocshmem_malloc(args.max_msg_size * args.wg_size);
+  r_buf = (char *)rocshmem_malloc(args.max_msg_size * args.wg_size);
 }
 
 PrimitiveMRTester::~PrimitiveMRTester() {
-  roc_shmem_free(s_buf);
-  roc_shmem_free(r_buf);
+  rocshmem_free(s_buf);
+  rocshmem_free(r_buf);
 }
 
 void PrimitiveMRTester::resetBuffers(size_t size) {

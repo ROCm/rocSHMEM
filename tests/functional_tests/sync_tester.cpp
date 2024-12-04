@@ -22,33 +22,33 @@
 
 #include "sync_tester.hpp"
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
-roc_shmem_team_t team_sync_world_dup;
+rocshmem_team_t team_sync_world_dup;
 
 /******************************************************************************
  * DEVICE TEST KERNEL
  *****************************************************************************/
 __global__ void SyncTest(int loop, int skip, uint64_t *timer, TestType type,
-                         ShmemContextType ctx_type, roc_shmem_team_t team) {
-  __shared__ roc_shmem_ctx_t ctx;
-  roc_shmem_wg_init();
-  roc_shmem_wg_ctx_create(ctx_type, &ctx);
+                         ShmemContextType ctx_type, rocshmem_team_t team) {
+  __shared__ rocshmem_ctx_t ctx;
+  rocshmem_wg_init();
+  rocshmem_wg_ctx_create(ctx_type, &ctx);
 
   uint64_t start;
   for (int i = 0; i < loop + skip; i++) {
     if (hipThreadIdx_x == 0 && i == skip) {
-      start = roc_shmem_timer();
+      start = rocshmem_timer();
     }
 
     __syncthreads();
     switch (type) {
       case SyncAllTestType:
-        roc_shmem_ctx_wg_sync_all(ctx);
+        rocshmem_ctx_wg_sync_all(ctx);
         break;
       case SyncTestType:
-        roc_shmem_ctx_wg_team_sync(ctx, team);
+        rocshmem_ctx_wg_team_sync(ctx, team);
         break;
       default:
         break;
@@ -57,11 +57,11 @@ __global__ void SyncTest(int loop, int skip, uint64_t *timer, TestType type,
   __syncthreads();
 
   if (hipThreadIdx_x == 0) {
-    timer[hipBlockIdx_x] = roc_shmem_timer() - start;
+    timer[hipBlockIdx_x] = rocshmem_timer() - start;
   }
 
-  roc_shmem_wg_ctx_destroy(&ctx);
-  roc_shmem_wg_finalize();
+  rocshmem_wg_ctx_destroy(&ctx);
+  rocshmem_wg_finalize();
 }
 
 /******************************************************************************
@@ -77,10 +77,10 @@ void SyncTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
                               uint64_t size) {
   size_t shared_bytes = 0;
 
-  int n_pes = roc_shmem_team_n_pes(ROC_SHMEM_TEAM_WORLD);
+  int n_pes = rocshmem_team_n_pes(ROCSHMEM_TEAM_WORLD);
 
-  team_sync_world_dup = ROC_SHMEM_TEAM_INVALID;
-  roc_shmem_team_split_strided(ROC_SHMEM_TEAM_WORLD, 0, 1, n_pes, nullptr, 0,
+  team_sync_world_dup = ROCSHMEM_TEAM_INVALID;
+  rocshmem_team_split_strided(ROCSHMEM_TEAM_WORLD, 0, 1, n_pes, nullptr, 0,
                                &team_sync_world_dup);
 
   hipLaunchKernelGGL(SyncTest, gridSize, blockSize, shared_bytes, stream, loop,

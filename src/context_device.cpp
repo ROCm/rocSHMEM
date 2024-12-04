@@ -154,7 +154,7 @@ __device__ void Context::sync_all() {
   DISPATCH(sync_all());
 }
 
-__device__ void Context::sync(roc_shmem_team_t team) {
+__device__ void Context::sync(rocshmem_team_t team) {
   ctxStats.incStat(NUM_SYNC_ALL);
 
   DISPATCH(sync(team));

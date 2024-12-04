@@ -22,7 +22,7 @@
 
 #include "primitive_tester.hpp"
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -32,40 +32,40 @@ using namespace rocshmem;
 __global__ void PrimitiveTest(int loop, int skip, uint64_t *timer, char *s_buf,
                               char *r_buf, int size, TestType type,
                               ShmemContextType ctx_type) {
-  __shared__ roc_shmem_ctx_t ctx;
-  roc_shmem_wg_init();
-  roc_shmem_wg_ctx_create(ctx_type, &ctx);
+  __shared__ rocshmem_ctx_t ctx;
+  rocshmem_wg_init();
+  rocshmem_wg_ctx_create(ctx_type, &ctx);
 
   uint64_t start;
 
   for (int i = 0; i < loop + skip; i++) {
     if (i == skip) {
         __syncthreads();
-        start = roc_shmem_timer();
+        start = rocshmem_timer();
     }
 
     switch (type) {
       case GetTestType:
-        roc_shmem_ctx_getmem(ctx, r_buf, s_buf, size, 1);
+        rocshmem_ctx_getmem(ctx, r_buf, s_buf, size, 1);
         break;
       case GetNBITestType:
-        roc_shmem_ctx_getmem_nbi(ctx, r_buf, s_buf, size, 1);
+        rocshmem_ctx_getmem_nbi(ctx, r_buf, s_buf, size, 1);
         break;
       case PutTestType:
-        roc_shmem_ctx_putmem(ctx, r_buf, s_buf, size, 1);
+        rocshmem_ctx_putmem(ctx, r_buf, s_buf, size, 1);
         break;
       case PutNBITestType:
-        roc_shmem_ctx_putmem_nbi(ctx, r_buf, s_buf, size, 1);
+        rocshmem_ctx_putmem_nbi(ctx, r_buf, s_buf, size, 1);
         break;
       case PTestType:
         for (int s = 0; s < size; s++) {
           char val = s_buf[s];
-          roc_shmem_ctx_char_p(ctx, &r_buf[s], val, 1);
+          rocshmem_ctx_char_p(ctx, &r_buf[s], val, 1);
         }
         break;
       case GTestType:
         for (int s = 0; s < size; s++) {
-          char ret = roc_shmem_ctx_char_g(ctx, &s_buf[s], 1);
+          char ret = rocshmem_ctx_char_g(ctx, &s_buf[s], 1);
           r_buf[s] = ret;
         }
         break;
@@ -74,29 +74,29 @@ __global__ void PrimitiveTest(int loop, int skip, uint64_t *timer, char *s_buf,
     }
   }
 
-  roc_shmem_ctx_quiet(ctx);
+  rocshmem_ctx_quiet(ctx);
 
   __syncthreads();
 
   if (hipThreadIdx_x == 0) {
-    timer[hipBlockIdx_x] = roc_shmem_timer() - start;
+    timer[hipBlockIdx_x] = rocshmem_timer() - start;
   }
 
-  roc_shmem_wg_ctx_destroy(&ctx);
-  roc_shmem_wg_finalize();
+  rocshmem_wg_ctx_destroy(&ctx);
+  rocshmem_wg_finalize();
 }
 
 /******************************************************************************
  * HOST TESTER CLASS METHODS
  *****************************************************************************/
 PrimitiveTester::PrimitiveTester(TesterArguments args) : Tester(args) {
-  s_buf = (char *)roc_shmem_malloc(args.max_msg_size * args.wg_size);
-  r_buf = (char *)roc_shmem_malloc(args.max_msg_size * args.wg_size);
+  s_buf = (char *)rocshmem_malloc(args.max_msg_size * args.wg_size);
+  r_buf = (char *)rocshmem_malloc(args.max_msg_size * args.wg_size);
 }
 
 PrimitiveTester::~PrimitiveTester() {
-  roc_shmem_free(s_buf);
-  roc_shmem_free(r_buf);
+  rocshmem_free(s_buf);
+  rocshmem_free(r_buf);
 }
 
 void PrimitiveTester::resetBuffers(uint64_t size) {

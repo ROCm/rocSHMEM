@@ -23,7 +23,7 @@
 #include "amo_bitwise_tester.hpp"
 
 #include <iostream>
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -41,13 +41,13 @@ __global__ void AMOBitwiseTest(int loop, int skip, uint64_t *timer, char *r_buf,
 template <typename T>
 AMOBitwiseTester<T>::AMOBitwiseTester(TesterArguments args) : Tester(args) {
   CHECK_HIP(hipMalloc((void **)&_ret_val, args.max_msg_size * args.num_wgs));
-  _r_buf = (char *)roc_shmem_malloc(args.max_msg_size);
-  _s_buf = (T *)roc_shmem_malloc(args.max_msg_size * args.num_wgs);
+  _r_buf = (char *)rocshmem_malloc(args.max_msg_size);
+  _s_buf = (T *)rocshmem_malloc(args.max_msg_size * args.num_wgs);
 }
 
 template <typename T>
 AMOBitwiseTester<T>::~AMOBitwiseTester() {
-  roc_shmem_free(_r_buf);
+  rocshmem_free(_r_buf);
   CHECK_HIP(hipFree(_ret_val));
 }
 
@@ -125,48 +125,48 @@ void AMOBitwiseTester<T>::verifyResults(uint64_t size) {
   __global__ void AMOBitwiseTest<T>(                                          \
       int loop, int skip, uint64_t *timer, char *r_buf, T *s_buf, T *ret_val, \
       TestType type, ShmemContextType ctx_type) {                             \
-    __shared__ roc_shmem_ctx_t ctx;                                           \
-    roc_shmem_wg_init();                                                      \
-    roc_shmem_wg_ctx_create(ctx_type, &ctx);                                  \
+    __shared__ rocshmem_ctx_t ctx;                                            \
+    rocshmem_wg_init();                                                       \
+    rocshmem_wg_ctx_create(ctx_type, &ctx);                                   \
     if (hipThreadIdx_x == 0) {                                                \
       uint64_t start;                                                         \
       T ret = 0;                                                              \
       T cond = 0;                                                             \
       for (int i = 0; i < loop + skip; i++) {                                 \
-        if (i == skip) start = roc_shmem_timer();                             \
+        if (i == skip) start = rocshmem_timer();                              \
         switch (type) {                                                       \
           case AMO_FetchAndTestType:                                          \
-            ret = roc_shmem_ctx_##TNAME##_atomic_fetch_and(ctx, (T *)r_buf,   \
+            ret = rocshmem_ctx_##TNAME##_atomic_fetch_and(ctx, (T *)r_buf,    \
                                                            0xFFFF, 1);        \
             break;                                                            \
           case AMO_AndTestType:                                               \
-            roc_shmem_ctx_##TNAME##_atomic_and(ctx, (T *)r_buf, 0xFFFF, 1);   \
+            rocshmem_ctx_##TNAME##_atomic_and(ctx, (T *)r_buf, 0xFFFF, 1);    \
             break;                                                            \
           case AMO_FetchOrTestType:                                           \
-            ret = roc_shmem_ctx_##TNAME##_atomic_fetch_or(ctx, (T *)r_buf,    \
+            ret = rocshmem_ctx_##TNAME##_atomic_fetch_or(ctx, (T *)r_buf,     \
                                                           0xFFFF, 1);         \
             break;                                                            \
           case AMO_OrTestType:                                                \
-            roc_shmem_ctx_##TNAME##_atomic_or(ctx, (T *)r_buf, 0xFFFF, 1);    \
+            rocshmem_ctx_##TNAME##_atomic_or(ctx, (T *)r_buf, 0xFFFF, 1);     \
             break;                                                            \
           case AMO_FetchXorTestType:                                          \
-            ret = roc_shmem_ctx_##TNAME##_atomic_fetch_xor(ctx, (T *)r_buf,   \
+            ret = rocshmem_ctx_##TNAME##_atomic_fetch_xor(ctx, (T *)r_buf,    \
                                                            0xFFFF, 1);        \
             break;                                                            \
           case AMO_XorTestType:                                               \
-            roc_shmem_ctx_##TNAME##_atomic_xor(ctx, (T *)r_buf, 0xFFFF, 1);   \
+            rocshmem_ctx_##TNAME##_atomic_xor(ctx, (T *)r_buf, 0xFFFF, 1);    \
             break;                                                            \
           default:                                                            \
             break;                                                            \
         }                                                                     \
       }                                                                       \
-      roc_shmem_ctx_quiet(ctx);                                               \
-      timer[hipBlockIdx_x] = roc_shmem_timer() - start;                       \
+      rocshmem_ctx_quiet(ctx);                                                \
+      timer[hipBlockIdx_x] = rocshmem_timer() - start;                        \
       ret_val[hipBlockIdx_x] = ret;                                           \
-      roc_shmem_ctx_getmem(ctx, &s_buf[hipBlockIdx_x], r_buf, sizeof(T), 1);  \
+      rocshmem_ctx_getmem(ctx, &s_buf[hipBlockIdx_x], r_buf, sizeof(T), 1);   \
     }                                                                         \
-    roc_shmem_wg_ctx_destroy(&ctx);                                            \
-    roc_shmem_wg_finalize();                                                  \
+    rocshmem_wg_ctx_destroy(&ctx);                                            \
+    rocshmem_wg_finalize();                                                   \
   }                                                                           \
   template class AMOBitwiseTester<T>;
 

@@ -15,9 +15,9 @@ pipeline {
         UCX_WARN_UNUSED_ENV_VARS="n"
         HSA_FORCE_FINE_GRAIN_PCIE=1
         UCX_TLS="rc"
-        ROC_SHMEM_USE_SQ_GPU_MEM=0
-        ROC_SHMEM_USE_CQ_GPU_MEM=0
-        ROC_SHMEM_NUM_BLOCKS=128
+        ROCSHMEM_USE_SQ_GPU_MEM=0
+        ROCSHMEM_USE_CQ_GPU_MEM=0
+        ROCSHMEM_NUM_BLOCKS=128
     }
     stages {
         stage('Synchronize Source Code') {
@@ -244,13 +244,13 @@ pipeline {
                 stage('RO_NET') {
                     steps {
                         dir("clients/functional_tests") {
-                            sh 'ROC_SHMEM_RO=1 RO_NET_CPU_QUEUE=1 UCX_TLS=rc ./driver.sh ${build_dir}/RO_NET/rocshmem_example_driver ro ${build_dir}/RO_NET'
+                            sh 'ROCSHMEM_RO=1 RO_NET_CPU_QUEUE=1 UCX_TLS=rc ./driver.sh ${build_dir}/RO_NET/rocshmem_example_driver ro ${build_dir}/RO_NET'
                         }
                         dir("clients/sos_tests") {
-                            sh 'ROC_SHMEM_RO=1 ./driver.sh ${build_dir}/RO_NET short ${build_dir}/RO_NET'
+                            sh 'ROCSHMEM_RO=1 ./driver.sh ${build_dir}/RO_NET short ${build_dir}/RO_NET'
                         }
                         //dir("internal/clients/spts") {
-                        //    sh 'ROC_SHMEM_RO=1 RO_NET_CPU_QUEUE=1 UCX_TLS=rc ./driver.sh ${build_dir}/RO_NET/spts multi_thread ${build_dir}/RO_NET'
+                        //    sh 'ROCSHMEM_RO=1 RO_NET_CPU_QUEUE=1 UCX_TLS=rc ./driver.sh ${build_dir}/RO_NET/spts multi_thread ${build_dir}/RO_NET'
                         //}
                     }
                 }

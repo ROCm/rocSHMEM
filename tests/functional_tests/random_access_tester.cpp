@@ -21,7 +21,7 @@
  *****************************************************************************/
 #include "random_access_tester.hpp"
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -55,11 +55,11 @@ __global__ void RandomAccessTest(int loop, int skip, uint64_t *timer,
                                  uint32_t *threads_bins, uint32_t *off_bins,
                                  uint32_t *PE_bins, ShmemContextType ctx_type) {
   uint64_t start;
-  __shared__ roc_shmem_ctx_t ctx;
-  roc_shmem_wg_init();
-  roc_shmem_wg_ctx_create(ctx_type, &ctx);
+  __shared__ rocshmem_ctx_t ctx;
+  rocshmem_wg_init();
+  rocshmem_wg_ctx_create(ctx_type, &ctx);
 
-  int pe = roc_shmem_ctx_my_pe(ctx);
+  int pe = rocshmem_ctx_my_pe(ctx);
   int offset;
   int PE;
 
@@ -69,26 +69,26 @@ __global__ void RandomAccessTest(int loop, int skip, uint64_t *timer,
     r_buf = r_buf + offset;
 
     for (int i = 0; i < loop + skip; i++) {
-      if (i == skip) start = roc_shmem_timer();
+      if (i == skip) start = rocshmem_timer();
       switch (type) {
         case GetType:
-          roc_shmem_ctx_getmem(ctx, r_buf, s_buf, size, PE);
+          rocshmem_ctx_getmem(ctx, r_buf, s_buf, size, PE);
           break;
         case PutType:
-          roc_shmem_ctx_putmem(ctx, (char *)r_buf, (char *)s_buf, size, PE);
+          rocshmem_ctx_putmem(ctx, (char *)r_buf, (char *)s_buf, size, PE);
           break;
         default:
           break;
       }
     }
 
-    roc_shmem_ctx_quiet(ctx);
+    rocshmem_ctx_quiet(ctx);
 
     atomicAdd((unsigned long long *)&timer[hipBlockIdx_x],
-              roc_shmem_timer() - start);
+              rocshmem_timer() - start);
   }
-  roc_shmem_wg_ctx_destroy(&ctx);
-  roc_shmem_wg_finalize();
+  rocshmem_wg_ctx_destroy(&ctx);
+  rocshmem_wg_finalize();
 }
 
 /******************************************************************************
@@ -131,8 +131,8 @@ RandomAccessTester::RandomAccessTester(TesterArguments args) : Tester(args) {
   _num_bins = args.thread_access / args.coal_coef;
   assert((args.wg_size / 64) <= 1);
 
-  s_buf = (int *)roc_shmem_malloc(max_size * wg_size * space);
-  r_buf = (int *)roc_shmem_malloc(max_size * wg_size * space);
+  s_buf = (int *)rocshmem_malloc(max_size * wg_size * space);
+  r_buf = (int *)rocshmem_malloc(max_size * wg_size * space);
   h_buf = (int *)malloc(max_size * wg_size * space);
   h_dev_buf = (int *)malloc(max_size * wg_size * space);
   CHECK_HIP(hipMalloc((void **)&_threads_bins, sizeof(uint32_t) * _num_waves * _num_bins));
@@ -144,8 +144,8 @@ RandomAccessTester::RandomAccessTester(TesterArguments args) : Tester(args) {
 }
 
 RandomAccessTester::~RandomAccessTester() {
-  roc_shmem_free(s_buf);
-  roc_shmem_free(r_buf);
+  rocshmem_free(s_buf);
+  rocshmem_free(r_buf);
   free(h_buf);
   free(h_dev_buf);
   CHECK_HIP(hipFree(_threads_bins));

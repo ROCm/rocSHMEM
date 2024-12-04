@@ -20,14 +20,14 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_ROC_SHMEM_CALC_HPP_
-#define LIBRARY_SRC_ROC_SHMEM_CALC_HPP_
+#ifndef LIBRARY_SRC_ROCSHMEM_CALC_HPP_
+#define LIBRARY_SRC_ROCSHMEM_CALC_HPP_
 
 namespace rocshmem {
 
 // clang-format off
 NOWARN(-Wunused-parameter,
-template <ROC_SHMEM_OP Op>
+template <ROCSHMEM_OP Op>
 struct OpWrap {
   template <typename T>
   __device__ static void Calc(T *src, T *dst, int i) {
@@ -41,7 +41,7 @@ struct OpWrap {
  ************************** TEMPLATE SPECIALIZATIONS **************************
  *****************************************************************************/
 template <>
-struct OpWrap<ROC_SHMEM_SUM> {
+struct OpWrap<ROCSHMEM_SUM> {
   template <typename T>
   __device__ static void Calc(T *src, T *dst, int i) {
     dst[i] += src[i];
@@ -49,7 +49,7 @@ struct OpWrap<ROC_SHMEM_SUM> {
 };
 
 template <>
-struct OpWrap<ROC_SHMEM_MAX> {
+struct OpWrap<ROCSHMEM_MAX> {
   template <typename T>
   __device__ static void Calc(T *src, T *dst, int i) {
     dst[i] = max(dst[i], src[i]);
@@ -57,7 +57,7 @@ struct OpWrap<ROC_SHMEM_MAX> {
 };
 
 template <>
-struct OpWrap<ROC_SHMEM_MIN> {
+struct OpWrap<ROCSHMEM_MIN> {
   template <typename T>
   __device__ static void Calc(T *src, T *dst, int i) {
     dst[i] = min(dst[i], src[i]);
@@ -65,7 +65,7 @@ struct OpWrap<ROC_SHMEM_MIN> {
 };
 
 template <>
-struct OpWrap<ROC_SHMEM_PROD> {
+struct OpWrap<ROCSHMEM_PROD> {
   template <typename T>
   __device__ static void Calc(T *src, T *dst, int i) {
     dst[i] *= src[i];
@@ -73,7 +73,7 @@ struct OpWrap<ROC_SHMEM_PROD> {
 };
 
 template <>
-struct OpWrap<ROC_SHMEM_AND> {
+struct OpWrap<ROCSHMEM_AND> {
   template <typename T>
   __device__ static void Calc(T *src, T *dst, int i) {
     dst[i] &= src[i];
@@ -81,7 +81,7 @@ struct OpWrap<ROC_SHMEM_AND> {
 };
 
 template <>
-struct OpWrap<ROC_SHMEM_OR> {
+struct OpWrap<ROCSHMEM_OR> {
   template <typename T>
   __device__ static void Calc(T *src, T *dst, int i) {
     dst[i] |= src[i];
@@ -89,7 +89,7 @@ struct OpWrap<ROC_SHMEM_OR> {
 };
 
 template <>
-struct OpWrap<ROC_SHMEM_XOR> {
+struct OpWrap<ROCSHMEM_XOR> {
   template <typename T>
   __device__ static void Calc(T *src, T *dst, int i) {
     dst[i] ^= src[i];
@@ -97,4 +97,4 @@ struct OpWrap<ROC_SHMEM_XOR> {
 };
 
 }
-#endif // LIBRARY_SRC_ROC_SHMEM_CALC_HPP_
+#endif // LIBRARY_SRC_ROCSHMEM_CALC_HPP_

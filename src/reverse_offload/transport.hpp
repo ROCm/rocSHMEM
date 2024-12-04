@@ -27,7 +27,7 @@
 
 #include <cassert>
 
-#include "roc_shmem/roc_shmem.hpp"
+#include "rocshmem/rocshmem.hpp"
 #include "backend_proxy.hpp"
 #include "ro_net_team.hpp"
 
@@ -48,18 +48,18 @@ class Transport {
                                TeamInfo *team_info_wrt_parent,
                                TeamInfo *team_info_wrt_world, int num_pes,
                                int my_pe_in_new_team, MPI_Comm team_comm,
-                               roc_shmem_team_t *new_team) = 0;
+                               rocshmem_team_t *new_team) = 0;
 
   virtual void barrier(int wg_id, int threadId, bool blocking,
                          MPI_Comm team) = 0;
 
   virtual void reduction(void *dst, void *src, int size, int pe, int win_id,
                            int wg_id, int start, int logPstride, int sizePE,
-                           void *pWrk, long *pSync, ROC_SHMEM_OP op,
+                           void *pWrk, long *pSync, ROCSHMEM_OP op,
                            ro_net_types type, int threadId, bool blocking) = 0;
 
   virtual void team_reduction(void *dst, void *src, int size, int win_id,
-                                int wg_id, MPI_Comm team, ROC_SHMEM_OP op,
+                                int wg_id, MPI_Comm team, ROCSHMEM_OP op,
                                 ro_net_types type, int threadId,
                                 bool blocking) = 0;
 
@@ -89,7 +89,7 @@ class Transport {
                         int wg_id, int threadId, bool blocking) = 0;
 
   virtual void amoFOP(void *dst, void *src, void *val, int pe, int win_id,
-                        int wg_id, int threadId, bool blocking, ROC_SHMEM_OP op,
+                        int wg_id, int threadId, bool blocking, ROCSHMEM_OP op,
                         ro_net_types type) = 0;
 
   virtual void amoFCAS(void *dst, void *src, void *val, int pe, int win_id,

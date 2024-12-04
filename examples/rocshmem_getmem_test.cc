@@ -10,14 +10,14 @@ hipcc -fgpu-rdc --hip-link rocshmem_getmem_test.o -o rocshmem_getmem_test \
   $OPENMPI_UCX_INSTALL_DIR/lib/libmpi.so \
   -L/opt/rocm/lib -lamdhip64 -lhsa-runtime64
 
-ROC_SHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 ./rocshmem_getmem_test
+ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 ./rocshmem_getmem_test
 */
 
 #include <iostream>
 
 #include <hip/hip_runtime_api.h>
 #include <hip/hip_runtime.h>
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 #define CHECK_HIP(condition) {                                            \
         hipError_t error = condition;                                     \
@@ -31,25 +31,25 @@ using namespace rocshmem;
 
 __global__ void simple_getmem_test(int *src, int *dst, size_t nelem)
 {
-    roc_shmem_wg_init();
+    rocshmem_wg_init();
 
     int threadId = blockIdx.x * blockDim.x + threadIdx.x;
     if (threadId == 0) {
-        int rank = roc_shmem_my_pe();
+        int rank = rocshmem_my_pe();
         int peer =  rank ? 0 : 1;
-        roc_shmem_getmem(dst, src, nelem * sizeof(int), peer);
-        roc_shmem_quiet();
+        rocshmem_getmem(dst, src, nelem * sizeof(int), peer);
+        rocshmem_quiet();
     }
 
     __syncthreads();
-    roc_shmem_wg_finalize();
+    rocshmem_wg_finalize();
 }
 
 #define MAX_ELEM 256
 
 int main (int argc, char **argv)
 {
-    int rank = roc_shmem_my_pe();
+    int rank = rocshmem_my_pe();
     int ndevices, my_device = 0;
     CHECK_HIP(hipGetDeviceCount(&ndevices));
     my_device = rank % ndevices;
@@ -60,15 +60,15 @@ int main (int argc, char **argv)
         nelem = atoi(argv[1]);
     }
 
-    roc_shmem_init();
-    int npes =  roc_shmem_n_pes();
-    int *src = (int *)roc_shmem_malloc(nelem * sizeof(int));
-    int *dst = (int *)roc_shmem_malloc(nelem * sizeof(int));
+    rocshmem_init();
+    int npes =  rocshmem_n_pes();
+    int *src = (int *)rocshmem_malloc(nelem * sizeof(int));
+    int *dst = (int *)rocshmem_malloc(nelem * sizeof(int));
     if (NULL == src || NULL == dst) {
         std::cout << "Error allocating memory from symmetric heap" << std::endl;
         std::cout << "source: " << src << ", dest: " << dst << ", size: "
           << sizeof(int) * nelem << std::endl;
-        roc_shmem_global_exit(1);
+        rocshmem_global_exit(1);
     }
 
     for (int i=0; i<nelem; i++) {
@@ -79,7 +79,7 @@ int main (int argc, char **argv)
 
     int threadsPerBlock=256;
     simple_getmem_test<<<dim3(1), dim3(threadsPerBlock), 0, 0>>>(src, dst, nelem);
-    roc_shmem_barrier_all();
+    rocshmem_barrier_all();
     CHECK_HIP(hipDeviceSynchronize());
 
     bool pass = true;
@@ -93,8 +93,8 @@ int main (int argc, char **argv)
     }
     printf("Test %s \t %s\n", argv[0], pass ? "[PASS]" : "[FAIL]");
 
-    roc_shmem_free(src);
-    roc_shmem_free(dst);
-    roc_shmem_finalize();
+    rocshmem_free(src);
+    rocshmem_free(dst);
+    rocshmem_finalize();
     return 0;
 }

@@ -30,7 +30,7 @@
  */
 
 /*
- * exercise roc_shmem_short_wait() and roc_shmem_short_wait_until() functions.
+ * exercise rocshmem_short_wait() and rocshmem_short_wait_until() functions.
  */
 
 #include <stdint.h>
@@ -38,17 +38,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
 #define DataType long
 
-#define SHM_PUT roc_shmem_long_put
-#define SHM_PUTP roc_shmem_long_p
-#define SHM_GETP roc_shmem_long_g
+#define SHM_PUT rocshmem_long_put
+#define SHM_PUTP rocshmem_long_p
+#define SHM_GETP rocshmem_long_g
 
-#define SHM_WAITU roc_shmem_long_wait_until
+#define SHM_WAITU rocshmem_long_wait_until
 #define PF "%ld"
 
 #define Vprintf \
@@ -65,29 +65,29 @@ int main(int argc, char *argv[]) {
     Verbose++;
   }
 
-  roc_shmem_init();
-  me = roc_shmem_my_pe();
-  num_pes = roc_shmem_n_pes();
+  rocshmem_init();
+  me = rocshmem_my_pe();
+  num_pes = rocshmem_n_pes();
 
   if (num_pes == 1) {
     printf("%s: Requires number of PEs > 1\n", argv[0]);
-    roc_shmem_finalize();
+    rocshmem_finalize();
     return 0;
   }
 
-  target = (DataType *)roc_shmem_malloc(10 * sizeof(DataType));
+  target = (DataType *)rocshmem_malloc(10 * sizeof(DataType));
 
-  pong = (DataType *)roc_shmem_malloc(sizeof(DataType));
+  pong = (DataType *)rocshmem_malloc(sizeof(DataType));
   *pong = 666;
 
-  t2 = (DataType *)roc_shmem_malloc(10 * sizeof(DataType));
+  t2 = (DataType *)rocshmem_malloc(10 * sizeof(DataType));
   if (!t2) {
-    if (me == 0) printf("roc_shmem_malloc() failed?\n");
-    roc_shmem_global_exit(1);
+    if (me == 0) printf("rocshmem_malloc() failed?\n");
+    rocshmem_global_exit(1);
   }
   t2[9] = target[9] = 0xFF;
 
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   if (me == 0) {
     memset(target, 0, 10 * sizeof(DataType));
@@ -96,17 +96,17 @@ int main(int argc, char *argv[]) {
     for (pe = 1; pe < num_pes; pe++) /* put 10 elements into target on PE 1 */
       SHM_PUT(target, source, 10, pe);
 
-    SHM_WAITU(pong, ROC_SHMEM_CMP_GT, 666);
+    SHM_WAITU(pong, ROCSHMEM_CMP_GT, 666);
     Vprintf("PE[%d] pong now " PF "\n", me, *pong);
 
     for (pe = 1; pe < num_pes; pe++) /* put 1 element into t2 on PE 1 */
       SHM_PUTP(&t2[9], 0xDD, pe);
   } else {
     /* wait for 10th element write of 'target' */
-    SHM_WAITU(&target[9], ROC_SHMEM_CMP_NE, 0xFF);
+    SHM_WAITU(&target[9], ROCSHMEM_CMP_NE, 0xFF);
     Vprintf("PE[%d] target[9] was 255 now " PF ", success.\n", me, target[9]);
 
-    SHM_WAITU(&target[9], ROC_SHMEM_CMP_EQ, 10);
+    SHM_WAITU(&target[9], ROCSHMEM_CMP_EQ, 10);
     Vprintf("PE[%d] expected target[9] == 10 now " PF "\n", me, target[9]);
 
     if (me == 1) {
@@ -117,10 +117,10 @@ int main(int argc, char *argv[]) {
       SHM_PUTP(pong, 999, 0);
     }
 
-    SHM_WAITU(&t2[9], ROC_SHMEM_CMP_NE, 0xFF);
+    SHM_WAITU(&t2[9], ROCSHMEM_CMP_NE, 0xFF);
   }
 
-  // roc_shmem_barrier_all();  /* sync sender and receiver */
+  // rocshmem_barrier_all();  /* sync sender and receiver */
 
   if (me != 0) {
     if (memcmp(source, target, sizeof(DataType) * 10) != 0) {
@@ -130,13 +130,13 @@ int main(int argc, char *argv[]) {
         printf(PF "," PF " ", source[i], target[i]);
       }
       printf("\n");
-      roc_shmem_global_exit(1);
+      rocshmem_global_exit(1);
     }
   }
-  roc_shmem_free(t2);
+  rocshmem_free(t2);
 
-  if (Verbose) fprintf(stderr, "[%d] exit\n", roc_shmem_my_pe());
+  if (Verbose) fprintf(stderr, "[%d] exit\n", rocshmem_my_pe());
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
   return 0;
 }

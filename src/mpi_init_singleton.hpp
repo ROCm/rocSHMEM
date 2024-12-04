@@ -81,7 +81,7 @@ class MPIInitSingleton {
   int nprocs_{-1};
 
   /**
-   * @brief Was MPI initialized before ROCSHMEM_init call
+   * @brief Was MPI initialized before rocshmem_init call
    */
   int pre_init_done{0};
 

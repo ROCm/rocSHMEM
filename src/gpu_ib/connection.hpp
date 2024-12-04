@@ -31,7 +31,7 @@ extern "C" {
 
 #include <vector>
 
-#include "roc_shmem/roc_shmem.hpp"
+#include "rocshmem/rocshmem.hpp"
 #include "connection_policy.hpp"
 
 namespace rocshmem {

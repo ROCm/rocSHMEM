@@ -21,7 +21,7 @@
  *****************************************************************************/
 #include "shmem_ptr_tester.hpp"
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -29,18 +29,18 @@ using namespace rocshmem;
  * DEVICE TEST KERNEL
  *****************************************************************************/
 __global__ void ShmemPtrTest(char *r_buf, int *available) {
-  roc_shmem_wg_init();
+  rocshmem_wg_init();
 
   if (hipThreadIdx_x == 0) {
     char *local_addr = r_buf + 4;
-    void *remote_addr = roc_shmem_ptr((void *)local_addr, 1);
+    void *remote_addr = rocshmem_ptr((void *)local_addr, 1);
     if (remote_addr != NULL) {
       *available = 1;
       ((char *)remote_addr)[0] = '1';
     }
   }
 
-  roc_shmem_wg_finalize();
+  rocshmem_wg_finalize();
 }
 
 /******************************************************************************
@@ -48,12 +48,12 @@ __global__ void ShmemPtrTest(char *r_buf, int *available) {
  *****************************************************************************/
 ShmemPtrTester::ShmemPtrTester(TesterArguments args) : Tester(args) {
   CHECK_HIP(hipMalloc((void **)&_available, sizeof(int)));
-  r_buf = (char *)roc_shmem_malloc(args.max_msg_size);
+  r_buf = (char *)rocshmem_malloc(args.max_msg_size);
 }
 
 ShmemPtrTester::~ShmemPtrTester() {
   CHECK_HIP(hipFree(_available));
-  roc_shmem_free(r_buf);
+  rocshmem_free(r_buf);
 }
 
 void ShmemPtrTester::resetBuffers(uint64_t size) {

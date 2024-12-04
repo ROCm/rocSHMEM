@@ -29,7 +29,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -44,35 +44,35 @@ int main(void) {
   // long *barrier_psync0, *barrier_psync1;
   long long *src, *dst;
 
-  roc_shmem_init();
+  rocshmem_init();
 
-  me = roc_shmem_my_pe();
-  npes = roc_shmem_n_pes();
+  me = rocshmem_my_pe();
+  npes = rocshmem_n_pes();
 
-  src = (long long *)roc_shmem_malloc(NELEM * sizeof(long long));
-  dst = (long long *)roc_shmem_malloc(NELEM * sizeof(long long));
+  src = (long long *)rocshmem_malloc(NELEM * sizeof(long long));
+  dst = (long long *)rocshmem_malloc(NELEM * sizeof(long long));
   for (i = 0; i < NELEM; i++) {
     src[i] = me;
     dst[i] = -1;
   }
 
   bcast_psync =
-      (long *)roc_shmem_malloc(ROC_SHMEM_BCAST_SYNC_SIZE * sizeof(long));
-  for (i = 0; i < ROC_SHMEM_BCAST_SYNC_SIZE; i++)
-    bcast_psync[i] = ROC_SHMEM_SYNC_VALUE;
+      (long *)rocshmem_malloc(ROCSHMEM_BCAST_SYNC_SIZE * sizeof(long));
+  for (i = 0; i < ROCSHMEM_BCAST_SYNC_SIZE; i++)
+    bcast_psync[i] = ROCSHMEM_SYNC_VALUE;
 
   /*
-  barrier_psync0 = (long *) roc_shmem_malloc(ROC_SHMEM_BCAST_SYNC_SIZE *
+  barrier_psync0 = (long *) rocshmem_malloc(ROCSHMEM_BCAST_SYNC_SIZE *
   sizeof(long)); barrier_psync1 = (long *)
-  roc_shmem_malloc(ROC_SHMEM_BCAST_SYNC_SIZE * sizeof(long)); for (i = 0; i <
-  ROC_SHMEM_BARRIER_SYNC_SIZE; i++) { barrier_psync0[i] = ROC_SHMEM_SYNC_VALUE;
-      barrier_psync1[i] = ROC_SHMEM_SYNC_VALUE;
+  rocshmem_malloc(ROCSHMEM_BCAST_SYNC_SIZE * sizeof(long)); for (i = 0; i <
+  ROCSHMEM_BARRIER_SYNC_SIZE; i++) { barrier_psync0[i] = ROCSHMEM_SYNC_VALUE;
+      barrier_psync1[i] = ROCSHMEM_SYNC_VALUE;
   }
   */
 
   if (me == 0) printf("Shrinking active set test\n");
 
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   /* A total of npes tests are performed, where the active set in each test
    * includes PEs i..npes-1 */
@@ -81,7 +81,7 @@ int main(void) {
 
     if (me == i) printf(" + active set size %d\n", npes - i);
 
-    roc_shmem_ctx_longlong_broadcast(ROC_SHMEM_CTX_DEFAULT, dst, src, NELEM, 0,
+    rocshmem_ctx_longlong_broadcast(ROCSHMEM_CTX_DEFAULT, dst, src, NELEM, 0,
                                      i, 0, npes - i, bcast_psync);
 
     /* Validate broadcasted data */
@@ -95,17 +95,17 @@ int main(void) {
       }
     }
 
-    // roc_shmem_barrier(i, 0, npes-i, (i % 2) ? barrier_psync0 :
+    // rocshmem_barrier(i, 0, npes-i, (i % 2) ? barrier_psync0 :
     // barrier_psync1);
   }
 
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   for (i = 0; i < NELEM; i++) dst[i] = -1;
 
   if (me == 0) printf("Changing root test\n");
 
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   /* A total of npes tests are performed, where the root changes each time */
   for (i = 0; i < npes; i++) {
@@ -113,7 +113,7 @@ int main(void) {
 
     if (me == i) printf(" + root %d\n", i);
 
-    roc_shmem_ctx_longlong_broadcast(ROC_SHMEM_CTX_DEFAULT, dst, src, NELEM, i,
+    rocshmem_ctx_longlong_broadcast(ROCSHMEM_CTX_DEFAULT, dst, src, NELEM, i,
                                      0, 0, npes, bcast_psync);
 
     /* Validate broadcasted data */
@@ -127,15 +127,15 @@ int main(void) {
       }
     }
 
-    // roc_shmem_barrier(0, 0, npes, barrier_psync0);
+    // rocshmem_barrier(0, 0, npes, barrier_psync0);
   }
 
-  roc_shmem_free(src);
-  roc_shmem_free(dst);
+  rocshmem_free(src);
+  rocshmem_free(dst);
 
-  roc_shmem_free(bcast_psync);
+  rocshmem_free(bcast_psync);
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
 
   return errors != 0;
 }

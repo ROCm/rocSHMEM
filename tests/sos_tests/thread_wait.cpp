@@ -26,13 +26,13 @@
  */
 
 /* Thread wait test: Test whether a store performed by one thead will wake up a
- * second thread from a call to roc_shmem_wait. */
+ * second thread from a call to rocshmem_wait. */
 
 #include <pthread.h>
 #include <stdio.h>
 #include <unistd.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -46,12 +46,12 @@ static void *src_thread_fn(void *arg) {
   *shr_var = 1;
 
   /* Quiet should provide a store fence */
-  roc_shmem_quiet();
+  rocshmem_quiet();
   return NULL;
 }
 
 static void *dst_thread_fn(void *arg) {
-  roc_shmem_long_wait_until(shr_var, ROC_SHMEM_CMP_NE, 0);
+  rocshmem_long_wait_until(shr_var, ROCSHMEM_CMP_NE, 0);
   printf("shr_var is now %ld\n", *shr_var);
   return NULL;
 }
@@ -60,15 +60,15 @@ int main(int argc, char *argv[]) {
   int tl, ret;
   pthread_t src_thread, dst_thread;
 
-  roc_shmem_init_thread(ROC_SHMEM_THREAD_MULTIPLE, &tl);
+  rocshmem_init_thread(ROCSHMEM_THREAD_MULTIPLE, &tl);
 
-  if (tl != ROC_SHMEM_THREAD_MULTIPLE) {
+  if (tl != ROCSHMEM_THREAD_MULTIPLE) {
     printf("Init failed (requested thread level %d, got %d)\n",
-           ROC_SHMEM_THREAD_MULTIPLE, tl);
-    roc_shmem_global_exit(1);
+           ROCSHMEM_THREAD_MULTIPLE, tl);
+    rocshmem_global_exit(1);
   }
 
-  shr_var = (long *)roc_shmem_malloc(sizeof(long));
+  shr_var = (long *)rocshmem_malloc(sizeof(long));
   *shr_var = 0;
 
   pthread_create(&dst_thread, NULL, &dst_thread_fn, NULL);
@@ -77,9 +77,9 @@ int main(int argc, char *argv[]) {
   pthread_join(dst_thread, NULL);
   pthread_join(src_thread, NULL);
 
-  roc_shmem_free(shr_var);
+  rocshmem_free(shr_var);
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
 
   return 0;
 }

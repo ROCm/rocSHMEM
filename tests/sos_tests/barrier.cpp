@@ -30,25 +30,25 @@
  */
 
 /*
- * roc_shmem_barrier() test  barrier {-V} {loop-cnt}
+ * rocshmem_barrier() test  barrier {-V} {loop-cnt}
  */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
 #define Rfprintf \
-  if (roc_shmem_my_pe() == 0) fprintf
+  if (rocshmem_my_pe() == 0) fprintf
 #define Rprintf \
-  if (roc_shmem_my_pe() == 0) printf
+  if (rocshmem_my_pe() == 0) printf
 #define RDfprintf \
-  if (Verbose && roc_shmem_my_pe() == 0) fprintf
+  if (Verbose && rocshmem_my_pe() == 0) fprintf
 #define RDprintf \
-  if (Verbose && roc_shmem_my_pe() == 0) printf
+  if (Verbose && rocshmem_my_pe() == 0) printf
 
 int Verbose;
 
@@ -57,12 +57,12 @@ int main(int argc, char* argv[]) {
   int rank, num_ranks;
   char* prog_name;
 
-  roc_shmem_init();
-  rank = roc_shmem_my_pe();
-  num_ranks = roc_shmem_n_pes();
+  rocshmem_init();
+  rank = rocshmem_my_pe();
+  num_ranks = rocshmem_n_pes();
   if (num_ranks == 1) {
     Rfprintf(stderr, "ERR - Requires > 1 PEs\n");
-    roc_shmem_finalize();
+    rocshmem_finalize();
     return 0;
   }
   prog_name = strrchr(argv[0], '/');
@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
         break;
       default:
         Rfprintf(stderr, "ERR - unknown -%c ?\n", c);
-        roc_shmem_finalize();
+        rocshmem_finalize();
         return 1;
     }
   }
@@ -89,7 +89,7 @@ int main(int argc, char* argv[]) {
     loops = atoi(argv[optind++]);
     if (loops <= 0 || loops > 1000000) {
       Rfprintf(stderr, "ERR - loops arg out of bounds '%d'?\n", loops);
-      roc_shmem_finalize();
+      rocshmem_finalize();
       return 1;
     }
   }
@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
     // if ( j==0 || (j % 10) == 0 )
     RDfprintf(stderr, "[%d] pre-barrier(%d)\n", rank, j);
 
-    roc_shmem_barrier_all(); /* sync sender and receiver */
+    rocshmem_barrier_all(); /* sync sender and receiver */
 
     // if ( j==0 || (j % 10) == 0 )
     RDfprintf(stderr, "[%d] post barrier(%d)\n", rank, j);
@@ -106,7 +106,7 @@ int main(int argc, char* argv[]) {
 
   RDprintf("%d(%d) Exit\n", rank, num_ranks);
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
 
   return 0;
 }

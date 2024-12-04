@@ -200,7 +200,7 @@ __host__ void HostInterface::broadcast(T* dest, const T* source, int nelems,
 }
 
 template <typename T>
-__host__ void HostInterface::broadcast(roc_shmem_team_t team, T* dest,
+__host__ void HostInterface::broadcast(rocshmem_team_t team, T* dest,
                                        const T* source, int nelems,
                                        int pe_root) {
   DPRINTF("Function: Team-based host_broadcast\n");
@@ -216,24 +216,24 @@ __host__ void HostInterface::broadcast(roc_shmem_team_t team, T* dest,
   return;
 }
 
-__host__ inline MPI_Op HostInterface::get_mpi_op(ROC_SHMEM_OP Op) {
+__host__ inline MPI_Op HostInterface::get_mpi_op(ROCSHMEM_OP Op) {
   switch (Op) {
-    case ROC_SHMEM_SUM:
+    case ROCSHMEM_SUM:
       return MPI_SUM;
-    case ROC_SHMEM_MAX:
+    case ROCSHMEM_MAX:
       return MPI_MAX;
-    case ROC_SHMEM_MIN:
+    case ROCSHMEM_MIN:
       return MPI_MIN;
-    case ROC_SHMEM_PROD:
+    case ROCSHMEM_PROD:
       return MPI_PROD;
-    case ROC_SHMEM_AND:
+    case ROCSHMEM_AND:
       return MPI_BAND;
-    case ROC_SHMEM_OR:
+    case ROCSHMEM_OR:
       return MPI_BOR;
-    case ROC_SHMEM_XOR:
+    case ROCSHMEM_XOR:
       return MPI_BXOR;
     default:
-      fprintf(stderr, "Unknown ROC_SHMEM op MPI conversion %d\n", Op);
+      fprintf(stderr, "Unknown rocSHMEM op MPI conversion %d\n", Op);
       abort();
       return 0;
   }
@@ -330,7 +330,7 @@ __host__ T HostInterface::amo_fetch_cas(void* dst, T value, T cond, int pe,
   return ret;
 }
 
-template <typename T, ROC_SHMEM_OP Op>
+template <typename T, ROCSHMEM_OP Op>
 __host__ void HostInterface::to_all_internal(MPI_Comm mpi_comm, T* dest,
                                              const T* source, int nreduce) {
   DPRINTF("Function: host_to_all_internal\n");
@@ -356,7 +356,7 @@ __host__ void HostInterface::to_all_internal(MPI_Comm mpi_comm, T* dest,
   return;
 }
 
-template <typename T, ROC_SHMEM_OP Op>
+template <typename T, ROCSHMEM_OP Op>
 __host__ void HostInterface::to_all(T* dest, const T* source, int nreduce,
                                     int pe_start, int log_pe_stride,
                                     int pe_size, [[maybe_unused]] T* p_wrk,
@@ -375,8 +375,8 @@ __host__ void HostInterface::to_all(T* dest, const T* source, int nreduce,
   return;
 }
 
-template <typename T, ROC_SHMEM_OP Op>
-__host__ int HostInterface::reduce(roc_shmem_team_t team, T* dest,
+template <typename T, ROCSHMEM_OP Op>
+__host__ int HostInterface::reduce(rocshmem_team_t team, T* dest,
                                     const T* source, int nreduce) {
   DPRINTF("Function: Team-based host_reduce\n");
 
@@ -388,7 +388,7 @@ __host__ int HostInterface::reduce(roc_shmem_team_t team, T* dest,
 
   to_all_internal<T, Op>(mpi_comm, dest, source, nreduce);
 
-  return ROC_SHMEM_SUCCESS;
+  return ROCSHMEM_SUCCESS;
 }
 
 template <typename T>
@@ -397,26 +397,26 @@ __host__ inline int HostInterface::compare(int cmp, T input_val,
   int cond_satisfied{0};
 
   switch (cmp) {
-    case ROC_SHMEM_CMP_EQ:
+    case ROCSHMEM_CMP_EQ:
       cond_satisfied = (input_val == target_val) ? 1 : 0;
       break;
-    case ROC_SHMEM_CMP_NE:
+    case ROCSHMEM_CMP_NE:
       cond_satisfied = (input_val != target_val) ? 1 : 0;
       break;
-    case ROC_SHMEM_CMP_GT:
+    case ROCSHMEM_CMP_GT:
       cond_satisfied = (input_val > target_val) ? 1 : 0;
       break;
-    case ROC_SHMEM_CMP_GE:
+    case ROCSHMEM_CMP_GE:
       cond_satisfied = (input_val >= target_val) ? 1 : 0;
       break;
-    case ROC_SHMEM_CMP_LT:
+    case ROCSHMEM_CMP_LT:
       cond_satisfied = (input_val < target_val) ? 1 : 0;
       break;
-    case ROC_SHMEM_CMP_LE:
+    case ROCSHMEM_CMP_LE:
       cond_satisfied = (input_val <= target_val) ? 1 : 0;
       break;
     default:
-      assert(cmp >= ROC_SHMEM_CMP_EQ && cmp <= ROC_SHMEM_CMP_LE);
+      assert(cmp >= ROCSHMEM_CMP_EQ && cmp <= ROCSHMEM_CMP_LE);
       break;
   }
 

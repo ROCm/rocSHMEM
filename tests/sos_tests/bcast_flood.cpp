@@ -38,7 +38,7 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -68,9 +68,9 @@ int main(int argc, char **argv) {
   char *pgm;
   double start_time, time_taken;
 
-  roc_shmem_init();
-  me = roc_shmem_my_pe();
-  npes = roc_shmem_n_pes();
+  rocshmem_init();
+  me = rocshmem_my_pe();
+  npes = rocshmem_n_pes();
 
   if ((pgm = strrchr(argv[0], '/'))) {
     pgm++;
@@ -86,21 +86,21 @@ int main(int argc, char **argv) {
       case 'e':
         if ((elements = atoi_scaled(optarg)) <= 0) {
           fprintf(stderr, "ERR: Bad elements count %d\n", elements);
-          roc_shmem_finalize();
+          rocshmem_finalize();
           return 1;
         }
         break;
       case 'l':
         if ((loops = atoi_scaled(optarg)) <= 0) {
           fprintf(stderr, "ERR: Bad loop count %d\n", loops);
-          roc_shmem_finalize();
+          rocshmem_finalize();
           return 1;
         }
         break;
       case 'p':
         if ((ps_cnt = atoi_scaled(optarg)) <= 0) {
           fprintf(stderr, "ERR: Bad pSync[] elements %d\n", loops);
-          roc_shmem_finalize();
+          rocshmem_finalize();
           return 1;
         }
         break;
@@ -115,32 +115,32 @@ int main(int argc, char **argv) {
           fprintf(stderr, "%s: unknown switch '-%c'?\n", pgm, i);
           usage(pgm);
         }
-        roc_shmem_finalize();
+        rocshmem_finalize();
         return 1;
     }
   }
 
-  ps_cnt *= ROC_SHMEM_BCAST_SYNC_SIZE;
-  pSync = (long *)roc_shmem_malloc(ps_cnt * sizeof(long));
+  ps_cnt *= ROCSHMEM_BCAST_SYNC_SIZE;
+  pSync = (long *)rocshmem_malloc(ps_cnt * sizeof(long));
   if (!pSync) {
     fprintf(stderr, "ERR - null pSync pointer\n");
-    roc_shmem_global_exit(1);
+    rocshmem_global_exit(1);
   }
 
   for (i = 0; i < ps_cnt; i++) {
-    pSync[i] = ROC_SHMEM_SYNC_VALUE;
+    pSync[i] = ROCSHMEM_SYNC_VALUE;
   }
 
-  source = (int *)roc_shmem_malloc(elements * sizeof(*source));
+  source = (int *)rocshmem_malloc(elements * sizeof(*source));
   if (!source) {
     fprintf(stderr, "ERR - null source pointer\n");
-    roc_shmem_global_exit(1);
+    rocshmem_global_exit(1);
   }
 
-  target = (int *)roc_shmem_malloc(elements * sizeof(*target));
+  target = (int *)rocshmem_malloc(elements * sizeof(*target));
   if (!target) {
     fprintf(stderr, "ERR - null target pointer\n");
-    roc_shmem_global_exit(1);
+    rocshmem_global_exit(1);
   }
   for (i = 0; i < elements; i += 1) {
     source[i] = i + 1;
@@ -151,20 +151,20 @@ int main(int argc, char **argv) {
     fprintf(stderr, "ps_cnt %d loops %d nElems %d\n", ps_cnt, loops, elements);
   }
 
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   for (time_taken = 0.0, ps = i = 0; i < loops; i++) {
     start_time = shmem_wtime();
 
-    roc_shmem_ctx_int_broadcast(ROC_SHMEM_CTX_DEFAULT, target, source, elements,
+    rocshmem_ctx_int_broadcast(ROCSHMEM_CTX_DEFAULT, target, source, elements,
                                 0, 0, 0, npes, &pSync[ps]);
 
-    if (Serialize) roc_shmem_barrier_all();
+    if (Serialize) rocshmem_barrier_all();
 
     time_taken += (shmem_wtime() - start_time);
 
     if (ps_cnt > 1) {
-      ps += ROC_SHMEM_BCAST_SYNC_SIZE;
+      ps += ROCSHMEM_BCAST_SYNC_SIZE;
       if (ps >= ps_cnt) ps = 0;
     }
   }
@@ -179,15 +179,15 @@ int main(int argc, char **argv) {
 
   if (Verbose > 1) fprintf(stderr, "[%d] pre B1\n", me);
 
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   if (Verbose > 1) fprintf(stderr, "[%d] post B1\n", me);
 
-  roc_shmem_free(pSync);
-  roc_shmem_free(target);
-  roc_shmem_free(source);
+  rocshmem_free(pSync);
+  rocshmem_free(target);
+  rocshmem_free(source);
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
 
   return 0;
 }

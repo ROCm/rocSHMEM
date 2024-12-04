@@ -5,7 +5,7 @@ src_path=$(dirname "$(realpath $0)")/..
 cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_VERBOSE_MAKEFILE=OFF \
-    -DUSE_ROC_SHMEM=OFF \
+    -DUSE_ROCSHMEM=OFF \
     -DUSE_HIP=ON \
     -DALL_ANALYZE=ON \
     -DUSE_DOUBLE=OFF \

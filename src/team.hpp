@@ -25,7 +25,7 @@
 
 #include <mpi.h>
 
-#include "roc_shmem/roc_shmem.hpp"
+#include "rocshmem/rocshmem.hpp"
 #include "backend_type.hpp"
 
 namespace rocshmem {
@@ -157,16 +157,16 @@ class Team {
   BackendType type{BackendType::GPU_IB_BACKEND};
 };
 
-__host__ __device__ Team* get_internal_team(roc_shmem_team_t team);
+__host__ __device__ Team* get_internal_team(rocshmem_team_t team);
 
-GPUIBTeam* get_internal_gpu_ib_team(roc_shmem_team_t team);
+GPUIBTeam* get_internal_gpu_ib_team(rocshmem_team_t team);
 
-ROTeam* get_internal_ro_team(roc_shmem_team_t team);
+ROTeam* get_internal_ro_team(rocshmem_team_t team);
 
-IPCTeam* get_internal_ipc_team(roc_shmem_team_t team);
+IPCTeam* get_internal_ipc_team(rocshmem_team_t team);
 
-__host__ __device__ int team_translate_pe(roc_shmem_team_t src_team, int src_pe,
-                                          roc_shmem_team_t dst_team);
+__host__ __device__ int team_translate_pe(rocshmem_team_t src_team, int src_pe,
+                                          rocshmem_team_t dst_team);
 
 }  // namespace rocshmem
 

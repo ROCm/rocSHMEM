@@ -41,19 +41,19 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
 #define Rfprintf \
-  if (roc_shmem_my_pe() == 0) fprintf
+  if (rocshmem_my_pe() == 0) fprintf
 #define Rprintf \
-  if (roc_shmem_my_pe() == 0) printf
+  if (rocshmem_my_pe() == 0) printf
 
 #define RDprintf \
-  if (Verbose && roc_shmem_my_pe() == 0) printf
+  if (Verbose && rocshmem_my_pe() == 0) printf
 #define RDfprintf \
-  if (Verbose && roc_shmem_my_pe() == 0) fprintf
+  if (Verbose && rocshmem_my_pe() == 0) fprintf
 
 /* option flags */
 #define OUTPUT_MOD 1  // output debug every X loops
@@ -75,13 +75,13 @@ int main(int argc, char *argv[]) {
   char *prog_name;
   long *Target;
 
-  roc_shmem_init();
-  proc = roc_shmem_my_pe();
-  num_procs = roc_shmem_n_pes();
+  rocshmem_init();
+  proc = rocshmem_my_pe();
+  num_procs = rocshmem_n_pes();
 
   if (num_procs == 1) {
     Rfprintf(stderr, "ERR - Requires > 1 PEs\n");
-    roc_shmem_finalize();
+    rocshmem_finalize();
     return 0;
   }
 
@@ -106,17 +106,17 @@ int main(int argc, char *argv[]) {
                    "ERR - output modulo arg out of "
                    "bounds '%d'?]\n",
                    output_mod);
-          roc_shmem_finalize();
+          rocshmem_finalize();
           return 1;
         }
         Rfprintf(stderr, "%s: output modulo %d\n", prog_name, output_mod);
         break;
       case 'h':
         Rfprintf(stderr, "usage: %s {nWords-2-put} {Loop-count}\n", prog_name);
-        roc_shmem_finalize();
+        rocshmem_finalize();
         return 1;
       default:
-        roc_shmem_finalize();
+        rocshmem_finalize();
         return 1;
     }
   }
@@ -128,7 +128,7 @@ int main(int argc, char *argv[]) {
     if (nWords <= 0 || nWords > TARGET_SZ) {
       Rfprintf(stderr, "ERR - nWords arg out of bounds '%d' [1..%d]?\n", nWords,
                TARGET_SZ);
-      roc_shmem_finalize();
+      rocshmem_finalize();
       return 1;
     }
   }
@@ -139,7 +139,7 @@ int main(int argc, char *argv[]) {
     loops = atoi(argv[optind++]);
     if (loops <= 0 || loops > 1000000) {
       Rfprintf(stderr, "ERR - loops arg out of bounds '%d'?\n", loops);
-      roc_shmem_finalize();
+      rocshmem_finalize();
       return 1;
     }
   }
@@ -148,33 +148,33 @@ int main(int argc, char *argv[]) {
 
   for (j = 0; j < nWords; j++) src[j] = VAL;
 
-  Target = (long *)roc_shmem_malloc(TARGET_SZ * sizeof(long));
+  Target = (long *)rocshmem_malloc(TARGET_SZ * sizeof(long));
 
   for (j = 0; j < loops; j++) {
-    roc_shmem_barrier_all();
+    rocshmem_barrier_all();
 
     if (Verbose && (j == 0 || (j % output_mod) == 0))
-      fprintf(stderr, "[%d] +(%d)\n", roc_shmem_my_pe(), j);
+      fprintf(stderr, "[%d] +(%d)\n", rocshmem_my_pe(), j);
 
     if (proc == 0) {
       int p;
       for (p = 1; p < num_procs; p++)
-        roc_shmem_long_put(Target, src, nWords, p);
+        rocshmem_long_put(Target, src, nWords, p);
     } else {
       if (Slow) {
         /* wait for each put to complete */
         for (k = 0; k < nWords; k++)
-          roc_shmem_long_wait_until(&Target[k], ROC_SHMEM_CMP_NE, proc);
+          rocshmem_long_wait_until(&Target[k], ROCSHMEM_CMP_NE, proc);
       } else {
         /* wait for last word to be written */
-        roc_shmem_long_wait_until(&Target[nWords - 1], ROC_SHMEM_CMP_NE, proc);
+        rocshmem_long_wait_until(&Target[nWords - 1], ROCSHMEM_CMP_NE, proc);
       }
     }
 
     if (Verbose && (j == 0 || (j % output_mod) == 0))
-      fprintf(stderr, "[%d] -(%d)\n", roc_shmem_my_pe(), j);
+      fprintf(stderr, "[%d] -(%d)\n", rocshmem_my_pe(), j);
 
-    roc_shmem_barrier_all();
+    rocshmem_barrier_all();
 
     if (proc != 0) {
       for (k = 0; k < nWords; k++) {
@@ -192,14 +192,14 @@ int main(int argc, char *argv[]) {
       memset(Target, 0, TARGET_SZ);
   }
 
-  roc_shmem_barrier_all();
+  rocshmem_barrier_all();
 
   if (failures || Verbose)
     Rprintf("%d(%d) Exit(%d)\n", proc, num_procs, failures);
 
-  roc_shmem_free(Target);
+  rocshmem_free(Target);
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
 
   return failures;
 }

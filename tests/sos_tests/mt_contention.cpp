@@ -33,7 +33,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <roc_shmem/roc_shmem.hpp>
+#include <rocshmem/rocshmem.hpp>
 
 using namespace rocshmem;
 
@@ -53,9 +53,9 @@ static void *thread_main(void *arg) {
    * with overlapping AMOs behaves correctly. */
 
   for (i = 1; i <= npes; i++)
-    roc_shmem_int64_atomic_add(dest, tid, (me + i) % npes);
+    rocshmem_int64_atomic_add(dest, tid, (me + i) % npes);
 
-  roc_shmem_quiet();
+  rocshmem_quiet();
 
   return NULL;
 }
@@ -65,21 +65,21 @@ int main(int argc, char **argv) {
   pthread_t threads[T];
   int t_arg[T];
 
-  roc_shmem_init_thread(ROC_SHMEM_THREAD_MULTIPLE, &tl);
+  rocshmem_init_thread(ROCSHMEM_THREAD_MULTIPLE, &tl);
 
-  if (tl != ROC_SHMEM_THREAD_MULTIPLE) {
+  if (tl != ROCSHMEM_THREAD_MULTIPLE) {
     printf("Init failed (requested thread level %d, got %d)\n",
-           ROC_SHMEM_THREAD_MULTIPLE, tl);
-    roc_shmem_global_exit(1);
+           ROCSHMEM_THREAD_MULTIPLE, tl);
+    rocshmem_global_exit(1);
   }
 
-  me = roc_shmem_my_pe();
-  npes = roc_shmem_n_pes();
+  me = rocshmem_my_pe();
+  npes = rocshmem_n_pes();
 
   if (me == 0)
     printf("Starting multithreaded test on %d PEs, %d threads/PE\n", npes, T);
 
-  dest = (long *)roc_shmem_malloc(sizeof(long));
+  dest = (long *)rocshmem_malloc(sizeof(long));
   *dest = 0;
 
   for (i = 0; i < T; i++) {
@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
     assert(0 == err);
   }
 
-  roc_shmem_sync_all();
+  rocshmem_sync_all();
 
   if ((*dest) != ((T - 1) * T / 2) * npes) {
     printf("%d: dest = %ld, expected %d\n", me, *dest,
@@ -103,8 +103,8 @@ int main(int argc, char **argv) {
     errors++;
   }
 
-  roc_shmem_free(dest);
+  rocshmem_free(dest);
 
-  roc_shmem_finalize();
+  rocshmem_finalize();
   return (errors == 0) ? 0 : 1;
 }

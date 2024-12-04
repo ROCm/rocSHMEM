@@ -93,13 +93,13 @@ __host__ void IPCHostContext::broadcast(
 }
 
 template <typename T>
-__host__ void IPCHostContext::broadcast(roc_shmem_team_t team, T *dest,
+__host__ void IPCHostContext::broadcast(rocshmem_team_t team, T *dest,
                                           const T *source, int nelems,
                                           int pe_root) {
   host_interface->broadcast<T>(team, dest, source, nelems, pe_root);
 }
 
-template <typename T, ROC_SHMEM_OP Op>
+template <typename T, ROCSHMEM_OP Op>
 __host__ void IPCHostContext::to_all(T *dest, const T *source, int nreduce,
                                        int pe_start, int log_pe_stride,
                                        int pe_size, T *p_wrk,
@@ -108,8 +108,8 @@ __host__ void IPCHostContext::to_all(T *dest, const T *source, int nreduce,
                                 pe_size, p_wrk, p_sync);
 }
 
-template <typename T, ROC_SHMEM_OP Op>
-__host__ int IPCHostContext::reduce(roc_shmem_team_t team, T *dest,
+template <typename T, ROCSHMEM_OP Op>
+__host__ int IPCHostContext::reduce(rocshmem_team_t team, T *dest,
                                        const T *source, int nreduce) {
   return host_interface->reduce<T, Op>(team, dest, source, nreduce);
 }
