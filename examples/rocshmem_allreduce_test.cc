@@ -1,7 +1,6 @@
 /*
 hipcc -c -fgpu-rdc -x hip rocshmem_allreduce_test.cc \
   -I/opt/rocm/include \
-  -I$ROCSHMEM_SRC_DIR/include \
   -I$ROCSHMEM_INSTALL_DIR/include \
   -I$OPENMPI_UCX_INSTALL_DIR/include/
 

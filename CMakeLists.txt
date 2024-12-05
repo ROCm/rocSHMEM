@@ -190,7 +190,7 @@ set_target_properties(
   ${PROJECT_NAME}
   PROPERTIES
     PUBLIC_HEADER
-      "${CMAKE_BINARY_DIR}/config.h;${CMAKE_CURRENT_SOURCE_DIR}/include/rocshmem/rocshmem.hpp;${CMAKE_CURRENT_SOURCE_DIR}/include/rocshmem/debug.hpp"
+      "${CMAKE_BINARY_DIR}/config.h"
 )
 
 ###############################################################################
@@ -384,6 +384,11 @@ install(
     RUNTIME
       DESTINATION ${INSTALL_BINDIR}
       COMPONENT bin
+)
+
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/
+    DESTINATION ${INSTALL_INCLUDEDIR}
+    COMPONENT dev
 )
 
 install(
