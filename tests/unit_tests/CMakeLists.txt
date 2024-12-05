@@ -22,6 +22,8 @@
 
 cmake_minimum_required(VERSION 3.16.3 FATAL_ERROR)
 
+set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+
 ###############################################################################
 # GLOBAL COMPILE FLAGS
 ###############################################################################
@@ -102,13 +104,13 @@ find_package(hip REQUIRED)
 target_include_directories(
   ${PROJECT_NAME}
   PRIVATE
-    rocshmem::rocshmem
+    roc::rocshmem
 )
 
 target_link_libraries(
   ${PROJECT_NAME}
   PRIVATE
-    rocshmem::rocshmem
+    roc::rocshmem
     hip::host
     -fgpu-rdc
 )

@@ -25,29 +25,14 @@ cmake_minimum_required(VERSION 3.16.3 FATAL_ERROR)
 ###############################################################################
 # AVOID IN SOURCE BUILD
 ###############################################################################
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR AND CMAKE_CURRENT_SOURCE_DIR STREQUAL
-                                                  CMAKE_SOURCE_DIR)
-    set(MSG "")
-    message(STATUS "Warning! Building from the source directory is not recommended")
-    message(STATUS "If unintended, please remove 'CMakeCache.txt' and 'CMakeFiles'")
-    message(STATUS "and build from a separate directory")
-    message(FATAL_ERROR "In-source build")
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR AND
+   CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+  set(MSG "")
+  message(STATUS "Warning! Building from the source directory is not recommended")
+  message(STATUS "If unintended, please remove 'CMakeCache.txt' and 'CMakeFiles'")
+  message(STATUS "and build from a separate directory")
+  message(FATAL_ERROR "In-source build")
 endif()
-
-###############################################################################
-# SYSTEM INFO
-###############################################################################
-cmake_host_system_information(RESULT LOCALHOST QUERY FQDN)
-message(STATUS "Hostname: ${LOCALHOST}")
-
-###############################################################################
-# VERSIONING INFO DERIVED FROM FILE
-###############################################################################
-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" FULL_VERSION_STRING LIMIT_COUNT 1)
-string(REGEX REPLACE "(\n|\r)" "" FULL_VERSION_STRING "${FULL_VERSION_STRING}")
-set(ROCSHMEM_FULL_VERSION "${FULL_VERSION_STRING}")
-string(REGEX REPLACE "([0-9]+)\.([0-9]+)\.([0-9]+)(.*)" "\\1.\\2.\\3" ROCSHMEM_VERSION
-                     "${FULL_VERSION_STRING}")
 
 ###############################################################################
 # CONFIGURATION OPTIONS
@@ -71,106 +56,85 @@ option(USE_HOST_SIDE_HDP_FLUSH "Use a polling thread to flush the HDP cache on t
 option(BUILD_FUNCTIONAL_TESTS "Build the functional tests" ON)
 option(BUILD_SOS_TESTS "Build the host-facing tests" OFF)
 option(BUILD_UNIT_TESTS "Build the unit tests" ON)
-
-set(ROCM_PATH "" CACHE PATH "ROCm path to use")
+option(BUILD_LOCAL_GPU_TARGET_ONLY "Build only for GPUs detected on this machine" OFF)
 
 configure_file(cmake/rocshmem_config.h.in rocshmem_config.h)
 
 ###############################################################################
-# Validate user passed options
-###############################################################################
-if(ROCM_PATH)
-    set(HIPCONFIG_PATH "${ROCM_PATH}/bin/hipconfig")
-    execute_process(
-      COMMAND "${HIPCONFIG_PATH}" --version
-      RESULT_VARIABLE HIPCONFIG_RETURN
-      OUTPUT_VARIABLE ROCM_VERSION
-      ERROR_QUIET
-      OUTPUT_STRIP_TRAILING_WHITESPACE)
-    if(HIPCONFIG_RETURN EQUAL 0)
-      message(STATUS "Using ROCm with version: ${ROCM_VERSION}")
-    else()
-      message(FATAL_ERROR "ROCm at ${ROCM_PATH} is missing the hipconfig binary. "
-        "Use -DROCM_PATH=/path/to/rocm or ensure ROCm's hipconfig is in your path.")
-  endif()
-else()
-    set(HIPCONFIG_PATH "hipconfig")
-    execute_process(
-      COMMAND "${HIPCONFIG_PATH}" --rocmpath
-      RESULT_VARIABLE HIPCONFIG_RETURN
-      OUTPUT_VARIABLE ROCM_PATH
-      ERROR_QUIET
-      OUTPUT_STRIP_TRAILING_WHITESPACE)
-    if(HIPCONFIG_RETURN EQUAL 0)
-      message(STATUS "Found ROCm at: ${ROCM_PATH}")
-    else()
-      message(FATAL_ERROR "Ensure hipconfig is in your path or use -DROCM_PATH=/path/to/rocm.")
-  endif()
-endif()
-
-###############################################################################
 # GLOBAL COMPILE FLAGS
 ###############################################################################
+if (DEFINED ENV{ROCM_PATH})
+  set(ROCM_PATH "$ENV{ROCM_PATH}" CACHE STRING "ROCm install directory")
+else()
+  set(ROCM_PATH "/opt/rocm" CACHE STRING "ROCm install directory")
+endif()
+
 if (NOT DEFINED CMAKE_CXX_COMPILER)
-    set(CMAKE_CXX_COMPILER ${ROCM_PATH}/bin/hipcc)
+  set(CMAKE_CXX_COMPILER ${ROCM_PATH}/bin/hipcc)
 endif()
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -ggdb")
 
-###############################################################################
-# MODULE SEARCH PATH
-###############################################################################
-set(
-  CMAKE_MODULE_PATH
-  ${CMAKE_MODULE_PATH}
-  "${CMAKE_SOURCE_DIR}/cmake/Modules"
-  "{ROCM_PATH}/hip/cmake"
-  "{ROCM_PATH}/rocclr/lib/cmake/rocclr"
-)
+find_package(ROCM 0.8 REQUIRED PATHS ${ROCM_PATH})
+set(ROCMCHECKS_WARN_TOOLCHAIN_VAR OFF)
+
+find_package(ROCmCMakeBuildTools)
+include(ROCMCreatePackage)
+include(ROCMInstallTargets)
+include(ROCMCheckTargetIds)
 
 ###############################################################################
 # PROJECT
 ###############################################################################
-  project(
-    rocshmem
-    VERSION ${ROCSHMEM_VERSION}
-    LANGUAGES CXX
-    DESCRIPTION "rocSHMEM"
-    HOMEPAGE_URL "https://github.com/ROCm/rocSHMEM")
+rocm_setup_version(VERSION 1.6.0)
+
+project(rocshmem CXX)
 
 ###############################################################################
-# DEFAULT BUILD TYPE
+# SET GPU ARCHITECTURES
 ###############################################################################
-if(NOT CMAKE_BUILD_TYPE)
-  set(
-    CMAKE_BUILD_TYPE
-    "Release"
-    CACHE
-      STRING
-        "build type: Release, Debug, RelWithDebInfo, MinSizeRel"
-    FORCE
-  )
-  message(STATUS "CMAKE_BUILD_TYPE unspecified: using ${CMAKE_BUILD_TYPE}")
+include(cmake/rocm_local_targets.cmake)
+
+set(DEFAULT_GPUS
+      gfx90a
+      gfx942)
+
+if (BUILD_LOCAL_GPU_TARGET_ONLY)
+  message(STATUS "Building only for local GPU target")
+  if (COMMAND rocm_local_targets)
+    rocm_local_targets(DEFAULT_GPUS)
+  else()
+    message(WARNING "Unable to determine local GPU targets. Falling back to default GPUs.")
+  endif()
 endif()
 
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(CMAKE_INSTALL_PREFIX
-        "/opt/lib/rocshmem"
-        CACHE PATH "default install path" FORCE)
+set(GPU_TARGETS "${DEFAULT_GPUS}" CACHE STRING
+    "Target default GPUs if GPU_TARGETS is not defined.")
+
+if (COMMAND rocm_check_target_ids)
+  message(STATUS "Checking for ROCm support for GPU targets: " "${GPU_TARGETS}")
+  rocm_check_target_ids(SUPPORTED_GPUS TARGETS ${GPU_TARGETS})
+else()
+  message(WARNING "Unable to check for supported GPU targets. Falling back to default GPUs.")
+  set(SUPPORTED_GPUS ${DEFAULT_GPUS})
 endif()
-message(STATUS "Installation path: ${CMAKE_INSTALL_PREFIX}")
+
+set(COMPILING_TARGETS "${SUPPORTED_GPUS}" CACHE STRING "GPU targets to compile for.")
+message(STATUS "Compiling for ${COMPILING_TARGETS}")
+
+foreach(target ${COMPILING_TARGETS})
+  list(APPEND static_link_flags --offload-arch=${target})
+endforeach()
+list(JOIN static_link_flags " " flags_str)
+add_compile_options(${flags_str})
 
 ###############################################################################
 # CREATE ROCSHMEM LIBRARY
 ###############################################################################
-add_library(
-  ${PROJECT_NAME}
-  STATIC
-  ""
-)
-add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+add_library(${PROJECT_NAME})
+add_library(roc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 ###############################################################################
 # INCLUDE DIRECTORIES
@@ -184,20 +148,9 @@ target_include_directories(
 )
 
 ###############################################################################
-# SPECIFY PUBLIC HEADER FILES
-###############################################################################
-set_target_properties(
-  ${PROJECT_NAME}
-  PROPERTIES
-    PUBLIC_HEADER
-      "${CMAKE_BINARY_DIR}/rocshmem_config.h"
-)
-
-###############################################################################
 # SUBDIRECTORY TARGETS
 ###############################################################################
 add_subdirectory(src)
-add_subdirectory(docs)
 add_subdirectory(tests)
 add_subdirectory(examples)
 
@@ -241,19 +194,19 @@ target_link_libraries(
 # IBVERBS
 ###############################################################################
 IF (USE_GPU_IB)
-find_package(Ibverbs REQUIRED)
+  find_package(Ibverbs REQUIRED)
 
-target_include_directories(
-  ${PROJECT_NAME}
-  PUBLIC
-    ${IBVERBS_INCLUDE_DIRS}
-)
+  target_include_directories(
+    ${PROJECT_NAME}
+    PUBLIC
+      ${IBVERBS_INCLUDE_DIRS}
+  )
 
-target_link_libraries(
-  ${PROJECT_NAME}
-  PUBLIC
-    ${IBVERBS_LIBRARIES}
-)
+  target_link_libraries(
+    ${PROJECT_NAME}
+    PUBLIC
+      ${IBVERBS_LIBRARIES}
+  )
 ENDIF()
 
 ###############################################################################
@@ -275,164 +228,32 @@ target_link_libraries(
 )
 
 ###############################################################################
-# MODULEFILE
-###############################################################################
-set(MOD_INSTALL_PATH
-    "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/modulefiles"
-    CACHE STRING "Install path for modulefile")
-message(STATUS "Modulefile install path: ${MOD_INSTALL_PATH}")
-
-set(moduleFileTemplate "${PROJECT_NAME}.lua.in")
-
-configure_file(
-    ${PROJECT_SOURCE_DIR}/cmake/${moduleFileTemplate}
-    ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_DATAROOTDIR}/modulefiles/${PROJECT_NAME}/${ROCSHMEM_FULL_VERSION}.lua
-    @ONLY)
-
-# Crusher
-if(LOCALHOST MATCHES ".*\.crusher\.olcf\.ornl\.gov")
-    list(APPEND CMAKE_MESSAGE_INDENT "  ")
-    message(STATUS "Using crusher-specific modulefile modification")
-    file(READ ${PROJECT_SOURCE_DIR}/cmake/modfile.crusher.mod mod_additions)
-    file(
-        APPEND
-        ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_DATAROOTDIR}/modulefiles/${PROJECT_NAME}/${ROCSHMEM_FULL_VERSION}.lua
-        ${mod_additions})
-    list(POP_BACK CMAKE_MESSAGE_INDENT)
-endif()
-
-# Frontier
-if(LOCALHOST MATCHES ".*\.frontier\.olcf\.ornl\.gov")
-    list(APPEND CMAKE_MESSAGE_INDENT "  ")
-    message(STATUS "Using frontier-specific modulefile modification")
-    file(READ ${PROJECT_SOURCE_DIR}/cmake/modfile.frontier.mod mod_additions)
-    file(
-        APPEND
-        ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_DATAROOTDIR}/modulefiles/${PROJECT_NAME}/${ROCSHMEM_FULL_VERSION}.lua
-        ${mod_additions})
-    list(POP_BACK CMAKE_MESSAGE_INDENT)
-endif()
-
-# hpcfund
-if(LOCALHOST MATCHES ".*\.hpcfund")
-    list(APPEND CMAKE_MESSAGE_INDENT "  ")
-    message(STATUS "Using hpcfund-specific modulefile modification")
-    file(READ ${PROJECT_SOURCE_DIR}/cmake/modfile.hpcfund.mod mod_additions)
-    file(
-        APPEND
-        ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_DATAROOTDIR}/modulefiles/${PROJECT_NAME}/${ROCSHMEM_FULL_VERSION}.lua
-        ${mod_additions})
-    list(POP_BACK CMAKE_MESSAGE_INDENT)
-endif()
-
-###############################################################################
 # INSTALL
 ###############################################################################
-include(GNUInstallDirs)
+include(ROCMInstallTargets)
+include(ROCMCreatePackage)
 
-# Specify layout within the build directory
-set(
-  CMAKE_ARCHIVE_OUTPUT_DIRECTORY
-  ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}
-)
-set(
-  CMAKE_LIBRARY_OUTPUT_DIRECTORY
-  ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}
-)
-set(
-  CMAKE_RUNTIME_OUTPUT_DIRECTORY
-  ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}
+rocm_install(TARGETS rocshmem)
+
+rocm_install(
+  DIRECTORY ${CMAKE_SOURCE_DIR}/include/
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-# Offer alternatives for default installation subdirectories
-set(
-  INSTALL_LIBDIR
-    ${CMAKE_INSTALL_LIBDIR} CACHE PATH
-    "Installation directory for libraries"
-)
-set(
-  INSTALL_BINDIR
-    ${CMAKE_INSTALL_BINDIR} CACHE PATH
-    "Installation directory for executables"
-)
-set(
-  INSTALL_INCLUDEDIR
-    ${CMAKE_INSTALL_INCLUDEDIR} CACHE PATH
-    "Installation directory for header files"
-)
-set(
-  DEF_INSTALL_CMAKEDIR
-  share/cmake/${PROJECT_NAME}
-)
-set(
-  INSTALL_CMAKEDIR
-    ${DEF_INSTALL_CMAKEDIR} CACHE PATH
-    "Installation directory for CMake files"
+rocm_install(
+  FILES "${CMAKE_BINARY_DIR}/rocshmem_config.h"
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rocshmem
 )
 
-install(
-  TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}Targets
-    ARCHIVE
-      DESTINATION ${INSTALL_LIBDIR}
-      COMPONENT lib
-    LIBRARY
-      DESTINATION ${INSTALL_LIBDIR}
-      COMPONENT lib
-    PUBLIC_HEADER
-      DESTINATION ${INSTALL_INCLUDEDIR}
-      COMPONENT dev
-    RUNTIME
-      DESTINATION ${INSTALL_BINDIR}
-      COMPONENT bin
+rocm_package_add_dependencies(
+  DEPENDS
+    hsa-rocr
+    "hip-runtime-amd >= 6.2.2"
+    "rocm-dev >= 6.2.2"
 )
 
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/
-    DESTINATION ${INSTALL_INCLUDEDIR}
-    COMPONENT dev
-)
-
-install(
-  EXPORT
-    ${PROJECT_NAME}Targets
-  FILE
-    ${PROJECT_NAME}Targets.cmake
-  NAMESPACE
-    ${PROJECT_NAME}::
-  DESTINATION
-    ${INSTALL_CMAKEDIR}
-  COMPONENT
-    dev
-)
-
-install(
-  FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
-  DESTINATION
-    ${INSTALL_CMAKEDIR}
-)
-
-install(
-    FILES
-    ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_DATAROOTDIR}/modulefiles/${PROJECT_NAME}/${ROCSHMEM_FULL_VERSION}.lua
-    DESTINATION ${MOD_INSTALL_PATH}/${PROJECT_NAME})
-
-###############################################################################
-# PACKAGE
-###############################################################################
-include(CMakePackageConfigHelpers)
-
-write_basic_package_version_file(
-  ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
-  VERSION
-    ${PROJECT_VERSION}
-  COMPATIBILITY
-    SameMajorVersion
-)
-
-configure_package_config_file(
-  ${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
-  ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
-  INSTALL_DESTINATION
-    ${INSTALL_CMAKEDIR}
+rocm_create_package(
+  NAME "rocSHMEM"
+  DESCRIPTION "ROCm OpenSHMEM (rocSHMEM)"
+  MAINTAINER "rocSHMEM Maintainer <rocshmem-maintainer@amd.com>"
 )

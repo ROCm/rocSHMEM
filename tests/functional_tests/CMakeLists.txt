@@ -67,13 +67,13 @@ target_sources(
 target_include_directories(
   ${TESTS_NAME}
   PRIVATE
-    rocshmem::rocshmem
+    roc::rocshmem
 )
 
 target_link_libraries(
   ${TESTS_NAME}
   PRIVATE
-    rocshmem::rocshmem
+    roc::rocshmem
     -fgpu-rdc
 #   xnack allows address translation fault recovery
 #   required option for managed heap configs

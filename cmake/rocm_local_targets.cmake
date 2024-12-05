@@ -20,20 +20,31 @@
 # IN THE SOFTWARE.
 ###############################################################################
 
-find_package(Doxygen)
-if (DOXYGEN_FOUND)
-   set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
-   set(DOXYGEN_SOURCE_BROWSER YES)
-   set(DOXYGEN_EXTRACT_PRIVATE YES)
-   set(DOXYGEN_MACRO_EXPANSION YES)
-   set(DOXYGEN_GENERATE_LATEX YES)
-   set(DOXYGEN_USE_PDFLATEX YES)
+# Find available local ROCM targets
+# NOTE: This will eventually be part of ROCm-CMake and should be removed at that time
+function(rocm_local_targets VARIABLE)
+  set(${VARIABLE} "NOTFOUND" PARENT_SCOPE)
+  find_program(_rocm_agent_enumerator rocm_agent_enumerator HINTS /opt/rocm/bin ENV ROCM_PATH)
+  if(NOT _rocm_agent_enumerator STREQUAL "_rocm_agent_enumerator-NOTFOUND")
+    execute_process(
+      COMMAND "${_rocm_agent_enumerator}"
+      RESULT_VARIABLE _found_agents
+      OUTPUT_VARIABLE _rocm_agents
+      ERROR_QUIET
+      )
+    if (_found_agents EQUAL 0)
+      string(REPLACE "\n" ";" _rocm_agents "${_rocm_agents}")
+      unset(result)
+      foreach (agent IN LISTS _rocm_agents)
+        if (NOT agent STREQUAL "gfx000")
+          list(APPEND result "${agent}")
+        endif()
+      endforeach()
+      if(result)
+        list(REMOVE_DUPLICATES result)
+        set(${VARIABLE} "${result}" PARENT_SCOPE)
+      endif()
+    endif()
+  endif()
+endfunction()
 
-   configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
-   doxygen_add_docs(
-      docs
-      ${PROJECT_SOURCE_DIR}
-      COMMENT "Generate man pages"
-      MACRO_EXPANSION YES
-   )
-endif()

@@ -45,7 +45,7 @@ foreach(SOURCE_FILE IN LISTS EXAMPLE_SOURCES)
   target_link_libraries(
     ${EXECUTABLE_NAME}
     PRIVATE
-      rocshmem::rocshmem
+      roc::rocshmem
       -fgpu-rdc
       # xnack allows address translation fault recovery
       # required option for managed heap configs
