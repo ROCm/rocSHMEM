@@ -23,7 +23,7 @@
 #ifndef LIBRARY_SRC_MEMORY_HEAP_TYPE_HPP_
 #define LIBRARY_SRC_MEMORY_HEAP_TYPE_HPP_
 
-#include "config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "hip_allocator.hpp"
 
 /**

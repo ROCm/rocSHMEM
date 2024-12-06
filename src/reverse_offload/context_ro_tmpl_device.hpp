@@ -23,7 +23,7 @@
 #ifndef LIBRARY_SRC_REVERSE_OFFLOAD_RO_NET_GPU_TEMPLATES_HPP_
 #define LIBRARY_SRC_REVERSE_OFFLOAD_RO_NET_GPU_TEMPLATES_HPP_
 
-#include "config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "commands_types.hpp"
 #include "context_ro_device.hpp"
 #include "queue_proxy.hpp"

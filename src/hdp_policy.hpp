@@ -26,7 +26,7 @@
 #include <hip/hip_runtime.h>
 #include <hsa/hsa_ext_amd.h>
 
-#include "config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "memory/hip_allocator.hpp"
 #include "util.hpp"
 

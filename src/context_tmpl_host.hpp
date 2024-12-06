@@ -23,7 +23,7 @@
 #ifndef LIBRARY_SRC_CONTEXT_TMPL_HOST_HPP_
 #define LIBRARY_SRC_CONTEXT_TMPL_HOST_HPP_
 
-#include "config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "backend_type.hpp"
 #ifdef USE_GPU_IB
 #include "gpu_ib/context_ib_host.hpp"

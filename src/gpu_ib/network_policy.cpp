@@ -24,7 +24,7 @@
 
 #include <mpi.h>
 
-#include "config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "../atomic_return.hpp"
 #include "../context_incl.hpp"
 #include "backend_ib.hpp"

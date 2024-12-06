@@ -25,7 +25,7 @@
 
 #include <hip/hip_runtime.h>
 
-#include "config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "util.hpp"
 
 namespace rocshmem {

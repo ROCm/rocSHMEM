@@ -26,7 +26,7 @@
 #include <hip/hip_runtime.h>
 #include <mpi.h>
 
-#include "config.h"
+#include "rocshmem_config.h"
 #include "rocshmem_common.hpp"
 #include "rocshmem_RMA.hpp"
 #include "rocshmem_AMO.hpp"

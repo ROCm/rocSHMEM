@@ -23,7 +23,7 @@
 #ifndef LIBRARY_SRC_GPU_IB_CONNECTION_POLICY_HPP_
 #define LIBRARY_SRC_GPU_IB_CONNECTION_POLICY_HPP_
 
-#include "config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "infiniband_structs.hpp"
 
 namespace rocshmem {

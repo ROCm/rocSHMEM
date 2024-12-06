@@ -26,7 +26,7 @@
 #include <hip/hip_runtime.h>
 #include <mpi.h>
 
-#include "config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "rocshmem/rocshmem.hpp"
 #include "connection_policy.hpp"
 #include "queue_pair.hpp"

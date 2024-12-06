@@ -74,7 +74,7 @@ option(BUILD_UNIT_TESTS "Build the unit tests" ON)
 
 set(ROCM_PATH "" CACHE PATH "ROCm path to use")
 
-configure_file(cmake/config.h.in config.h)
+configure_file(cmake/rocshmem_config.h.in rocshmem_config.h)
 
 ###############################################################################
 # Validate user passed options
@@ -179,7 +179,7 @@ target_include_directories(
   ${PROJECT_NAME}
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>                 # CONFIG.H
+    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>                 # rocshmem_config.h
     $<INSTALL_INTERFACE:include>
 )
 
@@ -190,7 +190,7 @@ set_target_properties(
   ${PROJECT_NAME}
   PROPERTIES
     PUBLIC_HEADER
-      "${CMAKE_BINARY_DIR}/config.h"
+      "${CMAKE_BINARY_DIR}/rocshmem_config.h"
 )
 
 ###############################################################################

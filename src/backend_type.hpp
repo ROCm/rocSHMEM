@@ -34,7 +34,7 @@
  * functions are not supported at this time.
  */
 
-#include "config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 
 namespace rocshmem {
 

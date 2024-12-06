@@ -22,7 +22,7 @@
 
 #include "thread_policy.hpp"
 
-#include "config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "queue_pair.hpp"
 
 namespace rocshmem {

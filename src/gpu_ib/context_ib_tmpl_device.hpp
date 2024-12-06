@@ -23,7 +23,7 @@
 #ifndef LIBRARY_SRC_GPU_IB_CONTEXT_IB_TMPL_DEVICE_HPP_
 #define LIBRARY_SRC_GPU_IB_CONTEXT_IB_TMPL_DEVICE_HPP_
 
-#include "config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "rocshmem/rocshmem.hpp"
 #include "context_ib_device.hpp"
 #include "gpu_ib_team.hpp"

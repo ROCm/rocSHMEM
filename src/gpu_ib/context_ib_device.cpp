@@ -24,7 +24,7 @@
 
 #include <hip/hip_runtime.h>
 
-#include "config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "rocshmem/rocshmem.hpp"
 #include "../backend_type.hpp"
 #include "../context_incl.hpp"

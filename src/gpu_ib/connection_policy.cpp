@@ -24,7 +24,7 @@
 
 #include <infiniband/mlx5dv.h>
 
-#include "config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "dynamic_connection.hpp"
 #include "queue_pair.hpp"
 
