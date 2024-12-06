@@ -23,7 +23,7 @@
 #include "primitive_tester.hpp"
 
 #include <rocshmem/rocshmem.hpp>
-#include <debug.hpp>
+#include <rocshmem/rocshmem_debug.hpp>
 
 #include <unistd.h>
 

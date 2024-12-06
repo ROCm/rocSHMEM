@@ -20,7 +20,7 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "rocshmem/debug.hpp"
+#include "rocshmem/rocshmem_debug.hpp"
 
 #include "qe_dumper.hpp"
 
