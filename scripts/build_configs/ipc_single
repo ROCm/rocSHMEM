@@ -25,7 +25,8 @@ cmake \
     -DUSE_THREADS=OFF \
     -DUSE_WF_COAL=OFF \
     -DUSE_SINGLE_NODE=ON \
-    -DUSE_HOST_SIDE_HDP_FLUSH=OFF\
+    -DUSE_HOST_SIDE_HDP_FLUSH=OFF \
+    -DBUILD_LOCAL_GPU_TARGET_ONLY=ON \
     $src_path
 cmake --build . --parallel 8
 cmake --install .
