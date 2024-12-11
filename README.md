@@ -1,59 +1,40 @@
 # ROCm OpenSHMEM (rocSHMEM)
 
-The ROCm OpenSHMEM (rocSHMEM) runtime is part of an AMD Research
-initiative to provide a unified runtime for heterogeneous systems.
-rocSHMEM supports both host-centric (a traditional host-driven
-OpenSHMEM runtime) and GPU-centric networking (provided a GPU kernel
-the ability to perform network operations) through an
-OpenSHMEM-like interface. This intra-kernel networking simplifies application
+The ROCm OpenSHMEM (rocSHMEM) runtime is part of an AMD and AMD Research
+initiative to provide GPU-centric networking through an OpenSHMEM-like interface.
+This intra-kernel networking library simplifies application
 code complexity and enables more fine-grained communication/computation
 overlap than traditional host-driven networking.
+rocSHMEM uses a single symmetric heap (SHEAP) that is allocated on GPU memories.
 
-rocSHMEM's primary target is heterogeneous computing; hence, for both
-CPU-centric and GPU-centric communications, rocSHMEM uses a single
-symmetric heap (SHEAP) that is allocated on GPU memories.
+There are currently three backends for rocSHMEM;
+IPC, GPU-IB and Reverse Offload (RO).
+The backends primarily differ in their implementations of intra-kernel networking.
+Currently only the IPC conduit is supported.
+The GPU-IB and RO backends are provided as-is with
+no guarantees of support from AMD or AMD Research.
 
-rocSHMEM's GPU-centric communication has two different backend designs.
-The backends primarily differ in their implementations of
-intra-kernel networking.
+The IPC backend implements communication primitives using load/store operations issued from the GPU.
 
-The first design will be referred to as the the GPU InfiniBand (GPU-IB)
-backend.  This backend implements a lightweight InfiniBand verbs interface
-on the GPU.  The GPU itself is responsible with building commands and ringing
-the doorbell on the NIC to send network commands.  GPU-IB is the default and
-preferred backend design that offers the best performance.
+The GPU InfiniBand (GPU-IB) backend implements a lightweight InfiniBand verbs interface
+on the GPU. The GPU itself is responsible for building commands and ringing
+the doorbell on the NIC to send network commands.
 
-The second design will be referred to as the Reverse Offload (RO) backend. With
-the RO backend, the GPU runtime forwards rocSHMEM networking operations to the
-host-side runtime, which calls into a traditional MPI or OpenSHMEM
-implementation.  This forwarding of requests is transparent to the
+The Reverse Offload (RO) backend has the GPU runtime forward rocSHMEM networking operations
+to the host-side runtime, which calls into a traditional MPI or OpenSHMEM
+implementation. This forwarding of requests is transparent to the
 programmer, who only sees the GPU-side interface.
 
-Both designs of the GPU-centric interface coexist seamlessly with the
-CPU-centric interface of the unified runtime. rocSHMEM ensures that CPU-centric
-updates to the SHEAP are consistent and visible to a GPU kernel that is executing
-in parallel to host-initiated communication.
-
-## Limitations
-
-rocSHMEM is an experimental prototype from AMD Research and not an official
-ROCm product.  The software is provided as-is with no guarantees of support
-from AMD or AMD Research.
+## Requirements
 
 rocSHMEM base requirements:
-* ROCm version 4.3.1 onwards
-    *  May work with other versions, but not tested
-* AMD GFX9 GPUs (e.g.: MI25, Vega 56, Vega 64, MI50, MI60, MI100, Radeon VII)
-* AMD MI200 GPUs: To enable the support on MI200, please configure the library
- with USE_COHERENT_HEAP
-* ROCm-aware MPI as described in
+* ROCm v6.2.2 onwards
+    *  May work with other versions, but it has not been tested
+* AMD GPUs
+  * MI250X
+  * MI300X
+* ROCm-aware Open MPI and UCX as described in
   [Building the Dependencies](#building-the-dependencies)
-* InfiniBand adaptor compatable with ROCm RDMA technology
-* UCX 1.6 or greater with ROCm support
-
-rocSHMEM optional requirements
- * For Documentation:
-     *  Doxygen
 
 rocSHMEM only supports HIP applications. There are no plans to port to
 OpenCL.
@@ -63,132 +44,131 @@ OpenCL.
 rocSHMEM uses the CMake build system. The CMakeLists file contains
 additional details about library options.
 
-To create an out-of-source build:
+To create an out-of-source build for the IPC backend:
 
-    mkdir build
-    cd build
+```
+mkdir build
+cd build
+../scripts/build_configs/ipc_single
+```
 
-Next, choose one configuration from the build_configs subdirectory. These
-scripts pass configuration options to CMake to setup canonical builds which
-are regularly tested:
-
-    ../scripts/build_configs/dc_single
-    ../scripts/build_configs/dc_multi
-    ../scripts/build_configs/rc_single
-    ../scripts/build_configs/rc_multi
-    ../scripts/build_configs/rc_multi_wf_coal
-    ../scripts/build_configs/ro_net_basic
+The build script passes configuration options to CMake to setup canonical builds.
+There are other scripts in `./scripts/build_configs`
+directory but currently, only `ipc_single` is supported.
 
 By default, the library is installed in `~/rocshmem`. You may provide a
 custom install path by supplying it as an argument. For example:
 
-    ../scripts/build_configs/rc_single /path/to/install
+```
+../scripts/build_configs/ipc_single /path/to/install
+```
 
-## Compiling/linking and Running with rocSHMEM
+## Compiling/Linking and Running with rocSHMEM
 
-rocSHMEM is built as a host and device side library that can be statically
-linked to your application during compilation using hipcc.
+rocSHMEM is built as a library that can be statically
+linked to your application during compilation using `hipcc`.
 
 During the compilation of your application, include the rocSHMEM header files
-and the rocSHMEM library when using hipcc:
-
-    -I/path/to/rocshmem/install/include
-    -L/path/to/rocshmem/install/lib -lrocshmem
-
-NOTE: rocSHMEM depends on MPI for its host code. So, you will need to link
-to an MPI library. Since you must use the hipcc compiler, the arguments for
-MPI linkage must be added manually as opposed to using mpicc. Similary,
-rocSHMEM depends on Verbs for its device code. So, you will need to link
-to a Verbs library.
+and the rocSHMEM library when using hipcc.
+Since rocSHMEM depends on MPI you will need to link to an MPI library.
+The arguments for MPI linkage must be added manually
+as opposed to using mpicc.
 
 When using hipcc directly (as opposed to through a build system), we
 recommend performing the compilation and linking steps separately.
-Here are the steps to build a standalone program, say
-rocshmem_hello.cpp.
+At the top of the examples files (`./examples/*`),
+example compile and link commands are provided:
 
 ```
 # Compile
-/opt/rocm/bin/hipcc ./rocshmem_hello.cpp -I/path/to/rocshmem/install/include -fgpu-rdc -o ./rocshmem_hello.o -c
+hipcc -c -fgpu-rdc -x hip rocshmem_allreduce_test.cc \
+  -I/opt/rocm/include                                \
+  -I$ROCSHMEM_INSTALL_DIR/include                    \
+  -I$OPENMPI_UCX_INSTALL_DIR/include/
 
 # Link
-/opt/rocm/bin/hipcc ./rocshmem_hello.o /path/to/rocshmem/install/lib/librocshmem.a -lmpi -lmlx5 -libverbs -lhsa-runtime64 -fgpu-rdc -o rocshmem_hello
+hipcc -fgpu-rdc --hip-link rocshmem_allreduce_test.o -o rocshmem_allreduce_test \
+  $ROCSHMEM_INSTALL_DIR/lib/librocshmem.a                                       \
+  $OPENMPI_UCX_INSTALL_DIR/lib/libmpi.so                                        \
+  -L/opt/rocm/lib -lamdhip64 -lhsa-runtime64
 
 ```
 
-If your project uses cmake, please refer to the CMakeLists.txt files
-in the clients directory for examples. You may also find the
+If your project uses cmake,
+you may find the
 [Using CMake with AMD ROCm](https://rocmdocs.amd.com/en/latest/conceptual/cmake-packages.html)
 page useful.
 
 ## Runtime Parameters
+rocSHMEM has the following enviroment variables:
 
+```
     ROCSHMEM_HEAP_SIZE (default : 1 GB)
-                        Defines the size of the OpenSHMEM symmetric heap
+                        Defines the size of the rocSHMEM symmetric heap
                         Note the heap is on the GPU memory.
-
-    ROCSHMEM_SQ_SIZE   (default 1024)
-                        Defines the size of the SQ as number of network
-                        packet (WQE). Each WQE is 64B. This only for
-                        GPU-IB conduit
-
-    ROCSHMEM_USE_CQ_GPU_MEM  (default : 1)
-                        Set the placement of CQ on GPU memory (1)
-                        or CPU memory (0)
-
-    ROCSHMEM_USE_SQ_GPU_MEM  (default : 1)
-                        Set the placement of SQ on GPU memory (1)
-                        or CPU memory (0)
-
-    RO_NET_CPU_QUEUE    (default: not set)
-                        Force producer/consumer queues between CPU and GPU to
-                        be in CPU memory. RO backend only.
+```
 
 rocSHMEM also requires the following environment variable be set for ROCm:
 
-    export HSA_FORCE_FINE_GRAIN_PCIE=1
-
-## Documentation
-
-To generate doxygen documentation for rocSHMEM's API, run the following
-from the library's build directory:
-
-    make docs
-
-The doxygen output will be in the `docs` folder of the build directory.
+```
+export HSA_FORCE_FINE_GRAIN_PCIE=1
+```
 
 ## Examples
 
 rocSHMEM is similar to OpenSHMEM and should be familiar to programmers who
 have experience with OpenSHMEM or other PGAS network programming APIs in the
-context of CPUs. The best way to learn how to use rocSHMEM is to read the
-autogenerated doxygen documentation for functions described in
-`rocshmem/rocshmem.hpp`, or to look at the provided sample applications in the
-`tests/` folder. rocSHMEM is shipped with a basic test suite for the
-supported rocSHMEM API. The examples test Puts, Gets, nonblocking Puts,
-nonblocking Gets, Quiets, Atomics, Tests, Wai-untils, Broadcasts, and
-Reductions.
+context of CPUs.
+The best way to learn how to use rocSHMEM is to read the functions described in
+headers in the dirctory `./include/rocshmem/`,
+or to look at the provided example code in the `./example/` directory.
+The examples can be run like so:
 
-To run the examples, you may use the driver scripts provided in respective
-folders of device- or host-initiated communication examples. Simply
-executing `./driver.sh` will show the help message on how to use the script.
-Here are some example uses of the driver script:
+```
+mpirun -np 2 ./build/examples/rocshmem_getmem_test
+```
 
-    ./scripts/functional_tests/driver.sh ./build/rocshmem_example_driver single_thread ./build   (for device-initiated communication)
-    ./scripts/sos_tests/driver.sh ./build short                                           (for host-initiated communication)
+## Tests
+rocSHMEM is shipped with a functional and unit test suite for the supported rocSHMEM API.
+They test Puts, Gets, nonblocking Puts,
+nonblocking Gets, Quiets, Atomics, Tests, Wait-untils, Broadcasts, Reductions, and etc.
+To run the tests, you may use the driver scripts provided in the `./scripts/` directory:
+
+```
+# Run Functional Tests
+./scripts/functional_tests/driver.sh ./build/tests/functional_tests/rocshmem_example_driver short <log_directory>
+
+# Run Unit Tests
+./scripts/unit_tests/driver.sh ./build/tests/unit_tests/rocshmem_unit_tests all
+```
 
 ## Building the Dependencies
 
-rocSHMEM requires an MPI runtime on the host that supports ROCm-Aware MPI.
-Currently all ROCm-Aware MPI runtimes require the usage of ROCm-Aware UCX.
+rocSHMEM requires a ROCm-Aware Open MPI and UCX.
+Other MPI implementations, such as MPICH,
+_should_ be compatible with rocSHMEM but it has not been thoroughly tested.
 
-To build and configure ROCm-Aware UCX, you need to:
- 1. Download the latest UCX
- 2. Configure and build UCX with ROCm support: --with-rocm=/opt/rocm
+To build and configure ROCm-Aware UCX (1.17.0 or later), you need to:
 
-Then, you need to build your MPI (OpenMPI or MPICH CH4) with UCX support.
+```
+git clone https://github.com/openucx/ucx.git -b v1.17.x
+cd ucx
+./autogen.sh
+./configure --prefix=<prefix_dir> --with-rocm=<rocm_path> --enable-mt
+make -j 8
+make -j 8 install
+```
+
+Then, you need to build Open MPI (5.0.6 or later) with UCX support.
+
+```
+git clone --recursive https://github.com/ROCm/ompi.git -b v5.0.x
+cd ompi
+./autogen.pl
+./configure --prefix=<prefix_dir> --with-rocm=<rocm_path> --with-ucx=<ucx_path>
+make -j 8
+make -j 8 install
+```
 
 For more information on OpenMPI-UCX support, please visit:
 https://github.com/openucx/ucx/wiki/OpenMPI-and-OpenSHMEM-installation-with-UCX
-
-For more information on MPICH-UCX support, please visit:
-https://www.mpich.org/about/news/
