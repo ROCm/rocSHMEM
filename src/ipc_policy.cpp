@@ -86,7 +86,7 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
    * For all local processing elements, initialize the device-side array
    * with the IPC symmetric heap base addresses.
    */
-  for (size_t i = 0; i < shm_size; i++) {
+  for (int i = 0; i < shm_size; i++) {
     if (i != shm_rank) {
       void **ipc_base_uncast = reinterpret_cast<void **>(&ipc_base[i]);
       CHECK_HIP(hipIpcOpenMemHandle(ipc_base_uncast, vec_ipc_handle[i],
@@ -109,7 +109,7 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
 }
 
 __host__ void IpcOnImpl::ipcHostStop() {
-  for (size_t i = 0; i < shm_size; i++) {
+  for (int i = 0; i < shm_size; i++) {
     if (i != shm_rank) {
       CHECK_HIP(hipIpcCloseMemHandle(ipc_bases[i]));
     }

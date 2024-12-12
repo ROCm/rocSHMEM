@@ -62,8 +62,8 @@ class TesterArguments {
   /**
    * Arguments obtained from rocshmem
    */
-  unsigned numprocs = UINT_MAX;
-  unsigned myid = UINT_MAX;
+  int numprocs = INT_MAX;
+  int myid = INT_MAX;
 
   /**
    * Defaults tester values
@@ -71,7 +71,7 @@ class TesterArguments {
   int loop = 10;
   int skip = 10;
   int loop_large = 10;
-  int large_message_size = 32768;
+  uint64_t large_message_size = 32768;
 };
 
 #endif

@@ -57,9 +57,9 @@ __device__
 void
 tiled_validator(bool *error, int *golden, int *dest, size_t bytes) {
     size_t elements {bytes / sizeof(int)};
-    for (int i {get_flat_id()}; i < elements; i += get_flat_grid_size()) {
+    for (size_t i = get_flat_id(); i < elements; i += get_flat_grid_size()) {
         if (golden[i] != dest[i]) {
-            printf("golden[%d] %d != dest[%d] %d\n", i, golden[i], i, dest[i]);
+            printf("golden[%zu] %d != dest[%zu] %d\n", i, golden[i], i, dest[i]);
             *error = true;
         }
     }
@@ -100,13 +100,13 @@ template <typename NotifierT>
 __global__
 void
 kernel_tiled_fine_copy_block(IpcImpl *ipc_impl, bool *error, int *golden, int *src, int *dest, size_t bytes, TestType test, NotifierT *notifier) {
-    int block_bytes = blockDim.x * THREAD_TRANSFER_GRANULARITY;
-    int block_byte_offset = blockIdx.x * block_bytes;
-    for (int i {block_byte_offset}; i < bytes; i += get_flat_grid_size() * THREAD_TRANSFER_GRANULARITY) {
-	int chunk = min(block_bytes, bytes - i);
+    size_t block_bytes = blockDim.x * THREAD_TRANSFER_GRANULARITY;
+    size_t block_byte_offset = blockIdx.x * block_bytes;
+    for (size_t i = block_byte_offset; i < bytes; i += get_flat_grid_size() * THREAD_TRANSFER_GRANULARITY) {
+	      int chunk = min(block_bytes, bytes - i);
         ipc_impl->ipcCopy_wg((char*)dest + i, (char*)src + i, chunk);
         ipc_impl->ipcFence();
-	__syncthreads();
+        __syncthreads();
         if (test == WRITE) {
             if (!threadIdx.x) {
                 ipc_impl->ipcAMOFetchAdd(dest + SIGNAL_OFFSET, -1);
@@ -123,10 +123,10 @@ template <typename NotifierT>
 __global__
 void
 kernel_tiled_fine_copy_warp(IpcImpl *ipc_impl, bool *error, int *golden, int *src, int *dest, size_t bytes, TestType test, NotifierT *notifier) {
-    int warp_id = (blockIdx.x * blockDim.x + threadIdx.x) / WARP_SIZE;
-    int warp_bytes = WARP_SIZE * THREAD_TRANSFER_GRANULARITY;
-    int warp_byte_offset = warp_id * warp_bytes;
-    for (int i {warp_byte_offset}; i < bytes; i += get_flat_grid_size() * THREAD_TRANSFER_GRANULARITY) {
+    size_t warp_id = (blockIdx.x * blockDim.x + threadIdx.x) / WARP_SIZE;
+    size_t warp_bytes = WARP_SIZE * THREAD_TRANSFER_GRANULARITY;
+    size_t warp_byte_offset = warp_id * warp_bytes;
+    for (size_t i = warp_byte_offset; i < bytes; i += get_flat_grid_size() * THREAD_TRANSFER_GRANULARITY) {
         int chunk = min(warp_bytes, bytes - i);
         ipc_impl->ipcCopy_wave(((char*)dest) + i, ((char*)src) + i, chunk);
         ipc_impl->ipcFence();
@@ -220,7 +220,7 @@ class IPCImplTiledFine : public ::testing::TestWithParam<std::tuple<int, int, in
 
     void validate_golden(size_t elems) {
         ASSERT_EQ(golden_.size(), elems);
-        for (int i{0}; i < golden_.size(); i++) {
+        for (int i = 0; i < static_cast<int>(golden_.size()); i++) {
             ASSERT_EQ(golden_[i], i);
         }
     }
@@ -288,7 +288,7 @@ class IPCImplTiledFine : public ::testing::TestWithParam<std::tuple<int, int, in
         }
 
         auto dev_dest = reinterpret_cast<int*>(ipc_impl_.ipc_bases[mpi_.my_pe()]);
-        for (int i{0}; i < golden_.size(); i++) {
+        for (int i = 0; i < static_cast<int>(golden_.size()); i++) {
             ASSERT_EQ(golden_[i], dev_dest[i]);
         }
     }

@@ -153,7 +153,7 @@ void TeamReductionTester<T1, T2>::postLaunchKernel() {
 
 template <typename T1, ROCSHMEM_OP T2>
 void TeamReductionTester<T1, T2>::resetBuffers(uint64_t size) {
-  for (int i = 0; i < args.max_msg_size; i++) {
+  for (uint64_t i = 0; i < args.max_msg_size; i++) {
     init_buf(s_buf[i], r_buf[i]);
   }
 }
@@ -161,10 +161,10 @@ void TeamReductionTester<T1, T2>::resetBuffers(uint64_t size) {
 template <typename T1, ROCSHMEM_OP T2>
 void TeamReductionTester<T1, T2>::verifyResults(uint64_t size) {
   int n_pes = rocshmem_n_pes();
-  for (int i = 0; i < size; i++) {
+  for (uint64_t i = 0; i < size; i++) {
     auto r = verify_buf(r_buf[i], (T1)n_pes);
     if (r.first == false) {
-      fprintf(stderr, "Data validation error at idx %d\n", i);
+      fprintf(stderr, "Data validation error at idx %lu\n", i);
       fprintf(stderr, "%s.\n", r.second.c_str());
       exit(-1);
     }

@@ -137,7 +137,7 @@ IPCBackend::~IPCBackend() {
 
 void IPCBackend::setup_ctxs() {
   CHECK_HIP(hipMalloc(&ctx_array, sizeof(IPCContext) * maximum_num_contexts_));
-  for (int i = 0; i < maximum_num_contexts_; i++) {
+  for (size_t i = 0; i < maximum_num_contexts_; i++) {
     new (&ctx_array[i]) IPCContext(this);
     ctx_free_list.get()->push_back(ctx_array + i);
   }
@@ -367,7 +367,7 @@ void IPCBackend::init_wrk_sync_buffer() {
    * For all local processing elements, initialize the device-side array
    * with the IPC work/sync buffer addresses.
    */
-  for (size_t i = 0; i < num_pes; i++) {
+  for (int i = 0; i < num_pes; i++) {
     if (i != my_pe) {
       CHECK_HIP(hipIpcOpenMemHandle(
           reinterpret_cast<void**>(&Wrk_Sync_buffer_bases_[i]),
@@ -380,7 +380,7 @@ void IPCBackend::init_wrk_sync_buffer() {
 }
 
 void IPCBackend::cleanup_wrk_sync_buffer() {
-  for (size_t i = 0; i < num_pes; i++) {
+  for (int i = 0; i < num_pes; i++) {
     if (i != my_pe) {
       CHECK_HIP(hipIpcCloseMemHandle(Wrk_Sync_buffer_bases_[i]));
     }
@@ -444,7 +444,7 @@ void IPCBackend::teams_init() {
 
   /* Accommodating for largest possible data type for pWrk */
   pWrk_pool = reinterpret_cast<void *>(temp_Wrk_Sync_buff_ptr_);
-  temp_Wrk_Sync_buff_ptr_ += sizeof(double) * ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE 
+  temp_Wrk_Sync_buff_ptr_ += sizeof(double) * ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE
                             * max_num_teams;
 
 
@@ -466,16 +466,16 @@ void IPCBackend::teams_init() {
     alltoall_pSync = reinterpret_cast<long *>(
         &alltoall_pSync_pool[team_i * ROCSHMEM_ALLTOALL_SYNC_SIZE]);
 
-    for (int i = 0; i < ROCSHMEM_BARRIER_SYNC_SIZE; i++) {
+    for (size_t i = 0; i < ROCSHMEM_BARRIER_SYNC_SIZE; i++) {
       barrier_pSync[i] = ROCSHMEM_SYNC_VALUE;
     }
-    for (int i = 0; i < ROCSHMEM_REDUCE_SYNC_SIZE; i++) {
+    for (size_t i = 0; i < ROCSHMEM_REDUCE_SYNC_SIZE; i++) {
       reduce_pSync[i] = ROCSHMEM_SYNC_VALUE;
     }
-    for (int i = 0; i < ROCSHMEM_BCAST_SYNC_SIZE; i++) {
+    for (size_t i = 0; i < ROCSHMEM_BCAST_SYNC_SIZE; i++) {
       bcast_pSync[i] = ROCSHMEM_SYNC_VALUE;
     }
-    for (int i = 0; i < ROCSHMEM_ALLTOALL_SYNC_SIZE; i++) {
+    for (size_t i = 0; i < ROCSHMEM_ALLTOALL_SYNC_SIZE; i++) {
       alltoall_pSync[i] = ROCSHMEM_SYNC_VALUE;
     }
   }

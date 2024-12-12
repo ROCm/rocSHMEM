@@ -154,7 +154,7 @@ RandomAccessTester::~RandomAccessTester() {
 }
 
 void RandomAccessTester::resetBuffers(uint64_t size) {
-  for (int i = 0; i < args.max_msg_size / sizeof(int) * args.wg_size * space;
+  for (size_t i = 0; i < args.max_msg_size / sizeof(int) * args.wg_size * space;
        i++) {
     s_buf[i] = 1;
     r_buf[i] = 0;
@@ -187,21 +187,21 @@ void RandomAccessTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
 }
 
 void RandomAccessTester::verifyResults(uint64_t size) {
-  int offset, i, j;
+  uint64_t offset;
   for (int k = 0; k < _num_waves; k++) {
-    for (i = 0; i < _num_bins; i++) {
+    for (int i = 0; i < _num_bins; i++) {
       int index = i + _num_bins * k;
       if (args.op_type == PutType) {
-        if (_PE_bins[index] == args.myid) {
+        if (_PE_bins[index] == static_cast<uint32_t>(args.myid)) {
           offset = _off_bins[index];
-          for (j = 0; j < ((size / sizeof(int)) * args.coal_coef); j++) {
+          for (uint64_t j = 0; j < ((size / sizeof(int)) * args.coal_coef); j++) {
             h_buf[offset + j] = 1;
           }
         }
       } else {
         if (args.myid == 0) {
           offset = _off_bins[index];
-          for (j = 0; j < ((size / sizeof(int)) * args.coal_coef); j++) {
+          for (uint64_t j = 0; j < ((size / sizeof(int)) * args.coal_coef); j++) {
             h_buf[offset + j] = 1;
           }
         }
@@ -212,9 +212,9 @@ void RandomAccessTester::verifyResults(uint64_t size) {
   CHECK_HIP(hipMemcpy(h_dev_buf, r_buf, space * args.wg_size * size,
 		      hipMemcpyDeviceToHost));
   CHECK_HIP(hipDeviceSynchronize());
-  for (i = 0; i < (space * args.wg_size * size / sizeof(int)); i++) {
+  for (uint64_t i = 0; i < (space * args.wg_size * size / sizeof(int)); i++) {
     if (h_dev_buf[i] != h_buf[i]) {
-      printf("PE %d  Got Data Validation: expecting %d got %d at  %d \n",
+      printf("PE %d  Got Data Validation: expecting %d got %d at  %lu\n",
              args.myid, h_buf[i], h_dev_buf[i], i);
       exit(-1);
     }

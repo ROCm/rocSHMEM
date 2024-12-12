@@ -653,7 +653,7 @@ uint64_t Tester::timerAvgInMicroseconds() {
    * TODO: (bpotter/avinash) Modify the calcuation for the Tiled version of
    *       puts and gets at wavefront level
   */
-  for (int i = 0; i < args.num_wgs; i++) {
+  for (uint64_t i = 0; i < args.num_wgs; i++) {
     sum += gpuCyclesToMicroseconds(timer[i]);
   }
 

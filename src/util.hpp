@@ -171,7 +171,7 @@ __device__ __forceinline__ void memcpy(void* dst, void* src, size_t size) {
   uint8_t* dst_bytes{static_cast<uint8_t*>(dst)};
   uint8_t* src_bytes{static_cast<uint8_t*>(src)};
 
-  for (int i = 8; i > 1; i >>= 1) {
+  for (size_t i = 8; i > 1; i >>= 1) {
     while (size >= i) {
       store_asm(src_bytes, dst_bytes, i);
       src_bytes += i;

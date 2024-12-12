@@ -156,7 +156,7 @@ __device__ T IPCContext::amo_fetch_cas(void *dest, T value, T cond, int pe) {
 template <typename T, ROCSHMEM_OP Op>
 __device__ void compute_reduce(T *src, T *dst, int size, int wg_id,
                                int wg_size) {
-  for (size_t i = wg_id; i < size; i += wg_size) {
+  for (int i = wg_id; i < size; i += wg_size) {
     OpWrap<Op>::Calc(src, dst, i);
   }
   __syncthreads();
@@ -299,12 +299,12 @@ __device__ void IPCContext::internal_ring_allreduce(
   int wg_size = get_flat_block_size();
   int wg_id = get_flat_block_id();
 
-  for (size_t i = wg_id; i < nelems; i += wg_size) {
+  for (int i = wg_id; i < nelems; i += wg_size) {
     dst[i] = src[i];
   }
   __syncthreads();
 
-  for (size_t seg = 0; seg < n_seg; seg++) {
+  for (int seg = 0; seg < n_seg; seg++) {
     off_seg = seg * seg_size;
     // Loop 2 in the algorithm above
     for (int iter = 0; iter < PE_size - 1; iter++) {
@@ -331,7 +331,7 @@ __device__ void IPCContext::internal_ring_allreduce(
     }
 
     // Loop 2 in the example above
-    for (size_t iter = PE_size - 1; iter < 2 * PE_size - 2; iter++) {
+    for (int iter = PE_size - 1; iter < 2 * PE_size - 2; iter++) {
       off_send = (((my_pe_in_team + 1 - iter + 2 * PE_size) % PE_size) * chunk_size);
       putmem_nbi_wg(reinterpret_cast<void *>(&dst[off_send + off_seg]),
                     reinterpret_cast<void *>(&dst[off_send + off_seg]),
@@ -351,7 +351,7 @@ __device__ void IPCContext::internal_ring_allreduce(
   }
   __syncthreads();
 
-  for (size_t i = wg_id; i < 2 * num_pes - 2; i += wg_size) {
+  for (int i = wg_id; i < 2 * num_pes - 2; i += wg_size) {
     pSync[i] = ROCSHMEM_SYNC_VALUE;
   }
   __syncthreads();

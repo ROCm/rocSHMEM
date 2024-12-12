@@ -44,7 +44,7 @@ class IpcOnImpl {
  public:
   int shm_rank{0};
 
-  uint32_t shm_size{0};
+  int shm_size{0};
 
   char **ipc_bases{nullptr};
 

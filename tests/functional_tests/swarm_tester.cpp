@@ -80,9 +80,9 @@ void GetSwarmTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
 
 void GetSwarmTester::verifyResults(uint64_t size) {
   if (args.myid == 0) {
-    for (int i = 0; i < size * args.wg_size; i++) {
+    for (uint64_t i = 0; i < size * args.wg_size; i++) {
       if (r_buf[i] != '0') {
-        fprintf(stderr, "Data validation error at idx %d\n", i);
+        fprintf(stderr, "Data validation error at idx %lu\n", i);
         fprintf(stderr, "Got %c, Expected %c\n", r_buf[i], '0');
         exit(-1);
       }

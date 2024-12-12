@@ -143,9 +143,9 @@ void SignalingOperationsTester::verifyResults(uint64_t size) {
                              ? 0 : -1; // do not check if it doesn't match a test
 
   if (args.myid == check_data_id) {
-    for (int i = 0; i < size; i++) {
+    for (uint64_t i = 0; i < size; i++) {
       if (r_buf[i] != '0') {
-        fprintf(stderr, "Data validation error at idx %d\n", i);
+        fprintf(stderr, "Data validation error at idx %lu\n", i);
         fprintf(stderr, "Got %c, Expected %c\n", r_buf[i], '0');
         exit(-1);
       }
