@@ -108,12 +108,6 @@ rocSHMEM has the following enviroment variables:
                         Note the heap is on the GPU memory.
 ```
 
-rocSHMEM also requires the following environment variable be set for ROCm:
-
-```
-export HSA_FORCE_FINE_GRAIN_PCIE=1
-```
-
 ## Examples
 
 rocSHMEM is similar to OpenSHMEM and should be familiar to programmers who
