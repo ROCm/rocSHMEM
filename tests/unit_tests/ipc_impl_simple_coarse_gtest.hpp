@@ -116,7 +116,7 @@ class IPCImplSimpleCoarse : public ::testing::TestWithParam<std::tuple<int, int,
 
     void validate_golden(size_t elems) {
         ASSERT_EQ(golden_.size(), elems);
-        for (int i{0}; i < golden_.size(); i++) {
+        for (int i = 0; i < static_cast<int>(golden_.size()); i++) {
             ASSERT_EQ(golden_[i], i);
         }
     }
@@ -165,7 +165,7 @@ class IPCImplSimpleCoarse : public ::testing::TestWithParam<std::tuple<int, int,
         }
 
         auto dev_dest = reinterpret_cast<int*>(ipc_impl_.ipc_bases[mpi_.my_pe()]);
-        for (int i{0}; i < golden_.size(); i++) {
+        for (int i = 0; i < static_cast<int>(golden_.size()); i++) {
             ASSERT_EQ(golden_[i], dev_dest[i]);
         }
     }

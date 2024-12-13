@@ -38,14 +38,14 @@ __device__ void IPCContext::internal_direct_barrier(int pe, int PE_start,
 #if defined(__gfx90a__)
     __threadfence_system();
 #endif /* __gfx90a__ */
-    for (size_t i = 1; i < n_pes; i++) {
+    for (int i = 1; i < n_pes; i++) {
       wait_until(&pSync[i], ROCSHMEM_CMP_EQ, flag_val);
       pSync[i] = ROCSHMEM_SYNC_VALUE;
     }
     threadfence_system();
 
     // Announce to other PEs that all have reached
-    for (size_t i = 1, j = PE_start + stride; i < n_pes; ++i, j += stride) {
+    for (int i = 1, j = PE_start + stride; i < n_pes; ++i, j += stride) {
       internal_putmem(&pSync[0], &flag_val, sizeof(*pSync), j);
 #if defined(__gfx90a__)
         __threadfence_system();
@@ -73,7 +73,7 @@ __device__ void IPCContext::internal_atomic_barrier(int pe, int PE_start,
     pSync[0] = ROCSHMEM_SYNC_VALUE;
     threadfence_system();
 
-    for (size_t i = 1, j = PE_start + stride; i < n_pes; ++i, j += stride) {
+    for (int i = 1, j = PE_start + stride; i < n_pes; ++i, j += stride) {
       internal_putmem(&pSync[0], &flag_val, sizeof(*pSync), j);
     }
   } else {

@@ -47,9 +47,9 @@ __device__
 void
 simple_validator(bool *error, int *golden, int *dest, size_t bytes) {
     size_t elements {bytes / sizeof(int)};
-    for (int i {get_flat_id()}; i < elements; i += get_flat_grid_size()) {
+    for (size_t i = get_flat_id(); i < elements; i += get_flat_grid_size()) {
         if (golden[i] != dest[i]) {
-            printf("golden[%d] %d != dest[%d] %d\n", i, golden[i], i, dest[i]);
+            printf("golden[%zu] %d != dest[%zu] %d\n", i, golden[i], i, dest[i]);
             *error = true;
         }
     }
@@ -202,7 +202,7 @@ class IPCImplSimpleFine : public ::testing::TestWithParam<std::tuple<int, int, i
 
     void validate_golden(size_t elems) {
         ASSERT_EQ(golden_.size(), elems);
-        for (int i{0}; i < golden_.size(); i++) {
+        for (int i = 0; i < static_cast<int>(golden_.size()); i++) {
             ASSERT_EQ(golden_[i], i);
         }
     }
@@ -270,7 +270,7 @@ class IPCImplSimpleFine : public ::testing::TestWithParam<std::tuple<int, int, i
         }
 
         auto dev_dest = reinterpret_cast<int*>(ipc_impl_.ipc_bases[mpi_.my_pe()]);
-        for (int i{0}; i < golden_.size(); i++) {
+        for (int i = 0; i < static_cast<int>(golden_.size()); i++) {
             ASSERT_EQ(golden_[i], dev_dest[i]);
         }
     }

@@ -145,17 +145,17 @@ void TeamBroadcastTester<T1>::postLaunchKernel() {
 
 template <typename T1>
 void TeamBroadcastTester<T1>::resetBuffers(uint64_t size) {
-  for (int i = 0; i < args.max_msg_size; i++) {
+  for (uint64_t i = 0; i < args.max_msg_size; i++) {
     init_buf(source_buf[i], dest_buf[i]);
   }
 }
 
 template <typename T1>
 void TeamBroadcastTester<T1>::verifyResults(uint64_t size) {
-  for (int i = 0; i < size; i++) {
+  for (uint64_t i = 0; i < size; i++) {
     auto r = verify_buf(dest_buf[i]);
     if (r.first == false) {
-      fprintf(stderr, "Data validation error at idx %d\n", i);
+      fprintf(stderr, "Data validation error at idx %lu\n", i);
       fprintf(stderr, "%s.\n", r.second.c_str());
       exit(-1);
     }

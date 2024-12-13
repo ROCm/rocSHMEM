@@ -142,7 +142,7 @@ template <typename T1>
 void AlltoallTester<T1>::resetBuffers(uint64_t size) {
   int n_pes = rocshmem_team_n_pes(ROCSHMEM_TEAM_WORLD);
   for (int i = 0; i < n_pes; i++) {
-    for (int j = 0; j < size; j++) {
+    for (uint64_t j = 0; j < size; j++) {
       init_buf(source_buf[i * size + j], dest_buf[i * size + j], (T1)i);
     }
   }
@@ -152,10 +152,10 @@ template <typename T1>
 void AlltoallTester<T1>::verifyResults(uint64_t size) {
   int n_pes = rocshmem_team_n_pes(ROCSHMEM_TEAM_WORLD);
   for (int i = 0; i < n_pes; i++) {
-    for (int j = 0; j < size; j++) {
+    for (uint64_t j = 0; j < size; j++) {
       auto r = verify_buf(dest_buf[i * size + j], i);
       if (r.first == false) {
-        fprintf(stderr, "Data validation error at idx %d\n", j);
+        fprintf(stderr, "Data validation error at idx %lu\n", j);
         fprintf(stderr, "%s.\n", r.second.c_str());
         exit(-1);
       }
