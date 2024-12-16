@@ -88,7 +88,7 @@ include(ROCMCheckTargetIds)
 ###############################################################################
 # PROJECT
 ###############################################################################
-rocm_setup_version(VERSION 1.6.0)
+rocm_setup_version(VERSION 2.0.0)
 
 project(rocshmem CXX)
 
