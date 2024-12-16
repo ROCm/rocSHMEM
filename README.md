@@ -156,7 +156,7 @@ make -j 8 install
 Then, you need to build Open MPI (5.0.6 or later) with UCX support.
 
 ```
-git clone --recursive https://github.com/ROCm/ompi.git -b v5.0.x
+git clone --recursive https://github.com/open-mpi/ompi.git -b v5.0.x
 cd ompi
 ./autogen.pl
 ./configure --prefix=<prefix_dir> --with-rocm=<rocm_path> --with-ucx=<ucx_path>
