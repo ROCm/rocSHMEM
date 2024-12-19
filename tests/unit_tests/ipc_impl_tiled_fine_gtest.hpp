@@ -257,6 +257,7 @@ class IPCImplTiledFine : public ::testing::TestWithParam<std::tuple<int, int, in
                 int *dest = reinterpret_cast<int*>(ipc_impl_.ipc_bases[1]);
                 FN_T2 val_fn = kernel_put_with_signal_tiled_validator;
                 launch(val_fn, grid, block, dest, bytes);
+                ASSERT_EQ(*(dest + SIGNAL_OFFSET), 0);
             }
             mpi_.barrier();
             return;
