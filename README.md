@@ -165,4 +165,4 @@ make -j 8 install
 ```
 
 For more information on OpenMPI-UCX support, please visit:
-https://github.com/openucx/ucx/wiki/OpenMPI-and-OpenSHMEM-installation-with-UCX
+https://rocm.docs.amd.com/en/latest/how-to/gpu-enabled-mpi.html
