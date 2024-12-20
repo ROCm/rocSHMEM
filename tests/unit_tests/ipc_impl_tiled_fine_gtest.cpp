@@ -141,7 +141,7 @@ int warp_signals_calculation(int grid_dim_x, int block_dim_x, size_t size) {
 
     int warps_per_block {warpsPerBlock(block_dim_x)};
     int total_num_warps_in_grid {grid_dim_x * warps_per_block};
-    int bytes_per_warp {WARP_SIZE * THREAD_TRANSFER_GRANULARITY};
+    int bytes_per_warp {min(block_dim_x, WARP_SIZE) * THREAD_TRANSFER_GRANULARITY};
 
     int num_signals_for_one_full_iteration = total_num_warps_in_grid;
     int num_signals_for_partial_last_iteration = ((partial_grid_last_iteration_data_size - THREAD_TRANSFER_GRANULARITY) + bytes_per_warp) / bytes_per_warp;
