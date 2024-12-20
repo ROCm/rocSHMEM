@@ -90,7 +90,7 @@ include(ROCMCheckTargetIds)
 ###############################################################################
 rocm_setup_version(VERSION 2.0.0)
 
-project(rocshmem CXX)
+project(rocshmem VERSION 2.0.0 LANGUAGES CXX)
 
 ###############################################################################
 # SET GPU ARCHITECTURES
@@ -250,6 +250,8 @@ rocm_package_add_dependencies(
     hsa-rocr
     "hip-runtime-amd >= 6.2.2"
     "rocm-dev >= 6.2.2"
+    "openmpi >= 5.0.6"
+    "ucx >= 1.17.0"
 )
 
 rocm_create_package(

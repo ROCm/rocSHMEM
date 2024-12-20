@@ -164,5 +164,13 @@ make -j 8
 make -j 8 install
 ```
 
+Alternatively, we have script to install dependencies.
+However, it is not gauranteed to work and perform optimally on all platforms.
+Configuration options are platform dependent.
+
+```
+./scripts/install_dependencies.sh
+```
+
 For more information on OpenMPI-UCX support, please visit:
 https://rocm.docs.amd.com/en/latest/how-to/gpu-enabled-mpi.html
