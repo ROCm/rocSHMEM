@@ -518,7 +518,7 @@ void Tester::execute() {
       }
 
       //            rocshmem_dump_stats();
-      rocshmem_reset_stats();
+      // rocshmem_reset_stats();
     }
 
     barrier();
