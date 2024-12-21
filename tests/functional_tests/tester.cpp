@@ -570,7 +570,7 @@ bool Tester::peLaunchesKernel() {
    * Some test types are active on both sides.
    */
   is_launcher = is_launcher || (_type == TeamReductionTestType) ||
-                (_type == TeamBroadcastTestType) ||
+                (_type == TeamBroadcastTestType) || (_type == TeamCtxInfraTestType) ||
                 (_type == AllToAllTestType) || (_type == FCollectTestType) ||
                 (_type == PingPongTestType) || (_type == BarrierAllTestType) ||
                 (_type == SyncTestType) || (_type == SyncAllTestType) ||
