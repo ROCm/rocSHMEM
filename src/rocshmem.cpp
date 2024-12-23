@@ -229,7 +229,8 @@ __host__ int rocshmem_team_split_strided(
   auto num_user_teams{backend->team_tracker.get_num_user_teams()};
   auto max_num_teams{backend->team_tracker.get_max_num_teams()};
   if (num_user_teams >= max_num_teams - 1) {
-    abort();
+    /* Exceeded maximum number of teams */
+    return -1;
   }
 
   if (parent_team == ROCSHMEM_TEAM_INVALID) {
