@@ -1,7 +1,0 @@
-#cmakedefine USE_ROCSHMEM
-#cmakedefine USE_HIP
-#cmakedefine ALL_ANALYZE
-#cmakedefine USE_DOUBLE
-#cmakedefine ALL_LEVELSET
-#cmakedefine ALL_LEVELSYNC
-#cmakedefine ALL_SYNCFREE
