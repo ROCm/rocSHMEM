@@ -286,7 +286,7 @@ void IPCBackend::initIPC() {
 }
 
 void IPCBackend::global_exit(int status) {
-  assert(false);
+  MPI_Abort(MPI_COMM_WORLD, status);
 }
 
 void IPCBackend::teams_destroy() {
