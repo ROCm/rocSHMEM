@@ -457,8 +457,7 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       testers.push_back(new SignalingOperationsTester(args));
       return testers;
     default:
-      if (rank == 0) std::cout << "Unknown ###" << std::endl;
-      testers.push_back(new PrimitiveTester(args));
+      if (rank == 0) std::cout << "Empty Test ###" << std::endl;
       return testers;
   }
   return testers;
