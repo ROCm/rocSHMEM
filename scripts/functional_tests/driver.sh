@@ -59,76 +59,76 @@ case $2 in
         ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 3 > $3/putnbi_n2_w1_z1_1MB.log
         check putnbi_n2_w1_z1_1MB
         echo "wg_get_n2_w1_z1_1MB"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 28 > $3/wg_get_n2_w1_z64_1MB.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 25 > $3/wg_get_n2_w1_z64_1MB.log
         check wg_get_n2_w1_z1_1MB
         echo "wg_getnbi_n2_w1_z1_1MB"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 29 > $3/wg_getnbi_n2_w1_z64_1MB.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 26 > $3/wg_getnbi_n2_w1_z64_1MB.log
         check wg_getnbi_n2_w1_z1_1MB
         echo "wg_put_n2_w1_z1_1MB"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 30 > $3/wg_put_n2_w1_z64_1MB.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 27 > $3/wg_put_n2_w1_z64_1MB.log
         check wg_put_n2_w1_z1_1MB
         echo "wg_putnbi_n2_w1_z1_1MB"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 31 > $3/wg_putnbi_n2_w1_z64_1MB.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 28 > $3/wg_putnbi_n2_w1_z64_1MB.log
         check wg_putnbi_n2_w1_z1_1MB
         echo "wg_get_tiled_n2_w1_z1_1MB"
-        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 64 -s 1048576 -a 28 > $3/wg_get_tiled_n2_w2_z64_1MB.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 64 -s 1048576 -a 25 > $3/wg_get_tiled_n2_w2_z64_1MB.log
         check wg_get_tiled_n2_w1_z1_1MB
         echo "wg_getnbi_tiled_n2_w1_z1_1MB"
-        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 64 -s 1048576 -a 29 > $3/wg_getnbi_tiled_n2_w2_z64_1MB.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 64 -s 1048576 -a 26 > $3/wg_getnbi_tiled_n2_w2_z64_1MB.log
         check wg_getnbi_tiled_n2_w1_z1_1MB
         echo "wg_put_tiled_n2_w1_z1_1MB"
-        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 64 -s 1048576 -a 30 > $3/wg_put_tiled_n2_w2_z64_1MB.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 64 -s 1048576 -a 27 > $3/wg_put_tiled_n2_w2_z64_1MB.log
         check wg_put_tiled_n2_w1_z1_1MB
         echo "wg_putnbi_tiled_n2_w1_z1_1MB"
-        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 64 -s 1048576 -a 31 > $3/wg_putnbi_tiled_n2_w2_z64_1MB.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 64 -s 1048576 -a 28 > $3/wg_putnbi_tiled_n2_w2_z64_1MB.log
         check wg_putnbi_tiled_n2_w1_z1_1MB
         echo "wave_get_n2_w1_z1_1MB"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 32 > $3/wave_get_n2_w1_z64_1MB.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 29 > $3/wave_get_n2_w1_z64_1MB.log
         check wave_get_n2_w1_z1_1MB
         echo "wave_getnbi_n2_w1_z1_1MB"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 33 > $3/wave_getnbi_n2_w1_z64_1MB.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 30 > $3/wave_getnbi_n2_w1_z64_1MB.log
         check wave_getnbi_n2_w1_z1_1MB
         echo "wave_put_n2_w1_z1_1MB"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 34 > $3/wave_put_n2_w1_z64_1MB.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 31 > $3/wave_put_n2_w1_z64_1MB.log
         check wave_put_n2_w1_z1_1MB
         echo "wave_putnbi_n2_w1_z1_1MB"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 35 > $3/wave_putnbi_n2_w1_z64_1MB.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 1048576 -a 32 > $3/wave_putnbi_n2_w1_z64_1MB.log
         check wave_putnbi_n2_w1_z1_1MB
         echo "wave_get_tiled_n2_w1_z1_1MB"
-        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 128 -s 1048576 -a 32 > $3/wave_get_tiled_n2_w2_z128_1MB.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 128 -s 1048576 -a 29 > $3/wave_get_tiled_n2_w2_z128_1MB.log
         check wave_get_tiled_n2_w1_z1_1MB
         echo "wave_getnbi_tiled_n2_w1_z1_1MB"
-        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 128 -s 1048576 -a 33 > $3/wave_getnbi_tiled_n2_w2_z128_1MB.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 128 -s 1048576 -a 30 > $3/wave_getnbi_tiled_n2_w2_z128_1MB.log
         check wave_getnbi_tiled_n2_w1_z1_1MB
         echo "wave_put_tiled_n2_w1_z1_1MB"
-        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 128 -s 1048576 -a 34 > $3/wave_put_tiled_n2_w2_z128_1MB.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 128 -s 1048576 -a 31 > $3/wave_put_tiled_n2_w2_z128_1MB.log
         check wave_put_tiled_n2_w1_z1_1MB
         echo "wave_putnbi_tiled_n2_w1_z1_1MB"
-        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 128 -s 1048576 -a 35 > $3/wave_putnbi_tiled_n2_w2_z128_1MB.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 128 -s 1048576 -a 32 > $3/wave_putnbi_tiled_n2_w2_z128_1MB.log
         check wave_putnbi_tiled_n2_w1_z1_1MB
         echo "amofadd_n2_w1_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 6 > $3/amofadd_n2_w1_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 5 > $3/amofadd_n2_w1_z1.log
         check amofadd_n2_w1_z1
         echo "amofinc_n2_w1_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 7 > $3/amofinc_n2_w1_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 6 > $3/amofinc_n2_w1_z1.log
         check amofinc_n2_w1_z1
         echo "amofetch_n2_w1_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 8 > $3/amofetch_n2_w1_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 7 > $3/amofetch_n2_w1_z1.log
         check amofetch_n2_w1_z1
         echo "amofcswap_n2_w1_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 9 > $3/amofcswap_n2_w1_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 8 > $3/amofcswap_n2_w1_z1.log
         check amofcswap_n2_w1_z1
         echo "amoadd_n2_w1_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 10 > $3/amoadd_n2_w1_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 9 > $3/amoadd_n2_w1_z1.log
         check amoadd_n2_w1_z1
         echo "amoinc_n2_w1_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 11 > $3/amoinc_n2_w1_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 10 > $3/amoinc_n2_w1_z1.log
         check amoinc_n2_w1_z1
-        # echo "pingpong_n2_w1"
-        # ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 14 > $3/pingpong_n2_w1.log
-        # check pingpong_n2_w1
+        echo "pingpong_n2_w1"
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 13 > $3/pingpong_n2_w1.log
+        check pingpong_n2_w1
         echo "amoset_n2_w1_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 44 > $3/amoset_n2_w1_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 41 > $3/amoset_n2_w1_z1.log
         check amoset_n2_w1_z1
         ;;
 
@@ -149,103 +149,103 @@ case $2 in
         ROCSHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 3 > $3/putnbi_n2_w16_z128_8B.log
         check putnbi_n2_w16_z128_8B
         echo "wg_get_n2_w1_z64_8B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 28 > $3/wg_get_n2_w1_z64_8B.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 25 > $3/wg_get_n2_w1_z64_8B.log
         check wg_get_n2_w1_z64_8B
         echo "wg_getnbi_n2_w1_z64_8B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 29 > $3/wg_getnbi_n2_w1_z64_8B.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 26 > $3/wg_getnbi_n2_w1_z64_8B.log
         check wg_getnbi_n2_w1_z64_8B
         echo "wg_put_n2_w1_z64_8B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 30 > $3/wg_put_n2_w1_z64_8B.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 27 > $3/wg_put_n2_w1_z64_8B.log
         check wg_put_n2_w1_z64_8B
         echo "wg_putnbi_n2_w1_z64_8B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 31 > $3/wg_putnbi_n2_w1_z64_8B.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 28 > $3/wg_putnbi_n2_w1_z64_8B.log
         check wg_putnbi_n2_w1_z64_8B
         echo "wg_get_tiled_n2_w16_z64_8B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 64 -s 8 -a 28 > $3/wg_get_tiled_n2_w16_z64_8B.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 64 -s 8 -a 25 > $3/wg_get_tiled_n2_w16_z64_8B.log
         check wg_get_tiled_n2_w16_z64_8B
         echo "wg_getnbi_tiled_n2_w16_z64_8B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 64 -s 8 -a 29 > $3/wg_getnbi_tiled_n2_w16_z64_8B.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 64 -s 8 -a 26 > $3/wg_getnbi_tiled_n2_w16_z64_8B.log
         check wg_getnbi_tiled_n2_w16_z64_8B
         echo "wg_put_tiled_n2_w16_z64_8B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 64 -s 8 -a 30 > $3/wg_put_tiled_n2_w16_z64_8B.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 64 -s 8 -a 27 > $3/wg_put_tiled_n2_w16_z64_8B.log
         check wg_put_tiled_n2_w16_z64_8B
         echo "wg_putnbi_tiled_n2_w16_z64_8B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 64 -s 8 -a 31 > $3/wg_putnbi_tiled_n2_w16_z64_8B.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 64 -s 8 -a 28 > $3/wg_putnbi_tiled_n2_w16_z64_8B.log
         check wg_putnbi_tiled_n2_w16_z64_8B
         echo "wave_get_n2_w1_z64_8B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 32 > $3/wave_get_n2_w1_z64_8B.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 29 > $3/wave_get_n2_w1_z64_8B.log
         check wave_get_n2_w1_z64_8B
         echo "wave_getnbi_n2_w1_z64_8B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 33 > $3/wave_getnbi_n2_w1_z64_8B.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 30 > $3/wave_getnbi_n2_w1_z64_8B.log
         check wave_getnbi_n2_w1_z64_8B
         echo "wave_put_n2_w1_z64_8B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 34 > $3/wave_put_n2_w1_z64_8B.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 31 > $3/wave_put_n2_w1_z64_8B.log
         check wave_put_n2_w1_z64_8B
         echo "wave_putnbi_n2_w1_z64_8B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 35 > $3/wave_putnbi_n2_w1_z64_8B.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 64 -s 8 -a 32 > $3/wave_putnbi_n2_w1_z64_8B.log
         check wave_putnbi_n2_w1_z64_8B
         echo "wave_get_tiled_n2_w16_z128_8B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 32 > $3/wave_get_tiled_n2_w16_z128_8B.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 29 > $3/wave_get_tiled_n2_w16_z128_8B.log
         check wave_get_tiled_n2_w16_z128_8B
         echo "wave_getnbi_tiled_n2_w16_z128_8B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 33 > $3/wave_getnbi_tiled_n2_w16_z128_8B.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 30 > $3/wave_getnbi_tiled_n2_w16_z128_8B.log
         check wave_getnbi_tiled_n2_w16_z128_8B
         echo "wave_put_tiled_n2_w16_z128_8B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 34 > $3/wave_put_tiled_n2_w16_z128_8B.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 31 > $3/wave_put_tiled_n2_w16_z128_8B.log
         check wave_put_tiled_n2_w16_z128_8B
         echo "wave_putnbi_tiled_n2_w16_z128_8B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 35 > $3/wave_putnbi_tiled_n2_w16_z128_8B.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=16 mpirun -np 2 $1 -w 16 -z 128 -s 8 -a 32 > $3/wave_putnbi_tiled_n2_w16_z128_8B.log
         check wave_putnbi_tiled_n2_w16_z128_8B
         echo "amofadd_n2_w8_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 6 > $3/amofadd_n2_w8_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 5 > $3/amofadd_n2_w8_z1.log
         check amofadd_n2_w8_z1
         echo "amofinc_n2_w8_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 7 > $3/amofinc_n2_w8_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 6 > $3/amofinc_n2_w8_z1.log
         check amofinc_n2_w8_z1
         echo "amofetch_n2_w8_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 8 > $3/amofetch_n2_w8_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 7 > $3/amofetch_n2_w8_z1.log
         check amofetch_n2_w8_z1
         echo "amofcswap_n2_w8_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 9 > $3/amofcswap_n2_w8_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 8 > $3/amofcswap_n2_w8_z1.log
         check amofcswap_n2_w8_z1
         echo "amoadd_n2_w8_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 10 > $3/amoadd_n2_w8_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 9 > $3/amoadd_n2_w8_z1.log
         check amoadd_n2_w8_z1
         echo "amoinc_n2_w8_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 11 > $3/amoinc_n2_w8_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 10 > $3/amoinc_n2_w8_z1.log
         check amoinc_n2_w8_z1
-        # echo "pingpong_n2_w1"
-        # ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 14 > $3/pingpong_n2_w1.log
-        # check pingpong_n2_w1
+        echo "pingpong_n2_w1"
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 13 > $3/pingpong_n2_w1.log
+        check pingpong_n2_w1
         echo "amoset_n2_w8_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 44 > $3/amoset_n2_w8_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 41 > $3/amoset_n2_w8_z1.log
         check amoset_n2_w8_z1
         echo "putsignal_n2_w1_z1"
-        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 53 > $3/putsignal_n2_w1_z1.log
+        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 50 > $3/putsignal_n2_w1_z1.log
         check putsignal_n2_w1_z1
         echo "putsignalwg_n2_w2_z32"
-        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 32 -s 1048576 -a 55 > $3/putsignalwg_n2_w2_z32.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 32 -s 1048576 -a 52 > $3/putsignalwg_n2_w2_z32.log
         check putsignalwg_n2_w2_z32
         echo "putsignalwave_n2_w1_z32"
-        mpirun -np 2 $1 -w 1 -z 32 -s 1048576 -a 55 > $3/putsignalwave_n2_w1_z32.log
+        mpirun -np 2 $1 -w 1 -z 32 -s 1048576 -a 52 > $3/putsignalwave_n2_w1_z32.log
         check putsignalwave_n2_w1_z32
         echo "putsignalnbi"
-        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 56 > $3/putsignalnbi_n2_w1_z1.log
+        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 53 > $3/putsignalnbi_n2_w1_z1.log
         check putsignalnbi_n2_w1_z1
         echo "putsignalnbiwg"
-        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 32 -s 1048576 -a 57 > $3/putsignalnbiwg_n2_w2_z32.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 32 -s 1048576 -a 54 > $3/putsignalnbiwg_n2_w2_z32.log
         check putsignalnbiwg_n2_w2_z32
         echo "putsignalnbiwave"
-        mpirun -np 2 $1 -w 1 -z 32 -s 1048576 -a 58 > $3/putsignalnbiwave_n2_w1_z32.log
+        mpirun -np 2 $1 -w 1 -z 32 -s 1048576 -a 55 > $3/putsignalnbiwave_n2_w1_z32.log
         check putsignalnbiwave_n2_w1_z32
         echo "signalfetch"
-        mpirun -np 2 $1 -w 1 -z 1 -a 59 > $3/signalfetch_n2_w1_z1.log
+        mpirun -np 2 $1 -w 1 -z 1 -a 56 > $3/signalfetch_n2_w1_z1.log
         check signalfetch_n2_w1_z1
         echo "signalfetchwg"
-        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 32 -a 60 > $3/signalfetchwg_n2_w2_z32.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 32 -a 57 > $3/signalfetchwg_n2_w2_z32.log
         check signalfetchwg_n2_w2_z32
         echo "signalfetchwave"
-        mpirun -np 2 $1 -w 1 -z 32 -a 60 > $3/signalfetchwave_n2_w2_z32.log
+        mpirun -np 2 $1 -w 1 -z 32 -a 57 > $3/signalfetchwave_n2_w2_z32.log
         check signalfetchwave_n2_w2_z32
         ;;
 
@@ -329,172 +329,132 @@ case $2 in
         echo "putnbi_n2_w64_z1024_8B"
         ROCSHMEM_MAX_NUM_CONTEXTS=64 mpirun -np 2 $1 -w 64 -z 1024 -s 8 -a 3 > $3/putnbi_n2_w64_z1024_8B.log
         check putnbi_n2_w64_z1024_8B
-        ############################# REDUCTION ##############################
-        echo "reduction_n2_w1_z1_32K"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -s 32768 -a 5 > $3/reduction_n2_w1_z1_32K.log
-        check reduction_n2_w1_z1_32K
-        echo "reduction_n2_w8_z1_32K"
-        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -s 32768 -a 5 > $3/reduction_n2_w8_z1_32K.log
-        check reduction_n2_w8_z1_32K
-        echo "reduction_n2_w32_z1_32K"
-        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 1 -s 32768 -a 5 > $3/reduction_n2_w32_z1_32K.log
-        check reduction_n2_w32_z1_32K
         ############################## AMOFADD ###############################
         echo "amofadd_n2_w1_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 6 > $3/amofadd_n2_w1_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 5 > $3/amofadd_n2_w1_z1.log
         check amofadd_n2_w1_z1
         echo "amofadd_n2_w1_z1024"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1024 -a 6 > $3/amofadd_n2_w1_z1024.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1024 -a 5 > $3/amofadd_n2_w1_z1024.log
         check amofadd_n2_w1_z1024
         echo "amofadd_n2_w8_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 6 > $3/amofadd_n2_w8_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 5 > $3/amofadd_n2_w8_z1.log
         check amofadd_n2_w8_z1
         echo "amofadd_n2_w32_z128"
-        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 128 -a 6 > $3/amofadd_n2_w32_z128.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 128 -a 5 > $3/amofadd_n2_w32_z128.log
         check amofadd_n2_w32_z128
         ############################## AMOFINC ###############################
         echo "amofinc_n2_w1_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 7 > $3/amofinc_n2_w1_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 6 > $3/amofinc_n2_w1_z1.log
         check amofinc_n2_w1_z1
         echo "amofinc_n2_w1_z1024"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1024 -a 7 > $3/amofinc_n2_w1_z1024.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1024 -a 6 > $3/amofinc_n2_w1_z1024.log
         check amofinc_n2_w1_z1024
         echo "amofinc_n2_w8_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 7 > $3/amofinc_n2_w8_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 6 > $3/amofinc_n2_w8_z1.log
         check amofinc_n2_w8_z1
         echo "amofinc_n2_w32_z128"
-        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 128 -a 7 > $3/amofinc_n2_w32_z128.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 128 -a 6 > $3/amofinc_n2_w32_z128.log
         check amofinc_n2_w32_z128
         ############################ AMOFETCH ################################
         echo "amofetch_n2_w1_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 8 > $3/amofetch_n2_w1_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 7 > $3/amofetch_n2_w1_z1.log
         check amofetch_n2_w1_z1
         echo "amofetch_n2_w1_z1024"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1024 -a 8 > $3/amofetch_n2_w1_z1024.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1024 -a 7 > $3/amofetch_n2_w1_z1024.log
         check amofetch_n2_w1_z1024
         echo "amofetch_n2_w8_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 8 > $3/amofetch_n2_w8_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 7 > $3/amofetch_n2_w8_z1.log
         check amofetch_n2_w8_z1
         echo "amofetch_n2_w32_z128"
-        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 128 -a 8 > $3/amofetch_n2_w32_z128.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 128 -a 7 > $3/amofetch_n2_w32_z128.log
         check amofetch_n2_w32_z128
         ########################### AMOFCSWAP ################################
         echo "amofcswap_n2_w1_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 9 > $3/amofcswap_n2_w1_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 8 > $3/amofcswap_n2_w1_z1.log
         check amofcswap_n2_w1_z1
         echo "amofcswap_n2_w8_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 9 > $3/amofcswap_n2_w8_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 8 > $3/amofcswap_n2_w8_z1.log
         check amofcswap_n2_w8_z1
         echo "amofcswap_n2_w32_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 1 -a 9 > $3/amofcswap_n2_w32_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 1 -a 8 > $3/amofcswap_n2_w32_z1.log
         check amofcswap_n2_w32_z1
         ############################# AMOADD ################################
         echo "amoadd_n2_w1_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 10 > $3/amoadd_n2_w1_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 9 > $3/amoadd_n2_w1_z1.log
         check amoadd_n2_w1_z1
         echo "amoadd_n2_w1_z1024"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1024 -a 10 > $3/amoadd_n2_w1_z1024.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1024 -a 9 > $3/amoadd_n2_w1_z1024.log
         check amoadd_n2_w1_z1024
         echo "amoadd_n2_w8_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 10 > $3/amoadd_n2_w8_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 9 > $3/amoadd_n2_w8_z1.log
         check amoadd_n2_w8_z1
         echo "amoadd_n2_w32_z128"
-        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 128 -a 10 > $3/amoadd_n2_w32_z128.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 128 -a 9 > $3/amoadd_n2_w32_z128.log
         check amoadd_n2_w32_z128
         ############################# AMOINC ################################
         echo "amoinc_n2_w1_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 11 > $3/amoinc_n2_w1_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 10 > $3/amoinc_n2_w1_z1.log
         check amoinc_n2_w1_z1
         echo "amoinc_n2_w1_z1024"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1024 -a 11 > $3/amoinc_n2_w1_z1024.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1024 -a 10 > $3/amoinc_n2_w1_z1024.log
         check amoinc_n2_w1_z1024
         echo "amoinc_n2_w8_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 11 > $3/amoinc_n2_w8_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 10 > $3/amoinc_n2_w8_z1.log
         check amoinc_n2_w8_z1
         echo "amoinc_n2_w32_z128"
-        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 128 -a 11 > $3/amoinc_n2_w32_z128.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 128 -a 10 > $3/amoinc_n2_w32_z128.log
         check amoinc_n2_w32_z128
         ############################## INIT #################################
         echo "init_n2"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -a 13 > $3/init_n2.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -a 12 > $3/init_n2.log
         check init_n2
         ########################### PINGPONG ################################
         echo "pingpong_n2_w1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 14 > $3/pingpong_n2_w1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 13 > $3/pingpong_n2_w1.log
         check pingpong_n2_w1
         echo "pingpong_n2_w8"
-        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -a 14 > $3/pingpong_n2_w8.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -a 13 > $3/pingpong_n2_w8.log
         check pingpong_n2_w8
         echo "pingpong_n2_w32"
-        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -a 14 > $3/pingpong_n2_w32.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -a 13 > $3/pingpong_n2_w32.log
         check pingpong_n2_w32
         ############################ BARRIER ################################
         echo "barrier_n2_w1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 17 > $3/barrier_n2_w1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 15 > $3/barrier_n2_w1.log
         check barrier_n2_w1
-        echo "barrier_n2_w8"
-        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -a 17 > $3/barrier_n2_w8.log
-        check barrier_n2_w8
-        echo "barrier_n2_w32"
-        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -a 17 > $3/barrier_n2_w32.log
-        check barrier_n2_w32
         ############################ SYNCALL ################################
         echo "syncall_n2_w1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 18 > $3/syncall_n2_w1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 16 > $3/syncall_n2_w1.log
         check syncall_n2_w1
-        echo "syncall_n2_w8"
-        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -a 18 > $3/syncall_n2_w8.log
-        check syncall_n2_w8
-        echo "syncall_n2_w32"
-        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -a 18 > $3/syncall_n2_w32.log
-        check syncall_n2_w32
         ############################# SYNC ##################################
         echo "sync_n2_w1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 19 > $3/sync_n2_w1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -a 17 > $3/sync_n2_w1.log
         check sync_n2_w1
-        echo "sync_n2_w8"
-        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -a 19 > $3/sync_n2_w8.log
-        check sync_n2_w8
-        echo "sync_n2_w32"
-        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -a 19 > $3/sync_n2_w32.log
-        check sync_n2_w32
         ########################### FCOLLECT ################################
         echo "fcollect_n2_w1_512B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -s 512 -a 22 > $3/fcollect_n2_w1_512B.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -s 512 -a 19 > $3/fcollect_n2_w1_512B.log
         check fcollect_n2_w1_512B
-        echo "fcollect_n2_w8_512B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -s 512 -a 22 > $3/fcollect_n2_w8_512B.log
-        check fcollect_n2_w8_512B
-        echo "fcollect_n2_w32_512B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -s 512 -a 22 > $3/fcollect_n2_w32_512B.log
-        check fcollect_n2_w32_512B
         ########################### ALLTOALL ################################
         echo "alltoall_n2_w1_512B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -s 512 -a 23 > $3/alltoall_n2_w1_512B.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -s 512 -a 20 > $3/alltoall_n2_w1_512B.log
         check alltoall_n2_w1_512B
-        echo "alltoall_n2_w8_512B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -s 512 -a 23 > $3/alltoall_n2_w8_512B.log
-        check alltoall_n2_w8_512B
-        echo "alltoall_n2_w32_512B"
-        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -s 512 -a 23 > $3/alltoall_n2_w32_512B.log
-        check alltoall_n2_w32_512B
         ########################## TEAMGETNBI ###############################
         echo "teamgetnbi_n2_w1_1MB"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -s 1048576 -a 39 > $3/teamgetnbi_n2_w1_1MB.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -s 1048576 -a 36 > $3/teamgetnbi_n2_w1_1MB.log
         check teamgetnbi_n2_w1_1MB
         ########################## TEAMPUTNBI ###############################
         echo "teamputnbi_n2_w1_1MB"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -s 1048576 -a 41 > $3/teamputnbi_n2_w1_1MB.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -s 1048576 -a 38 > $3/teamputnbi_n2_w1_1MB.log
         check teamputnbi_n2_w1_1MB
         ############################ AMOSET #################################
         echo "amoset_n2_w1_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 44 > $3/amoset_n2_w1_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=1 mpirun -np 2 $1 -w 1 -z 1 -a 41 > $3/amoset_n2_w1_z1.log
         check amoset_n2_w1_z1
         echo "amoset_n2_w8_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 44 > $3/amoset_n2_w8_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=8 mpirun -np 2 $1 -w 8 -z 1 -a 41 > $3/amoset_n2_w8_z1.log
         check amoset_n2_w8_z1
         echo "amoset_n2_w32_z1"
-        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 1 -a 44 > $3/amoset_n2_w32_z1.log
+        ROCSHMEM_MAX_NUM_CONTEXTS=32 mpirun -np 2 $1 -w 32 -z 1 -a 41 > $3/amoset_n2_w32_z1.log
         check amoset_n2_w32_z1
         ;;
 
@@ -517,118 +477,115 @@ case $2 in
         mpirun -np 2 $1 -w 1 -z 1 -s 32768 -a 5
         ;;
     *"amofadd")
-        mpirun -np 2 $1 -w 1 -z 1 -a 6
+        mpirun -np 2 $1 -w 1 -z 1 -a 5
         ;;
     *"amofinc")
-        mpirun -np 2 $1 -w 1 -z 1 -a 7
+        mpirun -np 2 $1 -w 1 -z 1 -a 6
         ;;
     *"amofetch")
-        mpirun -np 2 $1 -w 1 -z 1 -a 8
+        mpirun -np 2 $1 -w 1 -z 1 -a 7
         ;;
     *"amofcswap")
-        mpirun -np 2 $1 -w 1 -z 1 -a 9
+        mpirun -np 2 $1 -w 1 -z 1 -a 8
         ;;
     *"amoadd")
-        mpirun -np 2 $1 -w 1 -z 1 -a 10
+        mpirun -np 2 $1 -w 1 -z 1 -a 9
         ;;
     *"amoinc")
-        mpirun -np 2 $1 -w 1 -z 1 -a 11
+        mpirun -np 2 $1 -w 1 -z 1 -a 10
         ;;
     *"init")
-        mpirun -np 2 $1 -a 13
+        mpirun -np 2 $1 -a 12
         ;;
     *"pingpong")
-        mpirun -np 2 $1 -w 1 -z 1 -a 14
+        mpirun -np 2 $1 -w 1 -z 1 -a 13
         ;;
     *"barrier")
-        mpirun -np 2 $1 -w 1 -z 1 -a 17
+        mpirun -np 2 $1 -w 1 -z 1 -a 15
         ;;
     *"syncall")
-        mpirun -np 2 $1 -w 1 -z 1 -a 18
+        mpirun -np 2 $1 -w 1 -z 1 -a 16
         ;;
     *"sync")
-        mpirun -np 2 $1 -w 1 -z 1 -s 8 -a 19
-        ;;
-    *"broadcast")
-        mpirun -np 2 $1 -w 1 -z 1 -s 32768 -a 20
+        mpirun -np 2 $1 -w 1 -z 1 -s 8 -a 17
         ;;
     *"fcollect")
-        mpirun -np 2 $1 -w 1 -z 1 -s 32768 -a 22
+        mpirun -np 2 $1 -w 1 -z 1 -s 32768 -a 19
         ;;
     *"alltoall")
-        mpirun -np 2 $1 -w 1 -z 1 -s 32768 -a 23
+        mpirun -np 2 $1 -w 1 -z 1 -s 32768 -a 20
         ;;
     *"team_broadcast")
-        mpirun -np 2 $1 -w 1 -z 1 -s 32768 -a 36
+        mpirun -np 2 $1 -w 1 -z 1 -s 32768 -a 33
         ;;
     *"team_reduction")
-        mpirun -np 2 $1 -w 1 -z 1 -s 32768 -a 37
+        mpirun -np 2 $1 -w 1 -z 1 -s 32768 -a 34
         ;;
     *"team_get")
-        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 38
+        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 35
         ;;
     *"team_getnbi")
-        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 39
+        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 36
         ;;
     *"team_put")
-        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 40
+        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 37
         ;;
     *"team_putnbi")
-        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 41
+        mpirun -np 2 $1 -w 1 -z 1 -s 1048576 -a 38
         ;;
     *"ctx_infra")
-        mpirun -np 2 $1 -w 1 -z 1 -a 42
+        mpirun -np 2 $1 -w 1 -z 1 -a 39
         ;;
     *"amoset")
-        mpirun -np 2 $1 -w 1 -z 1 -a 44
+        mpirun -np 2 $1 -w 1 -z 1 -a 41
         ;;
     *"amoswap")
-        mpirun -np 2 $1 -w 1 -z 1 -a 45
+        mpirun -np 2 $1 -w 1 -z 1 -a 42
         ;;
     *"amofetchand")
-        mpirun -np 2 $1 -w 1 -z 1 -a 46
+        mpirun -np 2 $1 -w 1 -z 1 -a 43
         ;;
     *"amofetchor")
-        mpirun -np 2 $1 -w 1 -z 1 -a 47
+        mpirun -np 2 $1 -w 1 -z 1 -a 44
         ;;
     *"amofetchxor")
-        mpirun -np 2 $1 -w 1 -z 1 -a 48
+        mpirun -np 2 $1 -w 1 -z 1 -a 45
         ;;
     *"amoand")
-        mpirun -np 2 $1 -w 1 -z 1 -a 49
+        mpirun -np 2 $1 -w 1 -z 1 -a 46
         ;;
     *"amoor")
-        mpirun -np 2 $1 -w 1 -z 1 -a 50
+        mpirun -np 2 $1 -w 1 -z 1 -a 47
         ;;
     *"amoxor")
-        mpirun -np 2 $1 -w 1 -z 1 -a 51
+        mpirun -np 2 $1 -w 1 -z 1 -a 48
         ;;
     *"putsignal")
-        mpirun -np 2 $1 -w 1 -z 1 -a 53
+        mpirun -np 2 $1 -w 1 -z 1 -a 50
         ;;
     *"putsignalwg")
-        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 32 -a 55
+        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 32 -a 52
         ;;
     *"putsignalwave")
-        mpirun -np 2 $1 -w 1 -z 32 -a 55
+        mpirun -np 2 $1 -w 1 -z 32 -a 52
         ;;
     *"putsignalnbi")
-        mpirun -np 2 $1 -w 1 -z 1 -a 56
+        mpirun -np 2 $1 -w 1 -z 1 -a 53
         ;;
     *"putsignalnbiwg")
-        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 32 -a 57
+        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 32 -a 54
         ;;
     *"putsignalnbiwave")
-        mpirun -np 2 $1 -w 1 -z 32 -a 58
+        mpirun -np 2 $1 -w 1 -z 32 -a 55
         ;;
     *"signalfetch")
-        mpirun -np 2 $1 -w 1 -z 1 -a 59
+        mpirun -np 2 $1 -w 1 -z 1 -a 56
         ;;
     *"signalfetchwg")
-        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 32 -a 60
+        ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 2 $1 -w 2 -z 32 -a 57
         ;;
     *"signalfetchwave")
-        mpirun -np 2 $1 -w 1 -z 32 -a 60
+        mpirun -np 2 $1 -w 1 -z 32 -a 57
         ;;
     *)
         echo "UNKNOWN TEST TYPE: $2"
