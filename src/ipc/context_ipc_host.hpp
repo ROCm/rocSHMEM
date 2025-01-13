@@ -136,8 +136,8 @@ class IPCHostContext : public Context {
   __host__ int test(T *ivars, int cmp, T val);
 
  public:
-  /* Pointer to the backend's host interface */
-  HostInterface *host_interface{nullptr};
+  /* Shared pointer to the backend's host interface */
+  std::shared_ptr<HostInterface> host_interface{nullptr};
 
   /* An MPI Window implements a context */
   WindowInfo *context_window_info{nullptr};

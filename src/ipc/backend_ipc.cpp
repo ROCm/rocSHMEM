@@ -77,8 +77,9 @@ IPCBackend::IPCBackend(MPI_Comm comm)
   bp->heap_ptr = &heap;
 
   /* Initialize the host interface */
-  host_interface =
-      new HostInterface(hdp_proxy_.get(), thread_comm, &heap);
+  host_interface = std::make_shared<HostInterface>(hdp_proxy_.get(),
+                                                 thread_comm,
+                                                 &heap);
 
   default_host_ctx = std::make_unique<IPCHostContext>(this, 0);
 
@@ -116,11 +117,6 @@ IPCBackend::~IPCBackend() {
    * Free the atomic_ret array.
    */
   CHECK_HIP(hipFree(bp->atomic_ret->atomic_base_ptr));
-
-  // TODO(Avinash) Free g_ret
-
-  // delete host_interface;
-  // host_interface = nullptr;
 
   /**
    * Destroy teams infrastructure

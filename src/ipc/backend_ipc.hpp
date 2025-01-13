@@ -124,9 +124,9 @@ class IPCBackend : public Backend {
 
   /**
    * @brief The host-facing interface that will be used
-   * by all contexts of the ROBackend
+   * by all contexts of the IPCBackend
    */
-  HostInterface *host_interface{nullptr};
+  std::shared_ptr<HostInterface> host_interface{nullptr};
 
   /**
    * @brief Scratchpad for the internal barrier algorithms.
