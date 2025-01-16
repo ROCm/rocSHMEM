@@ -38,7 +38,7 @@ cd ucx
 make -j
 make install
 
-# Step 3: Install OpenMPI with UCX support
+# Step 2: Install OpenMPI with UCX support
 cd $_DEPS_SRC_DIR
 rm -rf ompi
 git clone --recursive $_OMPI_REPO -b $_OMPI_BRANCH
