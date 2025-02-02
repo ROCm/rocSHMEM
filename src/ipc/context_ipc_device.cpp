@@ -42,11 +42,7 @@ __host__ IPCContext::IPCContext(Backend *b)
   ipcImpl_.ipc_bases = b->ipcImpl.ipc_bases;
   ipcImpl_.shm_size = b->ipcImpl.shm_size;
 
-  auto *bp{backend->ipc_backend_proxy.get()};
-
   barrier_sync = backend->barrier_sync;
-  g_ret = bp->g_ret;
-  atomic_base_ptr = bp->atomic_ret->atomic_base_ptr;
   fence_pool = backend->fence_pool;
   Wrk_Sync_buffer_bases_ = backend->get_wrk_sync_bases();
 

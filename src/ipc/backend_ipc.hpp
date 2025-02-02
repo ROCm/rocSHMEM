@@ -27,7 +27,6 @@
 #include "../containers/free_list_impl.hpp"
 #include "../hdp_proxy.hpp"
 #include "../memory/hip_allocator.hpp"
-#include "ipc_backend_proxy.hpp"
 #include "../context_incl.hpp"
 #include "ipc_context_proxy.hpp"
 #include "../ipc_policy.hpp"
@@ -116,11 +115,6 @@ class IPCBackend : public Backend {
    * @return Vector containing the addresses of the work/sync bases
    */
   char** get_wrk_sync_bases() { return Wrk_Sync_buffer_bases_; }
-
-  /**
-   * @brief Handle to device memory fields.
-   */
-  IPCBackendProxyT ipc_backend_proxy{};
 
   /**
    * @brief The host-facing interface that will be used
