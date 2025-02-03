@@ -432,6 +432,25 @@ __device__ void ROContext::get_nbi_wave(T *dest, const T *source, size_t nelems,
   getmem_nbi_wave(dest, source, size, pe);
 }
 
+#define RO_CONTEXT_PUT_SIGNAL_DEF(SUFFIX)                                                            \
+  template <typename T>                                                                              \
+  __device__ void ROContext::put_signal##SUFFIX(T *dest, const T *source, size_t nelems,             \
+                                                uint64_t *sig_addr, uint64_t signal, int sig_op,     \
+                                                int pe) {                                            \
+    putmem_signal##SUFFIX(dest, source, nelems * sizeof(T), sig_addr, signal, sig_op, pe);           \
+  }                                                                                                  \
+                                                                                                     \
+  template <typename T>                                                                              \
+  __device__ void ROContext::put_signal_nbi##SUFFIX(T *dest, const T *source, size_t nelems,         \
+                                                    uint64_t *sig_addr, uint64_t signal, int sig_op, \
+                                                    int pe) {                                        \
+    putmem_signal##SUFFIX(dest, source, nelems * sizeof(T), sig_addr, signal, sig_op, pe);           \
+  }
+
+RO_CONTEXT_PUT_SIGNAL_DEF()
+RO_CONTEXT_PUT_SIGNAL_DEF(_wg)
+RO_CONTEXT_PUT_SIGNAL_DEF(_wave)
+
 }  // namespace rocshmem
 
 #endif  // LIBRARY_SRC_REVERSE_OFFLOAD_RO_NET_GPU_TEMPLATES_HPP_
