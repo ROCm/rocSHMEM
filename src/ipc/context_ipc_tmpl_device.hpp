@@ -55,6 +55,7 @@ __device__ void IPCContext::put_nbi(T *dest, const T *source, size_t nelems,
 template <typename T>
 __device__ T IPCContext::g(const T *source, int pe) {
   T ret;
+  getmem(&ret, source, sizeof(T), pe);
   return ret;
 }
 

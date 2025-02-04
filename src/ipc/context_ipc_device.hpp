@@ -212,10 +212,6 @@ class IPCContext : public Context {
   //context class has IpcImpl object (ipcImpl_)
   IpcImpl *ipcImpl{nullptr};
 
-  uint64_t* atomic_base_ptr{nullptr};
-
-  char* g_ret;
-
   //internal functions used by collective operations
   template <typename T>
   __device__ void internal_broadcast(T *dest, const T *source, int nelems, int pe_root,

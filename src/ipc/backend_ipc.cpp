@@ -72,10 +72,6 @@ IPCBackend::IPCBackend(MPI_Comm comm)
    */
   assert(num_pes == ipcImpl.shm_size);
 
-  auto *bp{ipc_backend_proxy.get()};
-
-  bp->heap_ptr = &heap;
-
   /* Initialize the host interface */
   host_interface = std::make_shared<HostInterface>(hdp_proxy_.get(),
                                                  thread_comm,
@@ -84,10 +80,6 @@ IPCBackend::IPCBackend(MPI_Comm comm)
   default_host_ctx = std::make_unique<IPCHostContext>(this, 0);
 
   ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque = default_host_ctx.get();
-
-  init_g_ret(&heap, thread_comm, MAX_NUM_BLOCKS, &bp->g_ret);
-
-  allocate_atomic_region(&bp->atomic_ret, MAX_NUM_BLOCKS);
 
   setup_team_world();
 
@@ -107,17 +99,6 @@ IPCBackend::IPCBackend(MPI_Comm comm)
 }
 
 IPCBackend::~IPCBackend() {
-  /*
-   * Validate that a handle was passed that is not a nullptr.
-   */
-  auto *bp{ipc_backend_proxy.get()};
-  assert(bp);
-
-  /*
-   * Free the atomic_ret array.
-   */
-  CHECK_HIP(hipFree(bp->atomic_ret->atomic_base_ptr));
-
   /**
    * Destroy teams infrastructure
    * and team world
