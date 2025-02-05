@@ -105,8 +105,9 @@ __device__ void IPCContext::sync(rocshmem_team_t team) {
   int pe_start = team_obj->tinfo_wrt_world->pe_start;
   int pe_stride = team_obj->tinfo_wrt_world->stride;
   int pe_size = team_obj->num_pes;
+  long *p_sync = team_obj->barrier_pSync;
 
-  internal_sync(pe, pe_start, pe_stride, pe_size, barrier_sync);
+  internal_sync(pe, pe_start, pe_stride, pe_size, p_sync);
 }
 
 __device__ void IPCContext::sync_all() {
