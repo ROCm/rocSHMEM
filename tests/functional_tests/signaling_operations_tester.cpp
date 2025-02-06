@@ -201,7 +201,6 @@ void SignalingOperationsTester::verifyResults(uint64_t size) {
       } else if (ROCSHMEM_SIGNAL_ADD == sig_op) {
         uint64_t value = *sig_addr;
         uint64_t expected_value = (args.myid + 123); // Initial Value
-        uint64_t num_waves = 1;
 
         switch (_type) {
           case PutSignalTestType:
@@ -214,8 +213,7 @@ void SignalingOperationsTester::verifyResults(uint64_t size) {
             break;
           case WAVEPutSignalTestType:
           case WAVEPutSignalNBITestType:
-            num_waves = max(1, (args.num_wgs / __AMDGCN_WAVEFRONT_SIZE__));
-            expected_value += ((args.skip + args.loop) * num_waves);
+            expected_value += ((args.skip + args.loop) * args.num_wgs * num_warps);
             break;
           default:
             fprintf(stderr, "Invalid Test\n");
