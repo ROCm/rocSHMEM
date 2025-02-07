@@ -8,7 +8,7 @@ if [[ -z "${_ROCM_DIR}" ]]; then
 fi
 
 # Location of dependencies source code
-export _INSTALL_DIR=$BUILD_DIR
+export _INSTALL_DIR=$BUILD_DIR/install
 export _DEPS_SRC_DIR=$_INSTALL_DIR/src
 
 mkdir -p $_DEPS_SRC_DIR
