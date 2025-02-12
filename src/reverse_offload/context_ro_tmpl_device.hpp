@@ -41,12 +41,12 @@ struct GetROType<char> {
 
 template <>
 struct GetROType<unsigned char> {
-  static constexpr ro_net_types Type{RO_NET_CHAR};
+  static constexpr ro_net_types Type{RO_NET_UNSIGNED_CHAR};
 };
 
 template <>
 struct GetROType<signed char> {
-  static constexpr ro_net_types Type{RO_NET_CHAR};
+  static constexpr ro_net_types Type{RO_NET_SIGNED_CHAR};
 };
 
 template <>

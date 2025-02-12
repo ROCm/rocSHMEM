@@ -50,6 +50,8 @@ enum ro_net_cmds {
 enum ro_net_types {
   RO_NET_FLOAT,
   RO_NET_CHAR,
+  RO_NET_SIGNED_CHAR,
+  RO_NET_UNSIGNED_CHAR,
   RO_NET_DOUBLE,
   RO_NET_INT,
   RO_NET_LONG,

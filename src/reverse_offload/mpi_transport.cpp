@@ -384,6 +384,12 @@ static MPI_Datatype convertType(ro_net_types type) {
       return MPI_SHORT;
     case RO_NET_LONG_DOUBLE:
       return MPI_LONG_DOUBLE;
+    case RO_NET_CHAR:
+      return MPI_CHAR;
+    case RO_NET_SIGNED_CHAR:
+      return MPI_SIGNED_CHAR;
+    case RO_NET_UNSIGNED_CHAR:
+      return MPI_UNSIGNED_CHAR;
     default:
       fprintf(stderr, "Unknown rocSHMEM type MPI conversion %d\n", type);
       abort();
