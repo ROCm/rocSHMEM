@@ -81,17 +81,38 @@ set(CMAKE_CXX_FLAGS_DEBUG "-O0 -ggdb")
 find_package(ROCM 0.8 REQUIRED PATHS ${ROCM_PATH})
 set(ROCMCHECKS_WARN_TOOLCHAIN_VAR OFF)
 
+###############################################################################
+# PROJECT
+###############################################################################
 find_package(ROCmCMakeBuildTools)
 include(ROCMCreatePackage)
 include(ROCMInstallTargets)
 include(ROCMCheckTargetIds)
 
-###############################################################################
-# PROJECT
-###############################################################################
 rocm_setup_version(VERSION 2.0.0)
 
 project(rocshmem VERSION 2.0.0 LANGUAGES CXX)
+
+###############################################################################
+# CREATE ROCSHMEM LIBRARY
+###############################################################################
+add_library(${PROJECT_NAME})
+add_library(roc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+
+###############################################################################
+# ROCSHMEM SUBDIRECTORY
+###############################################################################
+add_subdirectory(src)
+
+###############################################################################
+# TEST SUBDIRECTORIES
+###############################################################################
+
+add_subdirectory(tests)
+
+IF (BUILD_EXAMPLES)
+  add_subdirectory(examples)
+ENDIF()
 
 ###############################################################################
 # SET GPU ARCHITECTURES
@@ -125,20 +146,28 @@ endif()
 set(COMPILING_TARGETS "${SUPPORTED_GPUS}" CACHE STRING "GPU targets to compile for.")
 message(STATUS "Compiling for ${COMPILING_TARGETS}")
 
-foreach(target ${COMPILING_TARGETS})
+foreach (target ${COMPILING_TARGETS})
   list(APPEND static_link_flags --offload-arch=${target})
 endforeach()
 list(JOIN static_link_flags " " flags_str)
 add_compile_options(${flags_str})
 
 ###############################################################################
-# CREATE ROCSHMEM LIBRARY
+# PACKAGE DEPENDENCIES
 ###############################################################################
-add_library(${PROJECT_NAME})
-add_library(roc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+find_package(Threads REQUIRED)
+find_package(MPI REQUIRED)
+find_package(hip REQUIRED)
+find_package(hsa-runtime64 REQUIRED)
+
+if (USE_GPU_IB)
+  find_package(Ibverbs REQUIRED)
+endif()
 
 ###############################################################################
-# INCLUDE DIRECTORIES
+# LINKING AND INCLUDE DIRECTORIES
 ###############################################################################
 target_include_directories(
   ${PROJECT_NAME}
@@ -146,60 +175,21 @@ target_include_directories(
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>                 # rocshmem_config.h
     $<INSTALL_INTERFACE:include>
+    ${MPI_CXX_HEADER_DIR}
 )
-
-###############################################################################
-# SUBDIRECTORY TARGETS
-###############################################################################
-add_subdirectory(src)
-add_subdirectory(tests)
-
-IF (BUILD_EXAMPLES)
-  add_subdirectory(examples)
-ENDIF()
-
-###############################################################################
-# HIP
-###############################################################################
-find_package(hip REQUIRED)
-
-target_link_libraries(
-  ${PROJECT_NAME}
-  PUBLIC
-    hip::device
-    hip::host
-)
-
-###############################################################################
-# HSA-RUNTIME64
-###############################################################################
-find_package(hsa-runtime64 REQUIRED)
-
-target_link_libraries(
-  ${PROJECT_NAME}
-  PUBLIC
-    hsa-runtime64::hsa-runtime64
-)
-
-###############################################################################
-# PTHREADS
-###############################################################################
-set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
-set(THREADS_PREFER_PTHREAD_FLAG TRUE)
-find_package(Threads REQUIRED)
 
 target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC
     Threads::Threads
+    ${MPI_mpi_LIBRARY}
+    ${MPI_mpicxx_LIBRARY}
+    hip::device
+    hip::host
+    hsa-runtime64::hsa-runtime64
 )
 
-###############################################################################
-# IBVERBS
-###############################################################################
-IF (USE_GPU_IB)
-  find_package(Ibverbs REQUIRED)
-
+if (USE_GPU_IB)
   target_include_directories(
     ${PROJECT_NAME}
     PUBLIC
@@ -211,25 +201,7 @@ IF (USE_GPU_IB)
     PUBLIC
       ${IBVERBS_LIBRARIES}
   )
-ENDIF()
-
-###############################################################################
-# MPI
-###############################################################################
-find_package(MPI REQUIRED)
-
-target_include_directories(
-  ${PROJECT_NAME}
-  PUBLIC
-    ${MPI_CXX_HEADER_DIR}
-)
-
-target_link_libraries(
-  ${PROJECT_NAME}
-  PUBLIC
-    ${MPI_mpi_LIBRARY}
-    ${MPI_mpicxx_LIBRARY}
-)
+endif()
 
 ###############################################################################
 # INSTALL
