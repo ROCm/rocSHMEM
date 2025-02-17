@@ -162,38 +162,13 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       if (rank == 0) {
         std::cout << "Team Broadcast Test ###" << std::endl;
       }
-      testers.push_back(new TeamBroadcastTester<long>(
-          args,
-          [](long& f1, long& f2) {
-            f1 = 1;
-            f2 = 2;
-          },
-          [rank](long v) {
-            long expected_val;
-            /**
-             * The verification routine here requires that the
-             * PE_root value is 0 which denotes that the
-             * sending processing element is rank 0.
-             *
-             * The difference in expected values arises from
-             * the specification for broadcast where the
-             * PE_root processing element does not copy the
-             * contents from its own source to dest during
-             * the broadcast.
-             */
-            if (rank == 0) {
-              expected_val = 2;
-            } else {
-              expected_val = 1;
-            }
-
-            return (v == expected_val)
-                       ? std::make_pair(true, "")
-                       : std::make_pair(
-                             false, "Rank " + std::to_string(rank) + ", Got " +
-                                        std::to_string(v) + ", Expect " +
-                                        std::to_string(expected_val));
-          }));
+      testers.push_back(new TeamBroadcastTester<int64_t>(args));
+      testers.push_back(new TeamBroadcastTester<int>(args));
+      testers.push_back(new TeamBroadcastTester<long long>(args));
+      testers.push_back(new TeamBroadcastTester<float>(args));
+      testers.push_back(new TeamBroadcastTester<double>(args));
+      testers.push_back(new TeamBroadcastTester<char>(args));
+      testers.push_back(new TeamBroadcastTester<unsigned char>(args));
       return testers;
     case TeamAllToAllTestType:
       if (rank == 0) {

@@ -99,6 +99,7 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
       break;
     case TeamFCollectTestType:
     case TeamAllToAllTestType:
+    case TeamBroadcastTestType:
       min_msg_size = 8;
       break;
     case TeamCtxInfraTestType:
