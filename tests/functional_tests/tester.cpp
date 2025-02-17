@@ -30,7 +30,6 @@
 #include <rocshmem/rocshmem.hpp>
 #include <vector>
 
-#include "alltoall_tester.hpp"
 #include "amo_bitwise_tester.hpp"
 #include "amo_extended_tester.hpp"
 #include "amo_standard_tester.hpp"
@@ -47,6 +46,7 @@
 #include "signaling_operations_tester.hpp"
 #include "swarm_tester.hpp"
 #include "sync_tester.hpp"
+#include "team_alltoall_tester.hpp"
 #include "team_broadcast_tester.hpp"
 #include "team_ctx_infra_tester.hpp"
 #include "team_ctx_primitive_tester.hpp"
@@ -195,31 +195,17 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
                                         std::to_string(expected_val));
           }));
       return testers;
-    case AllToAllTestType:
+    case TeamAllToAllTestType:
       if (rank == 0) {
         std::cout << "Alltoall Test ###" << std::endl;
       }
-      testers.push_back(new AlltoallTester<int64_t>(
-          args,
-          [rank](int64_t& f1, int64_t& f2, int64_t dest_pe) {
-            const long SRC_SHIFT = 16;
-            // Make value for each src, dst pair unique
-            // by shifting src by SRC_SHIFT bits
-            f1 = (rank << SRC_SHIFT) + dest_pe;
-            f2 = -1;
-          },
-          [rank](int64_t v, int64_t src_pe) {
-            const long SRC_SHIFT = 16;
-            // See if we obtained unique value
-            long expected_val = (src_pe << SRC_SHIFT) + rank;
-
-            return (v == expected_val)
-                       ? std::make_pair(true, "")
-                       : std::make_pair(
-                             false, "Rank " + std::to_string(rank) + ", Got " +
-                                        std::to_string(v) + ", Expect " +
-                                        std::to_string(expected_val));
-          }));
+      testers.push_back(new TeamAlltoallTester<int64_t>(args));
+      testers.push_back(new TeamAlltoallTester<int>(args));
+      testers.push_back(new TeamAlltoallTester<long long>(args));
+      testers.push_back(new TeamAlltoallTester<float>(args));
+      testers.push_back(new TeamAlltoallTester<double>(args));
+      testers.push_back(new TeamAlltoallTester<char>(args));
+      testers.push_back(new TeamAlltoallTester<unsigned char>(args));
       return testers;
     case FCollectTestType:
       if (rank == 0) {
@@ -525,7 +511,7 @@ bool Tester::peLaunchesKernel() {
    */
   is_launcher = is_launcher || (_type == TeamReductionTestType) ||
                 (_type == TeamBroadcastTestType) || (_type == TeamCtxInfraTestType) ||
-                (_type == AllToAllTestType) || (_type == FCollectTestType) ||
+                (_type == TeamAllToAllTestType) || (_type == FCollectTestType) ||
                 (_type == PingPongTestType) || (_type == BarrierAllTestType) ||
                 (_type == SyncTestType) || (_type == SyncAllTestType) ||
                 (_type == RandomAccessTestType) || (_type == PingAllTestType);
