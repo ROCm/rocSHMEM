@@ -53,7 +53,7 @@ enum TestType {
   SyncAllTestType = 16,
   SyncTestType = 17,
   CollectTestType = 18,
-  FCollectTestType = 19,
+  TeamFCollectTestType = 19,
   TeamAllToAllTestType = 20,
   AllToAllsTestType = 21,
   ShmemPtrTestType = 22,

@@ -36,7 +36,6 @@
 #include "barrier_all_tester.hpp"
 #include "empty_tester.hpp"
 #include "extended_primitives.hpp"
-#include "fcollect_tester.hpp"
 #include "ping_all_tester.hpp"
 #include "ping_pong_tester.hpp"
 #include "primitive_mr_tester.hpp"
@@ -50,6 +49,7 @@
 #include "team_broadcast_tester.hpp"
 #include "team_ctx_infra_tester.hpp"
 #include "team_ctx_primitive_tester.hpp"
+#include "team_fcollect_tester.hpp"
 #include "team_reduction_tester.hpp"
 #include "wave_level_primitives.hpp"
 
@@ -207,26 +207,17 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       testers.push_back(new TeamAlltoallTester<char>(args));
       testers.push_back(new TeamAlltoallTester<unsigned char>(args));
       return testers;
-    case FCollectTestType:
+    case TeamFCollectTestType:
       if (rank == 0) {
         std::cout << "Fcollect Test ###" << std::endl;
       }
-      testers.push_back(new FcollectTester<int64_t>(
-          args,
-          [rank](int64_t& f1, int64_t& f2) {
-            f1 = rank;
-            f2 = -1;
-          },
-          [rank](int64_t v, int64_t src_pe) {
-            int64_t expected_val = src_pe;
-
-            return (v == expected_val)
-                       ? std::make_pair(true, "")
-                       : std::make_pair(
-                             false, "Rank " + std::to_string(rank) + ", Got " +
-                                        std::to_string(v) + ", Expect " +
-                                        std::to_string(expected_val));
-          }));
+      testers.push_back(new TeamFcollectTester<int64_t>(args));
+      testers.push_back(new TeamFcollectTester<int>(args));
+      testers.push_back(new TeamFcollectTester<long long>(args));
+      testers.push_back(new TeamFcollectTester<float>(args));
+      testers.push_back(new TeamFcollectTester<double>(args));
+      testers.push_back(new TeamFcollectTester<char>(args));
+      testers.push_back(new TeamFcollectTester<unsigned char>(args));
       return testers;
     case AMO_FAddTestType:
       if (rank == 0) std::cout << "AMO Fetch_Add ###" << std::endl;
@@ -511,7 +502,7 @@ bool Tester::peLaunchesKernel() {
    */
   is_launcher = is_launcher || (_type == TeamReductionTestType) ||
                 (_type == TeamBroadcastTestType) || (_type == TeamCtxInfraTestType) ||
-                (_type == TeamAllToAllTestType) || (_type == FCollectTestType) ||
+                (_type == TeamAllToAllTestType) || (_type == TeamFCollectTestType) ||
                 (_type == PingPongTestType) || (_type == BarrierAllTestType) ||
                 (_type == SyncTestType) || (_type == SyncAllTestType) ||
                 (_type == RandomAccessTestType) || (_type == PingAllTestType);
