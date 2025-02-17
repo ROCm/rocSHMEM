@@ -28,7 +28,8 @@
 /******************************************************************************
  * DEVICE TEST KERNEL
  *****************************************************************************/
-__global__ void GetSwarmTest(int loop, int skip, uint64_t *timer, char *s_buf,
+__global__ void GetSwarmTest(int loop, int skip, long long int *start_time,
+                             long long int *end_time, char *s_buf,
                              char *r_buf, int size);
 
 /******************************************************************************

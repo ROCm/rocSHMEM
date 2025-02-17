@@ -29,17 +29,18 @@ using namespace rocshmem;
 /******************************************************************************
  * DEVICE TEST KERNEL
  *****************************************************************************/
-__global__ void PrimitiveMRTest(int loop, uint64_t *timer, char *s_buf,
+__global__ void PrimitiveMRTest(int loop, long long int *start_time,
+                                long long int *end_time, char *s_buf,
                                 char *r_buf, int size,
                                 ShmemContextType ctx_type) {
   __shared__ rocshmem_ctx_t ctx;
+  int wg_id = get_flat_grid_id();
   rocshmem_wg_init();
   rocshmem_wg_ctx_create(ctx_type, &ctx);
 
   if (hipThreadIdx_x == 0) {
-    uint64_t start;
 
-    start = rocshmem_timer();
+    start_time[wg_id] = wall_clock64();
 
     for (int win_i = 0; win_i < 64 * loop; win_i++) {
       for (int i = 0; i < 64; i++) {
@@ -48,7 +49,7 @@ __global__ void PrimitiveMRTest(int loop, uint64_t *timer, char *s_buf,
       rocshmem_ctx_quiet(ctx);
     }
 
-    timer[hipBlockIdx_x] = rocshmem_timer() - start;
+    end_time[wg_id] = wall_clock64();
   }
 
   __syncthreads();
@@ -81,11 +82,13 @@ void PrimitiveMRTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
 
   /* Warmup */
   hipLaunchKernelGGL(PrimitiveMRTest, gridSize, blockSize, shared_bytes, stream,
-                     loop, timer, s_buf, r_buf, size, _shmem_context);
+                     loop, start_time, end_time, s_buf, r_buf, size,
+                     _shmem_context);
 
   /* Benchmark */
   hipLaunchKernelGGL(PrimitiveMRTest, gridSize, blockSize, shared_bytes, stream,
-                     loop, timer, s_buf, r_buf, size, _shmem_context);
+                     loop, start_time, end_time, s_buf, r_buf, size,
+                     _shmem_context);
 
   CHECK_HIP(hipDeviceSynchronize());
 

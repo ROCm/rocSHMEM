@@ -49,13 +49,14 @@ __device__ bool thread_passing(int num_bins, uint32_t *bin_threads,
   return pass;
 }
 
-__global__ void RandomAccessTest(int loop, int skip, uint64_t *timer,
-                                 int *s_buf, int *r_buf, int size, OpType type,
+__global__ void RandomAccessTest(int loop, int skip, long long int *start_time,
+                                 long long int *end_time, int *s_buf,
+                                 int *r_buf, int size, OpType type,
                                  int coal_coef, int num_bins, int num_waves,
                                  uint32_t *threads_bins, uint32_t *off_bins,
                                  uint32_t *PE_bins, ShmemContextType ctx_type) {
-  uint64_t start;
   __shared__ rocshmem_ctx_t ctx;
+  int wg_id = get_flat_grid_id();
   rocshmem_wg_init();
   rocshmem_wg_ctx_create(ctx_type, &ctx);
 
@@ -69,7 +70,9 @@ __global__ void RandomAccessTest(int loop, int skip, uint64_t *timer,
     r_buf = r_buf + offset;
 
     for (int i = 0; i < loop + skip; i++) {
-      if (i == skip) start = rocshmem_timer();
+      if (i == skip) {
+        start_time[wg_id] = wall_clock64();
+      }
       switch (type) {
         case GetType:
           rocshmem_ctx_getmem(ctx, r_buf, s_buf, size, PE);
@@ -84,8 +87,9 @@ __global__ void RandomAccessTest(int loop, int skip, uint64_t *timer,
 
     rocshmem_ctx_quiet(ctx);
 
-    atomicAdd((unsigned long long *)&timer[hipBlockIdx_x],
-              rocshmem_timer() - start);
+    // atomicAdd((unsigned long long *)&timer[hipBlockIdx_x],
+    //           rocshmem_timer() - start);
+    end_time[wg_id] = wall_clock64();
   }
   rocshmem_wg_ctx_destroy(&ctx);
   rocshmem_wg_finalize();
@@ -178,9 +182,10 @@ void RandomAccessTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
 
   if (args.myid == 0) {
     hipLaunchKernelGGL(RandomAccessTest, gridSize, blockSize, shared_bytes,
-                       stream, loop, args.skip, timer, s_buf, r_buf, size,
-                       (OpType)args.op_type, _coal_coef, _num_bins, _num_waves,
-                       _threads_bins, _off_bins, _PE_bins, _shmem_context);
+                       stream, loop, args.skip, start_time, end_time, s_buf,
+                       r_buf, size, (OpType)args.op_type, _coal_coef,
+                       _num_bins, _num_waves, _threads_bins, _off_bins,
+                       _PE_bins, _shmem_context);
   }
   num_msgs = (loop + args.skip) * _num_waves * _thread_access;
   num_timed_msgs = loop * _num_waves * _thread_access;

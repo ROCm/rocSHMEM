@@ -73,11 +73,13 @@ rocshmem_team_t team_reduce_world_dup;
  * DEVICE TEST KERNEL
  *****************************************************************************/
 template <typename T1, ROCSHMEM_OP T2>
-__global__ void TeamReductionTest(int loop, int skip, uint64_t *timer,
-                                  T1 *s_buf, T1 *r_buf, int size, TestType type,
+__global__ void TeamReductionTest(int loop, int skip, long long int *start_time,
+                                  long long int *end_time, T1 *s_buf, T1 *r_buf,
+                                  int size, TestType type,
                                   ShmemContextType ctx_type,
                                   rocshmem_team_t team) {
   __shared__ rocshmem_ctx_t ctx;
+  int wg_id = get_flat_grid_id();
 
   rocshmem_wg_init();
   rocshmem_wg_ctx_create(ctx_type, &ctx);
@@ -86,10 +88,9 @@ __global__ void TeamReductionTest(int loop, int skip, uint64_t *timer,
 
   __syncthreads();
 
-  uint64_t start;
   for (int i = 0; i < loop + skip; i++) {
     if (i == skip && hipThreadIdx_x == 0) {
-      start = rocshmem_timer();
+      start_time[wg_id] = wall_clock64();
     }
     wg_team_reduce<T1, T2>(ctx, team, r_buf, s_buf, size);
     rocshmem_ctx_wg_barrier_all(ctx);
@@ -98,7 +99,7 @@ __global__ void TeamReductionTest(int loop, int skip, uint64_t *timer,
   __syncthreads();
 
   if (hipThreadIdx_x == 0) {
-    timer[hipBlockIdx_x] = rocshmem_timer() - start;
+    end_time[wg_id] = wall_clock64();
   }
 
   rocshmem_wg_ctx_destroy(&ctx);
@@ -138,9 +139,9 @@ void TeamReductionTester<T1, T2>::launchKernel(dim3 gridSize, dim3 blockSize,
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(HIP_KERNEL_NAME(TeamReductionTest<T1, T2>), gridSize,
-                     blockSize, shared_bytes, stream, loop, args.skip, timer,
-                     s_buf, r_buf, size, _type, _shmem_context,
-                     team_reduce_world_dup);
+                     blockSize, shared_bytes, stream, loop, args.skip,
+                     start_time, end_time, s_buf, r_buf, size, _type,
+                     _shmem_context, team_reduce_world_dup);
 
   num_msgs = loop + args.skip;
   num_timed_msgs = loop;

@@ -29,19 +29,19 @@ using namespace rocshmem;
 /******************************************************************************
  * DEVICE TEST KERNEL
  *****************************************************************************/
-__global__ void PrimitiveTest(int loop, int skip, uint64_t *timer, char *s_buf,
+__global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
+                              long long int *end_time, char *s_buf,
                               char *r_buf, int size, TestType type,
                               ShmemContextType ctx_type) {
   __shared__ rocshmem_ctx_t ctx;
+  int wg_id = get_flat_grid_id();
   rocshmem_wg_init();
   rocshmem_wg_ctx_create(ctx_type, &ctx);
-
-  uint64_t start;
 
   for (int i = 0; i < loop + skip; i++) {
     if (i == skip) {
         __syncthreads();
-        start = rocshmem_timer();
+        start_time[wg_id] = wall_clock64();
     }
 
     switch (type) {
@@ -79,7 +79,7 @@ __global__ void PrimitiveTest(int loop, int skip, uint64_t *timer, char *s_buf,
   __syncthreads();
 
   if (hipThreadIdx_x == 0) {
-    timer[hipBlockIdx_x] = rocshmem_timer() - start;
+    end_time[wg_id] = wall_clock64();
   }
 
   rocshmem_wg_ctx_destroy(&ctx);
@@ -109,8 +109,8 @@ void PrimitiveTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(PrimitiveTest, gridSize, blockSize, shared_bytes, stream,
-                     loop, args.skip, timer, s_buf, r_buf, size, _type,
-                     _shmem_context);
+                     loop, args.skip, start_time, end_time, s_buf, r_buf,
+                     size, _type, _shmem_context);
 
   num_msgs = (loop + args.skip) * gridSize.x;
   num_timed_msgs = loop;

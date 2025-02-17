@@ -29,9 +29,11 @@ using namespace rocshmem;
 /******************************************************************************
  * DEVICE TEST KERNEL
  *****************************************************************************/
-__global__ void GetSwarmTest(int loop, int skip, uint64_t *timer, char *s_buf,
+__global__ void GetSwarmTest(int loop, int skip, long long int *start_time,
+                             long long int *end_time, char *s_buf,
                              char *r_buf, int size, ShmemContextType ctx_type) {
   __shared__ rocshmem_ctx_t ctx;
+  int wg_id = get_flat_grid_id();
 
   int provided;
   rocshmem_wg_init_thread(ROCSHMEM_THREAD_MULTIPLE, &provided);
@@ -42,18 +44,20 @@ __global__ void GetSwarmTest(int loop, int skip, uint64_t *timer, char *s_buf,
   __syncthreads();
 
   int index = hipThreadIdx_x * size;
-  uint64_t start = 0;
 
   for (int i = 0; i < loop + skip; i++) {
-    if (i == skip) start = rocshmem_timer();
-
+    if (i == skip) {
+      start_time[wg_id] = wall_clock64();
+    }
     rocshmem_ctx_getmem(ctx, &r_buf[index], &s_buf[index], size, 1);
 
     __syncthreads();
   }
 
-  atomicAdd((unsigned long long *)&timer[hipBlockIdx_x],
-            rocshmem_timer() - start);
+  // atomicAdd((unsigned long long *)&timer[hipBlockIdx_x],
+  //           rocshmem_timer() - start);
+
+  end_time[wg_id] = wall_clock64();
 
   rocshmem_wg_ctx_destroy(&ctx);
   rocshmem_wg_finalize();
@@ -71,8 +75,8 @@ void GetSwarmTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(GetSwarmTest, gridSize, blockSize, shared_bytes, stream,
-                     loop, args.skip, timer, s_buf, r_buf, size,
-		     _shmem_context);
+                     loop, args.skip, start_time, end_time, s_buf, r_buf, size,
+                     _shmem_context);
 
   num_msgs = (loop + args.skip) * gridSize.x * blockSize.x;
   num_timed_msgs = loop * gridSize.x * blockSize.x;

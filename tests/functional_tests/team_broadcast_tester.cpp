@@ -61,11 +61,13 @@ rocshmem_team_t team_bcast_world_dup;
  * DEVICE TEST KERNEL
  *****************************************************************************/
 template <typename T1>
-__global__ void TeamBroadcastTest(int loop, int skip, uint64_t *timer,
-                                  T1 *source_buf, T1 *dest_buf, int size,
+__global__ void TeamBroadcastTest(int loop, int skip, long long int *start_time,
+                                  long long int *end_time, T1 *source_buf,
+                                  T1 *dest_buf, int size,
                                   ShmemContextType ctx_type,
                                   rocshmem_team_t team) {
   __shared__ rocshmem_ctx_t ctx;
+  int wg_id = get_flat_grid_id();
 
   rocshmem_wg_init();
   rocshmem_wg_ctx_create(ctx_type, &ctx);
@@ -74,10 +76,9 @@ __global__ void TeamBroadcastTest(int loop, int skip, uint64_t *timer,
 
   __syncthreads();
 
-  uint64_t start;
   for (int i = 0; i < loop; i++) {
     if (i == skip && hipThreadIdx_x == 0) {
-      start = rocshmem_timer();
+      start_time[wg_id] = wall_clock64();
     }
 
     wg_team_broadcast<T1>(ctx, team,
@@ -91,7 +92,7 @@ __global__ void TeamBroadcastTest(int loop, int skip, uint64_t *timer,
   __syncthreads();
 
   if (hipThreadIdx_x == 0) {
-    timer[hipBlockIdx_x] = rocshmem_timer() - start;
+    end_time[wg_id] = wall_clock64();
   }
 
   rocshmem_wg_ctx_destroy(&ctx);
@@ -131,8 +132,8 @@ void TeamBroadcastTester<T1>::launchKernel(dim3 gridSize, dim3 blockSize,
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(TeamBroadcastTest<T1>, gridSize, blockSize, shared_bytes,
-                     stream, loop, args.skip, timer, source_buf, dest_buf, size,
-                     _shmem_context, team_bcast_world_dup);
+                     stream, loop, args.skip, start_time, end_time, source_buf,
+                     dest_buf, size, _shmem_context, team_bcast_world_dup);
 
   num_msgs = loop + args.skip;
   num_timed_msgs = loop;

@@ -30,16 +30,18 @@ rocshmem_team_t team_sync_world_dup;
 /******************************************************************************
  * DEVICE TEST KERNEL
  *****************************************************************************/
-__global__ void SyncTest(int loop, int skip, uint64_t *timer, TestType type,
+__global__ void SyncTest(int loop, int skip, long long int *start_time,
+                         long long int *end_time, TestType type,
                          ShmemContextType ctx_type, rocshmem_team_t team) {
   __shared__ rocshmem_ctx_t ctx;
+  int wg_id = get_flat_grid_id();
+
   rocshmem_wg_init();
   rocshmem_wg_ctx_create(ctx_type, &ctx);
 
-  uint64_t start;
   for (int i = 0; i < loop + skip; i++) {
     if (hipThreadIdx_x == 0 && i == skip) {
-      start = rocshmem_timer();
+      start_time[wg_id] = wall_clock64();
     }
 
     __syncthreads();
@@ -57,7 +59,7 @@ __global__ void SyncTest(int loop, int skip, uint64_t *timer, TestType type,
   __syncthreads();
 
   if (hipThreadIdx_x == 0) {
-    timer[hipBlockIdx_x] = rocshmem_timer() - start;
+    end_time[wg_id] = wall_clock64();
   }
 
   rocshmem_wg_ctx_destroy(&ctx);
@@ -84,7 +86,7 @@ void SyncTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
                                &team_sync_world_dup);
 
   hipLaunchKernelGGL(SyncTest, gridSize, blockSize, shared_bytes, stream, loop,
-                     args.skip, timer, _type, _shmem_context,
+                     args.skip, start_time, end_time, _type, _shmem_context,
                      team_sync_world_dup);
 
   num_msgs = (loop + args.skip) * gridSize.x;

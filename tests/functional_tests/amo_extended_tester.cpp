@@ -29,9 +29,10 @@ using namespace rocshmem;
 
 /* Declare the global kernel template with a generic implementation */
 template <typename T>
-__global__ void AMOExtendedTest(int loop, int skip, uint64_t *timer,
-                                char *r_buf, T *s_buf, T *ret_val,
-                                TestType type, ShmemContextType ctx_type) {
+__global__ void AMOExtendedTest(int loop, int skip, long long int *start_time,
+                                long long int *end_time, char *r_buf,
+                                T *s_buf, T *ret_val, TestType type,
+                                ShmemContextType ctx_type) {
   return;
 }
 
@@ -64,8 +65,8 @@ void AMOExtendedTester<T>::launchKernel(dim3 gridsize, dim3 blocksize, int loop,
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(AMOExtendedTest, gridsize, blocksize, shared_bytes, stream,
-                     loop, args.skip, timer, _r_buf, _s_buf, _ret_val, _type,
-                     _shmem_context);
+                     loop, args.skip, start_time, end_time, _r_buf, _s_buf,
+                     _ret_val, _type, _shmem_context);
 
   _gridSize = gridsize;
   num_msgs = (loop + args.skip) * gridsize.x;
@@ -111,17 +112,20 @@ void AMOExtendedTester<T>::verifyResults(uint64_t size) {
 #define AMO_EXTENDED_DEF_GEN(T, TNAME)                                        \
   template <>                                                                 \
   __global__ void AMOExtendedTest<T>(                                         \
-      int loop, int skip, uint64_t *timer, char *r_buf, T *s_buf, T *ret_val, \
+      int loop, int skip, long long int *start_time,                          \
+      long long int *end_time, char *r_buf, T *s_buf, T *ret_val,             \
       TestType type, ShmemContextType ctx_type) {                             \
     __shared__ rocshmem_ctx_t ctx;                                            \
+    int wg_id = get_flat_grid_id();                                           \
     rocshmem_wg_init();                                                       \
     rocshmem_wg_ctx_create(ctx_type, &ctx);                                   \
     if (hipThreadIdx_x == 0) {                                                \
-      uint64_t start;                                                         \
       T ret = 0;                                                              \
       T cond = 0;                                                             \
       for (int i = 0; i < loop + skip; i++) {                                 \
-        if (i == skip) start = rocshmem_timer();                              \
+        if (i == skip) {                                                      \
+          start_time[wg_id] = wall_clock64();                                 \
+        }                                                                     \
         switch (type) {                                                       \
           case AMO_FetchTestType:                                             \
             ret = rocshmem_ctx_##TNAME##_atomic_fetch(ctx, (T *)r_buf, 1);    \
@@ -138,9 +142,9 @@ void AMOExtendedTester<T>::verifyResults(uint64_t size) {
         }                                                                     \
       }                                                                       \
       rocshmem_ctx_quiet(ctx);                                                \
-      timer[hipBlockIdx_x] = rocshmem_timer() - start;                        \
-      ret_val[hipBlockIdx_x] = ret;                                           \
-      rocshmem_ctx_getmem(ctx, &s_buf[hipBlockIdx_x], r_buf, sizeof(T), 1);   \
+      end_time[wg_id] = wall_clock64();                                       \
+      ret_val[wg_id] = ret;                                                   \
+      rocshmem_ctx_getmem(ctx, &s_buf[wg_id], r_buf, sizeof(T), 1);           \
     }                                                                         \
     rocshmem_wg_ctx_destroy(&ctx);                                            \
     rocshmem_wg_finalize();                                                   \

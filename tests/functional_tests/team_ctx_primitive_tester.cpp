@@ -31,20 +31,23 @@ rocshmem_team_t team_primitive_world_dup;
 /******************************************************************************
  * DEVICE TEST KERNEL
  *****************************************************************************/
-__global__ void TeamCtxPrimitiveTest(int loop, int skip, uint64_t *timer,
-                                     char *s_buf, char *r_buf, int size,
-                                     TestType type, ShmemContextType ctx_type,
+__global__ void TeamCtxPrimitiveTest(int loop, int skip, long long int *start_time,
+                                     long long int *end_time, char *s_buf,
+                                     char *r_buf, int size, TestType type,
+                                     ShmemContextType ctx_type,
                                      rocshmem_team_t team) {
   __shared__ rocshmem_ctx_t ctx;
+  int wg_id = get_flat_grid_id();
+
   rocshmem_wg_init();
   rocshmem_wg_team_create_ctx(team, ctx_type, &ctx);
 
   if (hipThreadIdx_x == 0) {
-    uint64_t start;
 
     for (int i = 0; i < loop + skip; i++) {
-      if (i == skip) start = rocshmem_timer();
-
+      if (i == skip) {
+        start_time[wg_id] = wall_clock64();
+      }
       switch (type) {
         case TeamCtxGetTestType:
           rocshmem_ctx_getmem(ctx, r_buf, s_buf, size, 1);
@@ -65,7 +68,7 @@ __global__ void TeamCtxPrimitiveTest(int loop, int skip, uint64_t *timer,
 
     rocshmem_ctx_quiet(ctx);
 
-    timer[hipBlockIdx_x] = rocshmem_timer() - start;
+    end_time[wg_id] = wall_clock64();
   }
 
   rocshmem_wg_ctx_destroy(&ctx);
@@ -104,8 +107,9 @@ void TeamCtxPrimitiveTester::launchKernel(dim3 gridSize, dim3 blockSize,
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(TeamCtxPrimitiveTest, gridSize, blockSize, shared_bytes,
-                     stream, loop, args.skip, timer, s_buf, r_buf, size, _type,
-                     _shmem_context, team_primitive_world_dup);
+                     stream, loop, args.skip, start_time, end_time, s_buf,
+                     r_buf, size, _type, _shmem_context,
+                     team_primitive_world_dup);
 
   num_msgs = (loop + args.skip) * gridSize.x;
   num_timed_msgs = loop * gridSize.x;

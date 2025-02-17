@@ -29,20 +29,21 @@ using namespace rocshmem;
 /******************************************************************************
  * DEVICE TEST KERNEL
  *****************************************************************************/
-__global__ void PutmemSignalTest(int loop, int skip, uint64_t *timer, char *s_buf,
+__global__ void PutmemSignalTest(int loop, int skip, long long int *start_time,
+                                 long long int *end_time, char *s_buf,
                                  char *r_buf, int size, uint64_t *sig_addr,
                                  TestType type, ShmemContextType ctx_type, int sig_op) {
   __shared__ rocshmem_ctx_t ctx;
+  int wg_id = get_flat_grid_id();
   rocshmem_wg_init();
   rocshmem_wg_ctx_create(ctx_type, &ctx);
 
-  uint64_t start;
   uint64_t signal = 1;
 
   for (int i = 0; i < loop + skip; i++) {
     if (i == skip) {
         __syncthreads();
-        start = rocshmem_timer();
+        start_time[wg_id] = wall_clock64();
     }
 
     switch (type) {
@@ -74,23 +75,24 @@ __global__ void PutmemSignalTest(int loop, int skip, uint64_t *timer, char *s_bu
   __syncthreads();
 
   if (hipThreadIdx_x == 0) {
-    timer[hipBlockIdx_x] = rocshmem_timer() - start;
+    end_time[wg_id] = wall_clock64();
   }
 
   rocshmem_wg_ctx_destroy(&ctx);
   rocshmem_wg_finalize();
 }
 
-__global__ void SignalFetchTest(int loop, int skip, uint64_t *timer, uint64_t *sig_addr,
+__global__ void SignalFetchTest(int loop, int skip, long long int *start_time,
+                                long long int *end_time, uint64_t *sig_addr,
                                 uint64_t *fetched_value, TestType type) {
   rocshmem_wg_init();
 
-  uint64_t start;
+  int wg_id = get_flat_grid_id();
 
   for (int i = 0; i < loop + skip; i++) {
     if (i == skip) {
         __syncthreads();
-        start = rocshmem_timer();
+        start_time[wg_id] = wall_clock64();
     }
 
     switch (type) {
@@ -111,7 +113,7 @@ __global__ void SignalFetchTest(int loop, int skip, uint64_t *timer, uint64_t *s
   __syncthreads();
 
   if (hipThreadIdx_x == 0) {
-    timer[hipBlockIdx_x] = rocshmem_timer() - start;
+    end_time[wg_id] = wall_clock64();
   }
 
   rocshmem_wg_finalize();
@@ -155,10 +157,10 @@ void SignalingOperationsTester::launchKernel(dim3 gridSize, dim3 blockSize, int 
       (_type == WAVESignalFetchTestType) ||
       (_type == WGSignalFetchTestType)) {
     hipLaunchKernelGGL(SignalFetchTest, gridSize, blockSize, shared_bytes, stream,
-                       loop, args.skip, timer, sig_addr, fetched_value, _type);
+                       loop, args.skip, start_time, end_time, sig_addr, fetched_value, _type);
   } else {
     hipLaunchKernelGGL(PutmemSignalTest, gridSize, blockSize, shared_bytes, stream,
-                       loop, args.skip, timer, s_buf, r_buf, size, sig_addr,
+                       loop, args.skip, start_time, end_time, s_buf, r_buf, size, sig_addr,
                        _type, _shmem_context, sig_op);
   }
 

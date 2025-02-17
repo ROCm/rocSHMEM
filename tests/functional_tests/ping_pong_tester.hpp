@@ -28,7 +28,8 @@
 /******************************************************************************
  * DEVICE TEST KERNEL
  *****************************************************************************/
-__global__ void PingPongTest(int loop, int skip, uint64_t *timer, int *r_buf);
+__global__ void PingPongTest(int loop, int skip, long long int *start_time,
+                             long long int *end_time, int *r_buf);
 
 /******************************************************************************
  * HOST TESTER CLASS

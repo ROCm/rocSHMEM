@@ -58,10 +58,12 @@ rocshmem_team_t team_alltoall_world_dup;
  * DEVICE TEST KERNEL
  *****************************************************************************/
 template <typename T1>
-__global__ void AlltoallTest(int loop, int skip, uint64_t *timer,
-                             T1 *source_buf, T1 *dest_buf, int size,
-                             ShmemContextType ctx_type, rocshmem_team_t team) {
+__global__ void AlltoallTest(int loop, int skip, long long int *start_time,
+                             long long int *end_time, T1 *source_buf,
+                             T1 *dest_buf, int size, ShmemContextType ctx_type,
+                             rocshmem_team_t team) {
   __shared__ rocshmem_ctx_t ctx;
+  int wg_id = get_flat_grid_id();
 
   rocshmem_wg_init();
   rocshmem_wg_ctx_create(ctx_type, &ctx);
@@ -70,10 +72,9 @@ __global__ void AlltoallTest(int loop, int skip, uint64_t *timer,
 
   __syncthreads();
 
-  uint64_t start;
   for (int i = 0; i < loop + skip; i++) {
     if (i == skip && hipThreadIdx_x == 0) {
-      start = rocshmem_timer();
+      start_time[wg_id] = wall_clock64();
     }
     wg_alltoall<T1>(ctx, team,
                     dest_buf,    // T* dest
@@ -84,7 +85,7 @@ __global__ void AlltoallTest(int loop, int skip, uint64_t *timer,
   __syncthreads();
 
   if (hipThreadIdx_x == 0) {
-    timer[hipBlockIdx_x] = rocshmem_timer() - start;
+    end_time[wg_id] = wall_clock64();
   }
 
   rocshmem_wg_ctx_destroy(&ctx);
@@ -126,8 +127,8 @@ void AlltoallTester<T1>::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(AlltoallTest<T1>, gridSize, blockSize, shared_bytes,
-                     stream, loop, args.skip, timer, source_buf, dest_buf, size,
-                     _shmem_context, team_alltoall_world_dup);
+                     stream, loop, args.skip, start_time, end_time, source_buf,
+                     dest_buf, size, _shmem_context, team_alltoall_world_dup);
 
   num_msgs = loop + args.skip;
   num_timed_msgs = loop;

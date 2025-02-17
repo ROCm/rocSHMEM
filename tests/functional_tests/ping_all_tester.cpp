@@ -29,9 +29,11 @@ using namespace rocshmem;
 /******************************************************************************
  * DEVICE TEST KERNEL
  *****************************************************************************/
-__global__ void PingAllTest(int loop, int skip, uint64_t *timer, int *r_buf,
+__global__ void PingAllTest(int loop, int skip, long long int *start_time,
+                            long long int *end_time, int *r_buf,
                             ShmemContextType ctx_type) {
   __shared__ rocshmem_ctx_t ctx;
+  int wg_id = get_flat_grid_id();
 
   rocshmem_wg_init();
   rocshmem_wg_ctx_create(ctx_type, &ctx);
@@ -44,12 +46,11 @@ __global__ void PingAllTest(int loop, int skip, uint64_t *timer, int *r_buf,
   }
 
   if (hipThreadIdx_x == 0) {
-    uint64_t start;
     auto blk_pe_off {hipBlockIdx_x * num_pe};
 
     for (int i = 0; i < loop + skip; i++) {
       if (i == skip) {
-        start = rocshmem_timer();
+        start_time[wg_id] = wall_clock64();
       }
 
       for (int j{0}; j < num_pe; j++) {
@@ -57,7 +58,7 @@ __global__ void PingAllTest(int loop, int skip, uint64_t *timer, int *r_buf,
       }
       rocshmem_int_wait_until_all(&r_buf[blk_pe_off], num_pe, status, ROCSHMEM_CMP_EQ, 1);
     }
-    timer[hipBlockIdx_x] = rocshmem_timer() - start;
+    end_time[wg_id] = wall_clock64();
   }
   rocshmem_wg_ctx_destroy(&ctx);
   rocshmem_wg_finalize();
@@ -83,7 +84,8 @@ void PingAllTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(PingAllTest, gridSize, blockSize, shared_bytes, stream,
-                     loop, args.skip, timer, r_buf, _shmem_context);
+                     loop, args.skip, start_time, end_time, r_buf,
+                     _shmem_context);
 
   num_msgs = (loop + args.skip) * gridSize.x;
   num_timed_msgs = loop;
