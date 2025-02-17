@@ -638,12 +638,6 @@ __device__ int rocshmem_my_pe() {
   return get_internal_ctx(ROCSHMEM_CTX_DEFAULT)->my_pe;
 }
 
-__device__ uint64_t rocshmem_timer() {
-  GPU_DPRINTF("Function: rocshmem_timer\n");
-
-  return __read_clock();
-}
-
 template <typename T>
 __device__ T rocshmem_atomic_fetch_add(rocshmem_ctx_t ctx, T *dest, T val,
                                         int pe) {

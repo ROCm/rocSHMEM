@@ -141,10 +141,10 @@ class Stats {
   StatType stats[I] = {0};
 
  public:
-  __device__ uint64_t startTimer() const { return rocshmem_timer(); }
+  __device__ uint64_t startTimer() const { return wall_clock64(); }
 
   __device__ void endTimer(uint64_t start, int index) {
-    incStat(index, rocshmem_timer() - start);
+    incStat(index, wall_clock64() - start);
   }
 
   __device__ void incStat(int index, int value = 1) {

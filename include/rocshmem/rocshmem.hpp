@@ -513,17 +513,6 @@ __device__ ATTR_NO_INLINE void rocshmem_wg_team_sync(rocshmem_team_t team);
 __device__ ATTR_NO_INLINE void *rocshmem_ptr(const void *dest, int pe);
 
 /**
- * @brief Query the current time. Similar to gettimeofday() on the CPU. To use
- * this function, rocSHMEM must be configured with profiling support
- * (--enable-profile).
- *
- * Can be called per thread with no performance penalty.
- *
- * @return Time in micro-seconds.
- */
-__device__ uint64_t rocshmem_timer();
-
-/**
  * @brief Make all uncacheable GPU data visible to other agents in the sytem.
  *
  * This only works for data that was explicitly allocated uncacheable on the
