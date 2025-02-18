@@ -85,6 +85,7 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
     case AMO_IncTestType:
     case AMO_FetchTestType:
     case BarrierAllTestType:
+    case SyncAllTestType:
     case SyncTestType:
     case ShmemPtrTestType:
       min_msg_size = 8;
