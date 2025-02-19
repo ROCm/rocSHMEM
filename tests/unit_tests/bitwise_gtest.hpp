@@ -58,7 +58,7 @@ class BitwiseDeviceMethods
         Block block {};
         if (activate_lane_helper(lanes_bitfield)) {
             auto low_lane = block.lowest_active_lane();
-            size_t warp_index = hipThreadIdx_x / _warp_size;
+            size_t warp_index = hipThreadIdx_x / WF_SIZE;
             size_t block_index = hipBlockIdx_x;
             auto *elem = warp_matrix->access(warp_index, block_index);
             *elem = low_lane;
@@ -73,7 +73,7 @@ class BitwiseDeviceMethods
         Block block {};
         if (activate_lane_helper(lanes_bitfield)) {
             if (block.is_lowest_active_lane()) {
-                size_t warp_index = hipThreadIdx_x / _warp_size;
+                size_t warp_index = hipThreadIdx_x / WF_SIZE;
                 size_t block_index = hipBlockIdx_x;
                 auto *elem = warp_matrix->access(warp_index, block_index);
                 *elem = block.lane_id();
@@ -89,7 +89,7 @@ class BitwiseDeviceMethods
         Block block {};
         if (activate_lane_helper(lanes_bitfield)) {
             if (block.active_logical_lane_id() == 2) {
-                size_t warp_index = hipThreadIdx_x / _warp_size;
+                size_t warp_index = hipThreadIdx_x / WF_SIZE;
                 size_t block_index = hipBlockIdx_x;
                 auto *elem = warp_matrix->access(warp_index, block_index);
                 *elem = block.lane_id();
@@ -105,7 +105,7 @@ class BitwiseDeviceMethods
         Block block {};
         if (activate_lane_helper(lanes_bitfield)) {
             auto lane_id = block.lane_id();
-            size_t warp_index = hipThreadIdx_x / _warp_size;
+            size_t warp_index = hipThreadIdx_x / WF_SIZE;
             size_t block_index = hipBlockIdx_x;
             auto *elem = warp_matrix->access(warp_index, block_index);
             *elem = lane_id;
@@ -120,7 +120,7 @@ class BitwiseDeviceMethods
         Block block {};
         if (activate_lane_helper(lanes_bitfield)) {
             auto number_active_lanes = block.number_active_lanes();
-            size_t warp_index = hipThreadIdx_x / _warp_size;
+            size_t warp_index = hipThreadIdx_x / WF_SIZE;
             size_t block_index = hipBlockIdx_x;
             auto *elem = warp_matrix->access(warp_index, block_index);
             *elem = number_active_lanes;
@@ -139,7 +139,7 @@ class BitwiseDeviceMethods
                 value = 42;
             }
             value = block.broadcast_up(value);
-            size_t warp_index = hipThreadIdx_x / _warp_size;
+            size_t warp_index = hipThreadIdx_x / WF_SIZE;
             size_t block_index = hipBlockIdx_x;
             auto *elem = warp_matrix->access(warp_index, block_index);
             *elem = value;
@@ -155,7 +155,7 @@ class BitwiseDeviceMethods
         if (activate_lane_helper(lanes_bitfield)) {
             auto orig = block.fetch_incr(_fetch_value);
             if (block.is_lowest_active_lane()) {
-                size_t warp_index = hipThreadIdx_x / _warp_size;
+                size_t warp_index = hipThreadIdx_x / WF_SIZE;
                 size_t block_index = hipBlockIdx_x;
                 auto *elem = warp_matrix->access(warp_index, block_index);
                 *elem = orig;
@@ -172,7 +172,7 @@ class BitwiseDeviceMethods
         if (activate_lane_helper(lanes_bitfield)) {
             auto orig = block.fetch_incr(_fetch_value);
             if (block.active_logical_lane_id() == 1) {
-                size_t warp_index = hipThreadIdx_x / _warp_size;
+                size_t warp_index = hipThreadIdx_x / WF_SIZE;
                 size_t block_index = hipBlockIdx_x;
                 auto *elem = warp_matrix->access(warp_index, block_index);
                 *elem = orig;
@@ -201,7 +201,7 @@ class BitwiseDeviceMethods
          * warp_bit_id := 66 % 64
          * warp_bit_id := 2
          */
-        uint64_t warp_bit_id = hipThreadIdx_x % _warp_size;
+        uint64_t warp_bit_id = hipThreadIdx_x % WF_SIZE;
 
         /*
          * Example (continued):
@@ -224,20 +224,7 @@ class BitwiseDeviceMethods
         return is_an_active_lane;
     }
 
-    __device__
-    uint64_t
-    warp_size() const
-    {
-        return _warp_size;
-    }
-
     long long unsigned *_fetch_value = nullptr;
-
-  private:
-    /*************************************************************************
-     ********************** Implementation Variables *************************
-     *************************************************************************/
-    static constexpr uint64_t _warp_size = __AMDGCN_WAVEFRONT_SIZE;
 };
 
 /*****************************************************************************
@@ -287,7 +274,7 @@ class BitwiseTestFixture : public ::testing::Test
         _hip_allocator.allocate(reinterpret_cast<void**>(&_warp_matrix),
                                 sizeof(WarpMatrix));
 
-        size_t warps_per_block = ceil(float(_hip_block_dim.x) / _warp_size);
+        size_t warps_per_block = ceil(float(_hip_block_dim.x) / WF_SIZE);
 
         const ObjectStrategy *default_object_strategy =
                 DefaultObjectStrategy::instance()->get();
@@ -354,7 +341,6 @@ class BitwiseTestFixture : public ::testing::Test
     dim3 _hip_block_dim {};
     dim3 _hip_grid_dim {};
     HIPAllocator _hip_allocator {};
-    static constexpr uint64_t _warp_size = __AMDGCN_WAVEFRONT_SIZE;
     WarpMatrix *_warp_matrix = nullptr;
     BitwiseDeviceMethods *_device_methods = nullptr;
 };

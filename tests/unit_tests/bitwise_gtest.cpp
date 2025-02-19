@@ -88,7 +88,7 @@ __global__ void activate_lane_helper_kernel(
    * Index into warp matrix to save return value to be read by host.
    */
   if (is_an_active_lane) {
-    size_t warp_index = hipThreadIdx_x / device_methods->warp_size();
+    size_t warp_index = hipThreadIdx_x / WF_SIZE;
     size_t block_index = hipBlockIdx_x;
     auto *elem = warp_matrix->access(warp_index, block_index);
     *elem = hipThreadIdx_x;
@@ -145,7 +145,7 @@ TEST_F(BitwiseTestFixture, verify_host_warp_matrix_init_1024_8) {
 TEST_F(BitwiseTestFixture, verify_warp_size_64) {
   setup_fixture({1, 1, 1}, {1, 1, 1});
 
-  ASSERT_EQ(_warp_size, 64);
+  ASSERT_EQ(WF_SIZE, 64);
 }
 
 /*****************************************************************************
@@ -1400,7 +1400,7 @@ TEST_F(BitwiseTestFixture, fetch_incr_kernel_4_1) {
   for (size_t i = 0; i < _warp_matrix->rows(); i++) {
     for (size_t j = 0; j < _warp_matrix->columns(); j++) {
       auto *elem = _warp_matrix->access(i, j);
-      ASSERT_EQ(*elem % _warp_size, 0);
+      ASSERT_EQ(*elem % WF_SIZE, 0);
     }
   }
 }
@@ -1424,7 +1424,7 @@ TEST_F(BitwiseTestFixture, fetch_incr_kernel_64_1) {
   for (size_t i = 0; i < _warp_matrix->rows(); i++) {
     for (size_t j = 0; j < _warp_matrix->columns(); j++) {
       auto *elem = _warp_matrix->access(i, j);
-      ASSERT_EQ(*elem % _warp_size, 0);
+      ASSERT_EQ(*elem % WF_SIZE, 0);
     }
   }
 }
@@ -1496,7 +1496,7 @@ TEST_F(BitwiseTestFixture, fetch_incr_kernel_1024_1024) {
   for (size_t i = 0; i < _warp_matrix->rows(); i++) {
     for (size_t j = 0; j < _warp_matrix->columns(); j++) {
       auto *elem = _warp_matrix->access(i, j);
-      ASSERT_EQ(*elem % _warp_size, 0);
+      ASSERT_EQ(*elem % WF_SIZE, 0);
     }
   }
 }
@@ -1520,7 +1520,7 @@ TEST_F(BitwiseTestFixture, fetch_incr_logical_1_kernel_1024_1024) {
   for (size_t i = 0; i < _warp_matrix->rows(); i++) {
     for (size_t j = 0; j < _warp_matrix->columns(); j++) {
       auto *elem = _warp_matrix->access(i, j);
-      ASSERT_EQ(*elem % _warp_size, 1);
+      ASSERT_EQ(*elem % WF_SIZE, 1);
     }
   }
 }
