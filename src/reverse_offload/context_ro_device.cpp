@@ -470,9 +470,9 @@ __device__ uint64_t active_logical_lane_id() {
 }
 
 __device__ uint64_t broadcast_lds(bool lowest_active, uint64_t value) {
-  constexpr size_t SIZE = 1024 / __AMDGCN_WAVEFRONT_SIZE;
+  constexpr size_t SIZE = 1024 / WF_SIZE;
   __shared__ uint64_t value_per_warp[SIZE];
-  auto wavefront_number {get_flat_block_id() / __AMDGCN_WAVEFRONT_SIZE};
+  auto wavefront_number {get_flat_block_id() / WF_SIZE};
   if (lowest_active) {
     value_per_warp[wavefront_number] = value;
     __threadfence_block();
@@ -481,7 +481,7 @@ __device__ uint64_t broadcast_lds(bool lowest_active, uint64_t value) {
 }
 
 __device__ uint64_t broadcast_shfl_up(uint64_t value) {
-  for (unsigned i{0}; i < __AMDGCN_WAVEFRONT_SIZE; i++) {
+  for (unsigned i{0}; i < WF_SIZE; i++) {
     uint64_t temp{__shfl_up(value, i)};
     if (temp) {
       value = temp;

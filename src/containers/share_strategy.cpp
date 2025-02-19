@@ -21,13 +21,9 @@
  *****************************************************************************/
 
 #include "share_strategy.hpp"
+#include "../constants.hpp"
 
 namespace rocshmem {
-
-/*
- * @brief The warp (wave-front) size.
- */
-static constexpr uint64_t WARP_SIZE = __AMDGCN_WAVEFRONT_SIZE;
 
 __device__ uint64_t Block::lane_id() {
   /*
@@ -202,7 +198,7 @@ __device__ uint64_t Block::active_logical_lane_id() {
 }
 
 __device__ uint64_t Block::broadcast_up(uint64_t fetch_value) {
-  for (unsigned i = 0; i < WARP_SIZE; i++) {
+  for (unsigned i = 0; i < WF_SIZE; i++) {
     uint64_t temp = __shfl_up(fetch_value, i);
     if (temp) {
       fetch_value = temp;
