@@ -22,17 +22,12 @@
 
 #include "sync_tester.hpp"
 
-#include <rocshmem/rocshmem.hpp>
-
-using namespace rocshmem;
-rocshmem_team_t team_sync_world_dup;
-
 /******************************************************************************
  * DEVICE TEST KERNEL
  *****************************************************************************/
 __global__ void SyncTest(int loop, int skip, long long int *start_time,
                          long long int *end_time, TestType type,
-                         ShmemContextType ctx_type, rocshmem_team_t team) {
+                         ShmemContextType ctx_type, rocshmem_team_t *teams) {
   __shared__ rocshmem_ctx_t ctx;
   int wg_id = get_flat_grid_id();
 
@@ -47,10 +42,16 @@ __global__ void SyncTest(int loop, int skip, long long int *start_time,
     __syncthreads();
     switch (type) {
       case SyncAllTestType:
-        rocshmem_ctx_wg_sync_all(ctx);
+        /**
+        * The function `rocshmem_ctx_wg_sync_all` should be called from only
+        * one group within the grid to avoid unintended behavior.
+        */
+        if (is_block_zero_in_grid()) {
+          rocshmem_ctx_wg_sync_all(ctx);
+        }
         break;
       case SyncTestType:
-        rocshmem_ctx_wg_team_sync(ctx, team);
+        rocshmem_ctx_wg_team_sync(ctx, teams[wg_id]);
         break;
       default:
         break;
@@ -69,11 +70,36 @@ __global__ void SyncTest(int loop, int skip, long long int *start_time,
 /******************************************************************************
  * HOST TESTER CLASS METHODS
  *****************************************************************************/
-SyncTester::SyncTester(TesterArguments args) : Tester(args) {}
+SyncTester::SyncTester(TesterArguments args) : Tester(args) {
 
-SyncTester::~SyncTester() {}
+  char* value{nullptr};
+  if ((value = getenv("ROCSHMEM_MAX_NUM_TEAMS"))) {
+    num_teams = atoi(value);
+  }
+
+  CHECK_HIP(hipMalloc(&team_sync_world_dup,
+                      sizeof(rocshmem_team_t) * num_teams));
+}
+
+SyncTester::~SyncTester() {
+  CHECK_HIP(hipFree(team_sync_world_dup));
+}
 
 void SyncTester::resetBuffers(uint64_t size) {}
+
+void SyncTester::preLaunchKernel() {
+  int n_pes = rocshmem_team_n_pes(ROCSHMEM_TEAM_WORLD);
+
+  for (int team_i = 0; team_i < num_teams; team_i++) {
+    team_sync_world_dup[team_i] = ROCSHMEM_TEAM_INVALID;
+    rocshmem_team_split_strided(ROCSHMEM_TEAM_WORLD, 0, 1, n_pes, nullptr, 0,
+                                 &team_sync_world_dup[team_i]);
+    if (team_sync_world_dup[team_i] == ROCSHMEM_TEAM_INVALID) {
+      printf("Team %d is invalid!\n", team_i);
+      abort();
+    }
+  }
+}
 
 void SyncTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
                               uint64_t size) {
@@ -81,16 +107,23 @@ void SyncTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
 
   int n_pes = rocshmem_team_n_pes(ROCSHMEM_TEAM_WORLD);
 
-  team_sync_world_dup = ROCSHMEM_TEAM_INVALID;
-  rocshmem_team_split_strided(ROCSHMEM_TEAM_WORLD, 0, 1, n_pes, nullptr, 0,
-                               &team_sync_world_dup);
-
   hipLaunchKernelGGL(SyncTest, gridSize, blockSize, shared_bytes, stream, loop,
                      args.skip, start_time, end_time, _type, _shmem_context,
                      team_sync_world_dup);
 
-  num_msgs = (loop + args.skip) * gridSize.x;
+  num_msgs = loop + args.skip;
   num_timed_msgs = loop;
+
+  if(_type == SyncTestType) {
+    num_msgs *= gridSize.x;
+    num_timed_msgs *= gridSize.x;
+  }
+}
+
+void SyncTester::postLaunchKernel() {
+  for (int team_i = 0; team_i < num_teams; team_i++) {
+    rocshmem_team_destroy(team_sync_world_dup[team_i]);
+  }
 }
 
 void SyncTester::verifyResults(uint64_t size) {}
