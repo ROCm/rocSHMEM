@@ -36,9 +36,17 @@ class HdpProxy {
   /*
    * Placement new the memory which is allocated by proxy_
    */
-  HdpProxy() {
+  HdpProxy(size_t num_elems = 1) : proxy_{num_elems} {
     new (proxy_.get()) HdpPolicy();
   }
+
+  HdpProxy(const HdpProxy& other) = delete;
+
+  HdpProxy& operator=(const HdpProxy& other) = delete;
+
+  HdpProxy(HdpProxy&& other) = default;
+
+  HdpProxy& operator=(HdpProxy&& other) = default;
 
   /*
    * Since placement new is called in the constructor, then

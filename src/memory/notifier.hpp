@@ -101,9 +101,17 @@ class NotifierProxy {
   using ProxyT = DeviceProxy<ALLOCATOR, Notifier<scope>>;
 
  public:
-  NotifierProxy() {
+  NotifierProxy(size_t num_elems = 1) : proxy_{num_elems} {
     new (proxy_.get()) Notifier<scope>();
   }
+
+  NotifierProxy(const NotifierProxy& other) = delete;
+
+  NotifierProxy& operator=(const NotifierProxy& other) = delete;
+
+  NotifierProxy(NotifierProxy&& other) = default;
+
+  NotifierProxy& operator=(NotifierProxy&& other) = default;
 
   ~NotifierProxy() {
     proxy_.get()->~Notifier<scope>();

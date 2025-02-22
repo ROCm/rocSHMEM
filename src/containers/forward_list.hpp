@@ -486,9 +486,19 @@ std::string to_string(const ForwardList<TYPE, ALLOC>& list);
 
 template <typename ALLOC, typename TYPE>
 class ForwardListProxy {
-  using ProxyT = DeviceProxy<ALLOC, ForwardList<TYPE, ALLOC>, 1>;
+  using ProxyT = DeviceProxy<ALLOC, ForwardList<TYPE, ALLOC>>;
 
  public:
+  ForwardList(size_t num_elems = 1) : proxy_{num_elems} {}
+
+  ForwardList(const ForwardList& other) = delete;
+
+  ForwardList& operator=(const ForwardList& other) = delete;
+
+  ForwardList(ForwardList&& other) = default;
+
+  ForwardList& operator=(ForwardList&& other) = default;
+
   __host__ __device__ ForwardList<TYPE, ALLOC>* get() { return proxy_.get(); }
 
  private:

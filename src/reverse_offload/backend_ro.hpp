@@ -255,6 +255,21 @@ class ROBackend : public Backend {
    * @brief Holds maximum number of contexts used in library
    */
   size_t maximum_num_contexts_{1024};
+
+  /**
+   * @brief Holds maximum threads per work-group
+  */
+  int max_wg_size_{};
+
+  /**
+   * @brief Holds the queue size for each context
+  */
+  size_t queue_size_{512};
+
+  /**
+   * @brief Number of MPI windows used for device contexts in RO Backend
+   */
+  size_t num_windows_{32};
 };
 
 }  // namespace rocshmem

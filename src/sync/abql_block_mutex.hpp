@@ -111,9 +111,19 @@ class ABQLBlockMutex {
 
 template <typename ALLOCATOR>
 class ABQLBlockMutexProxy {
-  using ProxyT = DeviceProxy<ALLOCATOR, ABQLBlockMutex, 1>;
+  using ProxyT = DeviceProxy<ALLOCATOR, ABQLBlockMutex>;
 
  public:
+  ABQLBlockMutexProxy(size_t num_elems = 1) : proxy_{num_elems} {}
+
+  ABQLBlockMutexProxy(const ABQLBlockMutexProxy& other) = delete;
+
+  ABQLBlockMutexProxy& operator=(const ABQLBlockMutexProxy& other) = delete;
+
+  ABQLBlockMutexProxy(ABQLBlockMutexProxy&& other) = default;
+
+  ABQLBlockMutexProxy& operator=(ABQLBlockMutexProxy&& other) = default;
+
   __host__ __device__ ABQLBlockMutex* get() { return proxy_.get(); }
 
  private:

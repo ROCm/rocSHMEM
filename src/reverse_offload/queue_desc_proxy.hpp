@@ -58,25 +58,35 @@ typedef struct queue_desc {
 
 template <typename ALLOCATOR>
 class QueueDescProxy {
-  static constexpr size_t MAX_NUM_BLOCKS{65536};
-  static constexpr size_t MAX_THREADS_PER_BLOCK{1024};
-  static constexpr size_t MAX_THREADS{MAX_NUM_BLOCKS * MAX_THREADS_PER_BLOCK};
-  using ProxyT = DeviceProxy<ALLOCATOR, queue_desc_t, MAX_NUM_BLOCKS>;
-  using ProxyStatusT = DeviceProxy<ALLOCATOR, char, MAX_THREADS>;
+  using ProxyT = DeviceProxy<ALLOCATOR, queue_desc_t>;
+  using ProxyStatusT = DeviceProxy<ALLOCATOR, char>;
 
  public:
-  QueueDescProxy() {
+  QueueDescProxy() = default;
+
+  QueueDescProxy(size_t max_queues, size_t max_threads_per_queue)
+    : max_queues_{max_queues}, max_threads_per_queue_{max_threads_per_queue},
+      max_threads_{max_queues * max_threads_per_queue}, proxy_{max_queues},
+      proxy_status_{max_queues * max_threads_per_queue} {
     auto *status{proxy_status_.get()};
-    size_t status_bytes{sizeof(char) * MAX_THREADS};
+    size_t status_bytes{sizeof(char) * max_threads_};
     memset(status, 0, status_bytes);
 
     auto *queue_descs{proxy_.get()};
-    for (size_t i{0}; i < MAX_NUM_BLOCKS; i++) {
+    for (size_t i{0}; i < max_queues_; i++) {
       queue_descs[i].read_index = 0;
       queue_descs[i].write_index = 0;
-      queue_descs[i].status = status + i * MAX_THREADS_PER_BLOCK;
+      queue_descs[i].status = status + i * max_threads_per_queue_;
     }
   }
+
+  QueueDescProxy(const QueueDescProxy& other) = delete;
+
+  QueueDescProxy& operator=(const QueueDescProxy& other) = delete;
+
+  QueueDescProxy(QueueDescProxy&& other) = default;
+
+  QueueDescProxy& operator=(QueueDescProxy&& other) = default;
 
   __host__ __device__ queue_desc_t *get() { return proxy_.get(); }
 
@@ -84,6 +94,12 @@ class QueueDescProxy {
   ProxyT proxy_{};
 
   ProxyStatusT proxy_status_{};
+
+  size_t max_queues_{};
+
+  size_t max_threads_per_queue_{};
+
+  size_t max_threads_{};
 };
 
 using QueueDescProxyT = QueueDescProxy<HIPDefaultFinegrainedAllocator>;

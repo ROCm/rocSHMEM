@@ -33,8 +33,22 @@ Queue::Queue() {
   }
 }
 
+Queue::Queue(size_t max_queues, size_t max_wg_size, size_t queue_size)
+    : max_queues_{max_queues},
+      max_wg_size_{max_wg_size},
+      queue_size_{queue_size},
+      queue_proxy_{max_queues, queue_size},
+      queue_desc_proxy_{max_queues, max_wg_size} {
+
+  gpu_queue = true;
+  char *value{nullptr};
+  if ((value = getenv("RO_NET_CPU_QUEUE")) != nullptr) {
+    gpu_queue = false;
+  }
+}
+
 uint64_t Queue::get_read_index(uint64_t queue_index) {
-  return descriptor(queue_index)->read_index % QUEUE_SIZE;
+  return descriptor(queue_index)->read_index % queue_size_;
 }
 
 void Queue::increment_read_index(uint64_t queue_index) {
@@ -92,7 +106,7 @@ void Queue::notify(int blockId, int threadId) {
 }
 
 uint64_t Queue::size() {
-  return QUEUE_SIZE;
+  return queue_size_;
 }
 
 __host__ __device__ queue_desc_t* Queue::descriptor(uint64_t index) {

@@ -39,13 +39,23 @@ class ROTeamProxy {
   /*
    * Placement new the memory which is allocated by proxy_
    */
-  ROTeamProxy(Backend* backend, MPI_Comm comm, int pe, int npes)
-      : my_pe_(pe), team_size_(npes) {
+  ROTeamProxy(Backend* backend, MPI_Comm comm, int pe, int npes,
+              size_t num_elems = 1)
+    : my_pe_(pe), team_size_(npes), proxy_{num_elems} {
+
     MPI_Comm_dup(comm, &team_world_comm_);
 
     new (proxy_.get()) ROTeam(backend, wrt_parent_.get(), wrt_world_.get(),
                               team_size_, my_pe_, team_world_comm_);
   }
+
+  ROTeamProxy(const ROTeamProxy& other) = delete;
+
+  ROTeamProxy& operator=(const ROTeamProxy& other) = delete;
+
+  ROTeamProxy(ROTeamProxy&& other) = default;
+
+  ROTeamProxy& operator=(ROTeamProxy&& other) = default;
 
   /*
    * Since placement new is called in the constructor, then

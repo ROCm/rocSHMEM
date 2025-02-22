@@ -50,7 +50,7 @@ __host__ ROContext::ROContext(Backend *b, size_t block_id)
     auto block_base{backend->block_handle_proxy_.get()};
     block_handle = &block_base[block_id];
   }
-  ro_net_win_id = block_id % backend->ro_window_proxy_->MAX_NUM_WINDOWS;
+  ro_net_win_id = block_id % backend->ro_window_proxy_->get_num_MPI_windows();
 
   ipcImpl_.ipc_bases = b->ipcImpl.ipc_bases;
   ipcImpl_.shm_size = b->ipcImpl.shm_size;

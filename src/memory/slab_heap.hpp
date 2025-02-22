@@ -160,13 +160,23 @@ class SlabHeap {
 
 template <typename ALLOCATOR>
 class SlabHeapProxy {
-  using ProxyT = DeviceProxy<ALLOCATOR, SlabHeap, 1>;
+  using ProxyT = DeviceProxy<ALLOCATOR, SlabHeap>;
 
  public:
   /*
    * Placement new the memory which is allocated by proxy_
    */
-  SlabHeapProxy() { new (proxy_.get()) SlabHeap(); }
+  SlabHeapProxy(size_t num_elems = 1) : proxy_{num_elems} {
+    new (proxy_.get()) SlabHeap();
+  }
+
+  SlabHeapProxy(const SlabHeapProxy& other) = delete;
+
+  SlabHeapProxy& operator=(const SlabHeapProxy& other) = delete;
+
+  SlabHeapProxy(SlabHeapProxy&& other) = default;
+
+  SlabHeapProxy& operator=(SlabHeapProxy&& other) = default;
 
   /*
    * Since placement new is called in the constructor, then

@@ -51,13 +51,13 @@ typedef NullStats<RO_NUM_STATS> ROStats;
 
 template <typename ALLOCATOR>
 class ProfilerProxy {
-  static constexpr size_t MAX_NUM_BLOCKS{65536};
-
-  using ProxyT = DeviceProxy<ALLOCATOR, ROStats, MAX_NUM_BLOCKS>;
+  using ProxyT = DeviceProxy<ALLOCATOR, ROStats>;
 
  public:
-  explicit ProfilerProxy(size_t num_blocks) : num_elem_{num_blocks} {
-    assert(num_blocks <= MAX_NUM_BLOCKS);
+  ProfilerProxy() = default;
+
+  explicit ProfilerProxy(size_t num_blocks)
+    : num_elem_{num_blocks}, proxy_{num_blocks} {
 
     auto *stat{proxy_.get()};
     assert(stat);
@@ -67,6 +67,14 @@ class ProfilerProxy {
       new (stat + i) ROStats();
     }
   }
+
+  ProfilerProxy(const ProfilerProxy& other) = delete;
+
+  ProfilerProxy& operator=(const ProfilerProxy& other) = delete;
+
+  ProfilerProxy(ProfilerProxy&& other) = default;
+
+  ProfilerProxy& operator=(ProfilerProxy&& other) = default;
 
   ~ProfilerProxy() {
     auto *stat{proxy_.get()};

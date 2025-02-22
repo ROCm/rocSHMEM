@@ -42,8 +42,9 @@ class DefaultContextProxy {
   /*
    * Placement new the memory which is allocated by proxy_
    */
-  explicit DefaultContextProxy(ROBackend* backend, TeamInfo *tinfo)
-  : constructed_{true} {
+  explicit DefaultContextProxy(ROBackend* backend, TeamInfo *tinfo,
+                               size_t num_elems = 1)
+  : constructed_{true}, proxy_{num_elems} {
     auto ctx{proxy_.get()};
     new (ctx) ROContext(reinterpret_cast<Backend*>(backend), -1);
     rocshmem_ctx_t local{ctx, tinfo};
@@ -86,54 +87,6 @@ class DefaultContextProxy {
 };
 
 using DefaultContextProxyT = DefaultContextProxy<HIPAllocator>;
-
-template <typename ALLOCATOR>
-class BlockContextProxy {
-  static constexpr size_t MAX_NUM_BLOCKS{65536};
-  using ProxyT = DeviceProxy<ALLOCATOR, ROContext, MAX_NUM_BLOCKS>;
-
- public:
-  BlockContextProxy() = default;
-
-  explicit BlockContextProxy(ROBackend* backend) : constructed_{true} {
-    auto* ctx{proxy_.get()};
-    for (size_t i{0}; i < MAX_NUM_BLOCKS; i++) {
-      auto ctx_p{&ctx[i]};
-      new (ctx_p) ROContext(reinterpret_cast<Backend*>(backend), i);
-    }
-  }
-
-  ~BlockContextProxy() {
-    if (constructed_) {
-      auto* ctx{proxy_.get()};
-      for (size_t i{0}; i < MAX_NUM_BLOCKS; i++) {
-        auto ctx_p{&ctx[i]};
-        ctx_p->~ROContext();
-      }
-    }
-  }
-
-  BlockContextProxy(const BlockContextProxy& other) = delete;
-
-  BlockContextProxy& operator=(const BlockContextProxy& other) = delete;
-
-  BlockContextProxy(BlockContextProxy&& other) = default;
-
-  BlockContextProxy& operator=(BlockContextProxy&& other) = default;
-
-  __host__ __device__ Context* get() { return proxy_.get(); }
-
- private:
-  /*
-   * @brief Memory managed by the lifetime of this object
-   */
-  ProxyT proxy_{};
-
-  /*
-   * @brief denotes if an objects was constructed in proxy
-   */
-  bool constructed_{false};
-};
 
 }  // namespace rocshmem
 

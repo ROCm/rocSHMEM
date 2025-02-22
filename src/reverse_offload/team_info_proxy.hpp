@@ -36,9 +36,18 @@ class TeamInfoProxy {
   /*
    * Placement new the memory which is allocated by proxy_
    */
-  TeamInfoProxy(Team* parent_team, int pe_start, int stride, int size) {
+  TeamInfoProxy(Team* parent_team, int pe_start, int stride, int size,
+    size_t num_elems = 1) : proxy_{num_elems} {
     new (proxy_.get()) TeamInfo(parent_team, pe_start, stride, size);
   }
+
+  TeamInfoProxy(const TeamInfoProxy& other) = delete;
+
+  TeamInfoProxy& operator=(const TeamInfoProxy& other) = delete;
+
+  TeamInfoProxy(TeamInfoProxy&& other) = default;
+
+  TeamInfoProxy& operator=(TeamInfoProxy&& other) = default;
 
   /*
    * Since placement new is called in the constructor, then
