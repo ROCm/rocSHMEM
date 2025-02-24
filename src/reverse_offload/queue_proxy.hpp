@@ -35,8 +35,6 @@
 
 namespace rocshmem {
 
-// constexpr size_t QUEUE_SIZE{512};
-
 struct cacheline_t {
   volatile char valid;
   volatile char padding[63];
