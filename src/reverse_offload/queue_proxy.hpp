@@ -35,8 +35,6 @@
 
 namespace rocshmem {
 
-constexpr size_t QUEUE_SIZE{512};
-
 struct cacheline_t {
   volatile char valid;
   volatile char padding[63];
@@ -82,7 +80,17 @@ class QueueElementProxy {
   using ProxyT = DeviceProxy<ALLOCATOR, queue_element_t>;
 
  public:
-  QueueElementProxy() { new (proxy_.get()) queue_element_t(); }
+  QueueElementProxy(size_t num_elems = 1) : proxy_{num_elems} {
+    new (proxy_.get()) queue_element_t();
+  }
+
+  QueueElementProxy(const QueueElementProxy& other) = delete;
+
+  QueueElementProxy& operator=(const QueueElementProxy& other) = delete;
+
+  QueueElementProxy(QueueElementProxy&& other) = default;
+
+  QueueElementProxy& operator=(QueueElementProxy&& other) = default;
 
   ~QueueElementProxy() { proxy_.get()->~queue_element_t(); }
 
@@ -96,11 +104,8 @@ using QueueElementProxyT = QueueElementProxy<PosixAligned64Allocator>;
 
 template <typename ALLOCATOR>
 class QueueProxy {
-  static constexpr size_t MAX_NUM_BLOCKS{65536};
-  static constexpr size_t TOTAL_QUEUE_ELEMENTS{QUEUE_SIZE * MAX_NUM_BLOCKS};
-  using ProxyT = DeviceProxy<ALLOCATOR, queue_element_t *, MAX_NUM_BLOCKS>;
-  using ProxyPerBlockT =
-      DeviceProxy<ALLOCATOR, queue_element_t, TOTAL_QUEUE_ELEMENTS>;
+  using ProxyT = DeviceProxy<ALLOCATOR, queue_element_t *>;
+  using ProxyPerBlockT = DeviceProxy<ALLOCATOR, queue_element_t>;
 
  public:
   /**
@@ -109,16 +114,31 @@ class QueueProxy {
    * The circular queues are indexed using the device block-id so that each
    * each block has its own queue.
    */
-  QueueProxy() {
+  QueueProxy() = default;
+
+  QueueProxy(size_t max_queues, size_t queue_size)
+    : max_queues_{max_queues}, queue_size_{queue_size},
+      total_queue_elements_{queue_size * max_queues},
+      queue_proxy_{max_queues},
+      per_block_queue_proxy_{queue_size * max_queues} {
+
     auto **queue_array{queue_proxy_.get()};
     auto *per_block_queue{per_block_queue_proxy_.get()};
-    for (size_t i{0}; i < MAX_NUM_BLOCKS; i++) {
-      queue_array[i] = per_block_queue + i * QUEUE_SIZE;
+    for (size_t i{0}; i < max_queues_; i++) {
+      queue_array[i] = per_block_queue + i * queue_size;
     }
     size_t total_queue_element_bytes{sizeof(queue_element_t) *
-                                     TOTAL_QUEUE_ELEMENTS};
+                                     total_queue_elements_};
     memset(per_block_queue, 0, total_queue_element_bytes);
   }
+
+  QueueProxy(const QueueProxy& other) = delete;
+
+  QueueProxy& operator=(const QueueProxy& other) = delete;
+
+  QueueProxy(QueueProxy&& other) = default;
+
+  QueueProxy& operator=(QueueProxy&& other) = default;
 
   __host__ __device__ queue_element_t **get() { return queue_proxy_.get(); }
 
@@ -126,6 +146,12 @@ class QueueProxy {
   ProxyT queue_proxy_{};
 
   ProxyPerBlockT per_block_queue_proxy_{};
+
+  size_t max_queues_{};
+
+  size_t queue_size_{};
+
+  size_t total_queue_elements_{};
 };
 
 using QueueProxyT = QueueProxy<HIPHostAllocator>;

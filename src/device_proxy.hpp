@@ -30,21 +30,28 @@
 
 namespace rocshmem {
 
-template <typename ALLOCATOR, typename T, size_t SIZE_IN = 1>
+template <typename ALLOCATOR, typename T>
 class DeviceProxy {
  public:
-  DeviceProxy() {
+  DeviceProxy() = default;
+
+  DeviceProxy(size_t num_elems) : num_elems_ {num_elems} {
+    /**
+     * @brief The allocation size of the internal memory
+     *
+    */
+    size_t size_bytes = sizeof(T) * num_elems_;
     /*
      * Allocate memory and verify that the allocation worked.
      */
     T* temp{nullptr};
-    allocator_.allocate(reinterpret_cast<void**>(&temp), SIZE_BYTES_);
+    allocator_.allocate(reinterpret_cast<void**>(&temp), size_bytes);
     assert(temp);
 
     /*
      * Default memory provided by the allocation to recognizable bytes.
      */
-    memset(static_cast<void*>(temp), 0xBC, SIZE_BYTES_);
+    memset(static_cast<void*>(temp), 0xBC, size_bytes);
 
     /*
      * Pass the memory into a unique ptr for tracking.
@@ -57,6 +64,14 @@ class DeviceProxy {
      */
     ptr_ = up_.get();
   }
+
+  DeviceProxy(const DeviceProxy& other) = delete;
+
+  DeviceProxy& operator=(const DeviceProxy& other) = delete;
+
+  DeviceProxy(DeviceProxy&& other) = default;
+
+  DeviceProxy& operator=(DeviceProxy&& other) = default;
 
   /**
    * @brief Return internal storage tracked by the Proxy.
@@ -98,9 +113,9 @@ class DeviceProxy {
   T* ptr_{nullptr};
 
   /**
-   * @brief The allocation size for the internal memory
+   * @brief Number of elements of type T to be allocated
    */
-  static constexpr size_t SIZE_BYTES_{sizeof(T) * SIZE_IN};
+  size_t num_elems_{};
 };
 
 }  // namespace rocshmem

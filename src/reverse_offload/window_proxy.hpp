@@ -31,24 +31,31 @@ namespace rocshmem {
 
 template <typename ALLOCATOR>
 class WindowProxy {
- public:
-  static constexpr size_t MAX_NUM_WINDOWS{32};
-
  private:
-  using ProxyT = DeviceProxy<ALLOCATOR, WindowInfo *, MAX_NUM_WINDOWS>;
+  using ProxyT = DeviceProxy<ALLOCATOR, WindowInfo *>;
 
  public:
   /*
    * Placement new the memory which is allocated by proxy_
    */
-  WindowProxy(SymmetricHeap *heap, MPI_Comm comm) {
+  WindowProxy(SymmetricHeap *heap, MPI_Comm comm, size_t num_windows)
+    : num_windows_{num_windows}, proxy_{num_windows} {
+
     auto *window_info{proxy_.get()};
 
-    for (size_t i{0}; i < MAX_NUM_WINDOWS; i++) {
+    for (size_t i{0}; i < num_windows_; i++) {
       window_info[i] =
           new WindowInfo(comm, heap->get_local_heap_base(), heap->get_size());
     }
   }
+
+  WindowProxy(const WindowProxy& other) = delete;
+
+  WindowProxy& operator=(const WindowProxy& other) = delete;
+
+  WindowProxy(WindowProxy&& other) = default;
+
+  WindowProxy& operator=(WindowProxy&& other) = default;
 
   /*
    * Since placement new is called in the constructor, then
@@ -57,7 +64,7 @@ class WindowProxy {
   ~WindowProxy() {
     auto *window_info{proxy_.get()};
 
-    for (size_t i{0}; i < MAX_NUM_WINDOWS; i++) {
+    for (size_t i{0}; i < num_windows_; i++) {
       delete window_info[i];
     }
   }
@@ -67,11 +74,17 @@ class WindowProxy {
    */
   __host__ __device__ WindowInfo **get() { return proxy_.get(); }
 
+  __host__ size_t get_num_MPI_windows() { return num_windows_; }
  private:
   /*
    * @brief Memory managed by the lifetime of this object
    */
   ProxyT proxy_{};
+
+  /**
+   * @brief Number of MPI windows used for device contexts in RO Backend
+   */
+  size_t num_windows_{32};
 };
 
 using WindowProxyT = WindowProxy<HostAllocator>;

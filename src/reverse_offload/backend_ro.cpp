@@ -45,7 +45,7 @@ namespace rocshmem {
 extern rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
 ROBackend::ROBackend(MPI_Comm comm)
-    : profiler_proxy_(MAX_NUM_BLOCKS), Backend() {
+    : Backend() {
   type = BackendType::RO_BACKEND;
 
   if (auto maximum_num_contexts_str = getenv("ROCSHMEM_MAX_NUM_CONTEXTS")) {
@@ -53,6 +53,18 @@ ROBackend::ROBackend(MPI_Comm comm)
     sstream >> maximum_num_contexts_;
   }
   poll_block_count_ = maximum_num_contexts_;
+
+  profiler_proxy_ = ProfilerProxyT(maximum_num_contexts_);
+
+  int device_id;
+  hipDeviceProp_t device_props;
+
+  CHECK_HIP(hipGetDevice(&device_id));
+  CHECK_HIP(hipGetDeviceProperties(&device_props, device_id));
+
+  max_wg_size_ = device_props.maxThreadsPerBlock;
+
+  queue_ = Queue(maximum_num_contexts_, max_wg_size_, queue_size_);
 
   transport_ = new MPITransport(comm, &queue_);
   num_pes = transport_->getNumPes();
@@ -68,16 +80,18 @@ ROBackend::ROBackend(MPI_Comm comm)
 
   bp->heap_ptr = &heap;
 
-  ro_window_proxy_ = new WindowProxyT(&heap, transport_->get_world_comm());
+  ro_window_proxy_ = new WindowProxyT(&heap, transport_->get_world_comm(),
+                                      num_windows_);
+
   bp->heap_window_info = ro_window_proxy_->get();
 
   initIPC();
 
-  init_g_ret(&heap, transport_->get_world_comm(), MAX_NUM_BLOCKS, &bp->g_ret);
+  init_g_ret(&heap, transport_->get_world_comm(), maximum_num_contexts_, &bp->g_ret);
 
-  allocate_atomic_region(&bp->atomic_ret, MAX_NUM_BLOCKS);
+  allocate_atomic_region(&bp->atomic_ret, maximum_num_contexts_);
 
-  transport_->initTransport(MAX_NUM_BLOCKS, &backend_proxy);
+  transport_->initTransport(maximum_num_contexts_, &backend_proxy);
 
   host_interface = transport_->host_interface;
 
@@ -99,7 +113,8 @@ ROBackend::ROBackend(MPI_Comm comm)
   default_context_proxy_ = DefaultContextProxyT(this, tinfo);
 
   block_handle_proxy_ = BlockHandleProxyT(bp->g_ret, bp->atomic_ret, &queue_,
-                                          &ipcImpl, hdp_proxy_.get());
+                                          &ipcImpl, hdp_proxy_.get(),
+                                          maximum_num_contexts_);
   setup_ctxs();
 
   worker_thread = std::thread(&ROBackend::ro_net_poll, this);

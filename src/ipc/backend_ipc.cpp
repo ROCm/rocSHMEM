@@ -221,7 +221,7 @@ void IPCBackend::create_new_team([[maybe_unused]] Team *parent_team,
 
   /**
    * Allocate device-side memory for team_world and
-   * construct a GPU_IB team in it
+   * construct a IPC team in it
    */
   GPUIBTeam *new_team_obj;
   CHECK_HIP(hipMalloc(&new_team_obj, sizeof(IPCTeam)));

@@ -262,7 +262,17 @@ class FreeListProxy {
  public:
   __host__ __device__ FreeListT* get() { return proxy_.get(); }
 
-  FreeListProxy() { new (proxy_.get()) FreeListT(); }
+  FreeListProxy(size_t num_elems = 1) : proxy_{num_elems} {
+    new (proxy_.get()) FreeListT();
+  }
+
+  FreeListProxy(const FreeListProxy& other) = delete;
+
+  FreeListProxy& operator=(const FreeListProxy& other) = delete;
+
+  FreeListProxy(FreeListProxy&& other) = default;
+
+  FreeListProxy& operator=(FreeListProxy&& other) = default;
 
   ~FreeListProxy() {
     auto free_list = proxy_.get();

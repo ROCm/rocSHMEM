@@ -51,7 +51,9 @@ class BackendProxy {
   /*
    * Placement new the memory which is allocated by proxy_
    */
-  BackendProxy() { new (proxy_.get()) BackendRegister(); }
+  BackendProxy(size_t num_elems = 1) : proxy_{num_elems} {
+    new (proxy_.get()) BackendRegister();
+  }
 
   /*
    * Since placement new is called in the constructor, then

@@ -41,8 +41,9 @@ class IPCDefaultContextProxy {
   /*
    * Placement new the memory which is allocated by proxy_
    */
-  explicit IPCDefaultContextProxy(IPCBackend* backend, TeamInfo *tinfo)
-  : constructed_{true} {
+  explicit IPCDefaultContextProxy(IPCBackend* backend, TeamInfo *tinfo,
+                                  size_t num_elems = 1)
+  : constructed_{true}, proxy_{num_elems} {
     auto ctx{proxy_.get()};
     new (ctx) IPCContext(reinterpret_cast<Backend*>(backend));
     ctx->tinfo = tinfo;

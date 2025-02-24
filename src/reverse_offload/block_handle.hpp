@@ -33,7 +33,7 @@ namespace rocshmem {
 struct BlockHandle {
   ROStats profiler{};
   queue_element_t *queue{nullptr};
-  uint64_t queue_size{QUEUE_SIZE};
+  uint64_t queue_size{};
   volatile uint64_t read_index{};
   volatile uint64_t write_index{};
   volatile uint64_t *host_read_index{};
@@ -53,7 +53,10 @@ class DefaultBlockHandleProxy {
   DefaultBlockHandleProxy() = default;
 
   DefaultBlockHandleProxy(char *g_ret, atomic_ret_t *atomic_ret, Queue *queue,
-                          IpcImpl *ipc_policy, HdpPolicy *hdp_policy) {
+                          IpcImpl *ipc_policy, HdpPolicy *hdp_policy,
+                          size_t num_elems = 1)
+    : proxy_{num_elems} {
+
     // TODO(bpotter): create a default queue for this queue descriptor
     auto queue_descriptor{queue->descriptor(0)};
     auto block_handle{proxy_.get()};
@@ -73,6 +76,14 @@ class DefaultBlockHandleProxy {
     block_handle->lock = 0;
   }
 
+  DefaultBlockHandleProxy(const DefaultBlockHandleProxy& other) = delete;
+
+  DefaultBlockHandleProxy& operator=(const DefaultBlockHandleProxy& other) = delete;
+
+  DefaultBlockHandleProxy(DefaultBlockHandleProxy&& other) = default;
+
+  DefaultBlockHandleProxy& operator=(DefaultBlockHandleProxy&& other) = default;
+
   __host__ __device__ BlockHandle *get() { return proxy_.get(); }
 
  private:
@@ -83,15 +94,17 @@ using DefaultBlockHandleProxyT = DefaultBlockHandleProxy<HIPAllocator>;
 
 template <typename ALLOCATOR>
 class BlockHandleProxy {
-  static constexpr size_t MAX_NUM_BLOCKS{65536};
-  using ProxyT = DeviceProxy<ALLOCATOR, BlockHandle, MAX_NUM_BLOCKS>;
+  using ProxyT = DeviceProxy<ALLOCATOR, BlockHandle>;
 
  public:
   BlockHandleProxy() = default;
 
   BlockHandleProxy(char *g_ret, atomic_ret_t *atomic_ret, Queue *queue,
-                   IpcImpl *ipc_policy, HdpPolicy *hdp_policy) {
-    for (size_t i{0}; i < MAX_NUM_BLOCKS; i++) {
+                   IpcImpl *ipc_policy, HdpPolicy *hdp_policy,
+                   size_t max_blocks)
+    : proxy_{max_blocks} {
+
+    for (size_t i{0}; i < max_blocks; i++) {
       auto queue_descriptor{queue->descriptor(i)};
       auto block_handle{&proxy_.get()[i]};
       block_handle->profiler.resetStats();
@@ -111,10 +124,20 @@ class BlockHandleProxy {
     }
   }
 
+  BlockHandleProxy(const BlockHandleProxy& other) = delete;
+
+  BlockHandleProxy& operator=(const BlockHandleProxy& other) = delete;
+
+  BlockHandleProxy(BlockHandleProxy&& other) = default;
+
+  BlockHandleProxy& operator=(BlockHandleProxy&& other) = default;
+
   __host__ __device__ BlockHandle *get() { return proxy_.get(); }
 
  private:
   ProxyT proxy_{};
+
+  size_t num_blocks_{};
 };
 
 using BlockHandleProxyT = BlockHandleProxy<HIPAllocator>;
