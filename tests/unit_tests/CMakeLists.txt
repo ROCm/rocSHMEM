@@ -94,6 +94,7 @@ target_sources(
     ipc_impl_simple_coarse_gtest.cpp
     ipc_impl_simple_fine_gtest.cpp
     ipc_impl_tiled_fine_gtest.cpp
+    wavefront_size_gtest.cpp
 )
 
 ###############################################################################
