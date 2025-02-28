@@ -55,6 +55,7 @@ class ROHostContext;
  * the host (which is an inversion of the normal behavior).
  */
 class ROBackend : public Backend {
+  using RetBufferProxyT = DeviceProxy<HIPAllocator, uint64_t>;
 
  public:
   /**
@@ -269,6 +270,16 @@ class ROBackend : public Backend {
    * @brief Number of MPI windows used for device contexts in RO Backend
    */
   size_t num_windows_{32};
+
+  /**
+   * @brief Return buffer for rocshmem_g API
+   */
+  RetBufferProxyT g_ret_buffer_;
+
+  /**
+   * @brief Return buffer for rocshmem atomic return APIs
+   */
+  RetBufferProxyT atomic_ret_buffer_;
 };
 
 }  // namespace rocshmem

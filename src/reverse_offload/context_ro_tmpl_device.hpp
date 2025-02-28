@@ -179,12 +179,7 @@ __device__ T ROContext::g(const T *source, int pe) {
     ipcImpl_.ipcCopy(&dest, ipcImpl_.ipc_bases[pe] + L_offset, sizeof(T));
     return dest;
   } else {
-    int thread_id{get_flat_block_id()};
-    int block_size{get_flat_block_size()};
-    int offset{get_flat_grid_id() * block_size + thread_id};
-
-    char *base_dest{block_handle->g_ret};
-    char *dest{&base_dest[offset * sizeof(int64_t)]};
+    auto dest{get_g_ret_buf()};
     get<T>(reinterpret_cast<T *>(dest), source, 1, pe);
     return *(reinterpret_cast<T *>(dest));
   }
@@ -206,7 +201,7 @@ __device__ void ROContext::get_nbi(T *dest, const T *source, size_t nelems,
 
 template <typename T>
 __device__ T ROContext::amo_fetch_cas(void *dst, T value, T cond, int pe) {
-  auto source{get_unused_atomic()};
+  auto source{get_atomic_ret_buf()};
   build_queue_element(RO_NET_AMO_FCAS, dst, reinterpret_cast<T *>(source),
                       value, pe, 0, 0, 0,
                       reinterpret_cast<void *>(static_cast<long long>(cond)),
@@ -223,7 +218,7 @@ __device__ void ROContext::amo_cas(void *dst, T value, T cond, int pe) {
 
 template <typename T>
 __device__ T ROContext::amo_fetch_add(void *dst, T value, int pe) {
-  auto source{get_unused_atomic()};
+  auto source{get_atomic_ret_buf()};
   build_queue_element(RO_NET_AMO_FOP, dst, reinterpret_cast<T *>(source), value,
                       pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
                       ro_net_win_id, block_handle, true, ROCSHMEM_SUM,
@@ -239,7 +234,7 @@ __device__ void ROContext::amo_add(void *dst, T value, int pe) {
 
 template <typename T>
 __device__ T ROContext::amo_swap(void *dst, T value, int pe) {
-  auto source{get_unused_atomic()};
+  auto source{get_atomic_ret_buf()};
   build_queue_element(RO_NET_AMO_FOP, dst, reinterpret_cast<void *>(source),
                       value, pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
                       ro_net_win_id, block_handle, true, ROCSHMEM_REPLACE,
@@ -255,7 +250,7 @@ __device__ void ROContext::amo_set(void *dst, T value, int pe) {
 
 template <typename T>
 __device__ T ROContext::amo_fetch_and(void *dst, T value, int pe) {
-  auto source{get_unused_atomic()};
+  auto source{get_atomic_ret_buf()};
   build_queue_element(RO_NET_AMO_FOP, dst, reinterpret_cast<void *>(source),
                       value, pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
                       ro_net_win_id, block_handle, true, ROCSHMEM_AND,
@@ -271,7 +266,7 @@ __device__ void ROContext::amo_and(void *dst, T value, int pe) {
 
 template <typename T>
 __device__ T ROContext::amo_fetch_or(void *dst, T value, int pe) {
-  auto source{get_unused_atomic()};
+  auto source{get_atomic_ret_buf()};
   build_queue_element(RO_NET_AMO_FOP, dst, reinterpret_cast<void *>(source),
                       value, pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
                       ro_net_win_id, block_handle, true, ROCSHMEM_OR,
@@ -287,7 +282,7 @@ __device__ void ROContext::amo_or(void *dst, T value, int pe) {
 
 template <typename T>
 __device__ T ROContext::amo_fetch_xor(void *dst, T value, int pe) {
-  auto source{get_unused_atomic()};
+  auto source{get_atomic_ret_buf()};
   build_queue_element(RO_NET_AMO_FOP, dst, reinterpret_cast<void *>(source),
                       value, pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
                       ro_net_win_id, block_handle, true, ROCSHMEM_XOR,

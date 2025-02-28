@@ -251,7 +251,9 @@ class ROContext : public Context {
   __device__ uint64_t signal_fetch_wave(const uint64_t *sig_addr);
 
  private:
-  __device__ uint64_t *get_unused_atomic();
+  __device__ uint64_t *get_atomic_ret_buf();
+
+  __device__ uint64_t *get_g_ret_buf();
 
   BlockHandle *block_handle{nullptr};
 

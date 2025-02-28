@@ -663,11 +663,17 @@ __device__ void build_queue_element(
   }
 }
 
-__device__ uint64_t *ROContext::get_unused_atomic() {
-  auto index{atomicAdd(&block_handle->atomic_ret.atomic_counter, 1)};
-  index = index % max_nb_atomic;
-  auto atomic_base_ptr{block_handle->atomic_ret.atomic_base_ptr};
-  return &atomic_base_ptr[index];
+__device__ uint64_t *ROContext::get_atomic_ret_buf() {
+  uint64_t *atomic_base_ptr{
+    reinterpret_cast<uint64_t*>(block_handle->atomic_ret)};
+  int thread_id{get_flat_block_id()};
+  return &atomic_base_ptr[thread_id];
+}
+
+__device__ uint64_t *ROContext::get_g_ret_buf() {
+  uint64_t *g_ret{reinterpret_cast<uint64_t*>(block_handle->g_ret)};
+  int thread_id{get_flat_block_id()};
+  return &g_ret[thread_id];
 }
 
 }  // namespace rocshmem
