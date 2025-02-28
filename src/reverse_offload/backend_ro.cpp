@@ -107,13 +107,12 @@ ROBackend::ROBackend(MPI_Comm comm)
       reinterpret_cast<rocshmem_team_t>(team_world_proxy_->get());
 
   default_block_handle_proxy_ = DefaultBlockHandleProxyT(
-      bp->g_ret, bp->atomic_ret, &queue_, &ipcImpl, hdp_proxy_.get());
+      bp->g_ret, bp->atomic_ret, &queue_);
 
   TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
   default_context_proxy_ = DefaultContextProxyT(this, tinfo);
 
   block_handle_proxy_ = BlockHandleProxyT(bp->g_ret, bp->atomic_ret, &queue_,
-                                          &ipcImpl, hdp_proxy_.get(),
                                           maximum_num_contexts_);
   setup_ctxs();
 
@@ -187,7 +186,7 @@ void ROBackend::ctx_destroy(Context *ctx) {
 void ROBackend::reset_backend_stats() {
   auto *bp{backend_proxy.get()};
 
-  for (size_t i{0}; i < MAX_NUM_BLOCKS; i++) {
+  for (size_t i{0}; i < maximum_num_contexts_; i++) {
     bp->profiler[i].resetStats();
   }
 }
@@ -208,7 +207,7 @@ void ROBackend::dump_backend_stats() {
 
   auto *bp{backend_proxy.get()};
 
-  for (size_t i{0}; i < MAX_NUM_BLOCKS; i++) {
+  for (size_t i{0}; i < maximum_num_contexts_; i++) {
     // Average latency as perceived from a thread
     const ROStats &prof{bp->profiler[i]};
     us_wait_slot += prof.getStat(WAITING_ON_SLOT) / gpu_frequency_mhz;

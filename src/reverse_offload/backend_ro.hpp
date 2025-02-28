@@ -55,7 +55,6 @@ class ROHostContext;
  * the host (which is an inversion of the normal behavior).
  */
 class ROBackend : public Backend {
-  const unsigned MAX_NUM_BLOCKS{65536};
 
  public:
   /**

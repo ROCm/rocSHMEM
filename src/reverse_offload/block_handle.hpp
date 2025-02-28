@@ -40,8 +40,6 @@ struct BlockHandle {
   volatile char *status{nullptr};
   char *g_ret{nullptr};
   atomic_ret_t atomic_ret{};
-  IpcImpl ipc{};
-  HdpPolicy *hdp{};
   volatile uint64_t lock{};
 };
 
@@ -53,7 +51,6 @@ class DefaultBlockHandleProxy {
   DefaultBlockHandleProxy() = default;
 
   DefaultBlockHandleProxy(char *g_ret, atomic_ret_t *atomic_ret, Queue *queue,
-                          IpcImpl *ipc_policy, HdpPolicy *hdp_policy,
                           size_t num_elems = 1)
     : proxy_{num_elems} {
 
@@ -70,9 +67,6 @@ class DefaultBlockHandleProxy {
     block_handle->g_ret = g_ret;
     block_handle->atomic_ret.atomic_base_ptr = atomic_ret->atomic_base_ptr;
     block_handle->atomic_ret.atomic_counter = 0;
-    block_handle->ipc.ipc_bases = ipc_policy->ipc_bases;
-    block_handle->ipc.shm_size = ipc_policy->shm_size;
-    block_handle->hdp = hdp_policy;
     block_handle->lock = 0;
   }
 
@@ -100,7 +94,6 @@ class BlockHandleProxy {
   BlockHandleProxy() = default;
 
   BlockHandleProxy(char *g_ret, atomic_ret_t *atomic_ret, Queue *queue,
-                   IpcImpl *ipc_policy, HdpPolicy *hdp_policy,
                    size_t max_blocks)
     : proxy_{max_blocks} {
 
@@ -117,9 +110,6 @@ class BlockHandleProxy {
       block_handle->g_ret = g_ret;
       block_handle->atomic_ret.atomic_base_ptr = atomic_ret->atomic_base_ptr;
       block_handle->atomic_ret.atomic_counter = 0;
-      block_handle->ipc.ipc_bases = ipc_policy->ipc_bases;
-      block_handle->ipc.shm_size = ipc_policy->shm_size;
-      block_handle->hdp = hdp_policy;
       block_handle->lock = 0;
     }
   }
