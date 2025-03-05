@@ -101,8 +101,8 @@ void Queue::sfence_flush_hdp() {
   }
 }
 
-void Queue::notify(int blockId, int threadId) {
-  descriptor(blockId)->status[threadId] = 1;
+void Queue::notify(volatile char* status) {
+  *status = 1;
 }
 
 uint64_t Queue::size() {
