@@ -56,6 +56,8 @@ class ROHostContext;
  */
 class ROBackend : public Backend {
   using RetBufferProxyT = DeviceProxy<HIPAllocator, uint64_t>;
+  using StatusProxyT =
+          DeviceProxy<HIPDefaultFinegrainedAllocator, char>;
 
  public:
   /**
@@ -280,6 +282,15 @@ class ROBackend : public Backend {
    * @brief Return buffer for rocshmem atomic return APIs
    */
   RetBufferProxyT atomic_ret_buffer_;
+
+  /**
+   * This buffer is used by the GPU to wait on a blocking operation. The initial
+   * value is 0. When a GPU enqueues a blocking operation, it waits for this
+   * value to resolve to 1, which is set by the CPU when the blocking
+   * operation completes. The GPU then resets status back to zero. There is
+   * a separate status variable for each work-item in a RO Context
+   */
+  StatusProxyT status_;
 };
 
 }  // namespace rocshmem

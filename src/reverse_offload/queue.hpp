@@ -35,7 +35,7 @@ class Queue {
  public:
   Queue();
 
-  Queue(size_t max_queues, size_t max_threads_per_block, size_t queue_size);
+  Queue(size_t max_queues, size_t queue_size);
 
   bool process(uint64_t queue_index, MPITransport* transport);
 
@@ -71,8 +71,6 @@ class Queue {
   bool gpu_queue{false};
 
   size_t max_queues_{};
-
-  size_t max_wg_size_{};
 
   size_t queue_size_{};
 };

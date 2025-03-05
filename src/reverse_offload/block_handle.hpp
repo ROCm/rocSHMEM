@@ -51,7 +51,7 @@ class DefaultBlockHandleProxy {
   DefaultBlockHandleProxy() = default;
 
   DefaultBlockHandleProxy(void *g_ret, void *atomic_ret, Queue *queue,
-                          size_t num_elems = 1)
+                          volatile char *status, size_t num_elems = 1)
     : proxy_{num_elems} {
 
     // TODO(bpotter): create a default queue for this queue descriptor
@@ -63,7 +63,7 @@ class DefaultBlockHandleProxy {
     block_handle->read_index = queue_descriptor->read_index;
     block_handle->write_index = queue_descriptor->write_index;
     block_handle->host_read_index = &queue_descriptor->read_index;
-    block_handle->status = queue_descriptor->status;
+    block_handle->status = status;
     block_handle->g_ret = g_ret;
     block_handle->atomic_ret = atomic_ret;
     block_handle->lock = 0;
@@ -92,8 +92,8 @@ class BlockHandleProxy {
  public:
   BlockHandleProxy() = default;
 
-  BlockHandleProxy(void *g_ret, void *atomic_ret, Queue *queue,
-                   size_t offset, size_t max_blocks)
+  BlockHandleProxy(void *g_ret, void *atomic_ret, Queue *queue, size_t offset,
+                   volatile char *status, size_t max_blocks)
     : proxy_{max_blocks} {
 
     for (size_t i{0}; i < max_blocks; i++) {
@@ -106,7 +106,7 @@ class BlockHandleProxy {
       block_handle->read_index = queue_descriptor->read_index;
       block_handle->write_index = queue_descriptor->write_index;
       block_handle->host_read_index = &queue_descriptor->read_index;
-      block_handle->status = queue_descriptor->status;
+      block_handle->status = status + block_offset;
       block_handle->g_ret = reinterpret_cast<uint64_t*>(g_ret) + block_offset;
       block_handle->atomic_ret = reinterpret_cast<uint64_t*>(atomic_ret) +
                                  block_offset;

@@ -70,7 +70,9 @@ ROBackend::ROBackend(MPI_Comm comm)
 
   atomic_ret_buffer_ = RetBufferProxyT(num_buff_elems);
 
-  queue_ = Queue(maximum_num_contexts_, max_wg_size_, queue_size_);
+  status_ = StatusProxyT(num_buff_elems);
+
+  queue_ = Queue(maximum_num_contexts_, queue_size_);
 
   transport_ = new MPITransport(comm, &queue_);
   num_pes = transport_->getNumPes();
@@ -110,7 +112,8 @@ ROBackend::ROBackend(MPI_Comm comm)
 
   default_block_handle_proxy_ = DefaultBlockHandleProxyT(
                                 g_ret_buffer_.get(),
-                                atomic_ret_buffer_.get(), &queue_);
+                                atomic_ret_buffer_.get(), &queue_,
+                                status_.get());
 
   TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
 
@@ -118,7 +121,7 @@ ROBackend::ROBackend(MPI_Comm comm)
 
   block_handle_proxy_ = BlockHandleProxyT(g_ret_buffer_.get(),
                         atomic_ret_buffer_.get(), &queue_,
-                        max_wg_size_, maximum_num_contexts_);
+                        max_wg_size_, status_.get(), maximum_num_contexts_);
   setup_ctxs();
 
   worker_thread = std::thread(&ROBackend::ro_net_poll, this);
