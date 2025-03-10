@@ -50,7 +50,7 @@
 #include "team_ctx_primitive_tester.hpp"
 #include "team_fcollect_tester.hpp"
 #include "team_reduction_tester.hpp"
-#include "wave_level_primitives.hpp"
+#include "wavefront_primitives.hpp"
 #include "workgroup_primitives.hpp"
 
 Tester::Tester(TesterArguments args) : args(args) {
@@ -334,22 +334,22 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
     case WAVEGetTestType:
       if (rank == 0)
         std::cout << "Blocking WAVE level Gets ###" << std::endl;
-      testers.push_back(new WaveLevelPrimitiveTester(args));
+      testers.push_back(new WaveFrontPrimitiveTester(args));
       return testers;
     case WAVEGetNBITestType:
       if (rank == 0)
         std::cout << "Non-Blocking WAVE level Gets ###" << std::endl;
-      testers.push_back(new WaveLevelPrimitiveTester(args));
+      testers.push_back(new WaveFrontPrimitiveTester(args));
       return testers;
     case WAVEPutTestType:
       if (rank == 0)
         std::cout << "Blocking WAVE level Puts ###" << std::endl;
-      testers.push_back(new WaveLevelPrimitiveTester(args));
+      testers.push_back(new WaveFrontPrimitiveTester(args));
       return testers;
     case WAVEPutNBITestType:
       if (rank == 0)
         std::cout << "Non-Blocking WAVE level Puts ###" << std::endl;
-      testers.push_back(new WaveLevelPrimitiveTester(args));
+      testers.push_back(new WaveFrontPrimitiveTester(args));
       return testers;
     case PutSignalTestType:
       if (rank == 0) std::cout << "Putmem Signal ###" << std::endl;

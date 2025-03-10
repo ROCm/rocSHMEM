@@ -57,7 +57,7 @@ target_sources(
     signaling_operations_tester.hpp
     workgroup_primitives.cpp
     empty_tester.cpp
-    wave_level_primitives.cpp
+    wavefront_primitives.cpp
 )
 
 ###############################################################################
