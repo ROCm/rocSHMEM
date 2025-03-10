@@ -30,8 +30,8 @@ using namespace rocshmem;
  * DEVICE TEST KERNEL
  *****************************************************************************/
 __global__ void GetSwarmTest(int loop, int skip, long long int *start_time,
-                             long long int *end_time, char *s_buf,
-                             char *r_buf, int size, ShmemContextType ctx_type) {
+                             long long int *end_time, char *source,
+                             char *dest, int size, ShmemContextType ctx_type) {
   __shared__ rocshmem_ctx_t ctx;
   int wg_id = get_flat_grid_id();
 
@@ -49,7 +49,7 @@ __global__ void GetSwarmTest(int loop, int skip, long long int *start_time,
     if (i == skip) {
       start_time[wg_id] = wall_clock64();
     }
-    rocshmem_ctx_getmem(ctx, &r_buf[index], &s_buf[index], size, 1);
+    rocshmem_ctx_getmem(ctx, &dest[index], &source[index], size, 1);
 
     __syncthreads();
   }
@@ -75,7 +75,7 @@ void GetSwarmTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(GetSwarmTest, gridSize, blockSize, shared_bytes, stream,
-                     loop, args.skip, start_time, end_time, s_buf, r_buf, size,
+                     loop, args.skip, start_time, end_time, source, dest, size,
                      _shmem_context);
 
   num_msgs = (loop + args.skip) * gridSize.x * blockSize.x;
@@ -85,9 +85,9 @@ void GetSwarmTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
 void GetSwarmTester::verifyResults(uint64_t size) {
   if (args.myid == 0) {
     for (uint64_t i = 0; i < size * args.wg_size; i++) {
-      if (r_buf[i] != '0') {
-        fprintf(stderr, "Data validation error at idx %lu\n", i);
-        fprintf(stderr, "Got %c, Expected %c\n", r_buf[i], '0');
+      if (dest[i] != '0') {
+        std::cerr << "Data validation error at idx " << i << std::endl;
+        std::cerr << " Got " << dest[i] << ", Expected 0" << std::endl;
         exit(-1);
       }
     }

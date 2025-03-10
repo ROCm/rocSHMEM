@@ -30,13 +30,20 @@ using namespace rocshmem;
  * DEVICE TEST KERNEL
  *****************************************************************************/
 __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
-                              long long int *end_time, char *s_buf,
-                              char *r_buf, int size, TestType type,
+                              long long int *end_time, char *source,
+                              char *dest, int size, TestType type,
                               ShmemContextType ctx_type) {
   __shared__ rocshmem_ctx_t ctx;
   int wg_id = get_flat_grid_id();
   rocshmem_wg_init();
   rocshmem_wg_ctx_create(ctx_type, &ctx);
+
+  /**
+   * Calculate start index for each thread within the grid
+   */
+  uint64_t idx = size * get_flat_id();
+  source += idx;
+  dest += idx;
 
   for (int i = 0; i < loop + skip; i++) {
     if (i == skip) {
@@ -46,27 +53,27 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
 
     switch (type) {
       case GetTestType:
-        rocshmem_ctx_getmem(ctx, r_buf, s_buf, size, 1);
+        rocshmem_ctx_getmem(ctx, dest, source, size, 1);
         break;
       case GetNBITestType:
-        rocshmem_ctx_getmem_nbi(ctx, r_buf, s_buf, size, 1);
+        rocshmem_ctx_getmem_nbi(ctx, dest, source, size, 1);
         break;
       case PutTestType:
-        rocshmem_ctx_putmem(ctx, r_buf, s_buf, size, 1);
+        rocshmem_ctx_putmem(ctx, dest, source, size, 1);
         break;
       case PutNBITestType:
-        rocshmem_ctx_putmem_nbi(ctx, r_buf, s_buf, size, 1);
+        rocshmem_ctx_putmem_nbi(ctx, dest, source, size, 1);
         break;
       case PTestType:
         for (int s = 0; s < size; s++) {
-          char val = s_buf[s];
-          rocshmem_ctx_char_p(ctx, &r_buf[s], val, 1);
+          char val = source[s];
+          rocshmem_ctx_char_p(ctx, &dest[s], val, 1);
         }
         break;
       case GTestType:
         for (int s = 0; s < size; s++) {
-          char ret = rocshmem_ctx_char_g(ctx, &s_buf[s], 1);
-          r_buf[s] = ret;
+          char ret = rocshmem_ctx_char_g(ctx, &source[s], 1);
+          dest[s] = ret;
         }
         break;
       default:
@@ -90,18 +97,29 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
  * HOST TESTER CLASS METHODS
  *****************************************************************************/
 PrimitiveTester::PrimitiveTester(TesterArguments args) : Tester(args) {
-  s_buf = (char *)rocshmem_malloc(args.max_msg_size * args.wg_size);
-  r_buf = (char *)rocshmem_malloc(args.max_msg_size * args.wg_size);
+  size_t buff_size = args.max_msg_size * args.wg_size * args.num_wgs;
+  source = (char *)rocshmem_malloc(buff_size);
+  dest = (char *)rocshmem_malloc(buff_size);
+
+  if (source == nullptr || dest == nullptr) {
+    std::cout << "Error allocating memory from symmetric heap" << std::endl;
+    std::cout << "source: " << source << ", dest: " << dest << std::endl;
+    rocshmem_global_exit(1);
+  }
+
+  for(size_t i = 0; i < buff_size; i++) {
+    source[i] = static_cast<char>('a' + i % 26);
+  }
 }
 
 PrimitiveTester::~PrimitiveTester() {
-  rocshmem_free(s_buf);
-  rocshmem_free(r_buf);
+  rocshmem_free(source);
+  rocshmem_free(dest);
 }
 
 void PrimitiveTester::resetBuffers(uint64_t size) {
-  memset(s_buf, '0', args.max_msg_size * args.wg_size);
-  memset(r_buf, '1', args.max_msg_size * args.wg_size);
+  size_t buff_size = size * args.wg_size * args.num_wgs;
+  memset(dest, '1', buff_size);
 }
 
 void PrimitiveTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
@@ -109,11 +127,11 @@ void PrimitiveTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(PrimitiveTest, gridSize, blockSize, shared_bytes, stream,
-                     loop, args.skip, start_time, end_time, s_buf, r_buf,
+                     loop, args.skip, start_time, end_time, source, dest,
                      size, _type, _shmem_context);
 
-  num_msgs = (loop + args.skip) * gridSize.x;
-  num_timed_msgs = loop;
+  num_msgs = (loop + args.skip) * gridSize.x * blockSize.x;
+  num_timed_msgs = loop * gridSize.x * blockSize.x;
 }
 
 void PrimitiveTester::verifyResults(uint64_t size) {
@@ -123,10 +141,12 @@ void PrimitiveTester::verifyResults(uint64_t size) {
           : 1;
 
   if (args.myid == check_id) {
-    for (uint64_t i = 0; i < size; i++) {
-      if (r_buf[i] != '0') {
-        fprintf(stderr, "Data validation error at idx %lu\n", i);
-        fprintf(stderr, "Got %c, Expected %c\n", r_buf[i], '0');
+    size_t buff_size = size * args.wg_size * args.num_wgs;
+    for (uint64_t i = 0; i < buff_size; i++) {
+      if (dest[i] != source[i]) {
+        std::cerr << "Data validation error at idx " << i << std::endl;
+        std::cerr << " Got " << dest[i] << ", Expected "
+                  << source[i] << std::endl;
         exit(-1);
       }
     }
