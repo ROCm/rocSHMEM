@@ -35,7 +35,6 @@
 #include "amo_standard_tester.hpp"
 #include "barrier_all_tester.hpp"
 #include "empty_tester.hpp"
-#include "extended_primitives.hpp"
 #include "ping_all_tester.hpp"
 #include "ping_pong_tester.hpp"
 #include "primitive_mr_tester.hpp"
@@ -52,6 +51,7 @@
 #include "team_fcollect_tester.hpp"
 #include "team_reduction_tester.hpp"
 #include "wave_level_primitives.hpp"
+#include "workgroup_primitives.hpp"
 
 Tester::Tester(TesterArguments args) : args(args) {
   _type = (TestType)args.algorithm;
@@ -309,22 +309,22 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
     case WGGetTestType:
       if (rank == 0)
         std::cout << "Blocking WG level Gets ###" << std::endl;
-      testers.push_back(new ExtendedPrimitiveTester(args));
+      testers.push_back(new WorkGroupPrimitiveTester(args));
       return testers;
     case WGGetNBITestType:
       if (rank == 0)
         std::cout << "Non-Blocking WG level Gets ###" << std::endl;
-      testers.push_back(new ExtendedPrimitiveTester(args));
+      testers.push_back(new WorkGroupPrimitiveTester(args));
       return testers;
     case WGPutTestType:
       if (rank == 0)
         std::cout << "Blocking WG level Puts ###" << std::endl;
-      testers.push_back(new ExtendedPrimitiveTester(args));
+      testers.push_back(new WorkGroupPrimitiveTester(args));
       return testers;
     case WGPutNBITestType:
       if (rank == 0)
         std::cout << "Non-Blocking WG level Puts ###" << std::endl;
-      testers.push_back(new ExtendedPrimitiveTester(args));
+      testers.push_back(new WorkGroupPrimitiveTester(args));
       return testers;
     case PutNBIMRTestType:
       if (rank == 0)
