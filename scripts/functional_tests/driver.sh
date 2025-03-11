@@ -159,7 +159,8 @@ TestRMA() {
   ExecTest  "waveput"          2       2            128       1048576
   ExecTest  "waveput"          2       16           128       8
 
-  ExecTest  "teamctxput"       2       1            1         1048576
+  ExecTest  "teamctxput"       2       4            128       1024
+  ExecTest  "teamctxput"       2       16           256       1024
 
   ExecTest  "get"              2       1            1         1048576
   ExecTest  "get"              2       1            1024      512
@@ -177,7 +178,8 @@ TestRMA() {
   ExecTest  "waveget"          2       2            128       1048576
   ExecTest  "waveget"          2       16           128       8
 
-  ExecTest  "teamctxget"       2       1            1         1048576
+  ExecTest  "teamctxget"       2       4            128       1024
+  ExecTest  "teamctxget"       2       16           256       1024
 
   ExecTest  "g"                2       1            1         1048576
   ExecTest  "g"                2       1            1024      512
@@ -211,7 +213,8 @@ TestRMA() {
   ExecTest  "waveputnbi"       2       2            128       1048576
   ExecTest  "waveputnbi"       2       16           128       8
 
-  ExecTest  "teamctxputnbi"    2       1            1         1048576
+  ExecTest  "teamctxputnbi"    2       4            128       1024
+  ExecTest  "teamctxputnbi"    2       16           256       1024
 
   ExecTest  "getnbi"           2       1            1         1048576
   ExecTest  "getnbi"           2       1            1024      512
@@ -229,7 +232,8 @@ TestRMA() {
   ExecTest  "wavegetnbi"       2       2            128       1048576
   ExecTest  "wavegetnbi"       2       16           128       8
 
-  ExecTest  "teamctxgetnbi"    2       1            1         1048576
+  ExecTest  "teamctxgetnbi"    2       4            128       1024
+  ExecTest  "teamctxgetnbi"    2       16           256       1024
 }
 
 TestAMO() {
