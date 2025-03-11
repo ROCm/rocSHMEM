@@ -66,6 +66,16 @@ Tester::Tester(TesterArguments args) : args(args) {
   CHECK_HIP(hipDeviceGetAttribute(&wall_clk_rate,
     hipDeviceAttributeWallClockRate, device_id));
   num_timers = args.num_wgs;
+  switch (_type) {
+    case WAVEGetTestType:
+    case WAVEGetNBITestType:
+    case WAVEPutTestType:
+    case WAVEPutNBITestType:
+      num_timers = args.num_wgs * num_warps;
+      break;
+    default:
+      break;
+  }
   CHECK_HIP(hipMalloc((void**)&timer, sizeof(long long int) * num_timers));
   CHECK_HIP(hipMalloc((void**)&start_time, sizeof(long long int) * num_timers));
   CHECK_HIP(hipMalloc((void**)&end_time, sizeof(long long int) * num_timers));

@@ -47,6 +47,7 @@ __global__ void GetSwarmTest(int loop, int skip, long long int *start_time,
 
   for (int i = 0; i < loop + skip; i++) {
     if (i == skip) {
+      __syncthreads();
       start_time[wg_id] = wall_clock64();
     }
     rocshmem_ctx_getmem(ctx, &dest[index], &source[index], size, 1);

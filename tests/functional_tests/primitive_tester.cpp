@@ -47,8 +47,10 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
 
   for (int i = 0; i < loop + skip; i++) {
     if (i == skip) {
-        __syncthreads();
-        start_time[wg_id] = wall_clock64();
+      // Ensures all RMA calls from the skip loops are completed
+      rocshmem_ctx_quiet(ctx);
+      __syncthreads();
+      start_time[wg_id] = wall_clock64();
     }
 
     switch (type) {
@@ -83,11 +85,7 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
 
   rocshmem_ctx_quiet(ctx);
 
-  __syncthreads();
-
-  if (hipThreadIdx_x == 0) {
-    end_time[wg_id] = wall_clock64();
-  }
+  end_time[wg_id] = wall_clock64();
 
   rocshmem_wg_ctx_destroy(&ctx);
   rocshmem_wg_finalize();
