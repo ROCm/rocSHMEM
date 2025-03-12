@@ -505,17 +505,20 @@ void Tester::print(uint64_t size) {
    */
   uint64_t total_size = size * num_timed_msgs;
   double timer_avg = timerAvgInMicroseconds();
-  double latency_avg = timer_avg / num_timed_msgs;
-  double avg_msg_rate = num_timed_msgs / (timer_avg / 1e6);
+
+  double time_us = gpuCyclesToMicroseconds(max_end_time - min_start_time);
+  double time_s = time_us / 1e6;
+
+  double latency_avg = time_us / num_timed_msgs;
+
+  double avg_msg_rate = num_timed_msgs / time_s;
+
+  double bandwidth_avg_gbs =
+      static_cast<double>(total_size * bw_factor) / time_s / pow(2, 30);
 
   float total_kern_time_ms;
   CHECK_HIP(hipEventElapsedTime(&total_kern_time_ms, start_event, stop_event));
   float total_kern_time_s = total_kern_time_ms / 1000;
-
-  double time_us = gpuCyclesToMicroseconds(max_end_time - min_start_time);
-  double time_s = time_us / 1e6;
-  double bandwidth_avg_gbs =
-      static_cast<double>(total_size * bw_factor) / time_s / pow(2, 30);
 
   int field_width = 20;
   int float_precision = 2;
