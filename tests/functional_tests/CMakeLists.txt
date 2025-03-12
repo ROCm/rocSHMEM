@@ -50,7 +50,6 @@ target_sources(
     amo_bitwise_tester.cpp
     amo_extended_tester.cpp
     amo_standard_tester.cpp
-    swarm_tester.cpp
     random_access_tester.cpp
     shmem_ptr_tester.cpp
     signaling_operations_tester.cpp

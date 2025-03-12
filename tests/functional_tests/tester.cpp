@@ -42,7 +42,6 @@
 #include "random_access_tester.hpp"
 #include "shmem_ptr_tester.hpp"
 #include "signaling_operations_tester.hpp"
-#include "swarm_tester.hpp"
 #include "sync_tester.hpp"
 #include "team_alltoall_tester.hpp"
 #include "team_broadcast_tester.hpp"
@@ -146,10 +145,6 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
     case GTestType:
       if (rank == 0) std::cout << "G Test ###" << std::endl;
       testers.push_back(new PrimitiveTester(args));
-      return testers;
-    case GetSwarmTestType:
-      if (rank == 0) std::cout << "Get Swarm ###" << std::endl;
-      testers.push_back(new GetSwarmTester(args));
       return testers;
     case TeamReductionTestType:
       if (rank == 0)

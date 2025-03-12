@@ -43,7 +43,7 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
   /**
    * Shared array to capture the start time for each wavefront
    * Max threads per block = 1024, wavefront size = 64 (in most GPUs)
-   * Minimum array size required = 1024/64 = 16
+   * Maximum array size required = 1024/64 = 16
    */
   __shared__ long long int wf_start_time[16];
 
