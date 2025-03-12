@@ -97,8 +97,14 @@ WaveFrontPrimitiveTester::WaveFrontPrimitiveTester(TesterArguments args)
   dest = (char *)rocshmem_malloc(buff_size);
 
   if (source == nullptr || dest == nullptr) {
-    std::cout << "Error allocating memory from symmetric heap" << std::endl;
-    std::cout << "source: " << source << ", dest: " << dest << std::endl;
+    std::cerr << "Error allocating memory from symmetric heap" << std::endl;
+    std::cerr << "source: " << source << ", dest: " << dest << std::endl;
+    if (source) {
+      rocshmem_free(source);
+    }
+    if (dest) {
+      rocshmem_free(dest);
+    }
     rocshmem_global_exit(1);
   }
 
