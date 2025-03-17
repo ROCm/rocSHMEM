@@ -49,7 +49,7 @@ __global__ void WorkGroupPrimitiveTest(int loop, int skip,
   for (int i = 0; i < loop + skip; i++) {
     if (i == skip) {
       // Ensures all RMA calls from the skip loops are completed
-      if (hipThreadIdx_x == 0) {
+      if (is_thread_zero_in_block()) {
         rocshmem_ctx_quiet(ctx);
       }
       __syncthreads();
@@ -74,7 +74,7 @@ __global__ void WorkGroupPrimitiveTest(int loop, int skip,
     }
   }
 
-  if (hipThreadIdx_x == 0) {
+  if (is_thread_zero_in_block()) {
     rocshmem_ctx_quiet(ctx);
     end_time[wg_id] = wall_clock64();
   }

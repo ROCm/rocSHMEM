@@ -50,14 +50,17 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
   /**
    * Calculate start index for each thread within the grid
    */
-  uint64_t idx = size * get_flat_id();
-  source += idx;
-  dest += idx;
+  uint64_t offset = size * get_flat_id();
+  source += offset;
+  dest += offset;
 
   for (int i = 0; i < loop + skip; i++) {
     if (i == skip) {
+      __syncthreads();
       // Ensures all RMA calls from the skip loops are completed
-      rocshmem_ctx_quiet(ctx);
+      if(is_thread_zero_in_block()) {
+        rocshmem_ctx_quiet(ctx);
+      }
       __syncthreads();
       // Capture the start time of each wavefront to identify the earliest one
       wf_start_time[wf_id] = wall_clock64();
@@ -93,7 +96,10 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
     }
   }
 
-  rocshmem_ctx_quiet(ctx);
+  __syncthreads();
+  if(is_thread_zero_in_block()) {
+    rocshmem_ctx_quiet(ctx);
+  }
 
   /**
    * End time of the last wavefront is recorded by overwriting
@@ -103,11 +109,12 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
 
   // Find the earliest start time
   int num_wfs = (get_flat_block_size() - 1 ) / wf_size + 1;
-  for (int i = num_wfs; i > 0; i >>= 1 ) {
+  for (int i = num_wfs / 2; i > 0; i >>= 1 ) {
     if(t_id < i) {
-      wf_start_time[t_id] = min(wf_start_time[t_id] , wf_start_time[t_id + i]);
+      wf_start_time[t_id] = min(wf_start_time[t_id], wf_start_time[t_id + i]);
     }
   }
+  __syncthreads();
 
   if (t_id == 0) {
     start_time[wg_id] = wf_start_time[0];
