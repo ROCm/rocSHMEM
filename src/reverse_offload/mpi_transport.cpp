@@ -388,8 +388,8 @@ void MPITransport::team_broadcast(void *dst, void *src, int size, int win_id,
   }
 
   NET_CHECK(MPI_Win_flush_all(bp->heap_window_info[win_id]->get_win()));
-  barrier(contextId, status, blocking, comm);
-  quiet(contextId,status);
+  barrier(contextId, nullptr, false, comm);
+  quiet(contextId, status);
 }
 
 void MPITransport::alltoall(void *dst, void *src, int size, int win_id,
