@@ -102,8 +102,7 @@ class AtomicWFQueue {
    *
    * This function inserts the specified value at the position indicated by 
    * the `tail_` of the AtomicWFQueue and increases the AtomicWFQueue size
-   * by one. If the AtomicWFQueue is full, the function waits until space
-   * becomes available. The enqueue operation follows a first-come, first-serve
+   * by one. The enqueue operation follows a first-come, first-serve
    * execution order.
    *
    * @param val The value to be inserted into the AtomicWFQueue.
@@ -127,7 +126,7 @@ class AtomicWFQueue {
    * @brief Inserts a new element at the end of the AtomicWFQueue.
    *
    * This function adds the specified value to the end of the AtomicWFQueue,
-   * updating the `tail_` and `size` accordingly. It is intended for
+   * updating the `tail_` and `curr_size_` accordingly. It is intended for
    * initializing the AtomicWFQueue with initial values.
    *
    * @note This function is not thread-safe and should only be used during 
@@ -241,17 +240,17 @@ class AtomicWFQueue {
                              __HIP_MEMORY_SCOPE_AGENT);
   }
 
-  __device__ void atomic_store(int* address, int val) {
+  __device__ void atomic_store(int* address, const int val) {
     __hip_atomic_store(address, val, __ATOMIC_SEQ_CST,
                        __HIP_MEMORY_SCOPE_AGENT);
   }
 
-  __device__ void atomic_add(int* address, int val) {
+  __device__ void atomic_add(int* address, const int val) {
     __hip_atomic_fetch_add(address, val, __ATOMIC_SEQ_CST,
                            __HIP_MEMORY_SCOPE_AGENT);
   }
 
-  __device__ void atomic_sub(int* address, int val) {
+  __device__ void atomic_sub(int* address, const int val) {
     __hip_atomic_fetch_sub(address, val, __ATOMIC_SEQ_CST,
                            __HIP_MEMORY_SCOPE_AGENT);
   }

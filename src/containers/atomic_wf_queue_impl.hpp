@@ -117,11 +117,10 @@ __device__ void AtomicWFQueue<TYPE, ALLOCATOR>::enqueue(const TYPE& val) {
     TicketLockGuard<MutexType> guard(*enqueue_mutex_.get());
 
     /**
-     * The queue is full; wait until space becomes available.
-     * Ideally, there should always be space available.
+     * There should always be space available.
      * If the queue is full, it indicates an unexpected issue.
      */
-    while (is_full()) {}
+    assert(!is_full());
 
     int next_tail = (tail_ + 1) % size_;
     queue_[tail_] = val;
