@@ -28,7 +28,6 @@
 
 #include "../backend_bc.hpp"
 #include "../containers/free_list_impl.hpp"
-#include "../containers/atomic_wf_queue_impl.hpp"
 #include "../hdp_proxy.hpp"
 #include "../memory/hip_allocator.hpp"
 #include "backend_proxy.hpp"
@@ -262,7 +261,7 @@ class ROBackend : public Backend {
   /**
    * @brief AtomicWFQueue containing status flag buffers for default context
    */
-  AtomicWFQueueProxy<HIPAllocator, char*> default_ctx_status_{};
+  AtomicWFQueueProxy<HIPAllocator, volatile char*> default_ctx_status_{};
 
   /**
    * @brief AtomicWFQueue containing rocshmem_g return buffers for default

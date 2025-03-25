@@ -117,7 +117,9 @@ ROBackend::ROBackend(MPI_Comm comm)
   default_block_handle_proxy_ = DefaultBlockHandleProxyT(
                                 g_ret_buffer_.get(),
                                 atomic_ret_buffer_.get(), &queue_,
-                                status_.get());
+                                status_.get(), default_ctx_status_.get(),
+                                default_ctx_g_ret_buffer_.get(),
+                                default_ctx_atomic_ret_buffer_.get());
 
   TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
 
