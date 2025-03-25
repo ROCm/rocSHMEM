@@ -64,6 +64,10 @@ ROBackend::ROBackend(MPI_Comm comm)
 
   max_wg_size_ = device_props.maxThreadsPerBlock;
 
+  wf_size_ = device_props.warpSize;
+
+  setup_default_ctx_buffers();
+
   size_t num_buff_elems = maximum_num_contexts_ * max_wg_size_;
 
   g_ret_buffer_ = RetBufferProxyT(num_buff_elems);
@@ -134,6 +138,37 @@ void ROBackend::setup_ctxs() {
   for (int i = 0; i < maximum_num_contexts_; i++) {
     new (&ctx_array[i]) ROContext(this, i);
     ctx_free_list.get()->push_back(ctx_array + i);
+  }
+}
+
+void ROBackend::setup_default_ctx_buffers() {
+  if (auto maximum_wf_buffers_str = getenv("ROCSHMEM_MAX_WF_BUFFERS")) {
+    std::stringstream sstream(maximum_wf_buffers_str);
+    sstream >> max_wavefront_buffers_;
+  }
+
+  size_t num_buff_elems = max_wavefront_buffers_ * wf_size_;
+
+  g_ret_buffer_default_ctx_ = RetBufferProxyT(num_buff_elems);
+
+  atomic_ret_buffer_default_ctx_ = RetBufferProxyT(num_buff_elems);
+
+  status_default_ctx_ = StatusProxyT(num_buff_elems);
+
+  default_ctx_status_.get()->allocate_queue(max_wavefront_buffers_);
+  default_ctx_g_ret_buffer_.get()->allocate_queue(max_wavefront_buffers_);
+  default_ctx_atomic_ret_buffer_.get()->allocate_queue(max_wavefront_buffers_);
+
+
+  char* status = status_default_ctx_.get();
+  uint64_t* g_ret_buf = g_ret_buffer_default_ctx_.get();
+  uint64_t* atomic_ret_buf = atomic_ret_buffer_default_ctx_.get();
+
+  for (int i{0}; i < max_wavefront_buffers_; i++) {
+    int offset {i * wf_size_};
+    default_ctx_status_.get()->push(status + offset);
+    default_ctx_g_ret_buffer_.get()->push(g_ret_buf + offset);
+    default_ctx_atomic_ret_buffer_.get()->push(atomic_ret_buf + offset);
   }
 }
 
