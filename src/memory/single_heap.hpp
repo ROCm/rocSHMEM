@@ -25,10 +25,16 @@
 #ifndef LIBRARY_SRC_MEMORY_SINGLE_HEAP_HPP_
 #define LIBRARY_SRC_MEMORY_SINGLE_HEAP_HPP_
 
-#include "address_record.hpp"
 #include "heap_memory.hpp"
 #include "heap_type.hpp"
+#if defined USE_ALLOC_DLMALLOC
+#include "dlmalloc.hpp"
+#elif defined USE_ALLOC_POW2BINS
+#include "address_record.hpp"
 #include "pow2_bins.hpp"
+#else
+#error "You need to have one of USE_ALLOC_DLMALLOC, USE_ALLOC_POW2BINS set to ON"
+#endif
 
 /**
  * @file single_heap.hpp
@@ -42,15 +48,21 @@
 namespace rocshmem {
 
 class SingleHeap {
+#if defined USE_ALLOC_DLMALLOC
+  /**
+   * @brief Helper type for allocation strategy
+   */
+  using STRAT_T = DLAllocatorStrategy<HEAP_T>;
+#elif defined USE_ALLOC_POW2BINS
   /**
    * @brief Helper type for address records
    */
   using AR_T = AddressRecord;
-
   /**
    * @brief Helper type for allocation strategy
    */
   using STRAT_T = Pow2Bins<AR_T, HEAP_T>;
+#endif // defined USE_ALLOC_POW2BINS
 
  public:
   /**
