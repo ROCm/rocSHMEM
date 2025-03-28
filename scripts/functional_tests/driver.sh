@@ -142,10 +142,12 @@ ExecTest() {
     TEST_LOG_NAME+=_"$MAX_MSG_SIZE"B
   fi
 
-  CMD+=" > $LOG_DIR/$TEST_LOG_NAME.log"
+  CMD+=" >> $LOG_DIR/$TEST_LOG_NAME.log"
 
   # Run Test
-  echo $TEST_LOG_NAME
+  # echo $TEST_LOG_NAME
+  echo $CMD
+  echo "# $CMD" >"$LOG_DIR/$TEST_LOG_NAME.log"
   eval $CMD
 
   # Validate Test
