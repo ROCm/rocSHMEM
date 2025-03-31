@@ -42,15 +42,8 @@ __global__ void BarrierAllTest(int loop, int skip, long long int *start_time,
       start_time[wg_id] = wall_clock64();
     }
 
-    __syncthreads();
+    rocshmem_ctx_wg_barrier_all(ctx);
 
-    /**
-     * The function `rocshmem_ctx_wg_barrier_all` should be called from only
-     * one group within the grid to avoid unintended behavior.
-     */
-    if (is_block_zero_in_grid()) {
-      rocshmem_ctx_wg_barrier_all(ctx);
-    }
   }
   __syncthreads();
 
