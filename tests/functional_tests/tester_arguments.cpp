@@ -89,6 +89,8 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
     case WGBarrierAllTestType:
     case TeamBarrierTestType:
     case SyncAllTestType:
+    case WAVESyncAllTestType:
+    case WGSyncAllTestType:
     case SyncTestType:
     case ShmemPtrTestType:
       min_msg_size = 8;
@@ -137,6 +139,7 @@ void TesterArguments::get_rocshmem_arguments() {
   TestType type = (TestType)algorithm;
   if ((type != BarrierAllTestType) && (type != WAVEBarrierAllTestType) &&
       (type != WGBarrierAllTestType) && (type != SyncAllTestType) &&
+      (type != WAVESyncAllTestType) && (type != WGSyncAllTestType) &&
       (type != SyncTestType) && (type != TeamAllToAllTestType) &&
       (type != TeamFCollectTestType) && (type != TeamReductionTestType) &&
       (type != TeamBroadcastTestType) && (type != PingAllTestType) &&

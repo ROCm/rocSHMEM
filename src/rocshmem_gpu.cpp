@@ -598,8 +598,28 @@ __device__ void rocshmem_barrier(rocshmem_team_t team) {
   get_internal_ctx(ROCSHMEM_CTX_DEFAULT)->barrier(team);
 }
 
-__device__ void rocshmem_ctx_wg_sync_all(rocshmem_ctx_t ctx) {
+__device__ void rocshmem_ctx_sync_all(rocshmem_ctx_t ctx) {
   GPU_DPRINTF("Function: rocshmem_ctx_sync_all\n");
+
+  get_internal_ctx(ctx)->sync_all();
+}
+
+__device__ void rocshmem_sync_all() {
+  rocshmem_ctx_sync_all(ROCSHMEM_CTX_DEFAULT);
+}
+
+__device__ void rocshmem_ctx_wave_sync_all(rocshmem_ctx_t ctx) {
+  GPU_DPRINTF("Function: rocshmem_ctx_wave_sync_all\n");
+
+  get_internal_ctx(ctx)->sync_all_wave();
+}
+
+__device__ void rocshmem_wave_sync_all() {
+  rocshmem_ctx_wave_sync_all(ROCSHMEM_CTX_DEFAULT);
+}
+
+__device__ void rocshmem_ctx_wg_sync_all(rocshmem_ctx_t ctx) {
+  GPU_DPRINTF("Function: rocshmem_ctx_wg_sync_all\n");
 
   get_internal_ctx(ctx)->sync_all_wg();
 }

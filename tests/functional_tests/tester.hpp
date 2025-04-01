@@ -101,6 +101,8 @@ enum TestType {
   DefaultCTXGTestType = 64,
   WAVEBarrierAllTestType = 65,
   WGBarrierAllTestType = 66,
+  WAVESyncAllTestType = 67,
+  WGSyncAllTestType = 68,
 };
 
 enum OpType { PutType = 0, GetType = 1 };

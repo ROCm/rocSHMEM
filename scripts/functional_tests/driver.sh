@@ -89,6 +89,8 @@ declare -A TEST_NUMBERS=(
   ["defaultctxg"]="64"
   ["wavebarrierall"]="65"
   ["wgbarrierall"]="66"
+  ["wavesyncall"]="67"
+  ["wgsyncall"]="68"
 )
 
 ExecTest() {
@@ -315,7 +317,7 @@ TestColl() {
   ExecTest  "barrierall"       2       32           256
   ExecTest  "barrierall"       2       64           1024
 
-  ExecTest  "wavebarrierall"   4       1            1
+  ExecTest  "wavebarrierall"   2       1            1
   ExecTest  "wavebarrierall"   2       16           64
   ExecTest  "wavebarrierall"   2       32           256
   ExecTest  "wavebarrierall"   2       64           1024
@@ -330,6 +332,19 @@ TestColl() {
   ExecTest  "sync"             2       1            1
 
   ExecTest  "syncall"          2       1            1
+  ExecTest  "syncall"          2       16           64
+  ExecTest  "syncall"          2       32           256
+  ExecTest  "syncall"          2       64           1024
+
+  ExecTest  "wavesyncall"      2       1            1
+  ExecTest  "wavesyncall"      2       16           64
+  ExecTest  "wavesyncall"      2       32           256
+  ExecTest  "wavesyncall"      2       64           1024
+
+  ExecTest  "wgsyncall"        2       1            1
+  ExecTest  "wgsyncall"        2       16           64
+  ExecTest  "wgsyncall"        2       32           256
+  ExecTest  "wgsyncall"        2       64           1024
 
   ExecTest  "alltoall"         2       1            1         512
 
