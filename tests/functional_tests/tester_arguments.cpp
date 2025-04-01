@@ -85,6 +85,8 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
     case AMO_IncTestType:
     case AMO_FetchTestType:
     case BarrierAllTestType:
+    case WAVEBarrierAllTestType:
+    case WGBarrierAllTestType:
     case TeamBarrierTestType:
     case SyncAllTestType:
     case SyncTestType:
@@ -133,7 +135,8 @@ void TesterArguments::get_rocshmem_arguments() {
   myid = rocshmem_my_pe();
 
   TestType type = (TestType)algorithm;
-  if ((type != BarrierAllTestType) && (type != SyncAllTestType) &&
+  if ((type != BarrierAllTestType) && (type != WAVEBarrierAllTestType) &&
+      (type != WGBarrierAllTestType) && (type != SyncAllTestType) &&
       (type != SyncTestType) && (type != TeamAllToAllTestType) &&
       (type != TeamFCollectTestType) && (type != TeamReductionTestType) &&
       (type != TeamBroadcastTestType) && (type != PingAllTestType) &&

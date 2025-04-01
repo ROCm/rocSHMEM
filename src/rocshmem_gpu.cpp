@@ -570,10 +570,22 @@ __device__ int rocshmem_test(T *ivars, int cmp, T val) {
   return ctx_internal->test(ivars, cmp, val);
 }
 
-__device__ void rocshmem_ctx_wg_barrier_all(rocshmem_ctx_t ctx) {
+__device__ void rocshmem_ctx_barrier_all(rocshmem_ctx_t ctx) {
   GPU_DPRINTF("Function: rocshmem_ctx_barrier_all\n");
 
   get_internal_ctx(ctx)->barrier_all();
+}
+
+__device__ void rocshmem_ctx_wave_barrier_all(rocshmem_ctx_t ctx) {
+  GPU_DPRINTF("Function: rocshmem_ctx_wave_barrier_all\n");
+
+  get_internal_ctx(ctx)->barrier_all_wave();
+}
+
+__device__ void rocshmem_ctx_wg_barrier_all(rocshmem_ctx_t ctx) {
+  GPU_DPRINTF("Function: rocshmem_ctx_wg_barrier_all\n");
+
+  get_internal_ctx(ctx)->barrier_all_wg();
 }
 
 __device__ void rocshmem_wg_barrier_all() {
@@ -589,7 +601,7 @@ __device__ void rocshmem_barrier(rocshmem_team_t team) {
 __device__ void rocshmem_ctx_wg_sync_all(rocshmem_ctx_t ctx) {
   GPU_DPRINTF("Function: rocshmem_ctx_sync_all\n");
 
-  get_internal_ctx(ctx)->sync_all();
+  get_internal_ctx(ctx)->sync_all_wg();
 }
 
 __device__ void rocshmem_wg_sync_all() {
@@ -600,7 +612,7 @@ __device__ void rocshmem_ctx_wg_team_sync(rocshmem_ctx_t ctx,
                                            rocshmem_team_t team) {
   GPU_DPRINTF("Function: rocshmem_ctx_sync_all\n");
 
-  get_internal_ctx(ctx)->sync(team);
+  get_internal_ctx(ctx)->sync_wg(team);
 }
 
 __device__ void rocshmem_wg_team_sync(rocshmem_team_t team) {

@@ -317,6 +317,14 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       if (rank == 0) std::cout << "Barrier_All ###" << std::endl;
       testers.push_back(new BarrierAllTester(args));
       return testers;
+    case WAVEBarrierAllTestType:
+      if (rank == 0) std::cout << "WAVE Barrier_All ###" << std::endl;
+      testers.push_back(new BarrierAllTester(args));
+      return testers;
+    case WGBarrierAllTestType:
+      if (rank == 0) std::cout << "WG Barrier_All ###" << std::endl;
+      testers.push_back(new BarrierAllTester(args));
+      return testers;
     case TeamBarrierTestType:
       if (rank == 0) std::cout << "Team Barrier Test ###" << std::endl;
       testers.push_back(new TeamBarrierTester(args));
@@ -510,6 +518,7 @@ bool Tester::peLaunchesKernel() {
                 (_type == TeamBroadcastTestType) || (_type == TeamCtxInfraTestType) ||
                 (_type == TeamAllToAllTestType) || (_type == TeamFCollectTestType) ||
                 (_type == PingPongTestType) || (_type == BarrierAllTestType) ||
+                (_type == WAVEBarrierAllTestType) || (_type == WGBarrierAllTestType) ||
                 (_type == SyncTestType) || (_type == SyncAllTestType) ||
                 (_type == RandomAccessTestType) || (_type == PingAllTestType) ||
                 (_type == TeamBarrierTestType);

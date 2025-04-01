@@ -494,6 +494,36 @@ __device__ int rocshmem_team_translate_pe(rocshmem_team_t src_team,
  * @brief perform a collective barrier between all PEs in the system.
  * The caller is blocked until the barrier is resolved.
  *
+ * This function must be invoked by a single thread within the PE.
+ *
+ * @param[in] handle GPU side handle.
+ *
+ * @return void
+ */
+__device__ ATTR_NO_INLINE void rocshmem_ctx_barrier_all(
+    rocshmem_ctx_t ctx);
+
+__device__ ATTR_NO_INLINE void rocshmem_barrier_all();
+
+/**
+ * @brief perform a collective barrier between all PEs in the system.
+ * The caller is blocked until the barrier is resolved.
+ *
+ * This function must be called as a wave-front collective.
+ *
+ * @param[in] handle GPU side handle.
+ *
+ * @return void
+ */
+__device__ ATTR_NO_INLINE void rocshmem_ctx_wave_barrier_all(
+    rocshmem_ctx_t ctx);
+
+__device__ ATTR_NO_INLINE void rocshmem_wave_barrier_all();
+
+/**
+ * @brief perform a collective barrier between all PEs in the system.
+ * The caller is blocked until the barrier is resolved.
+ *
  * This function must be called as a work-group collective.
  *
  * @param[in] handle GPU side handle.

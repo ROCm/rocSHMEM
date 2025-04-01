@@ -81,6 +81,14 @@ declare -A TEST_NUMBERS=(
   ["wgsignalfetch"]="56"
   ["wavesignalfetch"]="57"
   ["teambarrier"]="58"
+  ["defaultctxget"]="59"
+  ["defaultctxgetnbi"]="60"
+  ["defaultctxput"]="61"
+  ["defaultctxputnbi"]="62"
+  ["defaultctxp"]="63"
+  ["defaultctxg"]="64"
+  ["wavebarrierall"]="65"
+  ["wgbarrierall"]="66"
 )
 
 ExecTest() {
@@ -303,6 +311,20 @@ TestColl() {
   #       | Name             | Ranks | Workgroups | Threads | Max Message Size #
   ##############################################################################
   ExecTest  "barrierall"       2       1            1
+  ExecTest  "barrierall"       2       16           64
+  ExecTest  "barrierall"       2       32           256
+  ExecTest  "barrierall"       2       64           1024
+
+  ExecTest  "wavebarrierall"   4       1            1
+  ExecTest  "wavebarrierall"   2       16           64
+  ExecTest  "wavebarrierall"   2       32           256
+  ExecTest  "wavebarrierall"   2       64           1024
+
+  ExecTest  "wgbarrierall"     2       1            1
+  ExecTest  "wgbarrierall"     2       16           64
+  ExecTest  "wgbarrierall"     2       32           256
+  ExecTest  "wgbarrierall"     2       64           1024
+
   ExecTest  "teambarrier"      2       1            1
 
   ExecTest  "sync"             2       1            1
