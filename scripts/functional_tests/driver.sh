@@ -144,7 +144,7 @@ ExecTest() {
   unset ROCSHMEM_MAX_NUM_CONTEXTS
 }
 
-TestRMA() {
+TestRMAPut() {
   ##############################################################################
   #       | Name             | Ranks | Workgroups | Threads | Max Message Size #
   ##############################################################################
@@ -172,30 +172,6 @@ TestRMA() {
   ExecTest  "p"                2       8            1         32
   ExecTest  "p"                2       16           128       4
 
-  ExecTest  "get"              2       1            1         1048576
-  ExecTest  "get"              2       1            1024      512
-  ExecTest  "get"              2       8            1         1048576
-  ExecTest  "get"              2       16           128       8
-  ExecTest  "get"              2       32           256       512
-  ExecTest  "get"              2       64           1024      8
-
-  ExecTest  "wgget"            2       1            64        1048576
-  ExecTest  "wgget"            2       2            64        1048576
-  ExecTest  "wgget"            2       16           64        8
-
-  ExecTest  "waveget"          2       1            64        1048576
-  ExecTest  "waveget"          2       2            64        1048576
-  ExecTest  "waveget"          2       2            128       1048576
-  ExecTest  "waveget"          2       16           128       8
-
-  ExecTest  "teamctxget"       2       4            128       1024
-  ExecTest  "teamctxget"       2       16           256       1024
-
-  ExecTest  "g"                2       1            1         128
-  ExecTest  "g"                2       1            1024      2
-  ExecTest  "g"                2       8            1         32
-  ExecTest  "g"                2       16           128       4
-
   ################################ Non-Blocking ################################
 
   ExecTest  "putnbi"           2       1            1         1048576
@@ -216,6 +192,37 @@ TestRMA() {
 
   ExecTest  "teamctxputnbi"    2       4            128       1024
   ExecTest  "teamctxputnbi"    2       16           256       1024
+}
+
+TestRMAGet() {
+  ##############################################################################
+  #       | Name             | Ranks | Workgroups | Threads | Max Message Size #
+  ##############################################################################
+  ExecTest  "get"              2       1            1         1048576
+  ExecTest  "get"              2       1            1024      512
+  ExecTest  "get"              2       8            1         1048576
+  ExecTest  "get"              2       16           128       8
+  ExecTest  "get"              2       32           256       512
+  ExecTest  "get"              2       64           1024      8
+
+  ExecTest  "wgget"            2       1            64        1048576
+  ExecTest  "wgget"            2       2            64        1048576
+  ExecTest  "wgget"            2       16           64        8
+
+  ExecTest  "waveget"          2       1            64        1048576
+  ExecTest  "waveget"          2       2            64        1048576
+  ExecTest  "waveget"          2       2            128       1048576
+  ExecTest  "waveget"          2       16           128       8
+
+  ExecTest  "teamctxget"       2       4            128       1024
+  ExecTest  "teamctxget"       2       16           256       1024
+
+  ExecTest  "g"                2       1            1         128
+  ExecTest  "g"                2       1            1024      1
+  ExecTest  "g"                2       8            1         32
+  ExecTest  "g"                2       16           128       4
+
+  ################################ Non-Blocking ################################
 
   ExecTest  "getnbi"           2       1            1         1048576
   ExecTest  "getnbi"           2       1            1024      512
@@ -235,7 +242,13 @@ TestRMA() {
 
   ExecTest  "teamctxgetnbi"    2       4            128       1024
   ExecTest  "teamctxgetnbi"    2       16           256       1024
+}
 
+TestRMA() {
+  TestRMAPut
+  if [ "0" == "$ROCSHMEM_DRIVER_DISABLE_GET" ]; then
+    TestRMAGet
+  fi
 }
 
 TestAMO() {
@@ -368,6 +381,7 @@ LOG_DIR=$3
 HOSTFILE=$4
 
 DRIVER_RETURN_STATUS=0
+ROCSHMEM_DRIVER_DISABLE_GET="${ROCSHMEM_DRIVER_DISABLE_GET:-1}"
 
 ValidateInput $#
 ValidateLogDir $LOG_DIR
