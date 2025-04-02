@@ -7,8 +7,8 @@ code complexity and enables more fine-grained communication/computation
 overlap than traditional host-driven networking.
 rocSHMEM uses a single symmetric heap (SHEAP) that is allocated on GPU memories.
 
-There are currently two backends for rocSHMEM;
-IPC and Reverse Offload (RO).
+There are currently three backends for rocSHMEM;
+IPC, Reverse Offload (RO), and GPU-IB.
 The backends primarily differ in their implementations of intra-kernel networking.
 
 The IPC backend implements communication primitives using load/store operations issued from the GPU.

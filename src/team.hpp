@@ -33,6 +33,7 @@ namespace rocshmem {
 class Backend;
 class Team;
 class ROTeam;
+class GPUIBTeam;
 class IPCTeam;
 
 class TeamInfo {
@@ -153,10 +154,12 @@ class Team {
    *
    * @note This is required to do some reinterpret_casts.
    */
-  BackendType type{BackendType::RO_BACKEND};
+  BackendType type{BackendType::GPU_IB_BACKEND};
 };
 
 __host__ __device__ Team* get_internal_team(rocshmem_team_t team);
+
+GPUIBTeam* get_internal_gpu_ib_team(rocshmem_team_t team);
 
 ROTeam* get_internal_ro_team(rocshmem_team_t team);
 

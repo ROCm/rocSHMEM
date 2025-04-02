@@ -38,7 +38,10 @@
 
 #include "backend_bc.hpp"
 #include "context_incl.hpp"
-#ifdef USE_RO
+#ifdef USE_GPU_IB
+#include "gpu_ib/backend_ib.hpp"
+#include "gpu_ib/context_ib_tmpl_host.hpp"
+#elif defined(USE_RO)
 #include "reverse_offload/backend_ro.hpp"
 #include "reverse_offload/context_ro_tmpl_host.hpp"
 #else
@@ -87,7 +90,10 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
   rocshmem_env_config_init();
 
-#ifdef USE_RO
+#ifdef USE_GPU_IB
+  CHECK_HIP(hipHostMalloc(&backend, sizeof(GPUIBBackend)));
+  backend = new (backend) GPUIBBackend(comm);
+#elif defined(USE_RO)
   CHECK_HIP(hipHostMalloc(&backend, sizeof(ROBackend)));
   backend = new (backend) ROBackend(comm);
 #else
