@@ -88,6 +88,8 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
     case WAVEBarrierAllTestType:
     case WGBarrierAllTestType:
     case TeamBarrierTestType:
+    case TeamWAVEBarrierTestType:
+    case TeamWGBarrierTestType:
     case SyncAllTestType:
     case WAVESyncAllTestType:
     case WGSyncAllTestType:
@@ -143,7 +145,8 @@ void TesterArguments::get_rocshmem_arguments() {
       (type != SyncTestType) && (type != TeamAllToAllTestType) &&
       (type != TeamFCollectTestType) && (type != TeamReductionTestType) &&
       (type != TeamBroadcastTestType) && (type != PingAllTestType) &&
-      (type != TeamBarrierTestType)) {
+      (type != TeamBarrierTestType) && (type != TeamWAVEBarrierTestType) &&
+      (type != TeamWGBarrierTestType)) {
     if (numprocs != 2) {
       if (myid == 0) {
         std::cerr << "This test requires exactly two processes, we have "

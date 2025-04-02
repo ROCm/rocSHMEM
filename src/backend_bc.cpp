@@ -132,6 +132,9 @@ void Backend::dump_stats() {
   printf("BarrierAll %llu\n", device_stats.getStat(NUM_BARRIER_ALL));
   printf("WAVE_BarrierAll %llu\n", device_stats.getStat(NUM_BARRIER_ALL_WAVE));
   printf("WG_BarrierAll %llu\n", device_stats.getStat(NUM_BARRIER_ALL_WG));
+  printf("Barrier %llu\n", device_stats.getStat(NUM_BARRIER));
+  printf("WAVE_Barrier %llu\n", device_stats.getStat(NUM_BARRIER_WAVE));
+  printf("WG_Barrier %llu\n", device_stats.getStat(NUM_BARRIER_WG));
   printf("Wait Until %llu\n", device_stats.getStat(NUM_WAIT_UNTIL));
   printf("Wait Until Any %llu\n", device_stats.getStat(NUM_WAIT_UNTIL_ANY));
   printf("Wait Until All %llu\n", device_stats.getStat(NUM_WAIT_UNTIL_ALL));

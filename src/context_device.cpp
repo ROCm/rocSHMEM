@@ -161,9 +161,21 @@ __device__ void Context::barrier_all_wg() {
 }
 
 __device__ void Context::barrier(rocshmem_team_t team) {
-  ctxStats.incStat(NUM_BARRIER_ALL);
+  ctxStats.incStat(NUM_BARRIER);
 
   DISPATCH(barrier(team));
+}
+
+__device__ void Context::barrier_wave(rocshmem_team_t team) {
+  ctxStats.incStat(NUM_BARRIER_WAVE);
+
+  DISPATCH(barrier_wave(team));
+}
+
+__device__ void Context::barrier_wg(rocshmem_team_t team) {
+  ctxStats.incStat(NUM_BARRIER_WG);
+
+  DISPATCH(barrier_wg(team));
 }
 
 __device__ void Context::sync_all() {

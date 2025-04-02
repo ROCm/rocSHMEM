@@ -330,6 +330,14 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       if (rank == 0) std::cout << "Team Barrier Test ###" << std::endl;
       testers.push_back(new TeamBarrierTester(args));
       return testers;
+    case TeamWAVEBarrierTestType:
+      if (rank == 0) std::cout << "Team WAVE Barrier Test ###" << std::endl;
+      testers.push_back(new TeamBarrierTester(args));
+      return testers;
+    case TeamWGBarrierTestType:
+      if (rank == 0) std::cout << "Team WG Barrier Test ###" << std::endl;
+      testers.push_back(new TeamBarrierTester(args));
+      return testers;
     case SyncAllTestType:
       if (rank == 0) std::cout << "SyncAll ###" << std::endl;
       testers.push_back(new SyncTester(args));
@@ -531,7 +539,8 @@ bool Tester::peLaunchesKernel() {
                 (_type == SyncTestType) || (_type == SyncAllTestType) ||
                 (_type == WAVESyncAllTestType) || (_type == WGSyncAllTestType) ||
                 (_type == RandomAccessTestType) || (_type == PingAllTestType) ||
-                (_type == TeamBarrierTestType);
+                (_type == TeamBarrierTestType) || (_type == TeamWAVEBarrierTestType) ||
+                (_type == TeamWGBarrierTestType);
 
   return is_launcher;
 }
