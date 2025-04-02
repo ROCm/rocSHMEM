@@ -196,8 +196,20 @@ __device__ void Context::sync_all_wg() {
   DISPATCH(sync_all_wg());
 }
 
+__device__ void Context::sync(rocshmem_team_t team) {
+  ctxStats.incStat(NUM_SYNC);
+
+  DISPATCH(sync(team));
+}
+
+__device__ void Context::sync_wave(rocshmem_team_t team) {
+  ctxStats.incStat(NUM_SYNC_WAVE);
+
+  DISPATCH(sync_wave(team));
+}
+
 __device__ void Context::sync_wg(rocshmem_team_t team) {
-  ctxStats.incStat(NUM_SYNC_ALL_WG);
+  ctxStats.incStat(NUM_SYNC_WG);
 
   DISPATCH(sync_wg(team));
 }

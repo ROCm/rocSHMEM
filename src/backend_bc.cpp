@@ -160,6 +160,9 @@ void Backend::dump_stats() {
   printf("SyncAll %llu\n", device_stats.getStat(NUM_SYNC_ALL));
   printf("WAVE_SyncAll %llu\n", device_stats.getStat(NUM_SYNC_ALL_WAVE));
   printf("WG_SyncAll %llu\n", device_stats.getStat(NUM_SYNC_ALL_WG));
+  printf("Sync %llu\n", device_stats.getStat(NUM_SYNC));
+  printf("WAVE_Sync %llu\n", device_stats.getStat(NUM_SYNC_WAVE));
+  printf("WG_Sync %llu\n", device_stats.getStat(NUM_SYNC_WG));
 
   const auto& host_stats{globalHostStats};
   printf("HOST STATS\n");

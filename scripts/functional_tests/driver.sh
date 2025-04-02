@@ -93,6 +93,8 @@ declare -A TEST_NUMBERS=(
   ["wgsyncall"]="68"
   ["teambarrier"]="69"
   ["teamwavebarrier"]="70"
+  ["wavesync"]="71"
+  ["wgsync"]="72"
 )
 
 ExecTest() {
@@ -345,6 +347,19 @@ TestColl() {
   ExecTest  "teamwgbarrier"    2       39           1024
 
   ExecTest  "sync"             2       1            1
+  ExecTest  "sync"             2       16           64
+  ExecTest  "sync"             2       32           256
+  ExecTest  "sync"             2       39           1024
+
+  ExecTest  "wavesync"         2       1            1
+  ExecTest  "wavesync"         2       16           64
+  ExecTest  "wavesync"         2       32           256
+  ExecTest  "wavesync"         2       39           1024
+
+  ExecTest  "wgsync"           2       1            1
+  ExecTest  "wgsync"           2       16           64
+  ExecTest  "wgsync"           2       32           256
+  ExecTest  "wgsync"           2       39           1024
 
   ExecTest  "syncall"          2       1            1
   ExecTest  "syncall"          2       16           64

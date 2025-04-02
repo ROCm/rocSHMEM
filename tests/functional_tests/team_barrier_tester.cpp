@@ -38,10 +38,6 @@ __global__ void TeamBarrierTest(int loop, int skip, long long int *start_time,
   rocshmem_wg_init();
   rocshmem_wg_team_create_ctx(teams[wg_id], ctx_type, &ctx);
 
-  int n_pes = rocshmem_ctx_n_pes(ctx);
-
-  __syncthreads();
-
   for (int i = 0; i < loop + skip; i++) {
     if (i == skip && hipThreadIdx_x == 0) {
       start_time[wg_id] = wall_clock64();
@@ -66,8 +62,6 @@ __global__ void TeamBarrierTest(int loop, int skip, long long int *start_time,
     }
     __syncthreads();
   }
-
-  __syncthreads();
 
   if (hipThreadIdx_x == 0) {
     end_time[wg_id] = wall_clock64();
@@ -117,7 +111,7 @@ void TeamBarrierTester::launchKernel(dim3 gridSize, dim3 blockSize,
   hipLaunchKernelGGL(TeamBarrierTest, gridSize, blockSize, shared_bytes,
                      stream, loop, args.skip, start_time, end_time,
                      _shmem_context, _type, wf_size,
-		                 team_barrier_world_dup);
+                     team_barrier_world_dup);
 
   num_msgs = (loop + args.skip) * gridSize.x;
   num_timed_msgs = loop * gridSize.x;

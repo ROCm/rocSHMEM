@@ -354,6 +354,14 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       if (rank == 0) std::cout << "Sync ###" << std::endl;
       testers.push_back(new SyncTester(args));
       return testers;
+    case WAVESyncTestType:
+      if (rank == 0) std::cout << "WAVE Sync ###" << std::endl;
+      testers.push_back(new SyncTester(args));
+      return testers;
+    case WGSyncTestType:
+      if (rank == 0) std::cout << "WG Sync ###" << std::endl;
+      testers.push_back(new SyncTester(args));
+      return testers;
     case RandomAccessTestType:
       if (rank == 0) std::cout << "Random_Access ###" << std::endl;
       testers.push_back(new RandomAccessTester(args));
@@ -536,7 +544,8 @@ bool Tester::peLaunchesKernel() {
                 (_type == TeamAllToAllTestType) || (_type == TeamFCollectTestType) ||
                 (_type == PingPongTestType) || (_type == BarrierAllTestType) ||
                 (_type == WAVEBarrierAllTestType) || (_type == WGBarrierAllTestType) ||
-                (_type == SyncTestType) || (_type == SyncAllTestType) ||
+                (_type == SyncTestType) || (_type == WAVESyncTestType) ||
+                (_type == WGSyncTestType) || (_type == SyncAllTestType) ||
                 (_type == WAVESyncAllTestType) || (_type == WGSyncAllTestType) ||
                 (_type == RandomAccessTestType) || (_type == PingAllTestType) ||
                 (_type == TeamBarrierTestType) || (_type == TeamWAVEBarrierTestType) ||

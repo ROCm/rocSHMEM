@@ -624,11 +624,25 @@ __device__ void rocshmem_ctx_wg_sync_all(rocshmem_ctx_t ctx) {
   get_internal_ctx(ctx)->sync_all_wg();
 }
 
-__device__ void rocshmem_ctx_wg_team_sync(rocshmem_ctx_t ctx,
+__device__ void rocshmem_ctx_team_sync(rocshmem_ctx_t ctx,
                                            rocshmem_team_t team) {
   GPU_DPRINTF("Function: rocshmem_ctx_sync_all\n");
 
   get_internal_ctx(ctx)->sync_wg(team);
+}
+
+__device__ void rocshmem_ctx_wave_team_sync(rocshmem_ctx_t ctx,
+  rocshmem_team_t team) {
+GPU_DPRINTF("Function: rocshmem_ctx_wave_sync_all\n");
+
+get_internal_ctx(ctx)->sync_wg(team);
+}
+
+__device__ void rocshmem_ctx_wg_team_sync(rocshmem_ctx_t ctx,
+  rocshmem_team_t team) {
+GPU_DPRINTF("Function: rocshmem_ctx_wg_sync_all\n");
+
+get_internal_ctx(ctx)->sync_wg(team);
 }
 
 __device__ int rocshmem_ctx_n_pes(rocshmem_ctx_t ctx) {

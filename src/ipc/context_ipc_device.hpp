@@ -77,6 +77,10 @@ class IPCContext : public Context {
 
   __device__ void sync_all_wg();
 
+  __device__ void sync(rocshmem_team_t team);
+
+  __device__ void sync_wave(rocshmem_team_t team);
+
   __device__ void sync_wg(rocshmem_team_t team);
 
   template <typename T>

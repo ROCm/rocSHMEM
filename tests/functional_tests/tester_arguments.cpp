@@ -142,7 +142,8 @@ void TesterArguments::get_rocshmem_arguments() {
   if ((type != BarrierAllTestType) && (type != WAVEBarrierAllTestType) &&
       (type != WGBarrierAllTestType) && (type != SyncAllTestType) &&
       (type != WAVESyncAllTestType) && (type != WGSyncAllTestType) &&
-      (type != SyncTestType) && (type != TeamAllToAllTestType) &&
+      (type != SyncTestType) && (type != WAVESyncTestType) &&
+      (type != WGSyncTestType) && (type != TeamAllToAllTestType) &&
       (type != TeamFCollectTestType) && (type != TeamReductionTestType) &&
       (type != TeamBroadcastTestType) && (type != PingAllTestType) &&
       (type != TeamBarrierTestType) && (type != TeamWAVEBarrierTestType) &&

@@ -627,6 +627,42 @@ __device__ ATTR_NO_INLINE void rocshmem_ctx_wg_sync_all(rocshmem_ctx_t ctx);
  * completion and visibility of previously issued memory stores and does not
  * ensure completion of remote memory updates issued via OpenSHMEM routines.
  *
+ * This function must be invoked by a single thread within the PE.
+ *
+ * @param[in] handle GPU side handle.
+ * @param[in] team  Handle of the team being synchronized
+ *
+ * @return void
+ */
+__device__ ATTR_NO_INLINE void rocshmem_ctx_team_sync(
+    rocshmem_ctx_t ctx, rocshmem_team_t team);
+
+/**
+ * @brief registers the arrival of a PE at a barrier.
+ * The caller is blocked until the synchronization is resolved.
+ *
+ * In contrast with the shmem_barrier_all routine, shmem_team_sync only ensures
+ * completion and visibility of previously issued memory stores and does not
+ * ensure completion of remote memory updates issued via OpenSHMEM routines.
+ *
+ * This function must be called as a wave-front collective.
+ *
+ * @param[in] handle GPU side handle.
+ * @param[in] team  Handle of the team being synchronized
+ *
+ * @return void
+ */
+__device__ ATTR_NO_INLINE void rocshmem_ctx_wave_team_sync(
+    rocshmem_ctx_t ctx, rocshmem_team_t team);
+
+/**
+ * @brief registers the arrival of a PE at a barrier.
+ * The caller is blocked until the synchronization is resolved.
+ *
+ * In contrast with the shmem_barrier_all routine, shmem_team_sync only ensures
+ * completion and visibility of previously issued memory stores and does not
+ * ensure completion of remote memory updates issued via OpenSHMEM routines.
+ *
  * This function must be called as a work-group collective.
  *
  * @param[in] handle GPU side handle.

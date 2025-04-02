@@ -105,6 +105,8 @@ enum TestType {
   WGSyncAllTestType = 68,
   TeamBarrierTestType = 69,
   TeamWAVEBarrierTestType = 70,
+  WAVESyncTestType = 71,
+  WGSyncTestType = 72,
 };
 
 enum OpType { PutType = 0, GetType = 1 };
