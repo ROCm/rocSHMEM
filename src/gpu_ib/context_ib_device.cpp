@@ -159,28 +159,28 @@ __device__ void *GPUIBContext::shmem_ptr(const void *dest, int pe) {
 __device__ void GPUIBContext::threadfence_system() {
   int thread_id = get_flat_block_id();
 
-  if (thread_id % WF_SIZE == lowerID()) {
-#ifdef USE_SINGLE_NODE
-    // Flush current PE HDP
-    HdpPolicy::hdp_flush(
-        reinterpret_cast<unsigned int *>(networkImpl.hdp_address));
-
-    // Flush the rest of the HDPs
-    for (int pe = 0; pe < ipcImpl_.shm_size; pe++) {
-      auto target_address = networkImpl.hdp_address;
-      const int value = HdpPolicy::HDP_FLUSH_VAL;
-      if (pe != my_pe) {
-        const int value = HdpPolicy::HDP_FLUSH_VAL;
-        auto mapped_address =
-            shmem_ptr(reinterpret_cast<void *>(target_address), pe);
-        __hip_atomic_store(static_cast<int *>(mapped_address), value,
-                           __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_SYSTEM);
-      }
-    }
-#else
-    getQueuePair(my_pe)->hdp_policy->flushCoherency();
-#endif
-  }
+//  if (thread_id % WF_SIZE == lowerID()) {
+//#ifdef USE_SINGLE_NODE
+//    // Flush current PE HDP
+//    HdpPolicy::hdp_flush(
+//        reinterpret_cast<unsigned int *>(networkImpl.hdp_address));
+//
+//    // Flush the rest of the HDPs
+//    for (int pe = 0; pe < ipcImpl_.shm_size; pe++) {
+//      auto target_address = networkImpl.hdp_address;
+//      const int value = HdpPolicy::HDP_FLUSH_VAL;
+//      if (pe != my_pe) {
+//        const int value = HdpPolicy::HDP_FLUSH_VAL;
+//        auto mapped_address =
+//            shmem_ptr(reinterpret_cast<void *>(target_address), pe);
+//        __hip_atomic_store(static_cast<int *>(mapped_address), value,
+//                           __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_SYSTEM);
+//      }
+//    }
+//#else
+//    getQueuePair(my_pe)->hdp_policy->flushCoherency();
+//#endif
+//  }
 
   __threadfence_system();
 }

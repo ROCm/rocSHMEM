@@ -83,8 +83,8 @@ GPUIBBackend::GPUIBBackend(MPI_Comm comm) : Backend() {
   NET_CHECK(MPI_Comm_rank(gpu_ib_comm_world, &my_pe));
 
   /* Initialize the host interface */
-  host_interface =
-      new HostInterface(hdp_proxy_.get(), gpu_ib_comm_world, &heap);
+//  host_interface =
+//      new HostInterface(hdp_proxy_.get(), gpu_ib_comm_world, &heap);
 
   /*
    * Construct default host context independently of the
@@ -107,16 +107,16 @@ GPUIBBackend::GPUIBBackend(MPI_Comm comm) : Backend() {
 
   worker_thread_exit = false;
 
-#ifdef USE_HOST_SIDE_HDP_FLUSH
-  hdp_gpu_cpu_flush_flag_ =
-      static_cast<unsigned int *>(rocshmem_malloc(sizeof(unsigned int)));
-  hdp_policy->set_flush_polling_ptr(hdp_gpu_cpu_flush_flag_);
-  hdp_flush_worker_thread = std::thread(&GPUIBBackend::hdp_flush_poll, this);
-
-  // We can now initialize and set the HDP window in the host interface
-  host_interface->create_hdp_window();
-
-#endif
+//#ifdef USE_HOST_SIDE_HDP_FLUSH
+//  hdp_gpu_cpu_flush_flag_ =
+//      static_cast<unsigned int *>(rocshmem_malloc(sizeof(unsigned int)));
+//  hdp_policy->set_flush_polling_ptr(hdp_gpu_cpu_flush_flag_);
+//  hdp_flush_worker_thread = std::thread(&GPUIBBackend::hdp_flush_poll, this);
+//
+//  // We can now initialize and set the HDP window in the host interface
+//  host_interface->create_hdp_window();
+//
+//#endif
 
   // commenting out the async  thread as there is some issues with ROCm
   // this makes the CPU init blocking
@@ -164,11 +164,11 @@ GPUIBBackend::~GPUIBBackend() {
 
   worker_thread_exit = true;
 
-#ifdef USE_HOST_SIDE_HDP_FLUSH
-  hdp_flush_worker_thread.join();
-  hdp_policy->set_flush_polling_ptr(nullptr);
-  rocshmem_free(hdp_gpu_cpu_flush_flag_);
-#endif
+//#ifdef USE_HOST_SIDE_HDP_FLUSH
+//  hdp_flush_worker_thread.join();
+//  hdp_policy->set_flush_polling_ptr(nullptr);
+//  rocshmem_free(hdp_gpu_cpu_flush_flag_);
+//#endif
 
   /**
    * Destroy teams infrastructure
@@ -365,16 +365,16 @@ void GPUIBBackend::thread_func_internal(GPUIBBackend *b) {
   *(b->done_init) = 1;
 }
 
-#ifdef USE_HOST_SIDE_HDP_FLUSH
-void GPUIBBackend::hdp_flush_poll() {
-  while (!worker_thread_exit) {
-    if (hdp_policy->has_active_flush_request()) {
-      hdp_policy->hdp_flush();
-      hdp_policy->clear_active_flush_flag();
-    }
-  }
-}
-#endif
+//#ifdef USE_HOST_SIDE_HDP_FLUSH
+//void GPUIBBackend::hdp_flush_poll() {
+//  while (!worker_thread_exit) {
+//    if (hdp_policy->has_active_flush_request()) {
+//      hdp_policy->hdp_flush();
+//      hdp_policy->clear_active_flush_flag();
+//    }
+//  }
+//}
+//#endif
 
 void GPUIBBackend::teams_init() {
   /**

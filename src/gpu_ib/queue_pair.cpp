@@ -33,10 +33,10 @@
 namespace rocshmem {
 
 QueuePair::QueuePair(GPUIBBackend *backend)
-    : hdp_policy(backend->hdp_policy),
-      connection_policy(*backend->networkImpl.connection_policy) {
-  hdp_rkey = backend->networkImpl.hdp_rkey;
-  hdp_address = backend->networkImpl.hdp_address;
+//    : hdp_policy(backend->hdp_policy),
+     : connection_policy(*backend->networkImpl.connection_policy) {
+//  hdp_rkey = backend->networkImpl.hdp_rkey;
+//  hdp_address = backend->networkImpl.hdp_address;
 
   atomic_ret.atomic_lkey = backend->networkImpl.atomic_ret->atomic_lkey;
   atomic_ret.atomic_counter = 0;
@@ -232,7 +232,7 @@ __device__ void QueuePair::update_posted_wqe_generic(
   connection_policy.setRkey(&rkey_in_stack_frame, pe);
 
   if (opcode == MLX5_OPCODE_RDMA_WRITE && !size) {
-    rkey_in_stack_frame = hdp_rkey[pe];
+//    rkey_in_stack_frame = hdp_rkey[pe];
     size = 4;
   }
 
@@ -377,10 +377,10 @@ __device__ void QueuePair::fence(int pe) {
   // TODO(khamidou): should this be replaced by a zero_byte_rd?
   // FIXME: the relaxed ordering requires an intervening read to order
   // prior operations.
-  auto remote_hdp_uncast = hdp_address[pe];
-  uintptr_t *remote_hdp = reinterpret_cast<uintptr_t *>(remote_hdp_uncast);
-  update_posted_wqe_generic<THREAD, true>(
-      pe, 0, nullptr, remote_hdp, MLX5_OPCODE_RDMA_WRITE, 0, 0, true, 0);
+//  auto remote_hdp_uncast = hdp_address[pe];
+//  uintptr_t *remote_hdp = reinterpret_cast<uintptr_t *>(remote_hdp_uncast);
+//  update_posted_wqe_generic<THREAD, true>(
+//      pe, 0, nullptr, remote_hdp, MLX5_OPCODE_RDMA_WRITE, 0, 0, true, 0);
 }
 
 __device__ void QueuePair::waitCQSpace(int num_msgs) {

@@ -30,13 +30,13 @@
 #include "rocshmem/rocshmem.hpp"
 #include "connection_policy.hpp"
 #include "queue_pair.hpp"
-#include "../hdp_policy.hpp"
+//#include "../hdp_policy.hpp"
 #include "../memory/symmetric_heap.hpp"
 #include "../stats.hpp"
 #include "../util.hpp"
 
 struct ibv_mr;
-struct hdp_reg_t;
+//struct hdp_reg_t;
 
 namespace rocshmem {
 
@@ -130,7 +130,7 @@ class NetworkOnImpl {
    * create helper function to improve code reuse regarding the many
    * data transfers.
    */
-  void exchange_hdp_info(HdpPolicy *hdp_policy, MPI_Comm thread_comm);
+//  void exchange_hdp_info(HdpPolicy *hdp_policy, MPI_Comm thread_comm);
 
   /**
    * @brief Allocate and initialize the atomic region.
@@ -191,7 +191,7 @@ class NetworkOnImpl {
    * class does not do much besides initialize this data structure and
    * hold it until the QueuePair can consume it.
    */
-  uint32_t *hdp_rkey{nullptr};
+//  uint32_t *hdp_rkey{nullptr};
 
   /**
    * @brief Holds HDP register addresses for each processing element.
@@ -209,12 +209,12 @@ class NetworkOnImpl {
    * class does not do much besides initialize this data structure and
    * hold it until the QueuePair can consume it.
    */
-  uintptr_t *hdp_address{nullptr};
+//  uintptr_t *hdp_address{nullptr};
 
   /**
    * @brief Handle for the HDP memory region.
    */
-  ibv_mr *hdp_mr{nullptr};
+//  ibv_mr *hdp_mr{nullptr};
 
   /**
    * @brief Set of QueuePairs used by device to do networking.
@@ -293,7 +293,7 @@ class NetworkOffImpl {
 
   __host__ void networkHostSetup(GPUIBBackend *B);
 
-  __host__ void exchange_hdp_info(HdpPolicy *hdp_policy, MPI_Comm thread_comm);
+//  __host__ void exchange_hdp_info(HdpPolicy *hdp_policy, MPI_Comm thread_comm);
 
   __host__ void networkHostFinalize();
 
@@ -318,11 +318,11 @@ class NetworkOffImpl {
 
   int num_blocks{0};
 
-  uint32_t *hdp_rkey{nullptr};
+//  uint32_t *hdp_rkey{nullptr};
 
-  uintptr_t *hdp_address{nullptr};
+//  uintptr_t *hdp_address{nullptr};
 
-  ibv_mr *hdp_mr{nullptr};
+//  ibv_mr *hdp_mr{nullptr};
 
   QueuePair *gpu_qps{nullptr};
 

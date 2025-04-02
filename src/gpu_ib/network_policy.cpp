@@ -100,91 +100,91 @@ void NetworkOnImpl::reset_backend_stats() {
   }
 }
 
-void NetworkOnImpl::exchange_hdp_info(HdpPolicy *hdp_policy,
-                                      MPI_Comm thread_comm) {
-  /*
-   * Using Connection class, register the host-side hdp flush address
-   * with the InfiniBand network.
-   */
-  connection->reg_mr(hdp_policy->get_hdp_flush_ptr(), 32, &hdp_mr, false);
-
-  /*
-   * Allocate device-side memory for the remote HDP keys.
-   */
-  CHECK_HIP(hipMalloc(reinterpret_cast<void **>(&hdp_rkey),
-                      num_pes * sizeof(uint32_t)));
-
-  /*
-   * Allocate device-side memory for the remote HDP addresses.
-   */
-  CHECK_HIP(hipMalloc(reinterpret_cast<void **>(&hdp_address),
-                      num_pes * sizeof(uintptr_t)));
-
-  /*
-   * Allocate host-side memory to exchange hdp keys using MPI_Allgather.
-   */
-  uint32_t *host_hdp_cpy =
-      reinterpret_cast<uint32_t *>(malloc(num_pes * sizeof(uint32_t)));
-  if (host_hdp_cpy == nullptr) {
-    abort();
-  }
-
-  /*
-   * Allocate host-side memory to exchange hdp addresses using
-   * MPI_Allgather.
-   */
-  uint32_t **host_hdp_address_cpy =
-      reinterpret_cast<uint32_t **>(malloc(num_pes * sizeof(uint32_t *)));
-  if (host_hdp_address_cpy == nullptr) {
-    free(host_hdp_cpy);
-    abort();
-  }
-
-  /*
-   * This processing element writes its personal HDP key and HDP address
-   * into the host-side arrays which were just allocated.
-   */
-  int my_rank = my_pe;
-  host_hdp_cpy[my_rank] = htobe32(hdp_mr->rkey);
-  host_hdp_address_cpy[my_rank] = hdp_policy->get_hdp_flush_ptr();
-
-  /*
-   * Do all-to-all exchange of our HDP key with other processing elements.
-   */
-  MPI_Allgather(MPI_IN_PLACE, sizeof(uint32_t), MPI_CHAR, host_hdp_cpy,
-                sizeof(uint32_t), MPI_CHAR, thread_comm);
-
-  /*
-   * Do all-to-all exchange of our HDP address with other processing
-   * elements.
-   */
-  MPI_Allgather(MPI_IN_PLACE, sizeof(uintptr_t), MPI_CHAR, host_hdp_address_cpy,
-                sizeof(uint32_t *), MPI_CHAR, thread_comm);
-
-  /*
-   * Copy the recently exchanged HDP keys to device memory.
-   */
-  hipStream_t stream;
-  CHECK_HIP(hipStreamCreateWithFlags(&stream, hipStreamNonBlocking));
-  CHECK_HIP(hipMemcpyAsync(hdp_rkey, host_hdp_cpy, num_pes * sizeof(uint32_t),
-                           hipMemcpyHostToDevice, stream));
-
-  /*
-   * Copy the recently exchanged HDP addresses to device memory.
-   */
-  CHECK_HIP(hipMemcpyAsync(hdp_address, host_hdp_address_cpy,
-                           num_pes * sizeof(uint32_t *), hipMemcpyHostToDevice,
-                           stream));
-  CHECK_HIP(hipStreamSynchronize(stream));
-  CHECK_HIP(hipStreamDestroy(stream));
-
-  /*
-   * Free the host-side resources used to exchange HDP resources
-   * between processing elements.
-   */
-  free(host_hdp_cpy);
-  free(host_hdp_address_cpy);
-}
+//void NetworkOnImpl::exchange_hdp_info(HdpPolicy *hdp_policy,
+//                                      MPI_Comm thread_comm) {
+//  /*
+//   * Using Connection class, register the host-side hdp flush address
+//   * with the InfiniBand network.
+//   */
+//  connection->reg_mr(hdp_policy->get_hdp_flush_ptr(), 32, &hdp_mr, false);
+//
+//  /*
+//   * Allocate device-side memory for the remote HDP keys.
+//   */
+//  CHECK_HIP(hipMalloc(reinterpret_cast<void **>(&hdp_rkey),
+//                      num_pes * sizeof(uint32_t)));
+//
+//  /*
+//   * Allocate device-side memory for the remote HDP addresses.
+//   */
+//  CHECK_HIP(hipMalloc(reinterpret_cast<void **>(&hdp_address),
+//                      num_pes * sizeof(uintptr_t)));
+//
+//  /*
+//   * Allocate host-side memory to exchange hdp keys using MPI_Allgather.
+//   */
+//  uint32_t *host_hdp_cpy =
+//      reinterpret_cast<uint32_t *>(malloc(num_pes * sizeof(uint32_t)));
+//  if (host_hdp_cpy == nullptr) {
+//    abort();
+//  }
+//
+//  /*
+//   * Allocate host-side memory to exchange hdp addresses using
+//   * MPI_Allgather.
+//   */
+//  uint32_t **host_hdp_address_cpy =
+//      reinterpret_cast<uint32_t **>(malloc(num_pes * sizeof(uint32_t *)));
+//  if (host_hdp_address_cpy == nullptr) {
+//    free(host_hdp_cpy);
+//    abort();
+//  }
+//
+//  /*
+//   * This processing element writes its personal HDP key and HDP address
+//   * into the host-side arrays which were just allocated.
+//   */
+//  int my_rank = my_pe;
+//  host_hdp_cpy[my_rank] = htobe32(hdp_mr->rkey);
+//  host_hdp_address_cpy[my_rank] = hdp_policy->get_hdp_flush_ptr();
+//
+//  /*
+//   * Do all-to-all exchange of our HDP key with other processing elements.
+//   */
+//  MPI_Allgather(MPI_IN_PLACE, sizeof(uint32_t), MPI_CHAR, host_hdp_cpy,
+//                sizeof(uint32_t), MPI_CHAR, thread_comm);
+//
+//  /*
+//   * Do all-to-all exchange of our HDP address with other processing
+//   * elements.
+//   */
+//  MPI_Allgather(MPI_IN_PLACE, sizeof(uintptr_t), MPI_CHAR, host_hdp_address_cpy,
+//                sizeof(uint32_t *), MPI_CHAR, thread_comm);
+//
+//  /*
+//   * Copy the recently exchanged HDP keys to device memory.
+//   */
+//  hipStream_t stream;
+//  CHECK_HIP(hipStreamCreateWithFlags(&stream, hipStreamNonBlocking));
+//  CHECK_HIP(hipMemcpyAsync(hdp_rkey, host_hdp_cpy, num_pes * sizeof(uint32_t),
+//                           hipMemcpyHostToDevice, stream));
+//
+//  /*
+//   * Copy the recently exchanged HDP addresses to device memory.
+//   */
+//  CHECK_HIP(hipMemcpyAsync(hdp_address, host_hdp_address_cpy,
+//                           num_pes * sizeof(uint32_t *), hipMemcpyHostToDevice,
+//                           stream));
+//  CHECK_HIP(hipStreamSynchronize(stream));
+//  CHECK_HIP(hipStreamDestroy(stream));
+//
+//  /*
+//   * Free the host-side resources used to exchange HDP resources
+//   * between processing elements.
+//   */
+//  free(host_hdp_cpy);
+//  free(host_hdp_address_cpy);
+//}
 
 void NetworkOnImpl::setup_atomic_region() {
   /*
@@ -314,7 +314,7 @@ __host__ void NetworkOnImpl::networkHostSetup(GPUIBBackend *B) {
 #endif
 
   connection->initialize(B->num_blocks_);
-  exchange_hdp_info(B->hdp_policy, B->thread_comm);
+//  exchange_hdp_info(B->hdp_policy, B->thread_comm);
 
   const auto &heap_bases{B->heap.get_heap_bases()};
   heap_memory_rkey(heap_bases[my_pe], B->heap.get_size(), B->thread_comm,
@@ -335,11 +335,11 @@ __host__ void NetworkOnImpl::networkHostSetup(GPUIBBackend *B) {
 }
 
 __host__ void NetworkOnImpl::networkHostFinalize() {
-  CHECK_HIP(hipFree(hdp_rkey));
-  hdp_rkey = nullptr;
-
-  CHECK_HIP(hipFree(hdp_address));
-  hdp_address = nullptr;
+//  CHECK_HIP(hipFree(hdp_rkey));
+//  hdp_rkey = nullptr;
+//
+//  CHECK_HIP(hipFree(hdp_address));
+//  hdp_address = nullptr;
 
   CHECK_HIP(hipFree(atomic_ret));
   atomic_ret = nullptr;
@@ -422,79 +422,79 @@ void NetworkOffImpl::networkHostSetup(GPUIBBackend *B) {
   my_pe = B->my_pe;
   num_blocks = B->num_blocks_;
 
-  exchange_hdp_info(B->hdp_policy, B->thread_comm);
+//  exchange_hdp_info(B->hdp_policy, B->thread_comm);
 }
-void NetworkOffImpl::exchange_hdp_info(HdpPolicy *hdp_policy,
-                                       MPI_Comm thread_comm) {
-#ifdef USE_SINGLE_NODE
-  // We are using the symmetric heap for the HDP flush ptr
-  hdp_address = reinterpret_cast<uintptr_t *>(hdp_policy->get_hdp_flush_ptr());
-#else
-  /*
-   * Allocate device-side memory for the remote HDP addresses.
-   */
-  CHECK_HIP(hipMalloc(reinterpret_cast<void **>(&hdp_address),
-                      num_pes * sizeof(uintptr_t)));
-
-  /*
-   * Allocate host-side memory to exchange hdp keys using MPI_Allgather.
-   */
-  uint32_t *host_hdp_cpy =
-      reinterpret_cast<uint32_t *>(malloc(num_pes * sizeof(uint32_t)));
-  if (host_hdp_cpy == nullptr) {
-    abort();
-  }
-
-  /*
-   * Allocate host-side memory to exchange hdp addresses using
-   * MPI_Allgather.
-   */
-  uint32_t **host_hdp_address_cpy =
-      reinterpret_cast<uint32_t **>(malloc(num_pes * sizeof(uint32_t *)));
-  if (host_hdp_address_cpy == nullptr) {
-    free(host_hdp_cpy);
-    abort();
-  }
-
-  /*
-   * This processing element writes its personal HDP address
-   * into the host-side array which were just allocated.
-   */
-  int my_rank = my_pe;
-  host_hdp_address_cpy[my_rank] = hdp_policy->get_hdp_flush_ptr();
-
-  /*
-   * Do all-to-all exchange of our HDP address with other processing
-   * elements.
-   */
-  MPI_Allgather(MPI_IN_PLACE, sizeof(uintptr_t), MPI_CHAR, host_hdp_address_cpy,
-                sizeof(uint32_t *), MPI_CHAR, thread_comm);
-
-  /*
-   * Copy the recently exchanged HDP addresses to device memory.
-   */
-  hipStream_t stream;
-  CHECK_HIP(hipStreamCreateWithFlags(&stream, hipStreamNonBlocking));
-  CHECK_HIP(hipMemcpyAsync(hdp_address, host_hdp_address_cpy,
-                           num_pes * sizeof(uint32_t *), hipMemcpyHostToDevice,
-                           stream));
-  CHECK_HIP(hipStreamSynchronize(stream));
-  CHECK_HIP(hipStreamDestroy(stream));
-
-  /*
-   * Free the host-side resources used to exchange HDP resources
-   * between processing elements.
-   */
-  free(host_hdp_cpy);
-  free(host_hdp_address_cpy);
-#endif
-}
+//void NetworkOffImpl::exchange_hdp_info(HdpPolicy *hdp_policy,
+//                                       MPI_Comm thread_comm) {
+//#ifdef USE_SINGLE_NODE
+//  // We are using the symmetric heap for the HDP flush ptr
+//  hdp_address = reinterpret_cast<uintptr_t *>(hdp_policy->get_hdp_flush_ptr());
+//#else
+//  /*
+//   * Allocate device-side memory for the remote HDP addresses.
+//   */
+//  CHECK_HIP(hipMalloc(reinterpret_cast<void **>(&hdp_address),
+//                      num_pes * sizeof(uintptr_t)));
+//
+//  /*
+//   * Allocate host-side memory to exchange hdp keys using MPI_Allgather.
+//   */
+//  uint32_t *host_hdp_cpy =
+//      reinterpret_cast<uint32_t *>(malloc(num_pes * sizeof(uint32_t)));
+//  if (host_hdp_cpy == nullptr) {
+//    abort();
+//  }
+//
+//  /*
+//   * Allocate host-side memory to exchange hdp addresses using
+//   * MPI_Allgather.
+//   */
+//  uint32_t **host_hdp_address_cpy =
+//      reinterpret_cast<uint32_t **>(malloc(num_pes * sizeof(uint32_t *)));
+//  if (host_hdp_address_cpy == nullptr) {
+//    free(host_hdp_cpy);
+//    abort();
+//  }
+//
+//  /*
+//   * This processing element writes its personal HDP address
+//   * into the host-side array which were just allocated.
+//   */
+//  int my_rank = my_pe;
+//  host_hdp_address_cpy[my_rank] = hdp_policy->get_hdp_flush_ptr();
+//
+//  /*
+//   * Do all-to-all exchange of our HDP address with other processing
+//   * elements.
+//   */
+//  MPI_Allgather(MPI_IN_PLACE, sizeof(uintptr_t), MPI_CHAR, host_hdp_address_cpy,
+//                sizeof(uint32_t *), MPI_CHAR, thread_comm);
+//
+//  /*
+//   * Copy the recently exchanged HDP addresses to device memory.
+//   */
+//  hipStream_t stream;
+//  CHECK_HIP(hipStreamCreateWithFlags(&stream, hipStreamNonBlocking));
+//  CHECK_HIP(hipMemcpyAsync(hdp_address, host_hdp_address_cpy,
+//                           num_pes * sizeof(uint32_t *), hipMemcpyHostToDevice,
+//                           stream));
+//  CHECK_HIP(hipStreamSynchronize(stream));
+//  CHECK_HIP(hipStreamDestroy(stream));
+//
+//  /*
+//   * Free the host-side resources used to exchange HDP resources
+//   * between processing elements.
+//   */
+//  free(host_hdp_cpy);
+//  free(host_hdp_address_cpy);
+//#endif
+//}
 
 void NetworkOffImpl::networkHostFinalize() {
-#ifndef USE_SINGLE_NODE
-  CHECK_HIP(hipFree(hdp_address));
-#endif
-  hdp_address = nullptr;
+//#ifndef USE_SINGLE_NODE
+//  CHECK_HIP(hipFree(hdp_address));
+//#endif
+//  hdp_address = nullptr;
 }
 
 }  // namespace rocshmem
