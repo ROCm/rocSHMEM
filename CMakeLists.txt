@@ -159,7 +159,7 @@ if (NOT BUILD_TESTS_ONLY)
   find_package(hsa-runtime64 REQUIRED)
 
   if (USE_GPU_IB)
-    find_package(Ibverbs REQUIRED)
+    include(cmake/find_ibverbs.cmake)
   endif()
 
   set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
