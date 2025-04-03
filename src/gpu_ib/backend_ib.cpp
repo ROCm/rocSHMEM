@@ -83,8 +83,9 @@ GPUIBBackend::GPUIBBackend(MPI_Comm comm) : Backend() {
   NET_CHECK(MPI_Comm_rank(gpu_ib_comm_world, &my_pe));
 
   /* Initialize the host interface */
-//  host_interface =
-//      new HostInterface(hdp_proxy_.get(), gpu_ib_comm_world, &heap);
+  host_interface =
+      //new HostInterface(hdp_proxy_.get(), gpu_ib_comm_world, &heap);
+      new HostInterface(nullptr, gpu_ib_comm_world, &heap);
 
   /*
    * Construct default host context independently of the
