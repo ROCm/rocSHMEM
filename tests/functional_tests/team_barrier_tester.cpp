@@ -46,16 +46,16 @@ __global__ void TeamBarrierTest(int loop, int skip, long long int *start_time,
     switch (type) {
       case TeamBarrierTestType:
         if(t_id == 0) {
-          rocshmem_barrier(ctx, teams[wg_id]);
+          rocshmem_ctx_barrier(ctx, teams[wg_id]);
         }
         break;
       case TeamWAVEBarrierTestType:
         if(wf_id == 0) {
-          rocshmem_wave_barrier(ctx, teams[wg_id]);
+          rocshmem_ctx_wave_barrier(ctx, teams[wg_id]);
         }
         break;
       case TeamWGBarrierTestType:
-        rocshmem_wg_barrier(ctx, teams[wg_id]);
+        rocshmem_ctx_wg_barrier(ctx, teams[wg_id]);
         break;
       default:
         break;

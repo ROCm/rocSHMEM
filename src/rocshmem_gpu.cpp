@@ -588,19 +588,19 @@ __device__ void rocshmem_ctx_wg_barrier_all(rocshmem_ctx_t ctx) {
   get_internal_ctx(ctx)->barrier_all_wg();
 }
 
-__device__ void rocshmem_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team) {
+__device__ void rocshmem_ctx_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team) {
   GPU_DPRINTF("Function: rocshmem_barrier\n");
 
   get_internal_ctx(ctx)->barrier(team);
 }
 
-__device__ void rocshmem_wave_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team) {
+__device__ void rocshmem_ctx_wave_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team) {
   GPU_DPRINTF("Function: rocshmem_wave_barrier\n");
 
   get_internal_ctx(ctx)->barrier_wave(team);
 }
 
-__device__ void rocshmem_wg_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team) {
+__device__ void rocshmem_ctx_wg_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team) {
   GPU_DPRINTF("Function: rocshmem_wg_barrier\n");
 
   get_internal_ctx(ctx)->barrier_wg(team);

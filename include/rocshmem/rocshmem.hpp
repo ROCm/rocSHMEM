@@ -541,7 +541,7 @@ __device__ ATTR_NO_INLINE void rocshmem_ctx_wg_barrier_all(
  *
  * @return void
  */
-__device__ void rocshmem_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team);
+__device__ void rocshmem_ctx_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team);
 
 /**
  * @brief perform a collective barrier between all PEs in the team.
@@ -555,7 +555,7 @@ __device__ void rocshmem_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team);
  *
  * @return void
  */
-__device__ void rocshmem_wave_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team);
+__device__ void rocshmem_ctx_wave_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team);
 
 /**
  * @brief perform a collective barrier between all PEs in the team.
@@ -569,7 +569,7 @@ __device__ void rocshmem_wave_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team);
  *
  * @return void
  */
-__device__ void rocshmem_wg_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team);
+__device__ void rocshmem_ctx_wg_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team);
 
 /**
  * @brief registers the arrival of a PE at a barrier.
