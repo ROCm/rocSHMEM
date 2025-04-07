@@ -30,13 +30,11 @@
 #include "rocshmem/rocshmem.hpp"
 #include "connection_policy.hpp"
 #include "queue_pair.hpp"
-//#include "../hdp_policy.hpp"
 #include "../memory/symmetric_heap.hpp"
 #include "../stats.hpp"
 #include "../util.hpp"
 
 struct ibv_mr;
-//struct hdp_reg_t;
 
 namespace rocshmem {
 
@@ -106,33 +104,6 @@ class NetworkOnImpl {
                         MPI_Comm thread_comm, bool is_managed);
 
   /**
-   * @brief Exchange HDP information between all processing elements.
-   *
-   * Each device has a Host Data Path (HDP) associated with it must be
-   * manually controlled when using fine-grained memory accesses. (The
-   * symmetric heap is allocated with fine-grained memory to support both
-   * host memory accesses and device memory accesses.) The HDP can be
-   * cleared by accessing an address on the device. These addresses must be
-   * shared across the network (to support updates on remote accesses).
-   *
-   * These HDPs are visible to the network by registering them as
-   * InfiniBand memory regions. Every memory region has a remote key
-   * which needs to be shared across the network (to access the memory
-   * region).
-   *
-   * This method is responsible to allocating and initializing the
-   * library's HDP device-side memory and running the all-to-all exchange
-   * to share both the keys and addresses.
-   *
-   * @todo Implement HDP policy class methods to hide most of this
-   * method. The guts should be encapsulated in the policy class and
-   * not exposed here in the backend. Within the policy class methods,
-   * create helper function to improve code reuse regarding the many
-   * data transfers.
-   */
-//  void exchange_hdp_info(HdpPolicy *hdp_policy, MPI_Comm thread_comm);
-
-  /**
    * @brief Allocate and initialize the atomic region.
    *
    * The atomic region is used by the atomic operations which have return
@@ -177,44 +148,6 @@ class NetworkOnImpl {
    * @brief Number of WG that will be performing communication
    */
   int num_blocks{0};
-
-  /**
-   * @brief Holds InfiniBand remote keys for HDP memory regions.
-   *
-   * The member holds a C-array allocation for remote keys (from
-   * InfiniBand memory registrations) for remote HDP registers. The C-array
-   * has one entry for each processing element (indexed by processing
-   * element ID).
-   *
-   * @todo Remove duplication between the backend class and the QueuePair
-   * class. QueuePair stores a copy of this member too. The backend
-   * class does not do much besides initialize this data structure and
-   * hold it until the QueuePair can consume it.
-   */
-//  uint32_t *hdp_rkey{nullptr};
-
-  /**
-   * @brief Holds HDP register addresses for each processing element.
-   *
-   * The Host Data Path (HDP) addresses are used to clear a buffer
-   * which interferes with memory visibility of accesses to fine-grained
-   * allocations.
-   *
-   * The member holds a C-array allocation for the register addresses.
-   * The C-array has one entry for each processing element (indexed by
-   * processing element ID).
-   *
-   * @todo Remove duplication between the backend class and the QueuePair
-   * class. QueuePair stores a copy of this member too. The backend
-   * class does not do much besides initialize this data structure and
-   * hold it until the QueuePair can consume it.
-   */
-//  uintptr_t *hdp_address{nullptr};
-
-  /**
-   * @brief Handle for the HDP memory region.
-   */
-//  ibv_mr *hdp_mr{nullptr};
 
   /**
    * @brief Set of QueuePairs used by device to do networking.
@@ -293,8 +226,6 @@ class NetworkOffImpl {
 
   __host__ void networkHostSetup(GPUIBBackend *B);
 
-//  __host__ void exchange_hdp_info(HdpPolicy *hdp_policy, MPI_Comm thread_comm);
-
   __host__ void networkHostFinalize();
 
   __host__ void networkHostInit(GPUIBContext *ctx, int buffer_id) {}
@@ -317,12 +248,6 @@ class NetworkOffImpl {
   int my_pe{-1};
 
   int num_blocks{0};
-
-//  uint32_t *hdp_rkey{nullptr};
-
-//  uintptr_t *hdp_address{nullptr};
-
-//  ibv_mr *hdp_mr{nullptr};
 
   QueuePair *gpu_qps{nullptr};
 

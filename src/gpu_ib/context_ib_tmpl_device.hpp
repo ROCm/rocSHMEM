@@ -266,7 +266,7 @@ __device__ T GPUIBContext::g(const T *source, int pe) {
     getQueuePair(pe)->get_nbi<THREAD>(base_heap[pe] + L_offset, dest, nelems,
                                       pe, true);
     getQueuePair(pe)->quiet_single<THREAD>();
-//  getQueuePair(my_pe)->hdp_policy->hdp_flush();
+
     __threadfence();
     ret = *(reinterpret_cast<T *>(dest));
     return ret;

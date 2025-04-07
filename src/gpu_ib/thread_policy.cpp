@@ -216,8 +216,6 @@ __device__ void WAVE::finishPost(QueuePair *handle, bool ring_db, int num_wqes,
 }
 
 __device__ void SingleThreadImpl::postLock(QueuePair *handle, int pe) {
-//  handle->hdp_policy->hdp_flush();
-  // handle->waitCQSpace(1);
   handle->waitSQSpace(1);
 }
 
@@ -226,7 +224,7 @@ __device__ void MultiThreadImpl::postLock_internal(QueuePair *handle) {
   int active_threads = wave_SZ();
 
   if (thread_id % WF_SIZE == lowerID()) {
-//    handle->hdp_policy->hdp_flush();
+
     /*
      * Don't let more than one wave in this WG go any further or a
      * horrible variety of impossible to debug race conditions can occur.
@@ -274,13 +272,11 @@ __device__ void MultiThreadImpl::postLock(QueuePair *handle, int pe) {
 }
 
 __device__ void WG::postLock(QueuePair *handle, int pe) {
-//  handle->hdp_policy->hdp_flush();
   // handle->waitCQSpace(1);
   handle->waitSQSpace(1);
 }
 
 __device__ void WAVE::postLock(QueuePair *handle, int pe) {
-//  handle->hdp_policy->hdp_flush();
 
   /*
    * Don't let more than one wave in this WG go any further or a horrible

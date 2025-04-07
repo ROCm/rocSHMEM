@@ -108,17 +108,6 @@ GPUIBBackend::GPUIBBackend(MPI_Comm comm) : Backend() {
 
   worker_thread_exit = false;
 
-//#ifdef USE_HOST_SIDE_HDP_FLUSH
-//  hdp_gpu_cpu_flush_flag_ =
-//      static_cast<unsigned int *>(rocshmem_malloc(sizeof(unsigned int)));
-//  hdp_policy->set_flush_polling_ptr(hdp_gpu_cpu_flush_flag_);
-//  hdp_flush_worker_thread = std::thread(&GPUIBBackend::hdp_flush_poll, this);
-//
-//  // We can now initialize and set the HDP window in the host interface
-//  host_interface->create_hdp_window();
-//
-//#endif
-
   // commenting out the async  thread as there is some issues with ROCm
   // this makes the CPU init blocking
   // async_thread_ = thread_spawn(this);
@@ -164,12 +153,6 @@ GPUIBBackend::~GPUIBBackend() {
   // async_thread_.join();
 
   worker_thread_exit = true;
-
-//#ifdef USE_HOST_SIDE_HDP_FLUSH
-//  hdp_flush_worker_thread.join();
-//  hdp_policy->set_flush_polling_ptr(nullptr);
-//  rocshmem_free(hdp_gpu_cpu_flush_flag_);
-//#endif
 
   /**
    * Destroy teams infrastructure
@@ -365,17 +348,6 @@ void GPUIBBackend::thread_func_internal(GPUIBBackend *b) {
   b->setup_default_ctx();
   *(b->done_init) = 1;
 }
-
-//#ifdef USE_HOST_SIDE_HDP_FLUSH
-//void GPUIBBackend::hdp_flush_poll() {
-//  while (!worker_thread_exit) {
-//    if (hdp_policy->has_active_flush_request()) {
-//      hdp_policy->hdp_flush();
-//      hdp_policy->clear_active_flush_flag();
-//    }
-//  }
-//}
-//#endif
 
 void GPUIBBackend::teams_init() {
   /**
