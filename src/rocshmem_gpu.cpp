@@ -480,7 +480,7 @@ __device__ void rocshmem_alltoall_wg(rocshmem_ctx_t ctx,
 }
 
 template <typename T>
-__device__ void rocshmem_wg_fcollect(rocshmem_ctx_t ctx,
+__device__ void rocshmem_fcollect_wg(rocshmem_ctx_t ctx,
                                       rocshmem_team_t team, T *dest,
                                       const T *source, int nelem) {
   GPU_DPRINTF("Function: rocshmem_fcollect\n");
@@ -1017,7 +1017,7 @@ __device__ int rocshmem_team_translate_pe(rocshmem_team_t src_team,
   template __device__ void rocshmem_alltoall_wg<T>(                            \
       rocshmem_ctx_t ctx, rocshmem_team_t team, T * dest, const T *source,     \
       int nelem);                                                              \
-  template __device__ void rocshmem_wg_fcollect<T>(                            \
+  template __device__ void rocshmem_fcollect_wg<T>(                            \
       rocshmem_ctx_t ctx, rocshmem_team_t team, T * dest, const T *source,     \
       int nelem);                                                              \
   template __device__ void rocshmem_put_wave<T>(                               \
@@ -1333,10 +1333,10 @@ __device__ int rocshmem_team_translate_pe(rocshmem_team_t src_team,
       int nelem) {                                                            \
     rocshmem_alltoall_wg<T>(ctx, team, dest, source, nelem);                  \
   }                                                                           \
-  __device__ void rocshmem_ctx_##TNAME##_wg_fcollect(                         \
+  __device__ void rocshmem_ctx_##TNAME##_fcollect_wg(                         \
       rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source,     \
       int nelem) {                                                            \
-    rocshmem_wg_fcollect<T>(ctx, team, dest, source, nelem);                  \
+    rocshmem_fcollect_wg<T>(ctx, team, dest, source, nelem);                  \
   }
 
 #define AMO_STANDARD_DEF_GEN(T, TNAME)                                        \
