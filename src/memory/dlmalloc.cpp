@@ -6374,6 +6374,16 @@ size_t DLMalloc::mspace_footprint(mspace msp) {
 size_t DLMalloc::mspace_max_footprint(mspace msp) {
   return ::rocshmem::mspace_max_footprint(msp);
 }
+size_t DLMalloc::mspace_used(mspace msp) {
+  struct mallinfo mi{0};
+  mi = mspace_mallinfo(msp);
+  return mi.uordblks;
+}
+size_t DLMalloc::mspace_avail(mspace msp) {
+  struct mallinfo mi{0};
+  mi = mspace_mallinfo(msp);
+  return mi.fordblks;
+}
 #endif // MSPACES
 #endif // ROCSHMEM_ENCAPSULATE
 } // namespace rocshmem

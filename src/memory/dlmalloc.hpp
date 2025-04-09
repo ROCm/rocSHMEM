@@ -58,6 +58,8 @@ class DLMalloc {
   static void* mspace_memalign(mspace msp, size_t alignment, size_t bytes);
   static size_t mspace_footprint(mspace msp);
   static size_t mspace_max_footprint(mspace msp);
+  static size_t mspace_avail(mspace msp);
+  static size_t mspace_used(mspace msp);
 };
 
 template <typename HM_T>
@@ -144,15 +146,31 @@ public:
   __device__ void free([[maybe_unused]] char* ptr) override {}
 
   /**
-   * @brief Sum of all proffered_ memory sizes
+   * @brief Used heap memory
    *
    * @return memory size
    *
-   * @note Not implemented
+   * @note The used size may be larger than the sum of the user allocation sizes
+   * (due to chunk tracking overhead and alignment).
+   *
    */
-  size_t amount_proffered() {
+  size_t get_used() override {
     size_t size{0};
-    size = DLMalloc::mspace_footprint(mspace_);
+    size = DLMalloc::mspace_used(mspace_);
+    return size;
+  }
+
+  /**
+   * @brief Available heap memory
+   *
+   * @return memory size
+   *
+   * @note The available size may be smaller than the total heap size minus the sum
+   * of user allocation sizes (due to chunk tracking overhead and alignment).
+   */
+  size_t get_avail() {
+    size_t size{0};
+    size = DLMalloc::mspace_avail(mspace_);
     return size;
   }
 
