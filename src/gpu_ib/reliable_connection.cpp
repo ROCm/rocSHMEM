@@ -21,6 +21,7 @@
  *****************************************************************************/
 
 #include "reliable_connection.hpp"
+#include "gpuib_macros.inl"
 
 #include <mpi.h>
 
@@ -78,7 +79,9 @@ Connection::RtsState ReliableConnection::rts(dest_info_t* dest) {
 
 ibv_qp* ReliableConnection::create_qp_0(ibv_context* context,
                                         ibv_qp_init_attr_ex* qp_attr) {
-  return ibv_create_qp_ex(context, qp_attr);
+  ibv_qp *qp = ibv_create_qp_ex(context, qp_attr);
+  GPUIB_CHECK_NNULL(qp, "ibv_create_qp_ex");
+  return qp;
 }
 
 void ReliableConnection::create_qps_1() { }
@@ -94,7 +97,8 @@ void ReliableConnection::create_qps_3(int port, ibv_qp* qp, int offset,
   all_qp[offset].qpn = qp->qp_num;
   all_qp[offset].psn = 0;
   union ibv_gid gid;
-  ibv_query_gid(ib_state->context, port, 0, &gid);
+  int err = ibv_query_gid(ib_state->context, port, 0, &gid);
+  GPUIB_CHECK_ZERO(err, "ibv_query_gid");
   all_qp[offset].gid = gid;
 }
 

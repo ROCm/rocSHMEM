@@ -106,7 +106,9 @@ ExecTest() {
 
   # MPI Parameters
   LAUNCHER=mpirun
-  OPTIONS=" -n $NUM_RANKS -mca pml ucx -x ROCSHMEM_MAX_NUM_CONTEXTS=$ROCSHMEM_MAX_NUM_CONTEXTS"
+  OPTIONS=" -n $NUM_RANKS -mca pml ucx"
+  OPTIONS+=" -x ROCSHMEM_MAX_NUM_CONTEXTS=$ROCSHMEM_MAX_NUM_CONTEXTS"
+  OPTIONS+=" -x $PATH -x $LD_LIBRARY_PATH --display-map"
 
   if [[ "" != "$HOSTFILE" ]]
   then
@@ -127,6 +129,7 @@ ExecTest() {
 
   # Run Test
   echo $TEST_LOG_NAME
+  echo $CMD
   eval $CMD
 
   # Validate Test

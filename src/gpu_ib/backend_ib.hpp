@@ -26,8 +26,6 @@
 #include "../backend_bc.hpp"
 #include "../containers/free_list_impl.hpp"
 #include "network_policy.hpp"
-//#include "../hdp_policy.hpp"
-//#include "../hdp_proxy.hpp"
 #include "../memory/hip_allocator.hpp"
 
 namespace rocshmem {
@@ -189,19 +187,6 @@ class GPUIBBackend : public Backend {
    */
   void rocshmem_collective_init();
 
-//#ifdef USE_HOST_SIDE_HDP_FLUSH
-//  /**
-//   * @brief A service thread routine that flushes the hdp cache on behalf of the
-//   * GPU.
-//   */
-//  void hdp_flush_poll();
-//
-//  /**
-//   * @brief Workers used to poll on the device hdp flush request.
-//   */
-//  std::thread hdp_flush_worker_thread{};
-//#endif
-
   /**
    * @brief Signals to the worker threads to exist
    */
@@ -256,24 +241,7 @@ class GPUIBBackend : public Backend {
    */
   size_t num_blocks_{1};
 
- private:
-  /**
-   * @brief Allocates cacheable, device memory for the hdp policy.
-   *
-   * @note Internal data ownership is managed by the proxy
-   */
-//  HdpProxy<HIPAllocator> hdp_proxy_{};
-
  public:
-  /**
-   * @brief Policy choice for two HDP implementations.
-   *
-   * @todo Combine HDP related stuff together into a class with a
-   * reasonable interface. The functionality does not need to exist in
-   * multiple pieces in the Backend and QueuePair classes. The hdp_rkey,
-   * hdp_addresses, and hdp_policy fields should all live in the class.
-   */
-//  HdpPolicy *hdp_policy{hdp_proxy_.get()};
 
   /**
    * @brief Scratchpad for the internal barrier algorithms.
@@ -343,7 +311,6 @@ class GPUIBBackend : public Backend {
    */
   GPUIBHostContext *default_host_ctx_{nullptr};
 
-//  unsigned int* hdp_gpu_cpu_flush_flag_;
 };
 
 }  // namespace rocshmem

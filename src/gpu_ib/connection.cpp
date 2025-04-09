@@ -21,6 +21,7 @@
  *****************************************************************************/
 
 #include "connection.hpp"
+#include "gpuib_macros.inl"
 
 #include <mpi.h>
 
@@ -66,10 +67,7 @@ void Connection::reg_mr(void* ptr, size_t size, ibv_mr** mr, bool managed) {
   }
 
   *mr = ibv_reg_mr(ib_state->pd, ptr, size, access);
-
-  if (*mr == nullptr) {
-    abort();
-  }
+  GPUIB_CHECK_NNULL(*mr, "ibv_reg_mr");
 }
 
 unsigned Connection::total_number_connections() {
@@ -83,14 +81,14 @@ void Connection::initialize(int num_block) {
 
   int ib_devices{0};
   dev_list = ibv_get_device_list(&ib_devices);
-  if (dev_list == nullptr) {
-    abort();
-  }
+  GPUIB_CHECK_NNULL(dev_list, "ibv_get_device");
 
   struct ibv_device* ib_dev = dev_list[0];
   if (requested_dev != nullptr) {
     for (int i = 0; i < ib_devices; i++) {
       const char* select_dev = ibv_get_device_name(dev_list[i]);
+      GPUIB_CHECK_NNULL(select_dev, "ibv_get_device_name");
+
       if (strstr(select_dev, requested_dev) != nullptr) {
         ib_dev = dev_list[i];
         break;
@@ -105,7 +103,7 @@ void Connection::initialize(int num_block) {
   CHECK_HIP(hipGetDevice(&hip_dev_id));
 
   int ib_fork_err = ibv_fork_init();
-  if (ib_fork_err != 0) printf("error: ibv_fork_init failed \n");
+  GPUIB_CHECK_ZERO(ib_fork_err, "ibv_fork_init");
 
   sq_post_dv = static_cast<sq_post_dv_t*>(
       malloc(sizeof(sq_post_dv_t) * total_number_connections()));
@@ -125,12 +123,11 @@ void Connection::finalize() {
   ibv_free_device_list(dev_list);
 
   int ret = ibv_dereg_mr(backend->networkImpl.heap_mr);
-  if (ret) {
-    abort();
-  }
+  GPUIB_CHECK_ZERO(ret, "ibv_dereg_mr");
+
   // comment until rocm 4.5
-  // ibv_dereg_mr(backend->networkImpl.hdp_mr);
-  ibv_dereg_mr(backend->networkImpl.mr);
+  ret = ibv_dereg_mr(backend->networkImpl.mr);
+  GPUIB_CHECK_ZERO(ret, "ibv_dereg_mr");
 }
 
 void Connection::ib_init(struct ibv_device* ib_dev, uint8_t port) {
@@ -154,13 +151,16 @@ void Connection::ib_init(struct ibv_device* ib_dev, uint8_t port) {
   ibv_parent_domain_init_attr pattr;
   init_parent_domain_attr(&pattr);
   ib_state->pd = ibv_alloc_parent_domain(ib_state->context, &pattr);
+  GPUIB_CHECK_NNULL(ib_state->pd, "ibv_alloc_parent_domain");
 
-  ibv_query_port(ib_state->context, port, &ib_state->portinfo);
+  int err = ibv_query_port(ib_state->context, port, &ib_state->portinfo);
+  GPUIB_CHECK_ZERO(err, "ibv_query_port");
 }
 
 template <typename StateType>
 void Connection::try_to_modify_qp(ibv_qp* qp, StateType state) {
-  ibv_modify_qp(qp, &state.exp_qp_attr, state.exp_attr_mask);
+  int err = ibv_modify_qp(qp, &state.exp_qp_attr, state.exp_attr_mask);
+  GPUIB_CHECK_ZERO(err, "ibv_modify_qp");
 }
 
 void Connection::init_qp_status(ibv_qp* qp, uint8_t port) {
@@ -316,13 +316,14 @@ ibv_cq* Connection::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
   cq_attr.parent_domain = pd;
 
   coherent_cq = 1;
-  ibv_cq_ex* cq = ibv_create_cq_ex(context, &cq_attr);
+  ibv_cq_ex* cq_ex = ibv_create_cq_ex(context, &cq_attr);
   coherent_cq = 0;
-  if (!cq) {
-    printf("error in ibv_create_cq_ex: %d %s\n", errno, strerror(errno));
-    return nullptr;
-  }
-  return ibv_cq_ex_to_cq(cq);
+
+  GPUIB_CHECK_NNULL(cq_ex, "ibv_create_cq_ex");
+
+  ibv_cq *cq = ibv_cq_ex_to_cq(cq_ex);
+  GPUIB_CHECK_NNULL(cq, "ibv_cq_ex_to_cq");
+  return cq;
 }
 
 void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp,

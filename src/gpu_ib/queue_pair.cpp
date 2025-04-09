@@ -33,11 +33,7 @@
 namespace rocshmem {
 
 QueuePair::QueuePair(GPUIBBackend *backend)
-//    : hdp_policy(backend->hdp_policy),
      : connection_policy(*backend->networkImpl.connection_policy) {
-//  hdp_rkey = backend->networkImpl.hdp_rkey;
-//  hdp_address = backend->networkImpl.hdp_address;
-
   atomic_ret.atomic_lkey = backend->networkImpl.atomic_ret->atomic_lkey;
   atomic_ret.atomic_counter = 0;
 }
