@@ -35,7 +35,7 @@ __device__ int wg_team_reduce(rocshmem_ctx_t ctx, rocshmem_team_t, T *dest,
   __device__ int wg_team_reduce<T, Op>(rocshmem_ctx_t ctx,               \
                                        rocshmem_team_t team, T * dest,   \
                                        const T *source, int nreduce) {    \
-    return rocshmem_ctx_##TNAME##_##Op_API##_wg_reduce(ctx, team, dest,  \
+    return rocshmem_ctx_##TNAME##_##Op_API##_reduce_wg(ctx, team, dest,  \
                                                         source, nreduce); \
   }
 

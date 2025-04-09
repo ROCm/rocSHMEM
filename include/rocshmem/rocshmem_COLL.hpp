@@ -345,252 +345,252 @@ __device__ ATTR_NO_INLINE void rocshmem_ctx_ulonglong_fcollect_wg(
  *
  * @return int (Zero on successful local completion. Nonzero otherwise.)
  */
-__device__ ATTR_NO_INLINE int rocshmem_ctx_short_sum_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_short_sum_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, short *dest, const short *source,
     int nreduce);
 __host__ int rocshmem_ctx_short_sum_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, short *dest, const short *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_short_min_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_short_min_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, short *dest, const short *source,
     int nreduce);
 __host__ int rocshmem_ctx_short_min_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, short *dest, const short *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_short_max_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_short_max_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, short *dest, const short *source,
     int nreduce);
 __host__ int rocshmem_ctx_short_max_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, short *dest, const short *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_short_prod_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_short_prod_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, short *dest, const short *source,
     int nreduce);
 __host__ int rocshmem_ctx_short_prod_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, short *dest, const short *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_short_or_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_short_or_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, short *dest, const short *source,
     int nreduce);
 __host__ int rocshmem_ctx_short_or_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, short *dest, const short *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_short_and_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_short_and_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, short *dest, const short *source,
     int nreduce);
 __host__ int rocshmem_ctx_short_and_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, short *dest, const short *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_short_xor_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_short_xor_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, short *dest, const short *source,
     int nreduce);
 __host__ int rocshmem_ctx_short_xor_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, short *dest, const short *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_int_sum_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_int_sum_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, int *dest, const int *source,
     int nreduce);
 __host__ int rocshmem_ctx_int_sum_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, int *dest, const int *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_int_min_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_int_min_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, int *dest, const int *source,
     int nreduce);
 __host__ int rocshmem_ctx_int_min_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, int *dest, const int *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_int_max_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_int_max_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, int *dest, const int *source,
     int nreduce);
 __host__ int rocshmem_ctx_int_max_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, int *dest, const int *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_int_prod_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_int_prod_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, int *dest, const int *source,
     int nreduce);
 __host__ int rocshmem_ctx_int_prod_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, int *dest, const int *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_int_or_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_int_or_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, int *dest, const int *source,
     int nreduce);
 __host__ int rocshmem_ctx_int_or_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, int *dest, const int *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_int_and_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_int_and_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, int *dest, const int *source,
     int nreduce);
 __host__ int rocshmem_ctx_int_and_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, int *dest, const int *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_int_xor_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_int_xor_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, int *dest, const int *source,
     int nreduce);
 __host__ int rocshmem_ctx_int_xor_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, int *dest, const int *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_long_sum_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_long_sum_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long *dest, const long *source,
     int nreduce);
 __host__ int rocshmem_ctx_long_sum_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long *dest, const long *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_long_min_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_long_min_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long *dest, const long *source,
     int nreduce);
 __host__ int rocshmem_ctx_long_min_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long *dest, const long *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_long_max_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_long_max_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long *dest, const long *source,
     int nreduce);
 __host__ int rocshmem_ctx_long_max_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long *dest, const long *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_long_prod_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_long_prod_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long *dest, const long *source,
     int nreduce);
 __host__ int rocshmem_ctx_long_prod_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long *dest, const long *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_long_or_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_long_or_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long *dest, const long *source,
     int nreduce);
 __host__ int rocshmem_ctx_long_or_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long *dest, const long *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_long_and_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_long_and_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long *dest, const long *source,
     int nreduce);
 __host__ int rocshmem_ctx_long_and_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long *dest, const long *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_long_xor_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_long_xor_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long *dest, const long *source,
     int nreduce);
 __host__ int rocshmem_ctx_long_xor_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long *dest, const long *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_longlong_sum_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_longlong_sum_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long long *dest, const long long *source,
     int nreduce);
 __host__ int rocshmem_ctx_longlong_sum_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long long *dest, const long long *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_longlong_min_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_longlong_min_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long long *dest, const long long *source,
     int nreduce);
 __host__ int rocshmem_ctx_longlong_min_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long long *dest, const long long *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_longlong_max_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_longlong_max_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long long *dest, const long long *source,
     int nreduce);
 __host__ int rocshmem_ctx_longlong_max_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long long *dest, const long long *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_longlong_prod_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_longlong_prod_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long long *dest, const long long *source,
     int nreduce);
 __host__ int rocshmem_ctx_longlong_prod_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long long *dest, const long long *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_longlong_or_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_longlong_or_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long long *dest, const long long *source,
     int nreduce);
 __host__ int rocshmem_ctx_longlong_or_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long long *dest, const long long *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_longlong_and_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_longlong_and_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long long *dest, const long long *source,
     int nreduce);
 __host__ int rocshmem_ctx_longlong_and_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long long *dest, const long long *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_longlong_xor_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_longlong_xor_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long long *dest, const long long *source,
     int nreduce);
 __host__ int rocshmem_ctx_longlong_xor_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long long *dest, const long long *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_float_sum_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_float_sum_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, float *dest, const float *source,
     int nreduce);
 __host__ int rocshmem_ctx_float_sum_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, float *dest, const float *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_float_min_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_float_min_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, float *dest, const float *source,
     int nreduce);
 __host__ int rocshmem_ctx_float_min_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, float *dest, const float *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_float_max_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_float_max_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, float *dest, const float *source,
     int nreduce);
 __host__ int rocshmem_ctx_float_max_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, float *dest, const float *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_float_prod_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_float_prod_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, float *dest, const float *source,
     int nreduce);
 __host__ int rocshmem_ctx_float_prod_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, float *dest, const float *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_double_sum_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_double_sum_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, double *dest, const double *source,
     int nreduce);
 __host__ int rocshmem_ctx_double_sum_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, double *dest, const double *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_double_min_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_double_min_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, double *dest, const double *source,
     int nreduce);
 __host__ int rocshmem_ctx_double_min_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, double *dest, const double *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_double_max_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_double_max_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, double *dest, const double *source,
     int nreduce);
 __host__ int rocshmem_ctx_double_max_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, double *dest, const double *source,
     int nreduce);
 
-__device__ ATTR_NO_INLINE int rocshmem_ctx_double_prod_wg_reduce(
+__device__ ATTR_NO_INLINE int rocshmem_ctx_double_prod_reduce_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, double *dest, const double *source,
     int nreduce);
 __host__ int rocshmem_ctx_double_prod_reduce(

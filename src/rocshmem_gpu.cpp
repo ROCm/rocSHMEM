@@ -453,7 +453,7 @@ __device__ void *rocshmem_ptr(const void *dest, int pe) {
 }
 
 template <typename T, ROCSHMEM_OP Op>
-__device__ int rocshmem_wg_reduce(rocshmem_ctx_t ctx, rocshmem_team_t team,
+__device__ int rocshmem_reduce_wg(rocshmem_ctx_t ctx, rocshmem_team_t team,
                                    T *dest, const T *source, int nreduce) {
   GPU_DPRINTF("Function: rocshmem_reduce\n");
 
@@ -981,7 +981,7 @@ __device__ int rocshmem_team_translate_pe(rocshmem_team_t src_team,
  * Template generator for reductions
  */
 #define REDUCTION_GEN(T, Op)                                                   \
-  template __device__ int rocshmem_wg_reduce<T, Op>(                           \
+  template __device__ int rocshmem_reduce_wg<T, Op>(                           \
       rocshmem_ctx_t ctx, rocshmem_team_t team, T * dest, const T *source,     \
       int nreduce);
 
@@ -1189,10 +1189,10 @@ __device__ int rocshmem_team_translate_pe(rocshmem_team_t src_team,
  **/
 
 #define REDUCTION_DEF_GEN(T, TNAME, Op_API, Op)                               \
-  __device__ int rocshmem_ctx_##TNAME##_##Op_API##_wg_reduce(                 \
+  __device__ int rocshmem_ctx_##TNAME##_##Op_API##_reduce_wg(                 \
       rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source,     \
       int nreduce) {                                                          \
-    return rocshmem_wg_reduce<T, Op>(ctx, team, dest, source, nreduce);       \
+    return rocshmem_reduce_wg<T, Op>(ctx, team, dest, source, nreduce);       \
   }
 
 #define ARITH_REDUCTION_DEF_GEN(T, TNAME)         \
