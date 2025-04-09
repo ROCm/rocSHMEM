@@ -38,7 +38,6 @@
 #include "../atomic_return.hpp"
 #include "connection_policy.hpp"
 #include "thread_policy.hpp"
-//#include "../hdp_policy.hpp"
 #include "../stats.hpp"
 
 namespace rocshmem {
@@ -358,12 +357,6 @@ class QueuePair {
    * Pointer to the doorbell record for the CQ.
    */
   volatile uint32_t *dbrec_cq{nullptr};
-
-//uint32_t *hdp_rkey{nullptr};
-
-//uintptr_t *hdp_address{nullptr};
-
-//HdpPolicy *hdp_policy{};
 
   atomic_ret_t atomic_ret{};
 
