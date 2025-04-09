@@ -461,7 +461,7 @@ __device__ int rocshmem_wg_reduce(rocshmem_ctx_t ctx, rocshmem_team_t team,
 }
 
 template <typename T>
-__device__ void rocshmem_wg_broadcast(rocshmem_ctx_t ctx,
+__device__ void rocshmem_broadcast_wg(rocshmem_ctx_t ctx,
                                        rocshmem_team_t team, T *dest,
                                        const T *source, int nelem,
                                        int pe_root) {
@@ -1011,7 +1011,7 @@ __device__ int rocshmem_team_translate_pe(rocshmem_team_t src_team,
   template __device__ void rocshmem_get_nbi<T>(T * dest, const T *source,      \
                                                 size_t nelems, int pe);        \
   template __device__ T rocshmem_g<T>(const T *source, int pe);                \
-  template __device__ void rocshmem_wg_broadcast<T>(                           \
+  template __device__ void rocshmem_broadcast_wg<T>(                           \
       rocshmem_ctx_t ctx, rocshmem_team_t team, T * dest, const T *source,     \
       int nelem, int pe_root);                                                 \
   template __device__ void rocshmem_alltoall_wg<T>(                            \
@@ -1323,10 +1323,10 @@ __device__ int rocshmem_team_translate_pe(rocshmem_team_t src_team,
                                                  size_t nelems, int pe) {     \
     rocshmem_get_nbi_wg<T>(dest, source, nelems, pe);                         \
   }                                                                           \
-  __device__ void rocshmem_ctx_##TNAME##_wg_broadcast(                        \
+  __device__ void rocshmem_ctx_##TNAME##_broadcast_wg(                        \
       rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source,     \
       int nelem, int pe_root) {                                               \
-    rocshmem_wg_broadcast<T>(ctx, team, dest, source, nelem, pe_root);        \
+    rocshmem_broadcast_wg<T>(ctx, team, dest, source, nelem, pe_root);        \
   }                                                                           \
   __device__ void rocshmem_ctx_##TNAME##_alltoall_wg(                         \
       rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source,     \
