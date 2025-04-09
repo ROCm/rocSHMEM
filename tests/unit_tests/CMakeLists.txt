@@ -88,7 +88,6 @@ target_sources(
     #spin_ebo_block_mutex_gtest.cpp
     abql_block_mutex_gtest.cpp
     notifier_gtest.cpp
-    #forward_list_gtest.cpp
     free_list_gtest.cpp
     #context_ipc_gtest.cpp
     wavefront_size_gtest.cpp
