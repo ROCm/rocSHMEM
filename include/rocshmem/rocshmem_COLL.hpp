@@ -41,55 +41,55 @@ namespace rocshmem {
  *
  * @return void
  */
-__device__ ATTR_NO_INLINE void rocshmem_ctx_float_wg_alltoall(
+__device__ ATTR_NO_INLINE void rocshmem_ctx_float_alltoall_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, float *dest,
     const float *source, int nelems);
 
-__device__ ATTR_NO_INLINE void rocshmem_ctx_double_wg_alltoall(
+__device__ ATTR_NO_INLINE void rocshmem_ctx_double_alltoall_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, double *dest,
     const double *source, int nelems);
 
-__device__ ATTR_NO_INLINE void rocshmem_ctx_char_wg_alltoall(
+__device__ ATTR_NO_INLINE void rocshmem_ctx_char_alltoall_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, char *dest,
     const char *source, int nelems);
 
-__device__ ATTR_NO_INLINE void rocshmem_ctx_schar_wg_alltoall(
+__device__ ATTR_NO_INLINE void rocshmem_ctx_schar_alltoall_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, signed char *dest,
     const signed char *source, int nelems);
 
-__device__ ATTR_NO_INLINE void rocshmem_ctx_short_wg_alltoall(
+__device__ ATTR_NO_INLINE void rocshmem_ctx_short_alltoall_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, short *dest,
     const short *source, int nelems);
 
-__device__ ATTR_NO_INLINE void rocshmem_ctx_int_wg_alltoall(
+__device__ ATTR_NO_INLINE void rocshmem_ctx_int_alltoall_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, int *dest,
     const int *source, int nelems);
 
-__device__ ATTR_NO_INLINE void rocshmem_ctx_long_wg_alltoall(
+__device__ ATTR_NO_INLINE void rocshmem_ctx_long_alltoall_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long *dest,
     const long *source, int nelems);
 
-__device__ ATTR_NO_INLINE void rocshmem_ctx_longlong_wg_alltoall(
+__device__ ATTR_NO_INLINE void rocshmem_ctx_longlong_alltoall_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, long long *dest,
     const long long *source, int nelems);
 
-__device__ ATTR_NO_INLINE void rocshmem_ctx_uchar_wg_alltoall(
+__device__ ATTR_NO_INLINE void rocshmem_ctx_uchar_alltoall_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, unsigned char *dest,
     const unsigned char *source, int nelems);
 
-__device__ ATTR_NO_INLINE void rocshmem_ctx_ushort_wg_alltoall(
+__device__ ATTR_NO_INLINE void rocshmem_ctx_ushort_alltoall_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, unsigned short *dest,
     const unsigned short *source, int nelems);
 
-__device__ ATTR_NO_INLINE void rocshmem_ctx_uint_wg_alltoall(
+__device__ ATTR_NO_INLINE void rocshmem_ctx_uint_alltoall_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, unsigned int *dest,
     const unsigned int *source, int nelems);
 
-__device__ ATTR_NO_INLINE void rocshmem_ctx_ulong_wg_alltoall(
+__device__ ATTR_NO_INLINE void rocshmem_ctx_ulong_alltoall_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, unsigned long *dest,
     const unsigned long *source, int nelems);
 
-__device__ ATTR_NO_INLINE void rocshmem_ctx_ulonglong_wg_alltoall(
+__device__ ATTR_NO_INLINE void rocshmem_ctx_ulonglong_alltoall_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, unsigned long long *dest,
     const unsigned long long *source, int nelems);
 

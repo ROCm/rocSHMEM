@@ -471,7 +471,7 @@ __device__ void rocshmem_wg_broadcast(rocshmem_ctx_t ctx,
 }
 
 template <typename T>
-__device__ void rocshmem_wg_alltoall(rocshmem_ctx_t ctx,
+__device__ void rocshmem_alltoall_wg(rocshmem_ctx_t ctx,
                                       rocshmem_team_t team, T *dest,
                                       const T *source, int nelem) {
   GPU_DPRINTF("Function: rocshmem_alltoall\n");
@@ -1014,7 +1014,7 @@ __device__ int rocshmem_team_translate_pe(rocshmem_team_t src_team,
   template __device__ void rocshmem_wg_broadcast<T>(                           \
       rocshmem_ctx_t ctx, rocshmem_team_t team, T * dest, const T *source,     \
       int nelem, int pe_root);                                                 \
-  template __device__ void rocshmem_wg_alltoall<T>(                            \
+  template __device__ void rocshmem_alltoall_wg<T>(                            \
       rocshmem_ctx_t ctx, rocshmem_team_t team, T * dest, const T *source,     \
       int nelem);                                                              \
   template __device__ void rocshmem_wg_fcollect<T>(                            \
@@ -1328,10 +1328,10 @@ __device__ int rocshmem_team_translate_pe(rocshmem_team_t src_team,
       int nelem, int pe_root) {                                               \
     rocshmem_wg_broadcast<T>(ctx, team, dest, source, nelem, pe_root);        \
   }                                                                           \
-  __device__ void rocshmem_ctx_##TNAME##_wg_alltoall(                         \
+  __device__ void rocshmem_ctx_##TNAME##_alltoall_wg(                         \
       rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source,     \
       int nelem) {                                                            \
-    rocshmem_wg_alltoall<T>(ctx, team, dest, source, nelem);                  \
+    rocshmem_alltoall_wg<T>(ctx, team, dest, source, nelem);                  \
   }                                                                           \
   __device__ void rocshmem_ctx_##TNAME##_wg_fcollect(                         \
       rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source,     \
