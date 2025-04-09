@@ -89,7 +89,6 @@ target_sources(
     abql_block_mutex_gtest.cpp
     notifier_gtest.cpp
     free_list_gtest.cpp
-    #context_ipc_gtest.cpp
     wavefront_size_gtest.cpp
     atomic_wf_queue_gtest.cpp
 )
