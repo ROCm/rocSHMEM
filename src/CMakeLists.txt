@@ -58,11 +58,7 @@ target_compile_options(
 ###############################################################################
 # ROCSHMEM TARGET FOR BACKENDS
 ###############################################################################
-IF (USE_GPU_IB)
 add_subdirectory(gpu_ib)
-ELSE()
-add_subdirectory(ipc)
-ENDIF()
 add_subdirectory(containers)
 add_subdirectory(host)
 add_subdirectory(memory)
