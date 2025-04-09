@@ -84,7 +84,6 @@ target_sources(
     pow2_bins_gtest.cpp
     remote_heap_info_gtest.cpp
     mpi_init_singleton_gtest.cpp
-    #spin_ebo_block_mutex_gtest.cpp
     abql_block_mutex_gtest.cpp
     notifier_gtest.cpp
     free_list_gtest.cpp
