@@ -37,7 +37,6 @@ target_sources(
     team_tracker.cpp
     util.cpp
     wf_coal_policy.cpp
-    ipc_policy.cpp
 )
 
 target_compile_options(

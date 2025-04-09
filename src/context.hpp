@@ -28,7 +28,6 @@
 #include "backend_type.hpp"
 #include "fence_policy.hpp"
 #include "host/host.hpp"
-#include "ipc_policy.hpp"
 #include "stats.hpp"
 #include "wf_coal_policy.hpp"
 
@@ -473,15 +472,6 @@ class Context {
    * @brief Controls fence behavior in device code
    */
   Fence fence_{};
-
- public:
-  /**
-   * @brief Inter-Process Communication (IPC) interface for context class
-   *
-   * This member is an interface to allow intra-node interprocess
-   * communication through shared memory.
-   */
-  IpcImpl ipcImpl_{};
 };
 
 }  // namespace rocshmem

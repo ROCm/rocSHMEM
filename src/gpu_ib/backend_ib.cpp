@@ -238,10 +238,6 @@ void GPUIBBackend::dump_backend_stats() {
 
 void GPUIBBackend::reset_backend_stats() { networkImpl.reset_backend_stats(); }
 
-void GPUIBBackend::initialize_ipc() {
-  ipcImpl.ipcHostInit(my_pe, heap.get_heap_bases(), thread_comm);
-}
-
 void GPUIBBackend::initialize_network() { networkImpl.networkHostSetup(this); }
 
 void GPUIBBackend::setup_default_host_ctx() {
@@ -341,7 +337,6 @@ std::thread GPUIBBackend::thread_spawn(GPUIBBackend *b) {
 void GPUIBBackend::thread_func_internal(GPUIBBackend *b) {
   CHECK_HIP(hipSetDevice(hip_dev_id));
 
-  b->initialize_ipc();
   b->initialize_network();
   b->setup_ctxs();
   b->setup_default_ctx();

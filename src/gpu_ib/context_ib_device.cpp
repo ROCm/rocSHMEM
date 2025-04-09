@@ -42,8 +42,6 @@ __host__ GPUIBContext::GPUIBContext(Backend *backend, bool option, int idx)
   networkImpl.networkHostInit(this, idx);
 
   barrier_sync = b->barrier_sync;
-  ipcImpl_.ipc_bases = b->ipcImpl.ipc_bases;
-  ipcImpl_.shm_size = b->ipcImpl.shm_size;
 }
 
 __device__ void GPUIBContext::ctx_create() {
@@ -94,67 +92,39 @@ __device__ void GPUIBContext::putmem_nbi(void *dest, const void *source,
                                          size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dest) - base_heap[my_pe];
 
-  if (ipcImpl_.isIpcAvailable(my_pe, pe)) {
-    int local_pe = pe % ipcImpl_.shm_size;
-    ipcImpl_.ipcCopy(ipcImpl_.ipc_bases[local_pe] + L_offset,
-                     const_cast<void *>(source), nelems);
-  } else {
-    bool must_send_message = wf_coal_.coalesce(pe, source, dest, &nelems);
-    if (!must_send_message) {
-      return;
-    }
-
-    auto *qp = getQueuePair(pe);
-    qp->put_nbi<THREAD>(base_heap[pe] + L_offset, source, nelems, pe, true);
+  bool must_send_message = wf_coal_.coalesce(pe, source, dest, &nelems);
+  if (!must_send_message) {
+    return;
   }
+
+  auto *qp = getQueuePair(pe);
+  qp->put_nbi<THREAD>(base_heap[pe] + L_offset, source, nelems, pe, true);
 }
 
 __device__ void GPUIBContext::getmem_nbi(void *dest, const void *source,
                                          size_t nelems, int pe) {
   const char *src_typed = reinterpret_cast<const char *>(source);
   uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
-  if (ipcImpl_.isIpcAvailable(my_pe, pe)) {
-    int local_pe = pe % ipcImpl_.shm_size;
-    ipcImpl_.ipcCopy(dest, ipcImpl_.ipc_bases[local_pe] + L_offset, nelems);
-  } else {
-    bool must_send_message = wf_coal_.coalesce(pe, source, dest, &nelems);
-    if (!must_send_message) {
-      return;
-    }
-
-    auto *qp = getQueuePair(pe);
-    qp->get_nbi<THREAD>(base_heap[pe] + L_offset, dest, nelems, pe, true);
+  bool must_send_message = wf_coal_.coalesce(pe, source, dest, &nelems);
+  if (!must_send_message) {
+    return;
   }
+
+  auto *qp = getQueuePair(pe);
+  qp->get_nbi<THREAD>(base_heap[pe] + L_offset, dest, nelems, pe, true);
 }
 
 __device__ void GPUIBContext::quiet() {
-#ifdef USE_SINGLE_NODE
-  threadfence_system();
-  for (int pe = 0; pe < ipcImpl_.shm_size; pe++) {
-    if (pe != my_pe) {
-      ipcImpl_.zero_byte_read(pe);
-    }
-  }
-#else
-
   for (int k = 0; k < getNumDest(); k++) {
     getQueuePair(k)->quiet_single_heavy<THREAD>(k);
   }
   fence_.flush();
-
-#endif
 }
 
 __device__ void *GPUIBContext::shmem_ptr(const void *dest, int pe) {
-  void *ret = nullptr;
-  if (ipcImpl_.isIpcAvailable(my_pe, pe)) {
-    void *dst = const_cast<void *>(dest);
-    uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
-    int local_pe = pe % ipcImpl_.shm_size;
-    ret = ipcImpl_.ipc_bases[local_pe] + L_offset;
-  }
-  return ret;
+  return nullptr;
 }
+
 
 __device__ void GPUIBContext::threadfence_system() {
   int thread_id = get_flat_block_id();
@@ -165,40 +135,26 @@ __device__ void GPUIBContext::getmem(void *dest, const void *source,
                                      size_t nelems, int pe) {
   const char *src_typed = reinterpret_cast<const char *>(source);
   uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
-  if (ipcImpl_.isIpcAvailable(my_pe, pe)) {
-    int local_pe = pe % ipcImpl_.shm_size;
-    ipcImpl_.ipcCopy(dest, ipcImpl_.ipc_bases[local_pe] + L_offset, nelems);
-  } else {
-    bool must_send_message = wf_coal_.coalesce(pe, source, dest, &nelems);
-    if (!must_send_message) {
-      return;
-    }
-    auto *qp = getQueuePair(pe);
-    qp->get_nbi_cqe<THREAD>(base_heap[pe] + L_offset, dest, nelems, pe, true);
-    qp->quiet_single<THREAD>();
+  bool must_send_message = wf_coal_.coalesce(pe, source, dest, &nelems);
+  if (!must_send_message) {
+    return;
   }
+  auto *qp = getQueuePair(pe);
+  qp->get_nbi_cqe<THREAD>(base_heap[pe] + L_offset, dest, nelems, pe, true);
+  qp->quiet_single<THREAD>();
   fence_.flush();
 }
 
 __device__ void GPUIBContext::putmem(void *dest, const void *source,
                                      size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dest) - base_heap[my_pe];
-  if (ipcImpl_.isIpcAvailable(my_pe, pe)) {
-    int local_pe = pe % ipcImpl_.shm_size;
-    ipcImpl_.ipcCopy(ipcImpl_.ipc_bases[local_pe] + L_offset,
-                     const_cast<void *>(source), nelems);
-
-    threadfence_system();
-    ipcImpl_.zero_byte_read(pe);
-  } else {
-    bool must_send_message = wf_coal_.coalesce(pe, source, dest, &nelems);
-    if (!must_send_message) {
-      return;
-    }
-    auto *qp = getQueuePair(pe);
-    qp->put_nbi_cqe<THREAD>(base_heap[pe] + L_offset, source, nelems, pe, true);
-    qp->quiet_single<THREAD>();
+  bool must_send_message = wf_coal_.coalesce(pe, source, dest, &nelems);
+  if (!must_send_message) {
+    return;
   }
+  auto *qp = getQueuePair(pe);
+  qp->put_nbi_cqe<THREAD>(base_heap[pe] + L_offset, source, nelems, pe, true);
+  qp->quiet_single<THREAD>();
   fence_.flush();
 }
 
@@ -208,15 +164,9 @@ __device__ void GPUIBContext::putmem(void *dest, const void *source,
 __device__ void GPUIBContext::putmem_nbi_wg(void *dest, const void *source,
                                             size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dest) - base_heap[my_pe];
-  if (ipcImpl_.isIpcAvailable(my_pe, pe)) {
-    int local_pe = pe % ipcImpl_.shm_size;
-    ipcImpl_.ipcCopy_wg(ipcImpl_.ipc_bases[local_pe] + L_offset,
-                        const_cast<void *>(source), nelems);
-  } else {
-    if (is_thread_zero_in_block()) {
-      auto *qp = getQueuePair(pe);
-      qp->put_nbi<WG>(base_heap[pe] + L_offset, source, nelems, pe, true);
-    }
+  if (is_thread_zero_in_block()) {
+    auto *qp = getQueuePair(pe);
+    qp->put_nbi<WG>(base_heap[pe] + L_offset, source, nelems, pe, true);
   }
   __syncthreads();
 }
@@ -224,35 +174,20 @@ __device__ void GPUIBContext::putmem_nbi_wg(void *dest, const void *source,
 __device__ void GPUIBContext::putmem_nbi_wave(void *dest, const void *source,
                                               size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dest) - base_heap[my_pe];
-  if (ipcImpl_.isIpcAvailable(my_pe, pe)) {
-    int local_pe = pe % ipcImpl_.shm_size;
-    ipcImpl_.ipcCopy_wave(ipcImpl_.ipc_bases[local_pe] + L_offset,
-                          const_cast<void *>(source), nelems);
-  } else {
-    if (is_thread_zero_in_wave()) {
-      auto *qp = getQueuePair(pe);
-      qp->put_nbi<WAVE>(base_heap[pe] + L_offset, source, nelems, pe, true);
-    }
+  if (is_thread_zero_in_wave()) {
+    auto *qp = getQueuePair(pe);
+    qp->put_nbi<WAVE>(base_heap[pe] + L_offset, source, nelems, pe, true);
   }
 }
 
 __device__ void GPUIBContext::putmem_wg(void *dest, const void *source,
                                         size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dest) - base_heap[my_pe];
-  if (ipcImpl_.isIpcAvailable(my_pe, pe)) {
-    int local_pe = pe % ipcImpl_.shm_size;
-    ipcImpl_.ipcCopy_wg(ipcImpl_.ipc_bases[local_pe] + L_offset,
-                        const_cast<void *>(source), nelems);
-    __syncthreads();
-    threadfence_system();
-    ipcImpl_.zero_byte_read(pe);
-  } else {
-    auto *qp = getQueuePair(pe);
-    if (is_thread_zero_in_block()) {
-      qp->put_nbi_cqe<WG>(base_heap[pe] + L_offset, source, nelems, pe, true);
-    }
-    qp->quiet_single<WG>();
+  auto *qp = getQueuePair(pe);
+  if (is_thread_zero_in_block()) {
+    qp->put_nbi_cqe<WG>(base_heap[pe] + L_offset, source, nelems, pe, true);
   }
+  qp->quiet_single<WG>();
   __syncthreads();
   fence_.flush();
 }
@@ -261,18 +196,10 @@ __device__ void GPUIBContext::putmem_wave(void *dest, const void *source,
                                           size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dest) - base_heap[my_pe];
   auto *qp = getQueuePair(pe);
-  if (ipcImpl_.isIpcAvailable(my_pe, pe)) {
-    int local_pe = pe % ipcImpl_.shm_size;
-    ipcImpl_.ipcCopy_wave(ipcImpl_.ipc_bases[local_pe] + L_offset,
-                          const_cast<void *>(source), nelems);
-    threadfence_system();
-    ipcImpl_.zero_byte_read(pe);
-  } else {
-    if (is_thread_zero_in_wave()) {
-      qp->put_nbi_cqe<WAVE>(base_heap[pe] + L_offset, source, nelems, pe, true);
-    }
-    qp->quiet_single<WAVE>();
+  if (is_thread_zero_in_wave()) {
+    qp->put_nbi_cqe<WAVE>(base_heap[pe] + L_offset, source, nelems, pe, true);
   }
+  qp->quiet_single<WAVE>();
   fence_.flush();
 }
 
@@ -281,15 +208,10 @@ __device__ void GPUIBContext::getmem_wg(void *dest, const void *source,
   const char *src_typed = reinterpret_cast<const char *>(source);
   uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
   auto *qp = getQueuePair(pe);
-  if (ipcImpl_.isIpcAvailable(my_pe, pe)) {
-    int local_pe = pe % ipcImpl_.shm_size;
-    ipcImpl_.ipcCopy_wg(dest, ipcImpl_.ipc_bases[local_pe] + L_offset, nelems);
-  } else {
-    if (is_thread_zero_in_block()) {
-      qp->get_nbi_cqe<WG>(base_heap[pe] + L_offset, dest, nelems, pe, true);
-    }
-    qp->quiet_single<WG>();
+  if (is_thread_zero_in_block()) {
+    qp->get_nbi_cqe<WG>(base_heap[pe] + L_offset, dest, nelems, pe, true);
   }
+  qp->quiet_single<WG>();
   __syncthreads();
   fence_.flush();
 }
@@ -299,16 +221,10 @@ __device__ void GPUIBContext::getmem_wave(void *dest, const void *source,
   const char *src_typed = reinterpret_cast<const char *>(source);
   uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
   auto *qp = getQueuePair(pe);
-  if (ipcImpl_.isIpcAvailable(my_pe, pe)) {
-    int local_pe = pe % ipcImpl_.shm_size;
-    ipcImpl_.ipcCopy_wave(dest, ipcImpl_.ipc_bases[local_pe] + L_offset,
-                          nelems);
-  } else {
-    if (is_thread_zero_in_wave()) {
-      qp->get_nbi_cqe<WAVE>(base_heap[pe] + L_offset, dest, nelems, pe, true);
-    }
-    qp->quiet_single<WAVE>();
+  if (is_thread_zero_in_wave()) {
+    qp->get_nbi_cqe<WAVE>(base_heap[pe] + L_offset, dest, nelems, pe, true);
   }
+  qp->quiet_single<WAVE>();
   fence_.flush();
 }
 
@@ -316,14 +232,9 @@ __device__ void GPUIBContext::getmem_nbi_wg(void *dest, const void *source,
                                             size_t nelems, int pe) {
   const char *src_typed = reinterpret_cast<const char *>(source);
   uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
-  if (ipcImpl_.isIpcAvailable(my_pe, pe)) {
-    int local_pe = pe % ipcImpl_.shm_size;
-    ipcImpl_.ipcCopy_wg(dest, ipcImpl_.ipc_bases[local_pe] + L_offset, nelems);
-  } else {
-    if (is_thread_zero_in_block()) {
-      auto *qp = getQueuePair(pe);
-      qp->get_nbi<WG>(base_heap[pe] + L_offset, dest, nelems, pe, true);
-    }
+  if (is_thread_zero_in_block()) {
+    auto *qp = getQueuePair(pe);
+    qp->get_nbi<WG>(base_heap[pe] + L_offset, dest, nelems, pe, true);
   }
   __syncthreads();
 }
@@ -332,15 +243,9 @@ __device__ void GPUIBContext::getmem_nbi_wave(void *dest, const void *source,
                                               size_t nelems, int pe) {
   const char *src_typed = reinterpret_cast<const char *>(source);
   uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
-  if (ipcImpl_.isIpcAvailable(my_pe, pe)) {
-    int local_pe = pe % ipcImpl_.shm_size;
-    ipcImpl_.ipcCopy_wave(dest, ipcImpl_.ipc_bases[local_pe] + L_offset,
-                          nelems);
-  } else {
-    if (is_thread_zero_in_wave()) {
-      auto *qp = getQueuePair(pe);
-      qp->get_nbi<WAVE>(base_heap[pe] + L_offset, dest, nelems, pe, true);
-    }
+  if (is_thread_zero_in_wave()) {
+    auto *qp = getQueuePair(pe);
+    qp->get_nbi<WAVE>(base_heap[pe] + L_offset, dest, nelems, pe, true);
   }
 }
 

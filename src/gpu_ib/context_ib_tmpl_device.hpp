@@ -247,30 +247,24 @@ __device__ T GPUIBContext::g(const T *source, int pe) {
   T ret;
   auto *src_const_cast = reinterpret_cast<const char *>(source);
   uint64_t L_offset = const_cast<char *>(src_const_cast) - base_heap[my_pe];
-  if (ipcImpl_.isIpcAvailable(my_pe, pe)) {
-    ipcImpl_.ipcCopy(&ret, ipcImpl_.ipc_bases[pe] + L_offset, sizeof(T));
-    return ret;
-  } else {
-    int thread_id = get_flat_block_id();
-    int block_size = get_flat_block_size();
-    int offset = ctx_idx * block_size + thread_id;
+  int thread_id = get_flat_block_id();
+  int block_size = get_flat_block_size();
+  int offset = ctx_idx * block_size + thread_id;
 
-    char *base_dest = g_ret;
-    char *dest = &base_dest[offset * sizeof(int64_t)];
-    size_t nelems = sizeof(T);
+  char *base_dest = g_ret;
+  char *dest = &base_dest[offset * sizeof(int64_t)];
+  size_t nelems = sizeof(T);
 
-    bool must_send_message = wf_coal_.coalesce(pe, source, dest, &nelems);
-    if (!must_send_message) {
-      return ret;
-    }
-    getQueuePair(pe)->get_nbi<THREAD>(base_heap[pe] + L_offset, dest, nelems,
-                                      pe, true);
-    getQueuePair(pe)->quiet_single<THREAD>();
-
-    __threadfence();
-    ret = *(reinterpret_cast<T *>(dest));
+  bool must_send_message = wf_coal_.coalesce(pe, source, dest, &nelems);
+  if (!must_send_message) {
     return ret;
   }
+  getQueuePair(pe)->get_nbi<THREAD>(base_heap[pe] + L_offset, dest, nelems,
+                                      pe, true);
+  getQueuePair(pe)->quiet_single<THREAD>();
+
+  __threadfence();
+  ret = *(reinterpret_cast<T *>(dest));
   return ret;
 }
 
@@ -295,64 +289,44 @@ __device__ void GPUIBContext::get_nbi(T *dest, const T *source, size_t nelems,
 template <typename T>
 __device__ T GPUIBContext::amo_fetch_add(void *dst, T value, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
-  if (ipcImpl_.isIpcAvailable(my_pe, pe)) {
-    return ipcImpl_.ipcAMOFetchAdd(
-        reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), value);
-  } else {
-    auto *qp = getQueuePair(pe);
-    return qp->atomic_fetch(base_heap[pe] + L_offset, value, 0, pe, true,
-                            MLX5_OPCODE_ATOMIC_FA);
-  }
+  auto *qp = getQueuePair(pe);
+  return qp->atomic_fetch(base_heap[pe] + L_offset, value, 0, pe, true,
+                          MLX5_OPCODE_ATOMIC_FA);
 }
 
 template <typename T>
 __device__ T GPUIBContext::amo_fetch_cas(void *dst, T value, T cond, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
-  if (ipcImpl_.isIpcAvailable(my_pe, pe)) {
-    return ipcImpl_.ipcAMOFetchCas(
-        reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), cond, value);
-  } else {
-    auto *qp = getQueuePair(pe);
-    return qp->atomic_fetch(base_heap[pe] + L_offset, value, cond, pe, true,
-                            MLX5_OPCODE_ATOMIC_CS);
-  }
+  auto *qp = getQueuePair(pe);
+  return qp->atomic_fetch(base_heap[pe] + L_offset, value, cond, pe, true,
+                          MLX5_OPCODE_ATOMIC_CS);
 }
 
 template <typename T>
 __device__ void GPUIBContext::amo_add(void *dst, T value, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
-  if (ipcImpl_.isIpcAvailable(my_pe, pe)) {
-    ipcImpl_.ipcAMOAdd(reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset),
-                       value);
-  } else {
-    auto *qp = getQueuePair(pe);
-    qp->atomic_nofetch(base_heap[pe] + L_offset, value, 0, pe, true,
-                       MLX5_OPCODE_ATOMIC_FA);
-  }
+  auto *qp = getQueuePair(pe);
+  qp->atomic_nofetch(base_heap[pe] + L_offset, value, 0, pe, true,
+                     MLX5_OPCODE_ATOMIC_FA);
 }
 
 template <typename T>
 __device__ void GPUIBContext::amo_set(void *dst, T value, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
 
-  if (ipcImpl_.isIpcAvailable(my_pe, pe)) {
-    ipcImpl_.ipcAMOSet(reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset),
-                       value);
-  } else {
-    auto *qp = getQueuePair(pe);
+  auto *qp = getQueuePair(pe);
 
-    // Guess that the remote memory is zero by setting condition to zero.
-    // The compare-and-swap loop will execute at least twice if wrong.
-    // It may run additional times if contention on memory location.
-    T ret_val;
-    T cond = 0;
-    while ((ret_val = qp->atomic_fetch(base_heap[pe] + L_offset, value, cond,
-                                       pe, true, MLX5_OPCODE_ATOMIC_CS))) {
-      if (ret_val == cond) {
-        break;
-      }
-      cond = ret_val;
+  // Guess that the remote memory is zero by setting condition to zero.
+  // The compare-and-swap loop will execute at least twice if wrong.
+  // It may run additional times if contention on memory location.
+  T ret_val;
+  T cond = 0;
+  while ((ret_val = qp->atomic_fetch(base_heap[pe] + L_offset, value, cond,
+                                     pe, true, MLX5_OPCODE_ATOMIC_CS))) {
+    if (ret_val == cond) {
+      break;
     }
+    cond = ret_val;
   }
 }
 
@@ -398,14 +372,9 @@ __device__ void GPUIBContext::amo_xor(void *dst, T value, int pe) {
 template <typename T>
 __device__ void GPUIBContext::amo_cas(void *dst, T value, T cond, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
-  if (ipcImpl_.isIpcAvailable(my_pe, pe)) {
-    ipcImpl_.ipcAMOCas(reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset),
-                       cond, value);
-  } else {
-    auto *qp = getQueuePair(pe);
-    qp->atomic_nofetch(base_heap[pe] + L_offset, value, cond, pe, true,
-                       MLX5_OPCODE_ATOMIC_CS);
-  }
+  auto *qp = getQueuePair(pe);
+  qp->atomic_nofetch(base_heap[pe] + L_offset, value, cond, pe, true,
+                     MLX5_OPCODE_ATOMIC_CS);
 }
 
 template <typename T>

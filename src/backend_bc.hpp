@@ -37,8 +37,8 @@
 
 #include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "rocshmem/rocshmem.hpp"
+#include "context_incl.hpp"
 #include "backend_type.hpp"
-#include "ipc_policy.hpp"
 #include "memory/symmetric_heap.hpp"
 #include "stats.hpp"
 #include "team_tracker.hpp"
@@ -250,16 +250,6 @@ class Backend {
    * @brief Remove all ctxs from the list of user-created ctxs
    */
   void destroy_remaining_ctxs();
-
-  /**
-   * @brief Compile-time configuration policy for intra-node shared memory
-   * accesses.
-   *
-   * The configuration option "USE_IPC" can be enabled to allow shared
-   * memory accesses to the symmetric heap from processing elements
-   * co-located on the same node.
-   */
-  IpcImpl ipcImpl{};
 
   /**
    * @brief Maintains information about teams
