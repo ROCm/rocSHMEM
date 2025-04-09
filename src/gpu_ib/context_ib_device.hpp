@@ -24,7 +24,6 @@
 #define LIBRARY_SRC_GPU_IB_CONTEXT_IB_DEVICE_HPP_
 
 #include "../context.hpp"
-#include "memory_builder_policy.hpp"
 #include "network_policy.hpp"
 
 namespace rocshmem {
