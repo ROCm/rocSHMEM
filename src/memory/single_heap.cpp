@@ -61,7 +61,7 @@ char* SingleHeap::get_base_ptr() { return heap_mem_.get_ptr(); }
 
 size_t SingleHeap::get_size() { return heap_mem_.get_size(); }
 
-size_t SingleHeap::get_used() { return strat_.amount_proffered(); }
+size_t SingleHeap::get_used() { return strat_.get_used(); }
 
 size_t SingleHeap::get_avail() { return get_size() - get_used(); }
 

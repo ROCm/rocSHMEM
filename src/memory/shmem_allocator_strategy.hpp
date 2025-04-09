@@ -85,6 +85,17 @@ class ShmemAllocatorStrategy {
    * @param[in] Raw pointer to symmetric heap memory
    */
   __device__ virtual void free(char* ptr) = 0;
+
+  /**
+   * @brief Used heap memory
+   *
+   * @return memory size
+   *
+   * @note The used size may be larger than the sum of the user allocation sizes
+   * (due to chunk tracking overhead and alignment).
+   *
+   */
+  virtual size_t get_used() = 0;
 };
 
 }  // namespace rocshmem
