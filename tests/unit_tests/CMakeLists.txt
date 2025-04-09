@@ -85,21 +85,10 @@ target_sources(
     remote_heap_info_gtest.cpp
     mpi_init_singleton_gtest.cpp
     abql_block_mutex_gtest.cpp
-    notifier_gtest.cpp
     free_list_gtest.cpp
     wavefront_size_gtest.cpp
     atomic_wf_queue_gtest.cpp
 )
-
-if (USE_IPC)
-  target_sources(
-    ${PROJECT_NAME}
-    PRIVATE
-      ipc_impl_simple_coarse_gtest.cpp
-      ipc_impl_simple_fine_gtest.cpp
-      ipc_impl_tiled_fine_gtest.cpp
-  )
-endif()
 
 ###############################################################################
 # ROCSHMEM DEPENDENCY
