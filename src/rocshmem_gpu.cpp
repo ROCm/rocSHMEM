@@ -576,14 +576,14 @@ __device__ void rocshmem_ctx_barrier_all(rocshmem_ctx_t ctx) {
   get_internal_ctx(ctx)->barrier_all();
 }
 
-__device__ void rocshmem_ctx_wave_barrier_all(rocshmem_ctx_t ctx) {
-  GPU_DPRINTF("Function: rocshmem_ctx_wave_barrier_all\n");
+__device__ void rocshmem_ctx_barrier_all_wave(rocshmem_ctx_t ctx) {
+  GPU_DPRINTF("Function: rocshmem_ctx_barrier_all_wave\n");
 
   get_internal_ctx(ctx)->barrier_all_wave();
 }
 
-__device__ void rocshmem_ctx_wg_barrier_all(rocshmem_ctx_t ctx) {
-  GPU_DPRINTF("Function: rocshmem_ctx_wg_barrier_all\n");
+__device__ void rocshmem_ctx_barrier_all_wg(rocshmem_ctx_t ctx) {
+  GPU_DPRINTF("Function: rocshmem_ctx_barrier_all_wg\n");
 
   get_internal_ctx(ctx)->barrier_all_wg();
 }
@@ -594,14 +594,14 @@ __device__ void rocshmem_ctx_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team) {
   get_internal_ctx(ctx)->barrier(team);
 }
 
-__device__ void rocshmem_ctx_wave_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team) {
-  GPU_DPRINTF("Function: rocshmem_wave_barrier\n");
+__device__ void rocshmem_ctx_barrier_wave(rocshmem_ctx_t ctx, rocshmem_team_t team) {
+  GPU_DPRINTF("Function: rocshmem_barrier_wave\n");
 
   get_internal_ctx(ctx)->barrier_wave(team);
 }
 
-__device__ void rocshmem_ctx_wg_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team) {
-  GPU_DPRINTF("Function: rocshmem_wg_barrier\n");
+__device__ void rocshmem_ctx_barrier_wg(rocshmem_ctx_t ctx, rocshmem_team_t team) {
+  GPU_DPRINTF("Function: rocshmem_barrier_wg\n");
 
   get_internal_ctx(ctx)->barrier_wg(team);
 }
@@ -612,35 +612,35 @@ __device__ void rocshmem_ctx_sync_all(rocshmem_ctx_t ctx) {
   get_internal_ctx(ctx)->sync_all();
 }
 
-__device__ void rocshmem_ctx_wave_sync_all(rocshmem_ctx_t ctx) {
-  GPU_DPRINTF("Function: rocshmem_ctx_wave_sync_all\n");
+__device__ void rocshmem_ctx_sync_all_wave(rocshmem_ctx_t ctx) {
+  GPU_DPRINTF("Function: rocshmem_ctx_sync_all_wave\n");
 
   get_internal_ctx(ctx)->sync_all_wave();
 }
 
-__device__ void rocshmem_ctx_wg_sync_all(rocshmem_ctx_t ctx) {
-  GPU_DPRINTF("Function: rocshmem_ctx_wg_sync_all\n");
+__device__ void rocshmem_ctx_sync_all_wg(rocshmem_ctx_t ctx) {
+  GPU_DPRINTF("Function: rocshmem_ctx_sync_all_wg\n");
 
   get_internal_ctx(ctx)->sync_all_wg();
 }
 
-__device__ void rocshmem_ctx_team_sync(rocshmem_ctx_t ctx,
+__device__ void rocshmem_ctx_sync(rocshmem_ctx_t ctx,
                                            rocshmem_team_t team) {
-  GPU_DPRINTF("Function: rocshmem_ctx_sync_all\n");
+  GPU_DPRINTF("Function: rocshmem_ctx_sync\n");
 
   get_internal_ctx(ctx)->sync_wg(team);
 }
 
-__device__ void rocshmem_ctx_wave_team_sync(rocshmem_ctx_t ctx,
+__device__ void rocshmem_ctx_sync_wave(rocshmem_ctx_t ctx,
   rocshmem_team_t team) {
-GPU_DPRINTF("Function: rocshmem_ctx_wave_sync_all\n");
+GPU_DPRINTF("Function: rocshmem_ctx_sync_wave\n");
 
 get_internal_ctx(ctx)->sync_wg(team);
 }
 
-__device__ void rocshmem_ctx_wg_team_sync(rocshmem_ctx_t ctx,
+__device__ void rocshmem_ctx_sync_wg(rocshmem_ctx_t ctx,
   rocshmem_team_t team) {
-GPU_DPRINTF("Function: rocshmem_ctx_wg_sync_all\n");
+GPU_DPRINTF("Function: rocshmem_ctx_sync_wg\n");
 
 get_internal_ctx(ctx)->sync_wg(team);
 }

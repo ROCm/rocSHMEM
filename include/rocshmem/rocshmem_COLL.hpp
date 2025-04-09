@@ -597,6 +597,210 @@ __host__ int rocshmem_ctx_double_prod_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, double *dest, const double *source,
     int nreduce);
 
+/**
+ * @brief perform a collective barrier between all PEs in the system.
+ * The caller is blocked until the barrier is resolved.
+ *
+ * This function must be invoked by a single thread within the PE.
+ *
+ * @param[in] handle GPU side handle.
+ *
+ * @return void
+ */
+__device__ ATTR_NO_INLINE void rocshmem_ctx_barrier_all(
+    rocshmem_ctx_t ctx);
+
+/**
+ * @brief perform a collective barrier between all PEs in the system.
+ * The caller is blocked until the barrier is resolved.
+ *
+ * This function must be called as a wave-front collective.
+ *
+ * @param[in] handle GPU side handle.
+ *
+ * @return void
+ */
+__device__ ATTR_NO_INLINE void rocshmem_ctx_barrier_all_wave(
+    rocshmem_ctx_t ctx);
+
+/**
+ * @brief perform a collective barrier between all PEs in the system.
+ * The caller is blocked until the barrier is resolved.
+ *
+ * This function must be called as a work-group collective.
+ *
+ * @param[in] handle GPU side handle.
+ *
+ * @return void
+ */
+__device__ ATTR_NO_INLINE void rocshmem_ctx_barrier_all_wg(
+    rocshmem_ctx_t ctx);
+
+/**
+ * @brief perform a collective barrier between all PEs in the team.
+ * The caller is blocked until the barrier is resolved.
+ *
+ * This function must be invoked by a single thread within the PE.
+ *
+ * @param[in] handle GPU side handle.
+ *
+ * @param[in] team The team on which to perform barrier synchronization
+ *
+ * @return void
+ */
+__device__ void rocshmem_ctx_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team);
+
+/**
+ * @brief perform a collective barrier between all PEs in the team.
+ * The caller is blocked until the barrier is resolved.
+ *
+ * This function must be called as a wave-front collective.
+ *
+ * @param[in] handle GPU side handle.
+ *
+ * @param[in] team The team on which to perform barrier synchronization
+ *
+ * @return void
+ */
+__device__ void rocshmem_ctx_barrier_wave(rocshmem_ctx_t ctx, rocshmem_team_t team);
+
+/**
+ * @brief perform a collective barrier between all PEs in the team.
+ * The caller is blocked until the barrier is resolved.
+ *
+ * This function must be called as a work-group collective.
+ *
+ * @param[in] handle GPU side handle.
+ *
+ * @param[in] team The team on which to perform barrier synchronization
+ *
+ * @return void
+ */
+__device__ void rocshmem_ctx_barrier_wg(rocshmem_ctx_t ctx, rocshmem_team_t team);
+
+/**
+ * @brief registers the arrival of a PE at a barrier.
+ * The caller is blocked until the synchronization is resolved.
+ *
+ * In contrast with the shmem_barrier_all routine, shmem_sync_all only ensures
+ * completion and visibility of previously issued memory stores and does not
+ * ensure completion of remote memory updates issued via OpenSHMEM routines.
+ *
+ * This function must be invoked by a single thread within the PE.
+ *
+ * @param[in] handle GPU side handle.
+ *
+ * @return void
+ */
+__device__ ATTR_NO_INLINE void rocshmem_ctx_sync_all(rocshmem_ctx_t ctx);
+
+/**
+ * @brief registers the arrival of a PE at a barrier.
+ * The caller is blocked until the synchronization is resolved.
+ *
+ * In contrast with the shmem_barrier_all routine, shmem_sync_all only ensures
+ * completion and visibility of previously issued memory stores and does not
+ * ensure completion of remote memory updates issued via OpenSHMEM routines.
+ *
+ * This function must be called as a wave-front collective.
+ *
+ * @param[in] handle GPU side handle.
+ *
+ * @return void
+ */
+__device__ ATTR_NO_INLINE void rocshmem_ctx_sync_all_wave(rocshmem_ctx_t ctx);
+
+/**
+ * @brief registers the arrival of a PE at a barrier.
+ * The caller is blocked until the synchronization is resolved.
+ *
+ * In contrast with the shmem_barrier_all routine, shmem_sync_all only ensures
+ * completion and visibility of previously issued memory stores and does not
+ * ensure completion of remote memory updates issued via OpenSHMEM routines.
+ *
+ * This function must be called as a work-group collective.
+ *
+ * @param[in] handle GPU side handle.
+ *
+ * @return void
+ */
+__device__ ATTR_NO_INLINE void rocshmem_ctx_sync_all_wg(rocshmem_ctx_t ctx);
+
+/**
+ * @brief registers the arrival of a PE at a barrier.
+ * The caller is blocked until the synchronization is resolved.
+ *
+ * In contrast with the shmem_barrier_all routine, shmem_team_sync only ensures
+ * completion and visibility of previously issued memory stores and does not
+ * ensure completion of remote memory updates issued via OpenSHMEM routines.
+ *
+ * This function must be invoked by a single thread within the PE.
+ *
+ * @param[in] handle GPU side handle.
+ * @param[in] team  Handle of the team being synchronized
+ *
+ * @return void
+ */
+__device__ ATTR_NO_INLINE void rocshmem_ctx_sync(
+    rocshmem_ctx_t ctx, rocshmem_team_t team);
+
+/**
+ * @brief registers the arrival of a PE at a barrier.
+ * The caller is blocked until the synchronization is resolved.
+ *
+ * In contrast with the shmem_barrier_all routine, shmem_team_sync only ensures
+ * completion and visibility of previously issued memory stores and does not
+ * ensure completion of remote memory updates issued via OpenSHMEM routines.
+ *
+ * This function must be called as a wave-front collective.
+ *
+ * @param[in] handle GPU side handle.
+ * @param[in] team  Handle of the team being synchronized
+ *
+ * @return void
+ */
+__device__ ATTR_NO_INLINE void rocshmem_ctx_sync_wave(
+    rocshmem_ctx_t ctx, rocshmem_team_t team);
+
+/**
+ * @brief registers the arrival of a PE at a barrier.
+ * The caller is blocked until the synchronization is resolved.
+ *
+ * In contrast with the shmem_barrier_all routine, shmem_team_sync only ensures
+ * completion and visibility of previously issued memory stores and does not
+ * ensure completion of remote memory updates issued via OpenSHMEM routines.
+ *
+ * This function must be called as a work-group collective.
+ *
+ * @param[in] handle GPU side handle.
+ * @param[in] team  Handle of the team being synchronized
+ *
+ * @return void
+ */
+__device__ ATTR_NO_INLINE void rocshmem_ctx_sync_wg(
+    rocshmem_ctx_t ctx, rocshmem_team_t team);
+
+/**
+ * @brief Query a local pointer to a symmetric data object on the
+ * specified \pe . Returns an address that may be used to directly reference
+ * dest on the specified \pe. This address can be accesses with LD/ST ops.
+ *
+ * Can be called per thread with no performance penalty.
+ */
+__device__ ATTR_NO_INLINE void *rocshmem_ptr(const void *dest, int pe);
+
+/**
+ * @brief Make all uncacheable GPU data visible to other agents in the sytem.
+ *
+ * This only works for data that was explicitly allocated uncacheable on the
+ * GPU!
+ *
+ * Can be called per thread with no performance penalty.
+ *
+ * @param[in] GPU-side handle.
+ *
+ * @return void
+ */
 
 }  // namespace rocshmem
 
