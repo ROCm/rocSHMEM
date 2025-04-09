@@ -198,6 +198,13 @@ __device__ __forceinline__ void __roc_flush() {
 __device__ __forceinline__ void store_asm(uint8_t* val, uint8_t* dst,
                                           int size) {
   switch (size) {
+    case 1: {
+      uint32_t val8{*(reinterpret_cast<uint32_t*>(val))};
+#if defined(__gfx942__)
+      asm volatile("flat_store_byte %0 %1 sc0 sc1" : : "v"(dst), "v"(val8));
+#endif
+      break;
+    }
     case 2: {
       int16_t val16{*(reinterpret_cast<int16_t*>(val))};
 #if defined(__gfx906__)
@@ -237,6 +244,14 @@ __device__ __forceinline__ void store_asm(uint8_t* val, uint8_t* dst,
 #endif
 #if defined(__gfx942__)
       asm volatile("flat_store_dwordx2 %0 %1 sc0 sc1" : : "v"(dst), "v"(val64));
+#endif
+      break;
+    }
+    case 16: {
+      using Vec4u32 = uint32_t __attribute__((ext_vector_type(4)));
+      Vec4u32 i4{*(reinterpret_cast<Vec4u32*>(val))};
+#if defined(__gfx942__)
+      asm volatile("flat_store_dwordx4 %0 %1 sc0 sc1" : : "v"(dst), "v"(i4));
 #endif
       break;
     }
