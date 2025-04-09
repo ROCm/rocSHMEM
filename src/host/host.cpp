@@ -82,8 +82,7 @@ int HostInterface::find_win_info_in_pool(WindowInfo* window_info) {
   return -1;
 }
 
-__host__ HostInterface::HostInterface(HdpPolicy* hdp_policy,
-                                      MPI_Comm rocshmem_comm,
+__host__ HostInterface::HostInterface(MPI_Comm rocshmem_comm,
                                       SymmetricHeap* heap) {
   /*
    * Duplicate a communicator from roc_shem's comm
@@ -92,12 +91,6 @@ __host__ HostInterface::HostInterface(HdpPolicy* hdp_policy,
   MPI_Comm_dup(rocshmem_comm, &host_comm_world_);
   MPI_Comm_rank(host_comm_world_, &my_pe_);
   MPI_Comm_rank(host_comm_world_, &num_pes_);
-
-  /*
-   * Create an MPI window on the HDP so that it can be flushed
-   * by remote PEs for host-facing functions
-   */
-  hdp_policy_ = hdp_policy;
 
   /*
    * Allocate and initialize pool of windows for contexts
@@ -115,40 +108,9 @@ __host__ HostInterface::HostInterface(HdpPolicy* hdp_policy,
     host_window_context_pool_[ctx_i] =
         new HostContextWindowInfo(host_comm_world_, heap);
   }
-
-#if !defined(USE_COHERENT_HEAP) && !defined(USE_SINGLE_NODE)
-  // The single node implementation needs a different path since
-  // the HDP flush pointers are allocated on the symmetric heap
-  // and we need to wait for other initialization to happen before
-  // calling `get_hdp_flush_ptr`.
-  create_hdp_window();
-#endif  // defined(USE_COHERENT_HEAP) && !defined(USE_SINGLE_NODE)
 }
-
-#ifndef USE_COHERENT_HEAP
-__host__ void HostInterface::create_hdp_window() {
-  MPI_Win_create(hdp_policy_->get_hdp_flush_ptr(),
-                 sizeof(unsigned int), /* size of window */
-                 sizeof(unsigned int), /* displacement */
-                 MPI_INFO_NULL, host_comm_world_, &hdp_win);
-
-  /*
-   * Start a shared access epoch on windows of all ranks,
-   * and let the library there is no need to check for
-   * lock exclusivity during operations on this window
-   * (MPI_MODE_NOCHECK).
-   */
-  MPI_Win_lock_all(MPI_MODE_NOCHECK, hdp_win);
-}
-#endif  // USE_COHERENT_HEAP
 
 __host__ HostInterface::~HostInterface() {
-#ifndef USE_COHERENT_HEAP
-  MPI_Win_unlock_all(hdp_win);
-
-  MPI_Win_free(&hdp_win);
-#endif  // USE_COHERENT_HEAP
-
   /* Detroy the pool of contexts */
   for (int ctx_i = 0; ctx_i < max_num_ctxs_; ctx_i++) {
     delete host_window_context_pool_[ctx_i];
@@ -185,46 +147,21 @@ __host__ void HostInterface::getmem(void* dest, const void* source,
   initiate_get(dest, source, nelems, pe, window_info);
 
   MPI_Win_flush_local(pe, window_info->get_win());
-
-  /*
-   * Flush local HDP to ensure that the NIC's write
-   * of the fetched data is visible in device memory
-   */
-  hdp_policy_->hdp_flush();
 }
 
 __host__ void HostInterface::fence(WindowInfo* window_info) {
   complete_all(window_info->get_win());
-
-  /*
-   * Flush my HDP and the HDPs of remote GPUs.
-   * The HDP is a write-combining (WC) write-through
-   * cache. But, even after the WC buffer is full and
-   * the data is passed to the Data Fabric (DF), DF
-   * can still reorder the writes. A flush ensures
-   * that writes after the flush are written only
-   * after those before the flush.
-   */
-  hdp_policy_->hdp_flush();
-  flush_remote_hdps();
-
   return;
 }
 
 __host__ void HostInterface::quiet(WindowInfo* window_info) {
   complete_all(window_info->get_win());
-
-  /* Same explanation as in fence */
-  hdp_policy_->hdp_flush();
-  flush_remote_hdps();
-
   return;
 }
 
 __host__ void HostInterface::sync_all(WindowInfo* window_info) {
   MPI_Win_sync(window_info->get_win());
 
-  hdp_policy_->hdp_flush();
   /*
    * No need to flush remote
    * HDPs here since all PEs are
@@ -243,7 +180,6 @@ __host__ void HostInterface::barrier_all(WindowInfo* window_info) {
    * Flush my HDP cache so remote NICs will
    * see the latest values in device memory
    */
-  hdp_policy_->hdp_flush();
 
   MPI_Barrier(host_comm_world_);
 }

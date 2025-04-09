@@ -59,16 +59,6 @@ __host__ inline void HostInterface::initiate_put(void* dest, const void* source,
   /* Calculate offset of remote dest from base address of window */
   MPI_Aint offset{compute_offset(dest, win_start, win_end)};
 
-  /*
-   * Current semantics of our API restrict the buffers
-   * passed in to be on the symmetric heap only. So,
-   * flush the HDP since the GPU may have written the
-   * latest value to the source buffer and we want the
-   * NIC to DMA read the latest value instead of the
-   * value that may have been cached in the HDP.
-   */
-  hdp_policy_->hdp_flush();
-
   /* Offload remote write operation to MPI */
   MPI_Put(source, nelems, MPI_CHAR, pe, offset, nelems, MPI_CHAR, win);
 }

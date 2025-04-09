@@ -37,7 +37,6 @@
 #include <map>
 
 #include "rocshmem/rocshmem.hpp"
-#include "../hdp_policy.hpp"
 #include "../memory/symmetric_heap.hpp"
 #include "../memory/window_info.hpp"
 
@@ -104,8 +103,7 @@ class HostInterface {
   /**
    * @brief Primary constructor
    */
-  __host__ HostInterface(HdpPolicy* hdp_policy, MPI_Comm rocshmem_comm,
-                         SymmetricHeap* heap);
+  __host__ HostInterface(MPI_Comm rocshmem_comm, SymmetricHeap* heap);
 
   /**
    * @brief Destructor
@@ -246,35 +244,10 @@ class HostInterface {
   template <typename T>
   __host__ int test(T *ivars, int cmp, T val, WindowInfo* window_info);
 
-#ifndef USE_COHERENT_HEAP
-  __host__ void create_hdp_window();
-#endif // USE_COHERENT_HEAP
-
  private:
   /**************************************************************************
    **************************** INTERNAL METHODS ****************************
    *************************************************************************/
-  __host__ void flush_remote_hdps() {
-#ifndef USE_COHERENT_HEAP
-    unsigned flush_val{HdpPolicy::HDP_FLUSH_VAL};
-    for (size_t i{0}; i < num_pes_; i++) {
-      if (i == my_pe_) {
-        continue;
-      }
-      MPI_Put(&flush_val, 1, MPI_UNSIGNED, i, 0, 1, MPI_UNSIGNED, hdp_win);
-    }
-    MPI_Win_flush_all(hdp_win);
-#endif // USE_COHERENT_HEAP
-  }
-
-  __host__ void flush_remote_hdp(int pe) {
-#ifndef USE_COHERENT_HEAP
-    unsigned flush_val{HdpPolicy::HDP_FLUSH_VAL};
-    MPI_Put(&flush_val, 1, MPI_UNSIGNED, pe, 0, 1, MPI_UNSIGNED, hdp_win);
-    MPI_Win_flush(pe, hdp_win);
-#endif // USE_COHERENT_HEAP
-  }
-
   __host__ void initiate_put(void* dest, const void* source, size_t nelems,
                              int pe, WindowInfo* window_info);
 
@@ -312,11 +285,6 @@ class HostInterface {
    **************************** INTERNAL MEMBERS ****************************
    *************************************************************************/
   /**
-   * @brief Duplicate to the Backend's hdp policy pointer
-   */
-  HdpPolicy* hdp_policy_{nullptr};
-
-  /**
    * @brief Global MPI communicator for those host API
    */
   MPI_Comm host_comm_world_{};
@@ -330,13 +298,6 @@ class HostInterface {
    * @brief Duplicate of global number of processing elements
    */
   int num_pes_{0};
-
-#ifndef USE_COHERENT_HEAP
-  /**
-   * @brief MPI window for hdp flushing
-   */
-  MPI_Win hdp_win;
-#endif  // USE_COHERENT_HEAP
 
   /**
    * @brief Max number of contexts for the application

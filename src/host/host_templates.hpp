@@ -168,11 +168,6 @@ __host__ void HostInterface::broadcast_internal(MPI_Comm mpi_comm, T* dest,
   }
 
   /*
-   * Flush my HDP so that the NIC does not read stale values
-   */
-  hdp_policy_->hdp_flush();
-
-  /*
    * Offload the broadcast to MPI
    */
   MPI_Bcast(buffer, nelems * sizeof(T), MPI_CHAR, pe_root, mpi_comm);
@@ -289,12 +284,6 @@ __host__ T HostInterface::amo_fetch_add(void* dst, T value, int pe,
   MPI_Aint offset{
       compute_offset(dst, window_info->get_start(), window_info->get_end())};
 
-  /*
-   * Flush the HDP of the remote PE so that the NIC does not
-   * read stale values
-   */
-  flush_remote_hdp(pe);
-
   /* Offload remote fetch and op operation to MPI */
   T ret{};
   MPI_Win win{window_info->get_win()};
@@ -312,12 +301,6 @@ __host__ T HostInterface::amo_fetch_cas(void* dst, T value, T cond, int pe,
   /* Calculate offset of remote dest from base address of window */
   MPI_Aint offset{
       compute_offset(dst, window_info->get_start(), window_info->get_end())};
-
-  /*
-   * Flush the HDP of the remote PE so that the NIC does not
-   * read stale values
-   */
-  flush_remote_hdp(pe);
 
   /* Offload remote compare and swap operation to MPI */
   T ret{};
@@ -341,11 +324,6 @@ __host__ void HostInterface::to_all_internal(MPI_Comm mpi_comm, T* dest,
 
   void* send_buf{const_cast<T*>(source)};
   void* recv_buf{const_cast<T*>(dest)};
-
-  /*
-   * Flush my HDP so that the NIC does not read stale values
-   */
-  hdp_policy_->hdp_flush();
 
   /*
    * Offload the allreduce to MPI
@@ -429,11 +407,6 @@ __host__ inline int HostInterface::test_and_compare(MPI_Aint offset,
                                                     int cmp, T val,
                                                     MPI_Win win) {
   T fetched_val{};
-
-  /*
-   * Flush the HDP so that the CPU doesn't read stale values
-   */
-  hdp_policy_->hdp_flush();
 
   MPI_Fetch_and_op(nullptr,  // because no operation happening here
                    &fetched_val, mpi_type, my_pe_, offset, MPI_NO_OP, win);
