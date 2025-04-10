@@ -23,19 +23,17 @@
 #include "context_ib_device.hpp"
 
 #include <hip/hip_runtime.h>
+#include <rocshmem/rocshmem.hpp>
 
 #include "rocshmem_config.h"  // NOLINT(build/include_subdir)
-#include "rocshmem/rocshmem.hpp"
-#include "../backend_type.hpp"
-#include "../context_incl.hpp"
+#include "context_incl.hpp"
 #include "backend_ib.hpp"
 #include "queue_pair.hpp"
 
 namespace rocshmem {
 
-__host__ GPUIBContext::GPUIBContext(Backend *backend, bool option, int idx)
-    : Context(backend, option) {
-  GPUIBBackend *b{static_cast<GPUIBBackend *>(backend)};
+__host__ GPUIBContext::GPUIBContext(GPUIBBackend *b, int idx)
+    : Context(b) {
   ctx_idx = idx;
   networkImpl = b->networkImpl;
   base_heap = b->heap.get_heap_bases().data();
@@ -49,11 +47,6 @@ __device__ void GPUIBContext::ctx_create() {
   return;
 }
 
-/*
- * TODO(bpotter): these will go in a policy class based on DC/RC.
- * I am not completely sure at this point what else is needed in said class,
- * so just leave them up here for now.
- */
 __device__ __host__ QueuePair *GPUIBContext::getQueuePair(int pe) {
   return networkImpl.getQueuePair(device_qp_proxy, pe);
 }

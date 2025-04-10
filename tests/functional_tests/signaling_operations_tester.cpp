@@ -36,7 +36,7 @@ __global__ void PutmemSignalTest(int loop, int skip, long long int *start_time,
   __shared__ rocshmem_ctx_t ctx;
   int wg_id = get_flat_grid_id();
   rocshmem_wg_init();
-  rocshmem_wg_ctx_create(ctx_type, &ctx);
+  rocshmem_wg_ctx_create(&ctx);
 
   uint64_t signal = 1;
 

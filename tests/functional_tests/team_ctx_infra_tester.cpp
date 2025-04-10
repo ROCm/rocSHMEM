@@ -48,10 +48,10 @@ __global__ void TeamCtxInfraTest(ShmemContextType ctx_type,
    * from the same team are the same.
    */
 
-  rocshmem_wg_team_create_ctx(team[0], ctx_type, &ctx1);
-  rocshmem_wg_team_create_ctx(team[0], ctx_type, &ctx2);
+  rocshmem_wg_team_create_ctx(team[0], &ctx1);
+  rocshmem_wg_team_create_ctx(team[0], &ctx2);
   rocshmem_wg_ctx_destroy(&ctx1);
-  rocshmem_wg_team_create_ctx(team[0], ctx_type, &ctx3);
+  rocshmem_wg_team_create_ctx(team[0],  &ctx3);
 
   __syncthreads();
 
@@ -70,7 +70,7 @@ __global__ void TeamCtxInfraTest(ShmemContextType ctx_type,
    * from different teams are different.
    */
   for (int team_i = 0; team_i < NUM_TEAMS; team_i++) {
-    rocshmem_wg_team_create_ctx(team[team_i], ctx_type, &ctx[team_i]);
+    rocshmem_wg_team_create_ctx(team[team_i], &ctx[team_i]);
   }
 
   if (ctx[0].team_opaque == ctx[NUM_TEAMS - 1].team_opaque) {

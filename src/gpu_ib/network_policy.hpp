@@ -31,7 +31,6 @@
 #include "connection_policy.hpp"
 #include "queue_pair.hpp"
 #include "../memory/symmetric_heap.hpp"
-#include "../stats.hpp"
 #include "../util.hpp"
 
 struct ibv_mr;
@@ -46,10 +45,6 @@ class Connection;
 
 class NetworkOnImpl {
  public:
-  void dump_backend_stats(ROCStats *globalStats);
-
-  void reset_backend_stats();
-
   /**
    * @brief setup the network resources and initialization for the
    * GPUIBBackend
@@ -220,10 +215,6 @@ class NetworkOnImpl {
 NOWARN(-Wunused-parameter,
 class NetworkOffImpl {
  public:
-  void dump_backend_stats(ROCStats *globalStats) { }
-
-  void reset_backend_stats() { }
-
   __host__ void networkHostSetup(GPUIBBackend *B);
 
   __host__ void networkHostFinalize();

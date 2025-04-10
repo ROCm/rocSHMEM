@@ -24,11 +24,11 @@
 
 #include <hip/hip_runtime.h>
 
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem_config.h"
 #include "backend_ib.hpp"
 #include "endian.hpp"
 #include "segment_builder.hpp"
-#include "../util.hpp"
+#include "util.hpp"
 
 namespace rocshmem {
 
@@ -39,8 +39,6 @@ QueuePair::QueuePair(GPUIBBackend *backend)
 }
 
 __device__ QueuePair::~QueuePair() {
-  uint64_t start = profiler.startTimer();
-
   global_qp->sq_counter = sq_counter;
   global_qp->local_sq_cnt = local_sq_cnt;
   global_qp->cq_consumer_counter = cq_consumer_counter;
@@ -48,10 +46,6 @@ __device__ QueuePair::~QueuePair() {
   global_qp->current_cq_q = current_cq_q;
   global_qp->sq_overflow = sq_overflow;
   global_qp->quiet_counter = quiet_counter;
-  profiler.endTimer(start, FINALIZE);
-
-  global_qp->profiler.accumulateStats(profiler);
-
   __syncthreads();
 }
 
@@ -121,9 +115,6 @@ __device__ void QueuePair::quiet_internal() {
     return;
   }
 
-  profiler.incStat(QUIET_COUNT);
-  uint64_t start = profiler.startTimer();
-
   /*
    * Generate a pointer to the completion queue entry.
    */
@@ -173,17 +164,12 @@ __device__ void QueuePair::quiet_internal() {
   level L;
   L.decQuietCounter(&quiet_counter, quiet_val);
 
-  profiler.endTimer(start, POLL_CQ);
-  start = profiler.startTimer();
-
   /*
    * Increment the trailing index counter which tracks our spot in the
    * completion queue.
    */
   cq_consumer_counter++;
   swap_endian_store(const_cast<uint32_t *>(dbrec_cq), cq_consumer_counter);
-
-  profiler.endTimer(start, NEXT_CQ);
 }
 
 template <class level>
@@ -203,7 +189,6 @@ __device__ void QueuePair::update_posted_wqe_generic(
     int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode,
     int64_t atomic_data, int64_t atomic_cmp, bool ring_db,
     uint64_t atomic_ret_pos, bool zero_byte_rd) {
-  uint64_t start = profiler.startTimer();
 
   level L;
   L.postLock(this, pe);
@@ -228,7 +213,6 @@ __device__ void QueuePair::update_posted_wqe_generic(
   connection_policy.setRkey(&rkey_in_stack_frame, pe);
 
   if (opcode == MLX5_OPCODE_RDMA_WRITE && !size) {
-//    rkey_in_stack_frame = hdp_rkey[pe];
     size = 4;
   }
 
@@ -257,15 +241,8 @@ __device__ void QueuePair::update_posted_wqe_generic(
     seg_build.update_data_seg(laddr, size, lkey_in_stack_frame);
   }
 
-  profiler.incStat(WQE_COUNT);
-  profiler.endTimer(start, UPDATE_WQE);
-  start = profiler.startTimer();
-
   L.template finishPost<cqe>(this, ring_db, num_wqes, pe, le_sq_counter,
                              opcode);
-
-  profiler.incStat(DB_COUNT);
-  profiler.endTimer(start, RING_SQ_DB);
 }
 
 /******************************************************************************
@@ -370,13 +347,6 @@ __device__ void QueuePair::atomic_nofetch(void *dest, int64_t value,
 }
 
 __device__ void QueuePair::fence(int pe) {
-  // TODO(khamidou): should this be replaced by a zero_byte_rd?
-  // FIXME: the relaxed ordering requires an intervening read to order
-  // prior operations.
-//  auto remote_hdp_uncast = hdp_address[pe];
-//  uintptr_t *remote_hdp = reinterpret_cast<uintptr_t *>(remote_hdp_uncast);
-//  update_posted_wqe_generic<THREAD, true>(
-//      pe, 0, nullptr, remote_hdp, MLX5_OPCODE_RDMA_WRITE, 0, 0, true, 0);
 }
 
 __device__ void QueuePair::waitCQSpace(int num_msgs) {

@@ -22,18 +22,14 @@
 
 #include "gpu_ib_team.hpp"
 
-#include "../backend_type.hpp"
 #include "backend_ib.hpp"
 
 namespace rocshmem {
 
-GPUIBTeam::GPUIBTeam(Backend *backend, TeamInfo *team_info_parent,
+GPUIBTeam::GPUIBTeam(GPUIBBackend *b, TeamInfo *team_info_parent,
                      TeamInfo *team_info_world, int num_pes, int my_pe,
                      MPI_Comm mpi_comm, int pool_index)
-    : Team(backend, team_info_parent, team_info_world, num_pes, my_pe,
-           mpi_comm) {
-  type = BackendType::GPU_IB_BACKEND;
-  const GPUIBBackend *b = static_cast<const GPUIBBackend *>(backend);
+    : Team(b, team_info_parent, team_info_world, num_pes, my_pe, mpi_comm) {
 
   pool_index_ = pool_index;
 

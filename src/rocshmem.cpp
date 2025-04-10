@@ -36,7 +36,6 @@
 #include <functional>
 #include <random>
 
-#include "backend_bc.hpp"
 #include "context_incl.hpp"
 #include "gpu_ib/backend_ib.hpp"
 #include "gpu_ib/context_ib_tmpl_host.hpp"
@@ -58,7 +57,7 @@ namespace rocshmem {
     }                                                                         \
   }
 
-Backend *backend = nullptr;
+GPUIBBackend *backend = nullptr;
 
 rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
@@ -215,17 +214,6 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   backend->heap.free(ptr);
 }
 
-[[maybe_unused]] __host__ void rocshmem_reset_stats() {
-  VERIFY_BACKEND();
-  backend->reset_stats();
-}
-
-[[maybe_unused]] __host__ void rocshmem_dump_stats() {
-  /** TODO: Many stats are backend independent! **/
-  VERIFY_BACKEND();
-  backend->dump_stats();
-}
-
 [[maybe_unused]] __host__ void rocshmem_finalize() {
   VERIFY_BACKEND();
 
@@ -240,10 +228,10 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
    * created but did not manually destroy
    */
   auto team_destroy{
-      std::bind(&Backend::team_destroy, backend, std::placeholders::_1)};
+      std::bind(&GPUIBBackend::team_destroy, backend, std::placeholders::_1)};
   backend->team_tracker.destroy_all(team_destroy);
 
-  backend->~Backend();
+  backend->~GPUIBBackend();
   CHECK_HIP(hipHostFree(backend));
 
   delete MPIInitSingleton::GetInstance();
@@ -541,11 +529,9 @@ __host__ Context *get_internal_ctx(rocshmem_ctx_t ctx) {
   return reinterpret_cast<Context *>(ctx.ctx_opaque);
 }
 
-__host__ int rocshmem_ctx_create(int64_t options, rocshmem_ctx_t *ctx) {
-  DPRINTF("Host function: rocshmem_ctx_create\n");
-
+__host__ int rocshmem_ctx_create(rocshmem_ctx_t *ctx) {
   void *phys_ctx;
-  backend->ctx_create(options, &phys_ctx);
+  backend->ctx_create(&phys_ctx);
 
   ctx->ctx_opaque = phys_ctx;
   /* This team in on TEAM_WORLD, no need for team info */
@@ -558,8 +544,6 @@ __host__ int rocshmem_ctx_create(int64_t options, rocshmem_ctx_t *ctx) {
 }
 
 __host__ void rocshmem_ctx_destroy(rocshmem_ctx_t ctx) {
-  DPRINTF("Host function: rocshmem_ctx_destroy\n");
-
   /* TODO: Implicit quiet on this context */
 
   Context *phys_ctx = get_internal_ctx(ctx);
@@ -572,207 +556,151 @@ __host__ void rocshmem_ctx_destroy(rocshmem_ctx_t ctx) {
 template <typename T>
 __host__ void rocshmem_put(rocshmem_ctx_t ctx, T *dest, const T *source,
                             size_t nelems, int pe) {
-  DPRINTF("Host function: rocshmem_put\n");
-
   get_internal_ctx(ctx)->put(dest, source, nelems, pe);
 }
 
 __host__ void rocshmem_ctx_putmem(rocshmem_ctx_t ctx, void *dest,
                                    const void *source, size_t nelems, int pe) {
-  DPRINTF("Host function: rocshmem_ctx_putmem\n");
-
   get_internal_ctx(ctx)->putmem(dest, source, nelems, pe);
 }
 
 template <typename T>
 __host__ void rocshmem_p(rocshmem_ctx_t ctx, T *dest, T value, int pe) {
-  DPRINTF("Host function: rocshmem_p\n");
-
   get_internal_ctx(ctx)->p(dest, value, pe);
 }
 
 template <typename T>
 __host__ void rocshmem_get(rocshmem_ctx_t ctx, T *dest, const T *source,
                             size_t nelems, int pe) {
-  DPRINTF("Host function: rocshmem_get\n");
-
   get_internal_ctx(ctx)->get(dest, source, nelems, pe);
 }
 
 __host__ void rocshmem_ctx_getmem(rocshmem_ctx_t ctx, void *dest,
                                    const void *source, size_t nelems, int pe) {
-  DPRINTF("Host function: rocshmem_ctx_getmem\n");
-
   get_internal_ctx(ctx)->getmem(dest, source, nelems, pe);
 }
 
 template <typename T>
 __host__ T rocshmem_g(rocshmem_ctx_t ctx, const T *source, int pe) {
-  DPRINTF("Host function: rocshmem_g\n");
-
   return get_internal_ctx(ctx)->g(source, pe);
 }
 
 template <typename T>
 __host__ void rocshmem_put_nbi(rocshmem_ctx_t ctx, T *dest, const T *source,
                                 size_t nelems, int pe) {
-  DPRINTF("Host function: rocshmem_put_nbi\n");
-
   get_internal_ctx(ctx)->put_nbi(dest, source, nelems, pe);
 }
 
 __host__ void rocshmem_ctx_putmem_nbi(rocshmem_ctx_t ctx, void *dest,
                                        const void *source, size_t nelems,
                                        int pe) {
-  DPRINTF("Host function: rocshmem_ctx_putmem_nbi\n");
-
   get_internal_ctx(ctx)->putmem_nbi(dest, source, nelems, pe);
 }
 
 template <typename T>
 __host__ void rocshmem_get_nbi(rocshmem_ctx_t ctx, T *dest, const T *source,
                                 size_t nelems, int pe) {
-  DPRINTF("Host function: rocshmem_get_nbi\n");
-
   get_internal_ctx(ctx)->get_nbi(dest, source, nelems, pe);
 }
 
 __host__ void rocshmem_ctx_getmem_nbi(rocshmem_ctx_t ctx, void *dest,
                                        const void *source, size_t nelems,
                                        int pe) {
-  DPRINTF("Host function: rocshmem_ctx_getmem_nbi\n");
-
   get_internal_ctx(ctx)->getmem_nbi(dest, source, nelems, pe);
 }
 
 template <typename T>
 __host__ T rocshmem_atomic_fetch_add(rocshmem_ctx_t ctx, T *dest, T val,
                                       int pe) {
-  DPRINTF("Host function: rocshmem_atomic_fetch_add\n");
-
   return get_internal_ctx(ctx)->amo_fetch_add<T>(dest, val, pe);
 }
 
 template <typename T>
 __host__ T rocshmem_atomic_compare_swap(rocshmem_ctx_t ctx, T *dest, T cond,
                                          T val, int pe) {
-  DPRINTF("Host function: rocshmem_atomic_compare_swap\n");
-
   return get_internal_ctx(ctx)->amo_fetch_cas(dest, val, cond, pe);
 }
 
 template <typename T>
 __host__ T rocshmem_atomic_fetch_inc(rocshmem_ctx_t ctx, T *dest, int pe) {
-  DPRINTF("Host function: rocshmem_atomic_fetch_inc\n");
-
   return get_internal_ctx(ctx)->amo_fetch_add<T>(dest, 1, pe);
 }
 
 template <typename T>
 __host__ T rocshmem_atomic_fetch(rocshmem_ctx_t ctx, T *source, int pe) {
-  DPRINTF("Host function: rocshmem_atomic_fetch\n");
-
   return get_internal_ctx(ctx)->amo_fetch_add<T>(source, 0, pe);
 }
 
 template <typename T>
 __host__ void rocshmem_atomic_add(rocshmem_ctx_t ctx, T *dest, T val,
                                    int pe) {
-  DPRINTF("Host function: rocshmem_atomic_add\n");
-
   get_internal_ctx(ctx)->amo_add<T>(dest, val, pe);
 }
 
 template <typename T>
 __host__ void rocshmem_atomic_inc(rocshmem_ctx_t ctx, T *dest, int pe) {
-  DPRINTF("Host function: rocshmem_atomic_inc\n");
-
   get_internal_ctx(ctx)->amo_add<T>(dest, 1, pe);
 }
 
 template <typename T>
 __host__ void rocshmem_atomic_set(rocshmem_ctx_t ctx, T *dest, T val,
                                    int pe) {
-  DPRINTF("Host function: rocshmem_atomic_set\n");
-
   get_internal_ctx(ctx)->amo_set(dest, val, pe);
 }
 
 template <typename T>
 __host__ T rocshmem_atomic_swap(rocshmem_ctx_t ctx, T *dest, T val, int pe) {
-  DPRINTF("Host function: rocshmem_atomic_set\n");
-
   return get_internal_ctx(ctx)->amo_swap(dest, val, pe);
 }
 
 template <typename T>
 __host__ T rocshmem_atomic_fetch_and(rocshmem_ctx_t ctx, T *dest, T val,
                                       int pe) {
-  DPRINTF("Host function: rocshmem_atomic_fetch_and\n");
-
   return get_internal_ctx(ctx)->amo_fetch_and(dest, val, pe);
 }
 
 template <typename T>
 __host__ void rocshmem_atomic_and(rocshmem_ctx_t ctx, T *dest, T val,
                                    int pe) {
-  DPRINTF("Host function: rocshmem_atomic_and\n");
-
   get_internal_ctx(ctx)->amo_and(dest, val, pe);
 }
 
 template <typename T>
 __host__ T rocshmem_atomic_fetch_or(rocshmem_ctx_t ctx, T *dest, T val,
                                      int pe) {
-  DPRINTF("Host function: rocshmem_atomic_fetch_or\n");
-
   return get_internal_ctx(ctx)->amo_fetch_or(dest, val, pe);
 }
 
 template <typename T>
 __host__ void rocshmem_atomic_or(rocshmem_ctx_t ctx, T *dest, T val, int pe) {
-  DPRINTF("Host function: rocshmem_atomic_or\n");
-
   get_internal_ctx(ctx)->amo_or(dest, val, pe);
 }
 
 template <typename T>
 __host__ T rocshmem_atomic_fetch_xor(rocshmem_ctx_t ctx, T *dest, T val,
                                       int pe) {
-  DPRINTF("Host function: rocshmem_atomic_fetch_xor\n");
-
   return get_internal_ctx(ctx)->amo_fetch_xor(dest, val, pe);
 }
 
 template <typename T>
 __host__ void rocshmem_atomic_xor(rocshmem_ctx_t ctx, T *dest, T val,
                                    int pe) {
-  DPRINTF("Host function: rocshmem_atomic_xor\n");
-
   get_internal_ctx(ctx)->amo_xor(dest, val, pe);
 }
 
 __host__ void rocshmem_ctx_fence(rocshmem_ctx_t ctx) {
-  DPRINTF("Host function: rocshmem_ctx_fence\n");
-
   get_internal_ctx(ctx)->fence();
 }
 
 __host__ void rocshmem_ctx_quiet(rocshmem_ctx_t ctx) {
-  DPRINTF("Host function: rocshmem_ctx_quiet\n");
-
   get_internal_ctx(ctx)->quiet();
 }
 
 __host__ void rocshmem_barrier_all() {
-  DPRINTF("Host function: rocshmem_barrier_all\n");
-
   get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->barrier_all();
 }
 
 __host__ void rocshmem_sync_all() {
-  DPRINTF("Host function: rocshmem_sync_all\n");
-
   get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->sync_all();
 }
 
@@ -781,8 +709,6 @@ __host__ void rocshmem_broadcast([[maybe_unused]] rocshmem_ctx_t ctx, T *dest,
                                   const T *source, int nelem, int pe_root,
                                   int pe_start, int log_pe_stride, int pe_size,
                                   long *p_sync) {
-  DPRINTF("Host function: rocshmem_broadcast\n");
-
   get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)
       ->broadcast<T>(dest, source, nelem, pe_root, pe_start, log_pe_stride,
                      pe_size, p_sync);
@@ -792,8 +718,6 @@ template <typename T>
 __host__ void rocshmem_broadcast([[maybe_unused]] rocshmem_ctx_t ctx,
                                   rocshmem_team_t team, T *dest,
                                   const T *source, int nelem, int pe_root) {
-  DPRINTF("Host function: Team-based rocshmem_broadcast\n");
-
   get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)
       ->broadcast<T>(team, dest, source, nelem, pe_root);
 }
@@ -803,8 +727,6 @@ __host__ void rocshmem_to_all([[maybe_unused]] rocshmem_ctx_t ctx, T *dest,
                                const T *source, int nreduce, int PE_start,
                                int logPE_stride, int PE_size, T *pWrk,
                                long *pSync) {
-  DPRINTF("Host function: rocshmem_to_all\n");
-
   get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)
       ->to_all<T, Op>(dest, source, nreduce, PE_start, logPE_stride, PE_size,
                       pWrk, pSync);
@@ -814,24 +736,18 @@ template <typename T, ROCSHMEM_OP Op>
 __host__ int rocshmem_reduce([[maybe_unused]] rocshmem_ctx_t ctx,
                                rocshmem_team_t team, T *dest, const T *source,
                                int nreduce) {
-  DPRINTF("Host function: Team-based rocshmem_reduce\n");
-
   return get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)
               ->reduce<T, Op>(team, dest, source, nreduce);
 }
 
 template <typename T>
 __host__ void rocshmem_wait_until(T *ivars, int cmp, T val) {
-  DPRINTF("Host function: rocshmem_wait_until\n");
-
   get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->wait_until(ivars, cmp, val);
 }
 
 template <typename T>
 __host__ void rocshmem_wait_until_all(T *ivars, size_t nelems, const int* status,
                                        int cmp, T val) {
-  DPRINTF("Host function: rocshmem_wait_until_all\n");
-
   get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->wait_until_all(ivars,
       nelems, status, cmp, val);
 }
@@ -839,8 +755,6 @@ __host__ void rocshmem_wait_until_all(T *ivars, size_t nelems, const int* status
 template <typename T>
 __host__ size_t rocshmem_wait_until_any(T *ivars, size_t nelems, const int* status,
                                        int cmp, T val) {
-  DPRINTF("Host function: rocshmem_wait_until_any\n");
-
   return get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->wait_until_any(ivars,
       nelems, status, cmp, val);
 }
@@ -849,8 +763,6 @@ template <typename T>
 __host__ size_t rocshmem_wait_until_some(T *ivars, size_t nelems, size_t* indices,
                                         const int* status, int cmp,
                                         T val) {
-  DPRINTF("Host function: rocshmem_wait_until_some\n");
-
   return get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->wait_until_some(ivars, nelems,
       indices, status, cmp, val);
 }
@@ -858,8 +770,6 @@ __host__ size_t rocshmem_wait_until_some(T *ivars, size_t nelems, size_t* indice
 template <typename T>
 __host__ size_t rocshmem_wait_until_any_vector(T *ivars, size_t nelems, const int* status,
                                                 int cmp, T* vals) {
-  DPRINTF("Host function: rocshmem_wait_until_any_vector\n");
-
   return get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->wait_until_any_vector(ivars,
       nelems, status, cmp, vals);
 }
@@ -867,8 +777,6 @@ __host__ size_t rocshmem_wait_until_any_vector(T *ivars, size_t nelems, const in
 template <typename T>
 __host__ void rocshmem_wait_until_all_vector(T *ivars, size_t nelems, const int* status,
                                               int cmp, T* vals) {
-  DPRINTF("Host function: rocshmem_wait_until_all_vector\n");
-
   get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->wait_until_all_vector(ivars,
       nelems, status, cmp, vals);
 }
@@ -878,16 +786,12 @@ __host__ size_t rocshmem_wait_until_some_vector(T *ivars, size_t nelems,
                                                size_t* indices,
                                                const int* status,
                                                int cmp, T* vals) {
-  DPRINTF("Host function: rocshmem_wait_until_some_vector\n");
-
   return get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->wait_until_some_vector(ivars,
       nelems, indices, status, cmp, vals);
 }
 
 template <typename T>
 __host__ int rocshmem_test(T *ivars, int cmp, T val) {
-  DPRINTF("Host function: rocshmem_testl\n");
-
   return get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->test(ivars, cmp, val);
 }
 

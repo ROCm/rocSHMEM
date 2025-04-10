@@ -24,13 +24,12 @@
 #define LIBRARY_SRC_TEAM_HPP_
 
 #include <mpi.h>
+#include <rocshmem/rocshmem.hpp>
 
-#include "rocshmem/rocshmem.hpp"
-#include "backend_type.hpp"
+#include "gpu_ib/backend_ib.hpp"
 
 namespace rocshmem {
 
-class Backend;
 class Team;
 class ROTeam;
 class GPUIBTeam;
@@ -87,7 +86,7 @@ class Team {
    * @param _my_pe the index of this PE in the team
    * @param _mpi_comm MPI Communicator representing the team
    */
-  Team(Backend* handle, TeamInfo* team_info_wrt_parent,
+  Team(GPUIBBackend* handle, TeamInfo* team_info_wrt_parent,
        TeamInfo* team_info_wrt_world, int num_pes, int my_pe,
        MPI_Comm mpi_comm);
 
@@ -148,13 +147,6 @@ class Team {
    * @brief This teams mpi communicator.
    */
   MPI_Comm mpi_comm{MPI_COMM_NULL};
-
-  /**
-   * @brief The backend type.
-   *
-   * @note This is required to do some reinterpret_casts.
-   */
-  BackendType type{BackendType::GPU_IB_BACKEND};
 };
 
 __host__ __device__ Team* get_internal_team(rocshmem_team_t team);

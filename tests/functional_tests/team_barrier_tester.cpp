@@ -34,7 +34,7 @@ __global__ void TeamBarrierTest(int loop, int skip, long long int *start_time,
   int wg_id = get_flat_grid_id();
 
   rocshmem_wg_init();
-  rocshmem_wg_team_create_ctx(teams[wg_id], ctx_type, &ctx);
+  rocshmem_wg_team_create_ctx(teams[wg_id], &ctx);
 
   int n_pes = rocshmem_ctx_n_pes(ctx);
 

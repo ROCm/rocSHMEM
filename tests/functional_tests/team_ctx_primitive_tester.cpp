@@ -42,7 +42,7 @@ __global__ void TeamCtxPrimitiveTest(int loop, int skip, long long int *start_ti
   int wf_id = t_id / wf_size;
 
   rocshmem_wg_init();
-  rocshmem_wg_team_create_ctx(team, ctx_type, &ctx);
+  rocshmem_wg_team_create_ctx(team, &ctx);
 
   /**
    * Shared array to capture the start time for each wavefront

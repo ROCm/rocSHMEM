@@ -25,7 +25,6 @@
 #include <cmath>
 
 #include "rocshmem/rocshmem.hpp"
-#include "backend_bc.hpp"
 #include "util.hpp"
 
 namespace rocshmem {
@@ -72,7 +71,7 @@ __host__ __device__ TeamInfo::TeamInfo(Team* _parent_team, int _pe_start,
   log_stride = log2(stride);
 }
 
-__host__ Team::Team(Backend* handle, TeamInfo* team_info_wrt_parent,
+__host__ Team::Team(GPUIBBackend* handle, TeamInfo* team_info_wrt_parent,
                     TeamInfo* team_info_wrt_world, int _num_pes, int _my_pe,
                     MPI_Comm _mpi_comm)
     : world_size(handle->getNumPEs()),

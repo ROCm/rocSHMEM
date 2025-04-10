@@ -20,17 +20,18 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
-#include "backend_bc.hpp"
+#include "rocshmem_config.h"
 #include "context_incl.hpp"
+#include "gpu_ib/backend_ib.hpp"
 #include "util.hpp"
 
 namespace rocshmem {
 
-__device__ Context::Context(Backend* handle, bool shareable)
+__device__ 
+Context::Context(GPUIBBackend* handle)
     : num_pes(handle->getNumPEs()),
       my_pe(handle->getMyPE()),
-      fence_(shareable) {
+      fence_() {
   /*
    * Device-side context constructor is a work-group collective, so make
    * sure all the members have their default values before returning.
@@ -50,234 +51,184 @@ __device__ Context::Context(Backend* handle, bool shareable)
 }
 
 /******************************************************************************
- ********************** CONTEXT DISPATCH IMPLEMENTATIONS **********************
+ ************************** CONTEXT IMPLEMENTATIONS ***************************
  *****************************************************************************/
 
-__device__ void Context::threadfence_system() {
-  DISPATCH(threadfence_system());
+__device__ 
+void Context::threadfence_system() {
+  static_cast<GPUIBContext*>(this)->threadfence_system();
 }
 
-__device__ void Context::ctx_create() {
-  if (is_thread_zero_in_block()) {
-    ctxStats.incStat(NUM_CREATE);
-  }
-
-  DISPATCH(ctx_create());
+__device__ 
+void Context::ctx_create() {
+  static_cast<GPUIBContext*>(this)->ctx_create();
 }
 
-__device__ void Context::ctx_destroy() {
-  if (is_thread_zero_in_block()) {
-    ctxStats.incStat(NUM_FINALIZE);
-    device_backend_proxy->globalStats.accumulateStats(ctxStats);
-  }
-
-  DISPATCH(ctx_destroy());
+__device__ 
+void Context::ctx_destroy() {
+  static_cast<GPUIBContext*>(this)->ctx_destroy();
 }
 
-__device__ void Context::putmem(void* dest, const void* source, size_t nelems,
-                                int pe) {
+__device__ 
+void Context::putmem(void* dest, const void* source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_PUT);
-
-  DISPATCH(putmem(dest, source, nelems, pe));
+  static_cast<GPUIBContext*>(this)->putmem(dest, source, nelems, pe);
 }
 
-__device__ void Context::getmem(void* dest, const void* source, size_t nelems,
-                                int pe) {
+__device__ 
+void Context::getmem(void* dest, const void* source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_GET);
-
-  DISPATCH(getmem(dest, source, nelems, pe));
+  static_cast<GPUIBContext*>(this)->getmem(dest, source, nelems, pe);
 }
 
-__device__ void Context::putmem_nbi(void* dest, const void* source,
-                                    size_t nelems, int pe) {
+__device__ 
+void Context::putmem_nbi(void* dest, const void* source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_PUT_NBI);
-
-  DISPATCH(putmem_nbi(dest, source, nelems, pe));
+  static_cast<GPUIBContext*>(this)->putmem_nbi(dest, source, nelems, pe);
 }
 
-__device__ void Context::getmem_nbi(void* dest, const void* source, size_t size,
-                                    int pe) {
+__device__ 
+void Context::getmem_nbi(void* dest, const void* source, size_t size, int pe) {
   if (size == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_GET_NBI);
-
-  DISPATCH(getmem_nbi(dest, source, size, pe));
+  static_cast<GPUIBContext*>(this)->getmem_nbi(dest, source, size, pe);
 }
 
-__device__ void Context::fence() {
-  ctxStats.incStat(NUM_FENCE);
-
-  DISPATCH(fence());
+__device__ 
+void Context::fence() {
+  static_cast<GPUIBContext*>(this)->fence();
 }
 
-__device__ void Context::fence(int pe) {
-  ctxStats.incStat(NUM_FENCE);
-
-  DISPATCH(fence(pe));
+__device__ 
+void Context::fence(int pe) {
+  static_cast<GPUIBContext*>(this)->fence(pe);
 }
 
-__device__ void Context::quiet() {
-  ctxStats.incStat(NUM_QUIET);
-
-  DISPATCH(quiet());
+__device__ 
+void Context::quiet() {
+  static_cast<GPUIBContext*>(this)->quiet();
 }
 
-__device__ void* Context::shmem_ptr(const void* dest, int pe) {
-  ctxStats.incStat(NUM_SHMEM_PTR);
-
-  DISPATCH_RET_PTR(shmem_ptr(dest, pe));
+__device__ 
+void* Context::shmem_ptr(const void* dest, int pe) {
+  void *ret_val{nullptr};
+  ret_val = static_cast<GPUIBContext *>(this)->shmem_ptr(dest, pe);
+  return ret_val;
 }
 
-__device__ void Context::barrier_all() {
-  ctxStats.incStat(NUM_BARRIER_ALL);
-
-  DISPATCH(barrier_all());
+__device__ 
+void Context::barrier_all() {
+  static_cast<GPUIBContext*>(this)->barrier_all();
 }
 
-__device__ void Context::barrier(rocshmem_team_t team) {
-  ctxStats.incStat(NUM_BARRIER_ALL);
-
-  DISPATCH(barrier(team));
+__device__ 
+void Context::barrier(rocshmem_team_t team) {
+  static_cast<GPUIBContext*>(this)->barrier(team);
 }
 
-__device__ void Context::sync_all() {
-  ctxStats.incStat(NUM_SYNC_ALL);
-
-  DISPATCH(sync_all());
+__device__ 
+void Context::sync_all() {
+  static_cast<GPUIBContext*>(this)->sync_all();
 }
 
-__device__ void Context::sync(rocshmem_team_t team) {
-  ctxStats.incStat(NUM_SYNC_ALL);
-
-  DISPATCH(sync(team));
+__device__ 
+void Context::sync(rocshmem_team_t team) {
+  static_cast<GPUIBContext*>(this)->sync(team);
 }
 
-__device__ void Context::putmem_wg(void* dest, const void* source,
-                                   size_t nelems, int pe) {
+__device__ 
+void Context::putmem_wg(void* dest, const void* source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_PUT_WG);
-
-  DISPATCH(putmem_wg(dest, source, nelems, pe));
+  static_cast<GPUIBContext*>(this)->putmem_wg(dest, source, nelems, pe);
 }
 
-__device__ void Context::getmem_wg(void* dest, const void* source,
-                                   size_t nelems, int pe) {
+__device__ 
+void Context::getmem_wg(void* dest, const void* source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_GET_WG);
-
-  DISPATCH(getmem_wg(dest, source, nelems, pe));
+  static_cast<GPUIBContext*>(this)->getmem_wg(dest, source, nelems, pe);
 }
 
-__device__ void Context::putmem_nbi_wg(void* dest, const void* source,
-                                       size_t nelems, int pe) {
+__device__ 
+void Context::putmem_nbi_wg(void* dest, const void* source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_PUT_NBI_WG);
-
-  DISPATCH(putmem_nbi_wg(dest, source, nelems, pe));
+  static_cast<GPUIBContext*>(this)->putmem_nbi_wg(dest, source, nelems, pe);
 }
 
-__device__ void Context::getmem_nbi_wg(void* dest, const void* source,
-                                       size_t size, int pe) {
+__device__ 
+void Context::getmem_nbi_wg(void* dest, const void* source, size_t size, int pe) {
   if (size == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_GET_NBI_WG);
-
-  DISPATCH(getmem_nbi_wg(dest, source, size, pe));
+  static_cast<GPUIBContext*>(this)->getmem_nbi_wg(dest, source, size, pe);
 }
 
-__device__ void Context::putmem_wave(void* dest, const void* source,
-                                     size_t nelems, int pe) {
+__device__ 
+void Context::putmem_wave(void* dest, const void* source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_PUT_WAVE);
-
-  DISPATCH(putmem_wave(dest, source, nelems, pe));
+  static_cast<GPUIBContext*>(this)->putmem_wave(dest, source, nelems, pe);
 }
 
-__device__ void Context::getmem_wave(void* dest, const void* source,
-                                     size_t nelems, int pe) {
+__device__ 
+void Context::getmem_wave(void* dest, const void* source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_GET_WAVE);
-
-  DISPATCH(getmem_wave(dest, source, nelems, pe));
+  static_cast<GPUIBContext*>(this)->getmem_wave(dest, source, nelems, pe);
 }
 
-__device__ void Context::putmem_nbi_wave(void* dest, const void* source,
-                                         size_t nelems, int pe) {
+__device__ 
+void Context::putmem_nbi_wave(void* dest, const void* source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_PUT_NBI_WAVE);
-
-  DISPATCH(putmem_nbi_wave(dest, source, nelems, pe));
+  static_cast<GPUIBContext*>(this)->putmem_nbi_wave(dest, source, nelems, pe);
 }
 
-__device__ void Context::getmem_nbi_wave(void* dest, const void* source,
-                                         size_t size, int pe) {
+__device__ 
+void Context::getmem_nbi_wave(void* dest, const void* source, size_t size, int pe) {
   if (size == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_GET_NBI_WAVE);
-
-  DISPATCH(getmem_nbi_wave(dest, source, size, pe));
+  static_cast<GPUIBContext*>(this)->getmem_nbi_wave(dest, source, size, pe);
 }
 
-#define CONTEXT_PUTMEM_SIGNAL_DEF(SUFFIX, STATS_SUFFIX)                                           \
-  __device__ void Context::putmem_signal##SUFFIX(void *dest, const void *source, size_t nelems,   \
-                                                 uint64_t *sig_addr, uint64_t signal, int sig_op, \
-                                                 int pe) {                                        \
-    if (nelems == 0) {                                                                            \
-      return;                                                                                     \
-    }                                                                                             \
-                                                                                                  \
-    ctxStats.incStat(NUM_PUT_SIGNAL##STATS_SUFFIX);                                               \
-                                                                                                  \
-    DISPATCH(putmem_signal##SUFFIX(dest, source, nelems, sig_addr, signal, sig_op, pe));          \
+#define CONTEXT_PUTMEM_SIGNAL_DEF(SUFFIX)                                                                        \
+  __device__ void Context::putmem_signal##SUFFIX(void *dest, const void *source, size_t nelems,                  \
+                                                 uint64_t *sig_addr, uint64_t signal, int sig_op,                \
+                                                 int pe) {                                                       \
+    if (nelems == 0) {                                                                                           \
+      return;                                                                                                    \
+    }                                                                                                            \
+                                                                                                                 \
+    static_cast<GPUIBContext*>(this)->putmem_signal##SUFFIX(dest, source, nelems, sig_addr, signal, sig_op, pe); \
   }
 
-CONTEXT_PUTMEM_SIGNAL_DEF(,)
-CONTEXT_PUTMEM_SIGNAL_DEF(_wg, _WG)
-CONTEXT_PUTMEM_SIGNAL_DEF(_wave, _WAVE)
-CONTEXT_PUTMEM_SIGNAL_DEF(_nbi, _NBI)
-CONTEXT_PUTMEM_SIGNAL_DEF(_nbi_wg, _NBI_WG)
-CONTEXT_PUTMEM_SIGNAL_DEF(_nbi_wave, _NBI_WAVE)
+CONTEXT_PUTMEM_SIGNAL_DEF()
+CONTEXT_PUTMEM_SIGNAL_DEF(_wg)
+CONTEXT_PUTMEM_SIGNAL_DEF(_wave)
+CONTEXT_PUTMEM_SIGNAL_DEF(_nbi)
+CONTEXT_PUTMEM_SIGNAL_DEF(_nbi_wg)
+CONTEXT_PUTMEM_SIGNAL_DEF(_nbi_wave)
 
-#define CONTEXT_SIGNAL_FETCH_DEF(SUFFIX)                                    \
-__device__ uint64_t Context::signal_fetch##SUFFIX(const uint64_t *sig_addr) \
-{                                                                           \
-    DISPATCH_RET(signal_fetch##SUFFIX(sig_addr));                           \
+#define CONTEXT_SIGNAL_FETCH_DEF(SUFFIX)                                               \
+__device__ uint64_t Context::signal_fetch##SUFFIX(const uint64_t *sig_addr) {          \
+    auto ret_val = static_cast<GPUIBContext*>(this)->signal_fetch##SUFFIX(sig_addr);   \
+    return ret_val;                                                                    \
 }
 
 CONTEXT_SIGNAL_FETCH_DEF()

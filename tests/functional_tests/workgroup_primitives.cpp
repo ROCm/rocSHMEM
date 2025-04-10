@@ -39,7 +39,7 @@ __global__ void WorkGroupPrimitiveTest(int loop, int skip,
   __shared__ rocshmem_ctx_t ctx;
   int wg_id = get_flat_grid_id();
   rocshmem_wg_init();
-  rocshmem_wg_ctx_create(ctx_type, &ctx);
+  rocshmem_wg_ctx_create(&ctx);
 
   // Calculate start index for each work group
   uint64_t offset = size * wg_id;

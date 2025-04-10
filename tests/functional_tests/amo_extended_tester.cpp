@@ -118,7 +118,7 @@ void AMOExtendedTester<T>::verifyResults(uint64_t size) {
     __shared__ rocshmem_ctx_t ctx;                                            \
     int wg_id = get_flat_grid_id();                                           \
     rocshmem_wg_init();                                                       \
-    rocshmem_wg_ctx_create(ctx_type, &ctx);                                   \
+    rocshmem_wg_ctx_create(&ctx);                                             \
     if (hipThreadIdx_x == 0) {                                                \
       T ret = 0;                                                              \
       T cond = 0;                                                             \

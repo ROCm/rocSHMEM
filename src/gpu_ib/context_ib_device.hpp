@@ -23,7 +23,7 @@
 #ifndef LIBRARY_SRC_GPU_IB_CONTEXT_IB_DEVICE_HPP_
 #define LIBRARY_SRC_GPU_IB_CONTEXT_IB_DEVICE_HPP_
 
-#include "../context.hpp"
+#include "context.hpp"
 #include "network_policy.hpp"
 
 namespace rocshmem {
@@ -32,7 +32,7 @@ class QueuePair;
 
 class GPUIBContext : public Context {
  public:
-  __host__ GPUIBContext(Backend *b, bool option, int idx);
+  __host__ GPUIBContext(GPUIBBackend *b, int idx);
 
   __device__ __host__ QueuePair *getQueuePair(int pe);
 
@@ -50,11 +50,9 @@ class GPUIBContext : public Context {
 
   __device__ void getmem(void *dest, const void *source, size_t nelems, int pe);
 
-  __device__ void putmem_nbi(void *dest, const void *source, size_t nelems,
-                             int pe);
+  __device__ void putmem_nbi(void *dest, const void *source, size_t nelems, int pe);
 
-  __device__ void getmem_nbi(void *dest, const void *source, size_t size,
-                             int pe);
+  __device__ void getmem_nbi(void *dest, const void *source, size_t size, int pe);
 
   __device__ void fence();
 
@@ -113,13 +111,10 @@ class GPUIBContext : public Context {
   __device__ T g(const T *source, int pe);
 
   template <typename T, ROCSHMEM_OP Op>
-  __device__ void to_all(T *dest, const T *source, int nreduce, int PE_start,
-                         int logPE_stride, int PE_size, T *pWrk,
-                         long *pSync);  // NOLINT(runtime/int)
+  __device__ void to_all(T *dest, const T *source, int nreduce, int PE_start, int logPE_stride, int PE_size, T *pWrk, long *pSync);
 
   template <typename T, ROCSHMEM_OP Op>
-  __device__ void to_all(rocshmem_team_t team, T *dest, const T *source,
-                         int nreduce);
+  __device__ void to_all(rocshmem_team_t team, T *dest, const T *source, int nreduce);
 
   template <typename T>
   __device__ void put(T *dest, const T *source, size_t nelems, int pe);
@@ -138,73 +133,53 @@ class GPUIBContext : public Context {
                             int nelems, int pe_root);
 
   template <typename T>
-  __device__ void broadcast(T *dest, const T *source, int nelems, int pe_root,
-                            int pe_start, int log_pe_stride, int pe_size,
-                            long *p_sync);  // NOLINT(runtime/int)
+  __device__ void broadcast(T *dest, const T *source, int nelems, int pe_root, int pe_start, int log_pe_stride, int pe_size, long *p_sync);
 
   template <typename T>
-  __device__ void alltoall(rocshmem_team_t team, T *dest, const T *source,
-                           int nelems);
+  __device__ void alltoall(rocshmem_team_t team, T *dest, const T *source, int nelems);
 
   template <typename T>
-  __device__ void alltoall_broadcast(rocshmem_team_t team, T *dest,
-                                     const T *source, int nelems);
+  __device__ void alltoall_broadcast(rocshmem_team_t team, T *dest, const T *source, int nelems);
 
   template <typename T>
-  __device__ void alltoall_brucks(rocshmem_team_t team, T *dest,
-                                  const T *source, int nelems);
+  __device__ void alltoall_brucks(rocshmem_team_t team, T *dest, const T *source, int nelems);
 
   template <typename T>
-  __device__ void alltoall_gcen(rocshmem_team_t team, T *dest, const T *source,
-                                int nelems);
+  __device__ void alltoall_gcen(rocshmem_team_t team, T *dest, const T *source, int nelems);
 
   template <typename T>
-  __device__ void alltoall_gcen2(rocshmem_team_t team, T *dest,
-                                 const T *source, int nelems);
+  __device__ void alltoall_gcen2(rocshmem_team_t team, T *dest, const T *source, int nelems);
 
   template <typename T>
-  __device__ void fcollect(rocshmem_team_t team, T *dest, const T *source,
-                           int nelems);
+  __device__ void fcollect(rocshmem_team_t team, T *dest, const T *source, int nelems);
 
   template <typename T>
-  __device__ void fcollect_broadcast(rocshmem_team_t team, T *dest,
-                                     const T *source, int nelems);
+  __device__ void fcollect_broadcast(rocshmem_team_t team, T *dest, const T *source, int nelems);
 
   template <typename T>
-  __device__ void fcollect_brucks(rocshmem_team_t team, T *dest,
-                                  const T *source, int nelems);
+  __device__ void fcollect_brucks(rocshmem_team_t team, T *dest, const T *source, int nelems);
 
   template <typename T>
-  __device__ void fcollect_gcen(rocshmem_team_t team, T *dest, const T *source,
-                                int nelems);
+  __device__ void fcollect_gcen(rocshmem_team_t team, T *dest, const T *source, int nelems);
 
   template <typename T>
-  __device__ void fcollect_gcen2(rocshmem_team_t team, T *dest,
-                                 const T *source, int nelems);
+  __device__ void fcollect_gcen2(rocshmem_team_t team, T *dest, const T *source, int nelems);
 
-  __device__ void putmem_wg(void *dest, const void *source, size_t nelems,
-                            int pe);
+  __device__ void putmem_wg(void *dest, const void *source, size_t nelems, int pe);
 
-  __device__ void getmem_wg(void *dest, const void *source, size_t nelems,
-                            int pe);
+  __device__ void getmem_wg(void *dest, const void *source, size_t nelems, int pe);
 
-  __device__ void putmem_nbi_wg(void *dest, const void *source, size_t nelems,
-                                int pe);
+  __device__ void putmem_nbi_wg(void *dest, const void *source, size_t nelems, int pe);
 
-  __device__ void getmem_nbi_wg(void *dest, const void *source, size_t size,
-                                int pe);
+  __device__ void getmem_nbi_wg(void *dest, const void *source, size_t size, int pe);
 
-  __device__ void putmem_wave(void *dest, const void *source, size_t nelems,
-                              int pe);
+  __device__ void putmem_wave(void *dest, const void *source, size_t nelems, int pe);
 
-  __device__ void getmem_wave(void *dest, const void *source, size_t nelems,
-                              int pe);
+  __device__ void getmem_wave(void *dest, const void *source, size_t nelems, int pe);
 
-  __device__ void putmem_nbi_wave(void *dest, const void *source, size_t nelems,
-                                  int pe);
+  __device__ void putmem_nbi_wave(void *dest, const void *source, size_t nelems, int pe);
 
-  __device__ void getmem_nbi_wave(void *dest, const void *source, size_t size,
-                                  int pe);
+  __device__ void getmem_nbi_wave(void *dest, const void *source, size_t size, int pe);
 
   template <typename T>
   __device__ void put_wg(T *dest, const T *source, size_t nelems, int pe);
@@ -232,38 +207,22 @@ class GPUIBContext : public Context {
 
  private:
   template <typename T, ROCSHMEM_OP Op>
-  __device__ void internal_direct_allreduce(
-      T *dst, const T *src, int nelems, int PE_start, int logPE_stride,
-      int PE_size, T *pWrk,
-      long *pSync);  // NOLINT(runtime/int)
+  __device__ void internal_direct_allreduce(T *dst, const T *src, int nelems, int PE_start, int logPE_stride, int PE_size, T *pWrk, long *pSync);
 
   template <typename T, ROCSHMEM_OP Op>
-  __device__ void internal_ring_allreduce(T *dst, const T *src, int nelems,
-                                          int PE_start, int logPE_stride,
-                                          int PE_size, T *pWrk,
-                                          long *pSync,  // NOLINT(runtime/int)
-                                          int n_seg, int seg_size,
-                                          int chunk_size);
+  __device__ void internal_ring_allreduce(T *dst, const T *src, int nelems, int PE_start, int logPE_stride, int PE_size, T *pWrk, long *pSync, int n_seg, int seg_size, int chunk_size);
 
   template <typename T>
-  __device__ void internal_put_broadcast(T *dst, const T *src, int nelems,
-                                         int pe_root, int PE_start,
-                                         int logPE_stride, int PE_size,
-                                         long *pSync);  // NOLINT(runtime/int)
+  __device__ void internal_put_broadcast(T *dst, const T *src, int nelems, int pe_root, int PE_start, int logPE_stride, int PE_size, long *pSync);
 
   template <typename T>
-  __device__ void internal_get_broadcast(T *dst, const T *src, int nelems,
-                                         int pe_root,
-                                         long *pSync);  // NOLINT(runtime/int)
+  __device__ void internal_get_broadcast(T *dst, const T *src, int nelems, int pe_root, long *pSync);
 
-  __device__ void internal_direct_barrier(int pe, int PE_start, int stride,
-                                          int n_pes, int64_t *pSync);
+  __device__ void internal_direct_barrier(int pe, int PE_start, int stride, int n_pes, int64_t *pSync);
 
-  __device__ void internal_atomic_barrier(int pe, int PE_start, int stride,
-                                          int n_pes, int64_t *pSync);
+  __device__ void internal_atomic_barrier(int pe, int PE_start, int stride, int n_pes, int64_t *pSync);
 
-  __device__ void internal_sync(int pe, int PE_start, int stride, int PE_size,
-                                int64_t *pSync);
+  __device__ void internal_sync(int pe, int PE_start, int stride, int PE_size, int64_t *pSync);
 
   __device__ void quiet_single(int cq_num);
 
@@ -272,8 +231,6 @@ class GPUIBContext : public Context {
    * Collection of queue pairs that are currently checked out by this
    * context from GPUIBBackend.
    */
-  // FIXME: keep it private and destroy in destructor for better
-  // encapsulation.
   QueuePair *device_qp_proxy{nullptr};
 
   /*

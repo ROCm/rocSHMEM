@@ -176,12 +176,11 @@ __host__ int rocshmem_my_pe();
 /**
  * @brief Creates an OpenSHMEM context.
  *
- * @param[in] options Options for context creation. Ignored in current design.
  * @param[out] ctx    Context handle.
  *
  * @return Zero on success and nonzero otherwise.
  */
-__host__ int rocshmem_ctx_create(int64_t options, rocshmem_ctx_t *ctx);
+__host__ int rocshmem_ctx_create(rocshmem_ctx_t *ctx);
 
 /**
  * @brief Destroys an OpenSHMEM context.
@@ -376,18 +375,16 @@ __device__ void rocshmem_query_thread(int *provided);
  *
  * Must be called collectively by all threads in the work-group.
  *
- * @param[in] options Options for context creation. Ignored in current design.
  * @param[out] ctx    Context handle.
  *
  * @return All threads returns 0 if the context was created successfully. If any
  * thread returns non-zero value, the operation failed and a higher number of
  * `ROCSHMEM_MAX_NUM_CONTEXTS` is required.
  */
-__device__ ATTR_NO_INLINE int rocshmem_wg_ctx_create(int64_t options,
-                                                      rocshmem_ctx_t *ctx);
+__device__ ATTR_NO_INLINE int rocshmem_wg_ctx_create(rocshmem_ctx_t *ctx);
 
 __device__ ATTR_NO_INLINE int rocshmem_wg_team_create_ctx(
-    rocshmem_team_t team, long options, rocshmem_ctx_t *ctx);
+    rocshmem_team_t team, rocshmem_ctx_t *ctx);
 
 /**
  * @brief Destroys an OpenSHMEM context.

@@ -58,7 +58,7 @@ __global__ void RandomAccessTest(int loop, int skip, long long int *start_time,
   __shared__ rocshmem_ctx_t ctx;
   int wg_id = get_flat_grid_id();
   rocshmem_wg_init();
-  rocshmem_wg_ctx_create(ctx_type, &ctx);
+  rocshmem_wg_ctx_create(&ctx);
 
   int pe = rocshmem_ctx_my_pe(ctx);
   int offset;

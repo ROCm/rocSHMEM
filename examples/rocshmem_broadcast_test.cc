@@ -31,10 +31,9 @@ using namespace rocshmem;
 __global__ void broadcast_test(int *source, int *dest, size_t nelem,
         int root, rocshmem_team_t team) {
     __shared__ rocshmem_ctx_t ctx;
-    int64_t ctx_type = 0;
 
     rocshmem_wg_init();
-    rocshmem_wg_ctx_create(ctx_type, &ctx);
+    rocshmem_wg_ctx_create(&ctx);
     int num_pes = rocshmem_ctx_n_pes(ctx);
 
     rocshmem_ctx_int_wg_broadcast(ctx, team, dest, source, nelem, root);

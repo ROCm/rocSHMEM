@@ -29,7 +29,7 @@ namespace rocshmem {
 
 class GPUIBHostContext : public Context {
  public:
-  __host__ GPUIBHostContext(Backend *b, int64_t options);
+  __host__ GPUIBHostContext(GPUIBBackend *b);
 
   __host__ ~GPUIBHostContext();
 

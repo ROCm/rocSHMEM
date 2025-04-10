@@ -41,7 +41,7 @@ __global__ void WaveFrontPrimitiveTest(int loop, int skip,
   int wg_id = get_flat_grid_id();
 
   rocshmem_wg_init();
-  rocshmem_wg_ctx_create(ctx_type, &ctx);
+  rocshmem_wg_ctx_create(&ctx);
 
   // Calculate start index for each wavefront
   int wf_id = get_flat_block_id() / wf_size;

@@ -23,35 +23,48 @@
 #ifndef LIBRARY_SRC_GPU_IB_BACKEND_IB_HPP_
 #define LIBRARY_SRC_GPU_IB_BACKEND_IB_HPP_
 
-#include "../backend_bc.hpp"
-#include "../containers/free_list_impl.hpp"
+#include <mpi.h>
+#include <vector>
+
+#include <rocshmem/rocshmem.hpp>
+#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
+			      //
+#include "context_incl.hpp"
+#include "containers/free_list_impl.hpp"
+#include "memory/hip_allocator.hpp"
+#include "memory/symmetric_heap.hpp"
 #include "network_policy.hpp"
-#include "../memory/hip_allocator.hpp"
+#include "team_tracker.hpp"
 
 namespace rocshmem {
 
 class HostInterface;
+class Team;
+class TeamInfo;
 
 /**
  * @class GPUIBBackend backend.hpp
  * @brief InfiniBand specific backend.
+ *
+ * @brief Container class for the persistent state used by the library.
+ *
+ * GPUIBBackend is populated by host-side initialization and allocation calls.
+ * It uses this state to populate Context objects which the GPU may use to
+ * perform networking operations.
+ *
+ * The rocshmem.cpp implementation file wraps many the GPUIBBackend public
+ * members to implement the library's public API.
  *
  * The InfiniBand (GPUIB) backend enables the device to enqueue network
  * requests to InfiniBand queues (with minimal host intervention). The setup
  * requires some effort from the host, but the device is able to craft
  * InfiniBand requests and send them on its own.
  */
-class GPUIBBackend : public Backend {
+class GPUIBBackend {
  public:
-  /**
-   * @copydoc Backend::Backend(unsigned)
-   */
   explicit GPUIBBackend(MPI_Comm comm);
 
-  /**
-   * @copydoc Backend::~Backend()
-   */
-  virtual ~GPUIBBackend();
+  ~GPUIBBackend();
 
   /**
    * @brief Abort the application.
@@ -62,62 +75,83 @@ class GPUIBBackend : public Backend {
    *
    * @note This routine terminates the entire application.
    */
-  void global_exit(int status) override;
+  void global_exit(int status);
 
   /**
-   * @copydoc Backend::create_new_team
+   * @brief Create a new team object and initialize it.
+   *
+   * @param[in] parent_team Pointer to the parrent team object.
+   * @param[in] team_info_wrt_parent TeamInfo object wrt parent team.
+   * @param[in] team_info_wrt_world TeamInfo object wrt TEAM_WORLD.
+   * @param[in] num_pes Number of PEs in this team.
+   * @param[in] my_pe_in_new_team Index of this PE in the new team.
+   * @param[in] team_comm MPI communicator for this team.
+   *
+   * @param[out] new_team pointer to the new team.
    */
-  void create_new_team(Team *parent_team, TeamInfo *team_info_wrt_parent,
-                       TeamInfo *team_info_wrt_world, int num_pes,
+  void create_new_team(Team* parent_team,
+                       TeamInfo* team_info_wrt_parent,
+                       TeamInfo* team_info_wrt_world, int num_pes,
                        int my_pe_in_new_team, MPI_Comm team_comm,
-                       rocshmem_team_t *new_team) override;
+                       rocshmem_team_t* new_team);
 
   /**
-   * @copydoc Backend::team_destroy(rocshmem_team_t)
-   */
-  void team_destroy(rocshmem_team_t team) override;
-
-  /**
-   * @copydoc Backend::ctx_create
-   */
-  void ctx_create(int64_t options, void **ctx) override;
-
-  __device__ bool create_ctx(int64_t options, rocshmem_ctx_t *ctx);
-
-  /**
-   * @copydoc Backend::ctx_destroy
-   */
-  void ctx_destroy(Context *ctx) override;
-
-  /**
-   * @copydoc Backend::ctx_destroy
-   */
-  __device__ void destroy_ctx(rocshmem_ctx_t *ctx);
-
- protected:
-  /**
-   * @copydoc Backend::dump_backend_stats()
-   */
-  void dump_backend_stats() override;
-
-  /**
-   * @copydoc Backend::reset_backend_stats()
-   */
-  void reset_backend_stats() override;
-
-  /**
-   * @brief spawn a new thread to perform the rest of initialization
-   */
-  std::thread thread_spawn(GPUIBBackend *b);
-
-  /**
-   * @brief overheads for helper thread to run
+   * @brief Destruct a team
    *
-   * @param[in] the thread needs access to the class
-   *
-   * @return void
+   * @param[in] team Handle to the team to destroy.
    */
-  void thread_func_internal(GPUIBBackend *b);
+  void team_destroy(rocshmem_team_t team);
+
+  /**
+   * @brief Reports processing element number id.
+   *
+   * @return Unique numeric identifier for each processing element.
+   */
+  __host__ __device__ int getMyPE() const { return my_pe; }
+
+  /**
+   * @brief Reports number of processing elements.
+   *
+   * @return Number of active processing elements tracked by library.
+   */
+  __host__ __device__ int getNumPEs() const { return num_pes; }
+
+  /**
+   * @brief Creates a new OpenSHMEM context.
+   *
+   * @param[in] ctx     Address of the pointer to the new context
+   *
+   * @return Zero on success, nonzero otherwise.
+   */
+  void ctx_create(void** ctx);
+
+  __device__ bool create_ctx(rocshmem_ctx_t *ctx);
+
+  /**
+   * @brief Destroys a context.
+   *
+   * @param[in] ctx Context handle.
+   *
+   * @return void.
+   */
+  void ctx_destroy(Context* ctx);
+
+  __device__ void destroy_ctx(rocshmem_ctx_t* ctx);
+
+  /**
+   * @brief Remove all ctxs from the list of user-created ctxs
+   */
+  void destroy_remaining_ctxs();
+
+  /**
+   * @brief Add ctx from the list of user-created ctxs
+   */
+  void track_ctx(Context* ctx);
+
+  /**
+   * @brief Remove ctx from the list of user-created ctxs
+   */
+  void untrack_ctx(Context* ctx);
 
   /**
    * @brief initialize MPI.
@@ -133,20 +167,6 @@ class GPUIBBackend : public Backend {
    * @brief init the network support
    */
   void initialize_network();
-
-  /**
-   * @brief Invokes the IPC policy class initialization method.
-   *
-   * This method delegates Inter Process Communication (IPC)
-   * initialization to the appropriate policy class. The initialization
-   * needs to be exposed to the Backed due to initialization ordering
-   * constraints. (The symmetric heaps needs to be allocated and
-   * initialized before this method can be called.)
-   *
-   * The policy class encapsulates what the initialization process so
-   * refer to that class for more details.
-   */
-  void initialize_ipc();
 
   /**
    * @brief Allocate and initialize the ROCSHMEM_CTX_DEFAULT variable.
@@ -187,12 +207,6 @@ class GPUIBBackend : public Backend {
    */
   void rocshmem_collective_init();
 
-  /**
-   * @brief Signals to the worker threads to exist
-   */
-  std::atomic<bool> worker_thread_exit{false};
-
- public:
   /**
    * @brief The host-facing interface that will be used
    * by all contexts of the GPUIBBackend
@@ -241,8 +255,6 @@ class GPUIBBackend : public Backend {
    */
   size_t num_blocks_{1};
 
- public:
-
   /**
    * @brief Scratchpad for the internal barrier algorithms.
    */
@@ -257,7 +269,6 @@ class GPUIBBackend : public Backend {
    */
   NetworkImpl networkImpl{};
 
- private:
   /**
    * @brief An array of @ref ROContexts that backs the context FreeList.
    */
@@ -293,11 +304,6 @@ class GPUIBBackend : public Backend {
   int bitmask_size_{-1};
 
   /**
-   * @brief a helper thread to perform the initialization (non-blocking init)
-   */
-  std::thread async_thread_{};
-
-  /**
    * @brief Holds a copy of the default context (see OpenSHMEM
    * specification).
    *
@@ -311,7 +317,61 @@ class GPUIBBackend : public Backend {
    */
   GPUIBHostContext *default_host_ctx_{nullptr};
 
+  /**
+   * @brief Number of processing elements running in job.
+   *
+   * @todo Change to size_t.
+   */
+  int num_pes{0};
+
+  /**
+   * @brief Unique numeric identifier ranging from 0 (inclusive) to
+   * num_pes (exclusive) [0 ... num_pes).
+   *
+   * @todo Change to size_t and set invalid entry to max size.
+   */
+  int my_pe{-1};
+
+  /**
+   * @brief indicate when init is done on the CPU. Non-blocking init is only
+   * available with GPU-IB
+   */
+  uint8_t* done_init{nullptr};
+
+  /**
+   * @todo document where this is used and try to coalesce this into another
+   * class
+   */
+  MPI_Comm thread_comm{};
+
+  /**
+   * @brief Object contains the interface and internal data structures
+   * needed to allocate/free memory on the symmetric heap.
+   */
+  SymmetricHeap heap{};
+
+  /**
+   * @brief Determines which device to launch device kernels onto.
+   *
+   * Multi-device nodes can specify which one they would like to use.
+   */
+  int hip_dev_id{0};
+
+  /**
+   * @brief Maintains information about teams
+   */
+  TeamTracker team_tracker{};
+
+  /**
+   * @brief List of ctxs created by the user.
+   */
+  std::vector<Context*> list_of_ctxs{};
 };
+
+/**
+ * @brief Global handle used by the device to access the backend.
+ */
+extern __constant__ GPUIBBackend* device_backend_proxy;
 
 }  // namespace rocshmem
 

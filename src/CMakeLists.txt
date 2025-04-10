@@ -27,7 +27,6 @@ target_sources(
   ${PROJECT_NAME}
   PRIVATE
     atomic_return.cpp
-    backend_bc.cpp
     context_host.cpp
     context_device.cpp
     mpi_init_singleton.cpp
@@ -39,20 +38,17 @@ target_sources(
     wf_coal_policy.cpp
 )
 
+target_include_directories(
+  ${PROJECT_NAME}
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 target_compile_options(
   ${PROJECT_NAME}
   PUBLIC
     -fgpu-rdc
-#   xnack allows address translation fault recovery
-#   required option for managed heap configs
-#    -mxnack
 )
-
-#target_link_options(
-  #${PROJECT_NAME}
-  #PUBLIC
-    #--hip-link
-#)
 
 ###############################################################################
 # ROCSHMEM TARGET FOR BACKENDS

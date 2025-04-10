@@ -23,184 +23,124 @@
 #ifndef LIBRARY_SRC_CONTEXT_TMPL_DEVICE_HPP_
 #define LIBRARY_SRC_CONTEXT_TMPL_DEVICE_HPP_
 
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
-#include "backend_type.hpp"
+#include "rocshmem_config.h"
 #include "gpu_ib/context_ib_device.hpp"
 
 namespace rocshmem {
 
-/*
- * Context dispatch implementations for the template functions. Needs to
- * be in a header and not cpp because it is a template.
- */
 template <typename T>
-__device__ void Context::p(T *dest, T value, int pe) {
-  ctxStats.incStat(NUM_P);
-
-  /*
-   * TODO: Need to handle _p a bit differently for coalescing, since the
-   * owner of a coalesced message needs val from all absorbed messages.
-   */
-  DISPATCH(p(dest, value, pe));
+__device__
+void Context::p(T *dest, T value, int pe) {
+  static_cast<GPUIBContext*>(this)->p(dest, value, pe);
 }
 
 template <typename T>
-__device__ T Context::g(T *source, int pe) {
-  ctxStats.incStat(NUM_G);
-
-  /*
-   * TODO: Need to handle _g a bit differently for coalescing, since the
-   * owner of a coalesced message needs val from all absorbed messages.
-   */
-  DISPATCH_RET(g(source, pe));
+__device__
+T Context::g(T *source, int pe) {
+  auto ret_val = static_cast<GPUIBContext*>(this)->g(source, pe);
+  return ret_val;
 }
 
-// The only way to get multi-arg templates to feed into a macro
 template <typename T, ROCSHMEM_OP Op>
-__device__ void Context::to_all(T *dest, const T *source, int nreduce,
-                                int PE_start, int logPE_stride, int PE_size,
-                                T *pWrk,
-                                long *pSync) {  // NOLINT(runtime/int)
+__device__
+void Context::to_all(T *dest, const T *source, int nreduce, int PE_start, int logPE_stride, int PE_size, T *pWrk, long *pSync) {
   if (nreduce == 0) {
     return;
   }
-
-  if (is_thread_zero_in_block()) {
-    ctxStats.incStat(NUM_TO_ALL);
-  }
-
-  DISPATCH(to_all<PAIR(T, Op)>(dest, source, nreduce, PE_start, logPE_stride,
-                               PE_size, pWrk, pSync));
+  static_cast<GPUIBContext*>(this)->to_all<T, Op>(dest, source, nreduce, PE_start, logPE_stride, PE_size, pWrk, pSync);
 }
 
 template <typename T, ROCSHMEM_OP Op>
-__device__ int Context::reduce(rocshmem_team_t team, T *dest, const T *source,
-                               int nreduce) {
+__device__
+int Context::reduce(rocshmem_team_t team, T *dest, const T *source, int nreduce) {
   if (nreduce == 0) {
     return ROCSHMEM_SUCCESS;
   }
-
-  if (is_thread_zero_in_block()) {
-    ctxStats.incStat(NUM_TO_ALL);
-  }
-
-  DISPATCH_RET(reduce<PAIR(T, Op)>(team, dest, source, nreduce));
+  auto ret_val = static_cast<GPUIBContext*>(this)->reduce<T, Op>(team, dest, source, nreduce);
+  return ret_val;
 }
 
 template <typename T>
-__device__ void Context::put(T *dest, const T *source, size_t nelems, int pe) {
+__device__
+void Context::put(T *dest, const T *source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_PUT);
-
-  DISPATCH(put(dest, source, nelems, pe));
+  static_cast<GPUIBContext*>(this)->put(dest, source, nelems, pe);
 }
 
 template <typename T>
-__device__ void Context::put_nbi(T *dest, const T *source, size_t nelems,
-                                 int pe) {
+__device__
+void Context::put_nbi(T *dest, const T *source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_PUT_NBI);
-
-  DISPATCH(put_nbi(dest, source, nelems, pe));
+  static_cast<GPUIBContext*>(this)->put_nbi(dest, source, nelems, pe);
 }
 
 template <typename T>
-__device__ void Context::get(T *dest, const T *source, size_t nelems, int pe) {
+__device__
+void Context::get(T *dest, const T *source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_GET);
-
-  DISPATCH(get(dest, source, nelems, pe));
+  static_cast<GPUIBContext*>(this)->get(dest, source, nelems, pe);
 }
 
 template <typename T>
-__device__ void Context::get_nbi(T *dest, const T *source, size_t nelems,
-                                 int pe) {
+__device__
+void Context::get_nbi(T *dest, const T *source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_GET_NBI);
-
-  DISPATCH(get_nbi(dest, source, nelems, pe));
+  static_cast<GPUIBContext*>(this)->get_nbi(dest, source, nelems, pe);
 }
 
 template <typename T>
-__device__ void Context::alltoall(rocshmem_team_t team, T *dest,
-                                  const T *source, int nelems) {
+__device__
+void Context::alltoall(rocshmem_team_t team, T *dest, const T *source, int nelems) {
   if (nelems == 0) {
     return;
   }
-
-  if (is_thread_zero_in_block()) {
-    ctxStats.incStat(NUM_ALLTOALL);
-  }
-
-  DISPATCH(alltoall<T>(team, dest, source, nelems));
+  static_cast<GPUIBContext*>(this)->alltoall<T>(team, dest, source, nelems);
 }
 
 template <typename T>
-__device__ void Context::fcollect(rocshmem_team_t team, T *dest,
-                                  const T *source, int nelems) {
+__device__ 
+void Context::fcollect(rocshmem_team_t team, T *dest, const T *source, int nelems) {
   if (nelems == 0) {
     return;
   }
-
-  if (is_thread_zero_in_block()) {
-    ctxStats.incStat(NUM_FCOLLECT);
-  }
-
-  DISPATCH(fcollect<T>(team, dest, source, nelems));
+  static_cast<GPUIBContext*>(this)->fcollect<T>(team, dest, source, nelems);
 }
 
 template <typename T>
-__device__ void Context::broadcast(rocshmem_team_t team, T *dest,
-                                   const T *source, int nelems, int pe_root) {
+__device__
+void Context::broadcast(rocshmem_team_t team, T *dest, const T *source, int nelems, int pe_root) {
   if (nelems == 0) {
     return;
   }
-
-  if (is_thread_zero_in_block()) {
-    ctxStats.incStat(NUM_BROADCAST);
-  }
-
-  DISPATCH(broadcast<T>(team, dest, source, nelems, pe_root));
+  static_cast<GPUIBContext*>(this)->broadcast<T>(team, dest, source, nelems, pe_root);
 }
 
 template <typename T>
-__device__ void Context::broadcast(T *dest, const T *source, int nelems,
-                                   int pe_root, int pe_start, int log_pe_stride,
-                                   int pe_size,
-                                   long *p_sync) {  // NOLINT(runtime/int)
+__device__
+void Context::broadcast(T *dest, const T *source, int nelems, int pe_root, int pe_start, int log_pe_stride, int pe_size, long *p_sync) {
   if (nelems == 0) {
     return;
   }
-
-  if (is_thread_zero_in_block()) {
-    ctxStats.incStat(NUM_BROADCAST);
-  }
-
-  DISPATCH(broadcast<T>(dest, source, nelems, pe_root, pe_start, log_pe_stride,
-                        pe_size, p_sync));
+  static_cast<GPUIBContext*>(this)->broadcast<T>(dest, source, nelems, pe_root, pe_start, log_pe_stride, pe_size, p_sync);
 }
 
 template <typename T>
-__device__ __forceinline__ void Context::wait_until(T *ivars, int cmp,
-                                                    T val) {
+__device__ __forceinline__
+void Context::wait_until(T *ivars, int cmp, T val) {
   while (!test(ivars, cmp, val)) {
   }
 }
 
-__device__ __forceinline__ size_t status_entry(size_t nelems,
-                                               const int *status) {
+__device__ __forceinline__
+size_t status_entry(size_t nelems, const int *status) {
   size_t i{0};
   while (i < nelems) {
     if (status[i] == 0) {
@@ -213,9 +153,7 @@ __device__ __forceinline__ size_t status_entry(size_t nelems,
 
 template <typename T>
 __device__ __forceinline__
-size_t Context::wait_until_any(T *ivars, size_t nelems,
-                               const int *status,
-                               int cmp, T val) {
+size_t Context::wait_until_any(T *ivars, size_t nelems, const int *status, int cmp, T val) {
   // zero nelems error condition
   if (!nelems) {
     return SIZE_MAX;
@@ -243,9 +181,7 @@ size_t Context::wait_until_any(T *ivars, size_t nelems,
 
 template <typename T>
 __device__ __forceinline__
-void Context::wait_until_all(T *ivars, size_t nelems,
-                             const int *status,
-                             int cmp, T val) {
+void Context::wait_until_all(T *ivars, size_t nelems, const int *status, int cmp, T val) {
   // zero nelems error condition
   if (!nelems) {
     return;
@@ -269,10 +205,7 @@ void Context::wait_until_all(T *ivars, size_t nelems,
 
 template <typename T>
 __device__ __forceinline__
-size_t Context::wait_until_some(T *ivars, size_t nelems,
-                              size_t* indices,
-                              const int *status,
-                              int cmp, T val) {
+size_t Context::wait_until_some(T *ivars, size_t nelems, size_t* indices, const int *status, int cmp, T val) {
   // zero nelems error condition
   if (!nelems) {
     return 0;
@@ -300,37 +233,31 @@ size_t Context::wait_until_some(T *ivars, size_t nelems,
       }
     }
   }
+
   return ncompleted;
 }
 
 template <typename T>
 __device__ __forceinline__
-void Context::wait_until_all_vector(T *ivars, size_t nelems,
-                                    const int *status,
-                                    int cmp, T* vals) {
+void Context::wait_until_all_vector(T *ivars, size_t nelems, const int *status, int cmp, T* vals) {
   ;
 }
 
 template <typename T>
 __device__ __forceinline__
-size_t Context::wait_until_any_vector(T *ivars, size_t nelems,
-                                      const int *status,
-                                      int cmp, T* vals) {
+size_t Context::wait_until_any_vector(T *ivars, size_t nelems, const int *status, int cmp, T* vals) {
   return 0;
 }
 
 template <typename T>
 __device__ __forceinline__
-size_t Context::wait_until_some_vector(T *ivars, size_t nelems,
-                                     size_t* indices,
-                                     const int *status,
-                                     int cmp, T* vals) {
+size_t Context::wait_until_some_vector(T *ivars, size_t nelems, size_t* indices, const int *status, int cmp, T* vals) {
   return 0;
 }
 
 template <typename T>
-__device__ __forceinline__ int Context::test(T *ivars, int cmp,
-                                             T val) {
+__device__ __forceinline__
+int Context::test(T *ivars, int cmp, T val) {
   int ret = 0;
   volatile T *vol_ivars = reinterpret_cast<T *>(ivars);
   switch (cmp) {
@@ -371,205 +298,172 @@ __device__ __forceinline__ int Context::test(T *ivars, int cmp,
 }
 
 template <typename T>
-__device__ void Context::put_wg(T *dest, const T *source, size_t nelems,
-                                int pe) {
+__device__
+void Context::put_wg(T *dest, const T *source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_PUT_WG);
-
-  DISPATCH(put_wg(dest, source, nelems, pe));
+  static_cast<GPUIBContext*>(this)->put_wg(dest, source, nelems, pe);
 }
 
 template <typename T>
-__device__ void Context::put_nbi_wg(T *dest, const T *source, size_t nelems,
-                                    int pe) {
+__device__
+void Context::put_nbi_wg(T *dest, const T *source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_PUT_NBI_WG);
-
-  DISPATCH(put_nbi_wg(dest, source, nelems, pe));
+  static_cast<GPUIBContext*>(this)->put_nbi_wg(dest, source, nelems, pe);
 }
 
 template <typename T>
-__device__ void Context::get_wg(T *dest, const T *source, size_t nelems,
-                                int pe) {
+__device__
+void Context::get_wg(T *dest, const T *source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_GET_WG);
-
-  DISPATCH(get_wg(dest, source, nelems, pe));
+  static_cast<GPUIBContext*>(this)->get_wg(dest, source, nelems, pe);
 }
 
 template <typename T>
-__device__ void Context::get_nbi_wg(T *dest, const T *source, size_t nelems,
-                                    int pe) {
+__device__
+void Context::get_nbi_wg(T *dest, const T *source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_GET_NBI_WG);
-
-  DISPATCH(get_nbi_wg(dest, source, nelems, pe));
+  static_cast<GPUIBContext*>(this)->get_nbi_wg(dest, source, nelems, pe);
 }
 
 template <typename T>
-__device__ void Context::put_wave(T *dest, const T *source, size_t nelems,
-                                  int pe) {
+__device__
+void Context::put_wave(T *dest, const T *source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_PUT_WAVE);
-
-  DISPATCH(put_wave(dest, source, nelems, pe));
+  static_cast<GPUIBContext*>(this)->put_wave(dest, source, nelems, pe);
 }
 
 template <typename T>
-__device__ void Context::put_nbi_wave(T *dest, const T *source, size_t nelems,
-                                      int pe) {
+__device__
+void Context::put_nbi_wave(T *dest, const T *source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_PUT_NBI_WAVE);
-
-  DISPATCH(put_nbi_wave(dest, source, nelems, pe));
+  static_cast<GPUIBContext*>(this)->put_nbi_wave(dest, source, nelems, pe);
 }
 
 template <typename T>
-__device__ void Context::get_wave(T *dest, const T *source, size_t nelems,
-                                  int pe) {
+__device__
+void Context::get_wave(T *dest, const T *source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_GET_WAVE);
-
-  DISPATCH(get_wave(dest, source, nelems, pe));
+  static_cast<GPUIBContext*>(this)->get_wave(dest, source, nelems, pe);
 }
 
 template <typename T>
-__device__ void Context::get_nbi_wave(T *dest, const T *source, size_t nelems,
-                                      int pe) {
+__device__
+void Context::get_nbi_wave(T *dest, const T *source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
-
-  ctxStats.incStat(NUM_GET_NBI_WAVE);
-
-  DISPATCH(get_nbi_wave(dest, source, nelems, pe));
+  static_cast<GPUIBContext*>(this)->get_nbi_wave(dest, source, nelems, pe);
 }
 
 template <typename T>
-__device__ T Context::amo_fetch_add(void *dst, T value, int pe) {
-  ctxStats.incStat(NUM_ATOMIC_FADD);
-
-  DISPATCH_RET(amo_fetch_add(dst, value, pe));
+__device__
+T Context::amo_fetch_add(void *dst, T value, int pe) {
+  auto ret_val = static_cast<GPUIBContext*>(this)->amo_fetch_add(dst, value, pe);
+  return ret_val;
 }
 
 template <typename T>
-__device__ void Context::amo_add(void *dst, T value, int pe) {
-  ctxStats.incStat(NUM_ATOMIC_ADD);
-
-  DISPATCH(amo_add(dst, value, pe));
+__device__
+void Context::amo_add(void *dst, T value, int pe) {
+  static_cast<GPUIBContext*>(this)->amo_add(dst, value, pe);
 }
 
 template <typename T>
-__device__ void Context::amo_set(void *dst, T value, int pe) {
-  ctxStats.incStat(NUM_ATOMIC_SET);
-
-  DISPATCH(amo_set(dst, value, pe));
+__device__
+void Context::amo_set(void *dst, T value, int pe) {
+  static_cast<GPUIBContext*>(this)->amo_set(dst, value, pe);
 }
 
 template <typename T>
-__device__ T Context::amo_swap(void *dst, T value, int pe) {
-  ctxStats.incStat(NUM_ATOMIC_SWAP);
-
-  DISPATCH_RET(amo_swap(dst, value, pe));
+__device__
+T Context::amo_swap(void *dst, T value, int pe) {
+  auto ret_val = static_cast<GPUIBContext*>(this)->amo_swap(dst, value, pe);
+  return ret_val;
 }
 
 template <typename T>
-__device__ T Context::amo_fetch_and(void *dst, T value, int pe) {
-  ctxStats.incStat(NUM_ATOMIC_FETCH_AND);
-
-  DISPATCH_RET(amo_fetch_and(dst, value, pe));
+__device__
+T Context::amo_fetch_and(void *dst, T value, int pe) {
+  auto ret_val = static_cast<GPUIBContext*>(this)->amo_fetch_and(dst, value, pe);
+  return ret_val;
 }
 
 template <typename T>
-__device__ void Context::amo_and(void *dst, T value, int pe) {
-  ctxStats.incStat(NUM_ATOMIC_AND);
-
-  DISPATCH(amo_and(dst, value, pe));
+__device__
+void Context::amo_and(void *dst, T value, int pe) {
+  static_cast<GPUIBContext*>(this)->amo_and(dst, value, pe);
 }
 
 template <typename T>
-__device__ T Context::amo_fetch_or(void *dst, T value, int pe) {
-  ctxStats.incStat(NUM_ATOMIC_FETCH_OR);
-
-  DISPATCH_RET(amo_fetch_or(dst, value, pe));
+__device__
+T Context::amo_fetch_or(void *dst, T value, int pe) {
+  auto ret_val = static_cast<GPUIBContext*>(this)->amo_fetch_or(dst, value, pe);
+  return ret_val;
 }
 
 template <typename T>
-__device__ void Context::amo_or(void *dst, T value, int pe) {
-  ctxStats.incStat(NUM_ATOMIC_OR);
-
-  DISPATCH(amo_or(dst, value, pe));
+__device__
+void Context::amo_or(void *dst, T value, int pe) {
+  static_cast<GPUIBContext*>(this)->amo_or(dst, value, pe);
 }
 
 template <typename T>
-__device__ T Context::amo_fetch_xor(void *dst, T value, int pe) {
-  ctxStats.incStat(NUM_ATOMIC_FETCH_XOR);
-
-  DISPATCH_RET(amo_fetch_xor(dst, value, pe));
+__device__
+T Context::amo_fetch_xor(void *dst, T value, int pe) {
+  auto ret_val = static_cast<GPUIBContext*>(this)->amo_fetch_xor(dst, value, pe);
+  return ret_val;
 }
 
 template <typename T>
-__device__ void Context::amo_xor(void *dst, T value, int pe) {
-  ctxStats.incStat(NUM_ATOMIC_XOR);
-
-  DISPATCH(amo_xor(dst, value, pe));
+__device__
+void Context::amo_xor(void *dst, T value, int pe) {
+  static_cast<GPUIBContext*>(this)->amo_xor(dst, value, pe);
 }
 
 template <typename T>
-__device__ T Context::amo_fetch_cas(void *dst, T value, T cond, int pe) {
-  ctxStats.incStat(NUM_ATOMIC_FCSWAP);
-
-  DISPATCH_RET(amo_fetch_cas(dst, value, cond, pe));
+__device__
+T Context::amo_fetch_cas(void *dst, T value, T cond, int pe) {
+  auto ret_val = static_cast<GPUIBContext*>(this)->amo_fetch_cas(dst, value, cond, pe);
+  return ret_val;
 }
 
 template <typename T>
-__device__ void Context::amo_cas(void *dst, T value, T cond, int pe) {
-  ctxStats.incStat(NUM_ATOMIC_CSWAP);
-
-  DISPATCH(amo_cas(dst, value, cond, pe));
+__device__
+void Context::amo_cas(void *dst, T value, T cond, int pe) {
+  static_cast<GPUIBContext*>(this)->amo_cas(dst, value, cond, pe);
 }
 
-#define CONTEXT_PUT_SIGNAL_DEF(SUFFIX, STATS_SUFFIX)                                           \
+#define CONTEXT_PUT_SIGNAL_DEF(SUFFIX)                                                         \
   template <typename T>                                                                        \
-  __device__ void Context::put_signal##SUFFIX(T *dest, const T *source, size_t nelems,         \
-                                              uint64_t *sig_addr, uint64_t signal, int sig_op, \
-                                              int pe) {                                        \
+  __device__                                                                                   \
+  void Context::put_signal##SUFFIX(T *dest, const T *source, size_t nelems,                    \
+                                   uint64_t *sig_addr, uint64_t signal, int sig_op, int pe) {  \
     if (nelems == 0) {                                                                         \
       return;                                                                                  \
     }                                                                                          \
-                                                                                               \
-    ctxStats.incStat(NUM_PUT_SIGNAL##STATS_SUFFIX);                                            \
-                                                                                               \
-    DISPATCH(put_signal##SUFFIX(dest, source, nelems, sig_addr, signal, sig_op, pe));          \
+    static_cast<GPUIBContext*>(this)->put_signal##SUFFIX(dest, source, nelems, sig_addr, signal, sig_op, pe); \
   }
 
-CONTEXT_PUT_SIGNAL_DEF(,)
-CONTEXT_PUT_SIGNAL_DEF(_wg, _WG)
-CONTEXT_PUT_SIGNAL_DEF(_wave, _WAVE)
-CONTEXT_PUT_SIGNAL_DEF(_nbi, _NBI)
-CONTEXT_PUT_SIGNAL_DEF(_nbi_wg, _NBI_WG)
-CONTEXT_PUT_SIGNAL_DEF(_nbi_wave, _NBI_WAVE)
+CONTEXT_PUT_SIGNAL_DEF()
+CONTEXT_PUT_SIGNAL_DEF(_wg)
+CONTEXT_PUT_SIGNAL_DEF(_wave)
+CONTEXT_PUT_SIGNAL_DEF(_nbi)
+CONTEXT_PUT_SIGNAL_DEF(_nbi_wg)
+CONTEXT_PUT_SIGNAL_DEF(_nbi_wave)
 
 }  // namespace rocshmem
 

@@ -38,25 +38,10 @@
 #include "../atomic_return.hpp"
 #include "connection_policy.hpp"
 #include "thread_policy.hpp"
-#include "../stats.hpp"
 
 namespace rocshmem {
 
 class GPUIBBackend;
-
-enum gpu_ib_stats {
-  RING_SQ_DB = 0,
-  UPDATE_WQE,
-  POLL_CQ,
-  NEXT_CQ,
-  QUIET_COUNT,
-  DB_COUNT,
-  WQE_COUNT,
-  MEM_WAIT,
-  INIT,
-  FINALIZE,
-  GPU_IB_NUM_STATS
-};
 
 typedef union db_reg {
   uint64_t *ptr;
@@ -68,7 +53,7 @@ class QueuePair {
   /**
    * @brief Constructor.
    *
-   * @param[in] backend Backend needed for member access.
+   * @param[in] backend GPUIBBackend needed for member access.
    */
   explicit QueuePair(GPUIBBackend *backend);
 
@@ -324,11 +309,6 @@ class QueuePair {
 
   /* TODO(bpotter): Most of these should be private/protected */
  public:
-#ifdef PROFILE
-  typedef Stats<GPU_IB_NUM_STATS> GPUIBStats;
-#else
-  typedef NullStats<GPU_IB_NUM_STATS> GPUIBStats;
-#endif
 
   /*
    * Pointer to the hardware doorbell register for the QP.
@@ -396,8 +376,6 @@ class QueuePair {
 
   uint32_t lkey{0};
 
-  GPUIBStats profiler{};
-
   uint16_t max_nwqe{0};
 
   bool sq_overflow{0};
@@ -405,7 +383,7 @@ class QueuePair {
   uint64_t db_val{};
   /*
    * Pointer to the QP in global memory that this QP is copied from.  When
-   * this QP is destroyed, the dynamic (indicies, stats, etc) in the
+   * this QP is destroyed, the dynamic (indicies, etc) in the
    * global_qp are updated.
    */
   QueuePair *global_qp{nullptr};
