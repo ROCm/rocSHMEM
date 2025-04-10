@@ -240,31 +240,6 @@ void rocshmem_atomic_xor(T *dest, T value, int pe) {
   rocshmem_atomic_xor(ROCSHMEM_CTX_DEFAULT, dest, value, pe);
 }
 
-#define ROCSHMEM_PUTMEM_SIGNAL_DEF(SUFFIX)                                                       \
-  __device__                                                                                     \
-  void rocshmem_putmem_signal##SUFFIX(void *dest, const void *source, size_t nelems,             \
-                                      uint64_t *sig_addr, uint64_t signal, int sig_op, int pe) { \
-    rocshmem_ctx_putmem_signal##SUFFIX(ROCSHMEM_CTX_DEFAULT,                                     \
-                                       dest, source, nelems,                                     \
-                                       sig_addr, signal, sig_op, pe);                            \
-  }                                                                                              \
-                                                                                                 \
-  template <typename T>                                                                          \
-  __device__                                                                                     \
-  void rocshmem_put_signal##SUFFIX(T *dest, const T *source, size_t nelems,                      \
-                                   uint64_t *sig_addr, uint64_t signal, int sig_op, int pe) {    \
-    rocshmem_ctx_put_signal##SUFFIX(ROCSHMEM_CTX_DEFAULT,                                        \
-                                    dest, source, nelems,                                        \
-                                    sig_addr, signal, sig_op, pe);                               \
-  }
-
-ROCSHMEM_PUTMEM_SIGNAL_DEF()
-ROCSHMEM_PUTMEM_SIGNAL_DEF(_wg)
-ROCSHMEM_PUTMEM_SIGNAL_DEF(_wave)
-ROCSHMEM_PUTMEM_SIGNAL_DEF(_nbi)
-ROCSHMEM_PUTMEM_SIGNAL_DEF(_nbi_wg)
-ROCSHMEM_PUTMEM_SIGNAL_DEF(_nbi_wave)
-
 /******************************************************************************
  ************************* Private Context Interfaces *************************
  *****************************************************************************/
@@ -420,86 +395,6 @@ void rocshmem_ctx_quiet(rocshmem_ctx_t ctx) {
 __device__ 
 void *rocshmem_ptr(const void *dest, int pe) {
   return get_internal_ctx(ROCSHMEM_CTX_DEFAULT)->shmem_ptr(dest, pe);
-}
-
-template <typename T, ROCSHMEM_OP Op>
-__device__ 
-int rocshmem_wg_reduce(rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source, int nreduce) {
-  return get_internal_ctx(ctx)->reduce<T, Op>(team, dest, source, nreduce);
-}
-
-template <typename T>
-__device__ 
-void rocshmem_wg_broadcast(rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source, int nelem, int pe_root) {
-  get_internal_ctx(ctx)->broadcast<T>(team, dest, source, nelem, pe_root);
-}
-
-template <typename T>
-__device__ 
-void rocshmem_wg_alltoall(rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source, int nelem) {
-  get_internal_ctx(ctx)->alltoall<T>(team, dest, source, nelem);
-}
-
-template <typename T>
-__device__ 
-void rocshmem_wg_fcollect(rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source, int nelem) {
-  get_internal_ctx(ctx)->fcollect<T>(team, dest, source, nelem);
-}
-
-template <typename T>
-__device__ 
-void rocshmem_wait_until(T *ivars, int cmp, T val) {
-  Context *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
-  ctx_internal->wait_until(ivars, cmp, val);
-}
-
-template <typename T>
-__device__ 
-void rocshmem_wait_until_all(T *ivars, size_t nelems, const int* status, int cmp, T val) {
-  Context *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
-  ctx_internal->wait_until_all(ivars, nelems, status, cmp, val);
-}
-
-template <typename T>
-__device__ 
-size_t rocshmem_wait_until_any(T *ivars, size_t nelems, const int* status, int cmp, T val) {
-  Context *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
-  return ctx_internal->wait_until_any(ivars, nelems, status, cmp, val);
-}
-
-template <typename T>
-__device__ 
-size_t rocshmem_wait_until_some(T *ivars, size_t nelems, size_t* indices, const int* status, int cmp, T val) {
-  Context *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
-  return ctx_internal->wait_until_some(ivars, nelems, indices, status, cmp, val);
-}
-
-template <typename T>
-__device__ 
-size_t rocshmem_wait_until_any_vector(T *ivars, size_t nelems, const int* status, int cmp, T* vals) {
-  Context *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
-  return ctx_internal->wait_until_any_vector(ivars, nelems, status, cmp, vals);
-}
-
-template <typename T>
-__device__ 
-void rocshmem_wait_until_all_vector(T *ivars, size_t nelems, const int* status, int cmp, T* vals) {
-  Context *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
-  ctx_internal->wait_until_all_vector(ivars, nelems, status, cmp, vals);
-}
-
-template <typename T>
-__device__ 
-size_t rocshmem_wait_until_some_vector(T *ivars, size_t nelems, size_t* indices, const int* status, int cmp, T* vals) {
-  Context *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
-  return ctx_internal->wait_until_some_vector(ivars, nelems, indices, status, cmp, vals);
-}
-
-template <typename T>
-__device__ 
-int rocshmem_test(T *ivars, int cmp, T val) {
-  Context *ctx_internal = get_internal_ctx(ROCSHMEM_CTX_DEFAULT);
-  return ctx_internal->test(ivars, cmp, val);
 }
 
 __device__ 
@@ -666,18 +561,8 @@ void rocshmem_ctx_putmem_wave(rocshmem_ctx_t ctx, void *dest, const void *source
 }
 
 __device__ 
-void rocshmem_ctx_putmem_wg(rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe) {
-  get_internal_ctx(ctx)->putmem_wg(dest, source, nelems, pe);
-}
-
-__device__ 
 void rocshmem_ctx_putmem_nbi_wave(rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe) {
   get_internal_ctx(ctx)->putmem_nbi_wave(dest, source, nelems, pe);
-}
-
-__device__ 
-void rocshmem_ctx_putmem_nbi_wg(rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe) {
-  get_internal_ctx(ctx)->putmem_nbi_wg(dest, source, nelems, pe);
 }
 
 template <typename T>
@@ -688,25 +573,8 @@ void rocshmem_put_wave(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nele
 
 template <typename T>
 __device__ 
-void rocshmem_put_wg(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {
-  get_internal_ctx(ctx)->put_wg(dest, source, nelems, pe);
-}
-
-template <typename T>
-__device__ 
 void rocshmem_put_nbi_wave(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {
   get_internal_ctx(ctx)->put_nbi_wave(dest, source, nelems, pe);
-}
-
-template <typename T>
-__device__ 
-void rocshmem_put_nbi_wg(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {
-  get_internal_ctx(ctx)->put_nbi_wg(dest, source, nelems, pe);
-}
-
-__device__ 
-void rocshmem_ctx_getmem_wg(rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe) {
-  get_internal_ctx(ctx)->getmem_wg(dest, source, nelems, pe);
 }
 
 __device__ 
@@ -716,25 +584,8 @@ void rocshmem_ctx_getmem_wave(rocshmem_ctx_t ctx, void *dest, const void *source
 
 template <typename T>
 __device__ 
-void rocshmem_get_wg(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {
-  get_internal_ctx(ctx)->get_wg(dest, source, nelems, pe);
-}
-
-template <typename T>
-__device__ 
 void rocshmem_get_wave(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {
   get_internal_ctx(ctx)->get_wave(dest, source, nelems, pe);
-}
-
-__device__ 
-void rocshmem_ctx_getmem_nbi_wg(rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe) {
-  get_internal_ctx(ctx)->getmem_nbi_wg(dest, source, nelems, pe);
-}
-
-template <typename T>
-__device__ 
-void rocshmem_get_nbi_wg(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {
-  get_internal_ctx(ctx)->get_nbi_wg(dest, source, nelems, pe);
 }
 
 __device__ 
@@ -748,42 +599,6 @@ void rocshmem_get_nbi_wave(rocshmem_ctx_t ctx, T *dest, const T *source, size_t 
   get_internal_ctx(ctx)->get_nbi_wave(dest, source, nelems, pe);
 }
 
-#define ROCSHMEM_CTX_PUTMEM_SIGNAL_DEF(SUFFIX)                                             \
-  __device__                                                                               \
-  void rocshmem_ctx_putmem_signal##SUFFIX(rocshmem_ctx_t ctx,                              \
-                                          void *dest, const void *source, size_t nelems,   \
-                                          uint64_t *sig_addr, uint64_t signal,             \
-                                          int sig_op, int pe) {                            \
-    get_internal_ctx(ctx)->putmem_signal##SUFFIX(dest, source, nelems,                     \
-                                                 sig_addr, signal, sig_op, pe);            \
-  }                                                                                        \
-                                                                                           \
-  template <typename T>                                                                    \
-  __device__                                                                               \
-  void rocshmem_ctx_put_signal##SUFFIX(rocshmem_ctx_t ctx,                                 \
-                                       T *dest, const T *source, size_t nelems,            \
-                                       uint64_t *sig_addr, uint64_t signal,                \
-                                       int sig_op, int pe) {                               \
-    get_internal_ctx(ctx)->put_signal##SUFFIX(dest, source, nelems,                        \
-                                              sig_addr, signal, sig_op, pe);               \
-  }
-
-ROCSHMEM_CTX_PUTMEM_SIGNAL_DEF()
-ROCSHMEM_CTX_PUTMEM_SIGNAL_DEF(_wg)
-ROCSHMEM_CTX_PUTMEM_SIGNAL_DEF(_wave)
-ROCSHMEM_CTX_PUTMEM_SIGNAL_DEF(_nbi)
-ROCSHMEM_CTX_PUTMEM_SIGNAL_DEF(_nbi_wg)
-ROCSHMEM_CTX_PUTMEM_SIGNAL_DEF(_nbi_wave)
-
-#define ROCSHMEM_SIGNAL_FETCH_DEF(SUFFIX)                                          \
-  __device__ uint64_t rocshmem_signal_fetch##SUFFIX(const uint64_t *sig_addr) {    \
-    return get_internal_ctx(ROCSHMEM_CTX_DEFAULT)->signal_fetch##SUFFIX(sig_addr); \
-  }
-
-ROCSHMEM_SIGNAL_FETCH_DEF()
-ROCSHMEM_SIGNAL_FETCH_DEF(_wg)
-ROCSHMEM_SIGNAL_FETCH_DEF(_wave)
-
 /******************************************************************************
  ****************************** Teams Interface *******************************
  *****************************************************************************/
@@ -796,14 +611,6 @@ int rocshmem_team_translate_pe(rocshmem_team_t src_team, int src_pe, rocshmem_te
 /******************************************************************************
  ************************* Template Generation Macros *************************
  *****************************************************************************/
-
-/*
- * Template generator for reductions
- */
-#define REDUCTION_GEN(T, Op)                                                   \
-  template __device__ int rocshmem_wg_reduce<T, Op>(                           \
-      rocshmem_ctx_t ctx, rocshmem_team_t team, T * dest, const T *source,     \
-      int nreduce);
 
 /*
  * Declare templates for the required datatypes (for the compiler)
@@ -831,47 +638,22 @@ int rocshmem_team_translate_pe(rocshmem_team_t src_team, int src_pe, rocshmem_te
   template __device__ void rocshmem_get_nbi<T>(T * dest, const T *source,      \
                                                 size_t nelems, int pe);        \
   template __device__ T rocshmem_g<T>(const T *source, int pe);                \
-  template __device__ void rocshmem_wg_broadcast<T>(                           \
-      rocshmem_ctx_t ctx, rocshmem_team_t team, T * dest, const T *source,     \
-      int nelem, int pe_root);                                                 \
-  template __device__ void rocshmem_wg_alltoall<T>(                            \
-      rocshmem_ctx_t ctx, rocshmem_team_t team, T * dest, const T *source,     \
-      int nelem);                                                              \
-  template __device__ void rocshmem_wg_fcollect<T>(                            \
-      rocshmem_ctx_t ctx, rocshmem_team_t team, T * dest, const T *source,     \
-      int nelem);                                                              \
   template __device__ void rocshmem_put_wave<T>(                               \
-      rocshmem_ctx_t ctx, T * dest, const T *source, size_t nelems, int pe);   \
-  template __device__ void rocshmem_put_wg<T>(                                 \
       rocshmem_ctx_t ctx, T * dest, const T *source, size_t nelems, int pe);   \
   template __device__ void rocshmem_put_wave<T>(T * dest, const T *source,     \
                                                  size_t nelems, int pe);       \
-  template __device__ void rocshmem_put_wg<T>(T * dest, const T *source,       \
-                                               size_t nelems, int pe);         \
   template __device__ void rocshmem_put_nbi_wave<T>(                           \
-      rocshmem_ctx_t ctx, T * dest, const T *source, size_t nelems, int pe);   \
-  template __device__ void rocshmem_put_nbi_wg<T>(                             \
       rocshmem_ctx_t ctx, T * dest, const T *source, size_t nelems, int pe);   \
   template __device__ void rocshmem_put_nbi_wave<T>(                           \
       T * dest, const T *source, size_t nelems, int pe);                       \
-  template __device__ void rocshmem_put_nbi_wg<T>(T * dest, const T *source,   \
-                                                   size_t nelems, int pe);     \
   template __device__ void rocshmem_get_wave<T>(                               \
-      rocshmem_ctx_t ctx, T * dest, const T *source, size_t nelems, int pe);   \
-  template __device__ void rocshmem_get_wg<T>(                                 \
       rocshmem_ctx_t ctx, T * dest, const T *source, size_t nelems, int pe);   \
   template __device__ void rocshmem_get_wave<T>(T * dest, const T *source,     \
                                                  size_t nelems, int pe);       \
-  template __device__ void rocshmem_get_wg<T>(T * dest, const T *source,       \
-                                               size_t nelems, int pe);         \
   template __device__ void rocshmem_get_nbi_wave<T>(                           \
       rocshmem_ctx_t ctx, T * dest, const T *source, size_t nelems, int pe);   \
-  template __device__ void rocshmem_get_nbi_wg<T>(                             \
-      rocshmem_ctx_t ctx, T * dest, const T *source, size_t nelems, int pe);   \
   template __device__ void rocshmem_get_nbi_wave<T>(                           \
-      T * dest, const T *source, size_t nelems, int pe);                       \
-  template __device__ void rocshmem_get_nbi_wg<T>(T * dest, const T *source,   \
-                                                   size_t nelems, int pe);
+      T * dest, const T *source, size_t nelems, int pe);
 
 /*
  * Declare templates for the standard amo types
@@ -935,103 +717,6 @@ int rocshmem_team_translate_pe(rocshmem_team_t src_team, int src_pe, rocshmem_te
                                                    T * dest, T value, int pe); \
   template __device__ void rocshmem_atomic_xor<T>(T * dest, T value, int pe);
 
-/*
- * Declare templates for the wait types
- */
-#define WAIT_GEN(T)                                                            \
-  template __device__ void rocshmem_wait_until<T>(T *ivars,                    \
-                                                   int cmp, T val);            \
-  template __device__ size_t rocshmem_wait_until_any<T>(T *ivars,              \
-                                      size_t nelems, const int* status,        \
-                                      int cmp, T val);                         \
-  template __device__ void rocshmem_wait_until_all<T>(T *ivars,                \
-                                      size_t nelems, const int* status,        \
-                                      int cmp, T val);                         \
-  template __device__ size_t rocshmem_wait_until_some<T>(T *ivars,             \
-                                      size_t nelems, size_t* indices,          \
-                                      const int* status,                       \
-                                      int cmp, T val);                         \
-  template __device__ size_t rocshmem_wait_until_any_vector<T>(T *ivars,       \
-                                      size_t nelems, const int* status,        \
-                                      int cmp, T* vals);                       \
-  template __device__ void rocshmem_wait_until_all_vector<T>(T *ivars,         \
-                                      size_t nelems, const int* status,        \
-                                      int cmp, T* vals);                       \
-  template __device__ size_t rocshmem_wait_until_some_vector<T>(T *ivars,      \
-                                      size_t nelems, size_t* indices,          \
-                                      const int* status, int cmp,              \
-                                      T* vals);                                \
-  template __device__ int rocshmem_test<T>(T *ivars, int cmp,                  \
-                                            T val);                            \
-  template __device__ void Context::wait_until<T>(T *ivars, int cmp,           \
-                                                  T val);                      \
-  template __device__ size_t Context::wait_until_any<T>(T *ivars,              \
-                                      size_t nelems, const int* status,        \
-                                      int cmp, T val);                         \
-  template __device__ void Context::wait_until_all<T>(T *ivars,                \
-                                      size_t nelems, const int* status,        \
-                                      int cmp, T val);                         \
-  template __device__ size_t Context::wait_until_some<T>(T *ivars,             \
-                                      size_t nelems,                           \
-                                      size_t* indices, const int* status,      \
-                                      int cmp, T val);                         \
-  template __device__ size_t Context::wait_until_any_vector<T>(T *ivars,       \
-                                      size_t nelems, const int* status,        \
-                                      int cmp, T* vals);                       \
-  template __device__ void Context::wait_until_all_vector<T>(T *ivars,         \
-                                      size_t nelems, const int* status,        \
-                                      int cmp, T* vals);                       \
-  template __device__ size_t Context::wait_until_some_vector<T>(T *ivars,      \
-                                      size_t nelems, size_t* indices,          \
-                                      const int* status, int cmp,              \
-                                      T* vals);                                \
-  template __device__ int Context::test<T>(T *ivars, int cmp, T val);
-
-#define ARITH_REDUCTION_GEN(T)    \
-  REDUCTION_GEN(T, ROCSHMEM_SUM) \
-  REDUCTION_GEN(T, ROCSHMEM_MIN) \
-  REDUCTION_GEN(T, ROCSHMEM_MAX) \
-  REDUCTION_GEN(T, ROCSHMEM_PROD)
-
-#define BITWISE_REDUCTION_GEN(T)  \
-  REDUCTION_GEN(T, ROCSHMEM_OR)  \
-  REDUCTION_GEN(T, ROCSHMEM_AND) \
-  REDUCTION_GEN(T, ROCSHMEM_XOR)
-
-#define INT_REDUCTION_GEN(T) \
-  ARITH_REDUCTION_GEN(T)     \
-  BITWISE_REDUCTION_GEN(T)
-
-#define FLOAT_REDUCTION_GEN(T) ARITH_REDUCTION_GEN(T)
-
-/*
- * Define APIs to call the template functions
- */
-
-#define REDUCTION_DEF_GEN(T, TNAME, Op_API, Op)                               \
-  __device__ int rocshmem_ctx_##TNAME##_##Op_API##_wg_reduce(                 \
-      rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source,     \
-      int nreduce) {                                                          \
-    return rocshmem_wg_reduce<T, Op>(ctx, team, dest, source, nreduce);       \
-  }
-
-#define ARITH_REDUCTION_DEF_GEN(T, TNAME)         \
-  REDUCTION_DEF_GEN(T, TNAME, sum, ROCSHMEM_SUM) \
-  REDUCTION_DEF_GEN(T, TNAME, min, ROCSHMEM_MIN) \
-  REDUCTION_DEF_GEN(T, TNAME, max, ROCSHMEM_MAX) \
-  REDUCTION_DEF_GEN(T, TNAME, prod, ROCSHMEM_PROD)
-
-#define BITWISE_REDUCTION_DEF_GEN(T, TNAME)       \
-  REDUCTION_DEF_GEN(T, TNAME, or, ROCSHMEM_OR)   \
-  REDUCTION_DEF_GEN(T, TNAME, and, ROCSHMEM_AND) \
-  REDUCTION_DEF_GEN(T, TNAME, xor, ROCSHMEM_XOR)
-
-#define INT_REDUCTION_DEF_GEN(T, TNAME) \
-  ARITH_REDUCTION_DEF_GEN(T, TNAME)     \
-  BITWISE_REDUCTION_DEF_GEN(T, TNAME)
-
-#define FLOAT_REDUCTION_DEF_GEN(T, TNAME) ARITH_REDUCTION_DEF_GEN(T, TNAME)
-
 #define RMA_DEF_GEN(T, TNAME)                                                 \
   __device__ void rocshmem_ctx_##TNAME##_put(                                 \
       rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {  \
@@ -1083,80 +768,33 @@ int rocshmem_team_translate_pe(rocshmem_team_t src_team, int src_pe, rocshmem_te
       rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {  \
     rocshmem_put_wave<T>(ctx, dest, source, nelems, pe);                      \
   }                                                                           \
-  __device__ void rocshmem_ctx_##TNAME##_put_wg(                              \
-      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {  \
-    rocshmem_put_wg<T>(ctx, dest, source, nelems, pe);                        \
-  }                                                                           \
   __device__ void rocshmem_##TNAME##_put_wave(T *dest, const T *source,       \
                                                size_t nelems, int pe) {       \
     rocshmem_put_wave<T>(dest, source, nelems, pe);                           \
-  }                                                                           \
-  __device__ void rocshmem_##TNAME##_put_wg(T *dest, const T *source,         \
-                                             size_t nelems, int pe) {         \
-    rocshmem_put_wg<T>(dest, source, nelems, pe);                             \
   }                                                                           \
   __device__ void rocshmem_ctx_##TNAME##_put_nbi_wave(                        \
       rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {  \
     rocshmem_put_nbi_wave<T>(ctx, dest, source, nelems, pe);                  \
   }                                                                           \
-  __device__ void rocshmem_ctx_##TNAME##_put_nbi_wg(                          \
-      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {  \
-    rocshmem_put_nbi_wg<T>(ctx, dest, source, nelems, pe);                    \
-  }                                                                           \
   __device__ void rocshmem_##TNAME##_put_nbi_wave(T *dest, const T *source,   \
                                                    size_t nelems, int pe) {   \
     rocshmem_put_nbi_wave<T>(dest, source, nelems, pe);                       \
-  }                                                                           \
-  __device__ void rocshmem_##TNAME##_put_nbi_wg(T *dest, const T *source,     \
-                                                 size_t nelems, int pe) {     \
-    rocshmem_put_nbi_wg<T>(dest, source, nelems, pe);                         \
   }                                                                           \
   __device__ void rocshmem_ctx_##TNAME##_get_wave(                            \
       rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {  \
     rocshmem_get_wave<T>(ctx, dest, source, nelems, pe);                      \
   }                                                                           \
-  __device__ void rocshmem_ctx_##TNAME##_get_wg(                              \
-      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {  \
-    rocshmem_get_wg<T>(ctx, dest, source, nelems, pe);                        \
-  }                                                                           \
   __device__ void rocshmem_##TNAME##_get_wave(T *dest, const T *source,       \
                                                size_t nelems, int pe) {       \
     rocshmem_get_wave<T>(dest, source, nelems, pe);                           \
-  }                                                                           \
-  __device__ void rocshmem_##TNAME##_get_wg(T *dest, const T *source,         \
-                                             size_t nelems, int pe) {         \
-    rocshmem_get_wg<T>(dest, source, nelems, pe);                             \
   }                                                                           \
   __device__ void rocshmem_ctx_##TNAME##_get_nbi_wave(                        \
       rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {  \
     rocshmem_get_nbi_wave<T>(ctx, dest, source, nelems, pe);                  \
   }                                                                           \
-  __device__ void rocshmem_ctx_##TNAME##_get_nbi_wg(                          \
-      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {  \
-    rocshmem_get_nbi_wg<T>(ctx, dest, source, nelems, pe);                    \
-  }                                                                           \
   __device__ void rocshmem_##TNAME##_get_nbi_wave(T *dest, const T *source,   \
                                                    size_t nelems, int pe) {   \
     rocshmem_get_nbi_wave<T>(dest, source, nelems, pe);                       \
-  }                                                                           \
-  __device__ void rocshmem_##TNAME##_get_nbi_wg(T *dest, const T *source,     \
-                                                 size_t nelems, int pe) {     \
-    rocshmem_get_nbi_wg<T>(dest, source, nelems, pe);                         \
-  }                                                                           \
-  __device__ void rocshmem_ctx_##TNAME##_wg_broadcast(                        \
-      rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source,     \
-      int nelem, int pe_root) {                                               \
-    rocshmem_wg_broadcast<T>(ctx, team, dest, source, nelem, pe_root);        \
-  }                                                                           \
-  __device__ void rocshmem_ctx_##TNAME##_wg_alltoall(                         \
-      rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source,     \
-      int nelem) {                                                            \
-    rocshmem_wg_alltoall<T>(ctx, team, dest, source, nelem);                  \
-  }                                                                           \
-  __device__ void rocshmem_ctx_##TNAME##_wg_fcollect(                         \
-      rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source,     \
-      int nelem) {                                                            \
-    rocshmem_wg_fcollect<T>(ctx, team, dest, source, nelem);                  \
   }
 
 #define AMO_STANDARD_DEF_GEN(T, TNAME)                                        \
@@ -1267,133 +905,11 @@ int rocshmem_team_translate_pe(rocshmem_team_t src_team, int src_pe, rocshmem_te
     rocshmem_atomic_xor<T>(dest, value, pe);                                  \
   }
 
-#define WAIT_DEF_GEN(T, TNAME)                                                \
-  __device__ void rocshmem_##TNAME##_wait_until(T *ivars, int cmp,            \
-                                                 T val) {                     \
-    rocshmem_wait_until<T>(ivars, cmp, val);                                  \
-  }                                                                           \
-  __device__ size_t rocshmem_##TNAME##_wait_until_any(T *ivars, size_t nelems,\
-                                                     const int* status,       \
-                                                     int cmp,                 \
-                                                     T val) {                 \
-    return rocshmem_wait_until_any<T>(ivars, nelems, status, cmp, val);       \
-  }                                                                           \
-  __device__ void rocshmem_##TNAME##_wait_until_all(T *ivars, size_t nelems,  \
-                                                   const int* status,         \
-                                                   int cmp,                   \
-                                                   T val) {                   \
-    rocshmem_wait_until_all<T>(ivars, nelems, status, cmp, val);              \
-  }                                                                           \
-  __device__ size_t rocshmem_##TNAME##_wait_until_some(T *ivars,              \
-                                                    size_t nelems,            \
-                                                    size_t* indices,          \
-                                                    const int* status,        \
-                                                    int cmp,                  \
-                                                    T val) {                  \
-    return rocshmem_wait_until_some<T>(ivars, nelems, indices, status, cmp,   \
-                                        val);                                 \
-  }                                                                           \
-  __device__ size_t rocshmem_##TNAME##_wait_until_any_vector(T *ivars,        \
-                                                          size_t nelems,      \
-                                                          const int* status,  \
-                                                          int cmp,            \
-                                                          T* vals) {          \
-    return rocshmem_wait_until_any_vector<T>(ivars, nelems, status, cmp,      \
-                                              vals);                          \
-  }                                                                           \
-  __device__ void rocshmem_##TNAME##_wait_until_all_vector(T *ivars,          \
-                                                          size_t nelems,      \
-                                                          const int* status,  \
-                                                          int cmp,            \
-                                                          T* vals) {          \
-    rocshmem_wait_until_all_vector<T>(ivars, nelems, status, cmp, vals);      \
-  }                                                                           \
-  __device__ size_t rocshmem_##TNAME##_wait_until_some_vector(T *ivars,       \
-                                                           size_t nelems,     \
-                                                           size_t* indices,   \
-                                                           const int* status, \
-                                                           int cmp,           \
-                                                           T* vals) {         \
-    return rocshmem_wait_until_some_vector<T>(ivars, nelems, indices,         \
-        status, cmp, vals);                                                   \
-  }                                                                           \
-  __device__ int rocshmem_##TNAME##_test(T *ivars, int cmp, T val) {          \
-    return rocshmem_test<T>(ivars, cmp, val);                                 \
-  }
-
-#define RMA_SIGNAL_SUFFIX_DEC(SUFFIX)                                                    \
-  template <typename T>                                                                  \
-  __device__ void rocshmem_ctx_put_signal##SUFFIX(rocshmem_ctx_t ctx,                 \
-                                                    T *dest, const T *source,            \
-                                                    size_t nelems,                       \
-                                                    uint64_t *sig_addr, uint64_t signal, \
-                                                    int sig_op, int pe);                 \
-                                                                                         \
-  template <typename T>                                                                  \
-  __device__ void rocshmem_put_signal##SUFFIX(T *dest, const T *source, size_t nelems, \
-                                                uint64_t *sig_addr, uint64_t signal,     \
-                                                int sig_op, int pe);                     \
-
-#define RMA_SIGNAL_SUFFIX_DEF(T, TNAME, SUFFIX)                                                   \
-  __device__ void rocshmem_ctx_##TNAME##_put_signal##SUFFIX(rocshmem_ctx_t ctx,                 \
-                                                             T *dest, const T *source,            \
-                                                             size_t nelems,                       \
-                                                             uint64_t *sig_addr, uint64_t signal, \
-                                                             int sig_op, int pe) {                \
-    rocshmem_ctx_put_signal##SUFFIX<T>(ctx, dest, source, nelems, sig_addr, signal, sig_op, pe); \
-  }                                                                                               \
-                                                                                                  \
-  __device__ void rocshmem_##TNAME##_put_signal##SUFFIX(T *dest, const T *source, size_t nelems, \
-                                                         uint64_t *sig_addr, uint64_t signal,     \
-                                                         int sig_op, int pe) {                    \
-    rocshmem_put_signal##SUFFIX(dest, source, nelems, sig_addr, signal, sig_op, pe);             \
-  }
-
-#define RMA_SIGNAL_GEN(SUFFIX)                                 \
-  RMA_SIGNAL_SUFFIX_DEC(SUFFIX)                                \
-  RMA_SIGNAL_SUFFIX_DEF(float, float, SUFFIX)                  \
-  RMA_SIGNAL_SUFFIX_DEF(double, double, SUFFIX)                \
-  RMA_SIGNAL_SUFFIX_DEF(char, char, SUFFIX)                    \
-  RMA_SIGNAL_SUFFIX_DEF(signed char, schar, SUFFIX)            \
-  RMA_SIGNAL_SUFFIX_DEF(short, short, SUFFIX)                  \
-  RMA_SIGNAL_SUFFIX_DEF(int, int, SUFFIX)                      \
-  RMA_SIGNAL_SUFFIX_DEF(long, long, SUFFIX)                    \
-  RMA_SIGNAL_SUFFIX_DEF(long long, longlong, SUFFIX)           \
-  RMA_SIGNAL_SUFFIX_DEF(unsigned char, uchar, SUFFIX)          \
-  RMA_SIGNAL_SUFFIX_DEF(unsigned short, ushort, SUFFIX)        \
-  RMA_SIGNAL_SUFFIX_DEF(unsigned int, uint, SUFFIX)            \
-  RMA_SIGNAL_SUFFIX_DEF(unsigned long, ulong, SUFFIX)          \
-  RMA_SIGNAL_SUFFIX_DEF(unsigned long long, ulonglong, SUFFIX) \
-  RMA_SIGNAL_SUFFIX_DEF(int8_t, int8, SUFFIX)                  \
-  RMA_SIGNAL_SUFFIX_DEF(int16_t, int16, SUFFIX)                \
-  RMA_SIGNAL_SUFFIX_DEF(int32_t, int32, SUFFIX)                \
-  RMA_SIGNAL_SUFFIX_DEF(int64_t, int64, SUFFIX)                \
-  RMA_SIGNAL_SUFFIX_DEF(uint8_t, uint8, SUFFIX)                \
-  RMA_SIGNAL_SUFFIX_DEF(uint16_t, uint16, SUFFIX)              \
-  RMA_SIGNAL_SUFFIX_DEF(uint32_t, uint32, SUFFIX)              \
-  RMA_SIGNAL_SUFFIX_DEF(uint64_t, uint64, SUFFIX)              \
-  RMA_SIGNAL_SUFFIX_DEF(size_t, size, SUFFIX)                  \
-  RMA_SIGNAL_SUFFIX_DEF(ptrdiff_t, ptrdiff, SUFFIX)
-
-RMA_SIGNAL_GEN(_wg)
-RMA_SIGNAL_GEN()
-RMA_SIGNAL_GEN(_wave)
-RMA_SIGNAL_GEN(_nbi)
-RMA_SIGNAL_GEN(_nbi_wg)
-RMA_SIGNAL_GEN(_nbi_wave)
-
 /******************************************************************************
  ************************* Macro Invocation Per Type **************************
  *****************************************************************************/
 
 // clang-format off
-INT_REDUCTION_GEN(int)
-INT_REDUCTION_GEN(short)
-INT_REDUCTION_GEN(long)
-INT_REDUCTION_GEN(long long)
-FLOAT_REDUCTION_GEN(float)
-FLOAT_REDUCTION_GEN(double)
-// FLOAT_REDUCTION_GEN(long double)
 
 RMA_GEN(float)
 RMA_GEN(double)
@@ -1431,28 +947,6 @@ AMO_BITWISE_GEN(unsigned long)
 AMO_BITWISE_GEN(unsigned long long)
 
 /* Supported synchronization types */
-WAIT_GEN(float)
-WAIT_GEN(double)
-// WAIT_GEN(long double)
-WAIT_GEN(char)
-WAIT_GEN(unsigned char)
-WAIT_GEN(unsigned short)
-WAIT_GEN(signed char)
-WAIT_GEN(short)
-WAIT_GEN(int)
-WAIT_GEN(long)
-WAIT_GEN(long long)
-WAIT_GEN(unsigned int)
-WAIT_GEN(unsigned long)
-WAIT_GEN(unsigned long long)
-
-INT_REDUCTION_DEF_GEN(int, int)
-INT_REDUCTION_DEF_GEN(short, short)
-INT_REDUCTION_DEF_GEN(long, long)
-INT_REDUCTION_DEF_GEN(long long, longlong)
-FLOAT_REDUCTION_DEF_GEN(float, float)
-FLOAT_REDUCTION_DEF_GEN(double, double)
-// FLOAT_REDUCTION_DEF_GEN(long double, longdouble)
 
 RMA_DEF_GEN(float, float)
 RMA_DEF_GEN(double, double)
@@ -1515,20 +1009,6 @@ AMO_BITWISE_DEF_GEN(int64_t, int64)
 AMO_BITWISE_DEF_GEN(uint32_t, uint32)
 AMO_BITWISE_DEF_GEN(uint64_t, uint64)
 
-WAIT_DEF_GEN(float, float)
-WAIT_DEF_GEN(double, double)
-// WAIT_DEF_GEN(long double, longdouble)
-WAIT_DEF_GEN(char, char)
-WAIT_DEF_GEN(signed char, schar)
-WAIT_DEF_GEN(short, short)
-WAIT_DEF_GEN(int, int)
-WAIT_DEF_GEN(long, long)
-WAIT_DEF_GEN(long long, longlong)
-WAIT_DEF_GEN(unsigned char, uchar)
-WAIT_DEF_GEN(unsigned short, ushort)
-WAIT_DEF_GEN(unsigned int, uint)
-WAIT_DEF_GEN(unsigned long, ulong)
-WAIT_DEF_GEN(unsigned long long, ulonglong)
 // clang-format on
 
 }  // namespace rocshmem

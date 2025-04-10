@@ -36,8 +36,6 @@
 #include "default_ctx_primitive_tester.hpp"
 #include "barrier_all_tester.hpp"
 #include "empty_tester.hpp"
-#include "ping_all_tester.hpp"
-#include "ping_pong_tester.hpp"
 #include "primitive_mr_tester.hpp"
 #include "primitive_tester.hpp"
 #include "random_access_tester.hpp"
@@ -47,7 +45,6 @@
 #include "team_ctx_infra_tester.hpp"
 #include "team_ctx_primitive_tester.hpp"
 #include "wavefront_primitives.hpp"
-#include "workgroup_primitives.hpp"
 
 Tester::Tester(TesterArguments args) : args(args) {
   _type = (TestType)args.algorithm;
@@ -247,14 +244,6 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       testers.push_back(new AMOStandardTester<long>(args));
       testers.push_back(new AMOStandardTester<int>(args));
       return testers;
-    case PingPongTestType:
-      if (rank == 0) std::cout << "PingPong ###" << std::endl;
-      testers.push_back(new PingPongTester(args));
-      return testers;
-    case PingAllTestType:
-      if (rank == 0) std::cout << "PingAll ###" << std::endl;
-      testers.push_back(new PingAllTester(args));
-      return testers;
     case BarrierAllTestType:
       if (rank == 0) std::cout << "Barrier_All ###" << std::endl;
       testers.push_back(new BarrierAllTester(args));
@@ -278,26 +267,6 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
     case ShmemPtrTestType:
       if (rank == 0) std::cout << "Shmem_Ptr ###" << std::endl;
       testers.push_back(new ShmemPtrTester(args));
-      return testers;
-    case WGGetTestType:
-      if (rank == 0)
-        std::cout << "Blocking WG level Gets ###" << std::endl;
-      testers.push_back(new WorkGroupPrimitiveTester(args));
-      return testers;
-    case WGGetNBITestType:
-      if (rank == 0)
-        std::cout << "Non-Blocking WG level Gets ###" << std::endl;
-      testers.push_back(new WorkGroupPrimitiveTester(args));
-      return testers;
-    case WGPutTestType:
-      if (rank == 0)
-        std::cout << "Blocking WG level Puts ###" << std::endl;
-      testers.push_back(new WorkGroupPrimitiveTester(args));
-      return testers;
-    case WGPutNBITestType:
-      if (rank == 0)
-        std::cout << "Non-Blocking WG level Puts ###" << std::endl;
-      testers.push_back(new WorkGroupPrimitiveTester(args));
       return testers;
     case PutNBIMRTestType:
       if (rank == 0)
@@ -408,9 +377,9 @@ bool Tester::peLaunchesKernel() {
    */
   is_launcher = is_launcher ||
                 (_type == TeamCtxInfraTestType) ||
-                (_type == PingPongTestType) || (_type == BarrierAllTestType) ||
+                (_type == BarrierAllTestType) ||
                 (_type == SyncTestType) || (_type == SyncAllTestType) ||
-                (_type == RandomAccessTestType) || (_type == PingAllTestType) ||
+                (_type == RandomAccessTestType) ||
                 (_type == TeamBarrierTestType);
 
   return is_launcher;

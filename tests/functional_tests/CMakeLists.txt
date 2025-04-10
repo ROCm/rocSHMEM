@@ -41,8 +41,6 @@ target_sources(
     test_driver.cpp
     tester.cpp
     tester_arguments.cpp
-    ping_pong_tester.cpp
-    ping_all_tester.cpp
     primitive_tester.cpp
     primitive_mr_tester.cpp
     default_ctx_primitive_tester.cpp
@@ -53,7 +51,6 @@ target_sources(
     amo_standard_tester.cpp
     random_access_tester.cpp
     shmem_ptr_tester.cpp
-    workgroup_primitives.cpp
     empty_tester.cpp
     wavefront_primitives.cpp
 )

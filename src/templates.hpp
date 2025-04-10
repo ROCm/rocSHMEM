@@ -371,103 +371,6 @@ template <typename T>
 __device__ void rocshmem_atomic_set(T *dest, T value, int pe);
 
 /**
- * @brief Block the caller until the condition (* \p ptr \p cmps \p val) is
- * true.
- *
- * This function can be called from divergent control paths at per-thread
- * granularity. However, performance may be improved if the caller can
- * coalesce contiguous messages and elect a leader thread to call into the
- * rocSHMEM function.
- *
- * @param[in] ivars Pointer to memory on the symmetric heap to wait for.
- * @param[in] cmp Operation for the comparison.
- * @param[in] val Value to compare the memory at \p ptr to.
- *
- * @return void
- *
- */
-template <typename T>
-__device__ void rocshmem_wait_until(T *ivars, int cmp, T val);
-
-/**
- * @brief test if the condition (* \p ptr \p cmps \p val) is
- * true.
- *
- * This function can be called from divergent control paths at per-thread
- * granularity. However, performance may be improved if the caller can
- * coalesce contiguous messages and elect a leader thread to call into the
- * rocSHMEM function.
- *
- * @param[in] ivars Pointer to memory on the symmetric heap to wait for.
- * @param[in] cmp Operation for the comparison.
- * @param[in] val Value to compare the memory at \p ptr to.
- *
- * @return 1 if the evaluation is true else 0
- *
- */
-template <typename T>
-__device__ int rocshmem_test(T *ivars, int cmp, T val);
-
-/**
- * @brief Perform a broadcast between PEs in the active set. The caller
- * is blocked until the broadcase completes.
- *
- * This function must be called as a work-group collective.
- *
- * @param[in] dest         Destination address. Must be an address on the
- *                         symmetric heap.
- * @param[in] source       Source address. Must be an address on the symmetric
-                           heap.
- * @param[in] nelement     Size of the buffer to participate in the broadcast.
- * @param[in] PE_root      Zero-based ordinal of the PE, with respect to the
-                           active set, from which the data is copied
- * @param[in] PE_start     PE to start the reduction.
- * @param[in] logPE_stride Stride of PEs participating in the reduction.
- * @param[in] PE_size      Number PEs participating in the reduction.
- * @param[in] pSync        Temporary sync buffer provided to rocSHMEM. Must
-                           be of size at least ROCSHMEM_REDUCE_SYNC_SIZE.
- *
- * @return void
- *
- */
-template <typename T>
-__device__ void rocshmem_wg_broadcast(rocshmem_ctx_t ctx, T *dest,
-                                       const T *source, int nelement,
-                                       int PE_root, int PE_start,
-                                       int logPE_stride, int PE_size,
-                                       long *pSync);
-
-/**
- * @brief Perform an allreduce between PEs in the active set. The caller
- * is blocked until the reduction completes.
- *
- * This function must be called as a work-group collective.
- *
- * @param[in] dest         Destination address. Must be an address on the
- *                         symmetric heap.
- * @param[in] source       Source address. Must be an address on the symmetric
-                           heap.
- * @param[in] nreduce      Size of the buffer to participate in the reduction.
- * @param[in] PE_start     PE to start the reduction.
- * @param[in] logPE_stride Stride of PEs participating in the reduction.
- * @param[in] PE_size      Number PEs participating in the reduction.
- * @param[in] pWrk         Temporary work buffer provided to rocSHMEM. Must
- *                         be of size at least max(size/2 + 1,
-                           ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE).
- * @param[in] pSync        Temporary sync buffer provided to rocSHMEM. Must
-                           be of size at least ROCSHMEM_REDUCE_SYNC_SIZE.
- * @param[in] handle       GPU side handle.
- *
- * @return void
- *
- */
-template <typename T, ROCSHMEM_OP Op>
-__device__ void rocshmem_wg_to_all(rocshmem_ctx_t ctx, T *dest,
-                                    const T *source, int nreduce, int PE_start,
-                                    int logPE_stride, int PE_size, T *pWrk,
-                                    long *pSync);
-
-/**
  * @brief Writes contiguous data of \p nelems elements from \p source on the
  * calling PE to \p dest at \p pe. The caller will block until the operation
  * completes locally (it is safe to reuse \p source). The caller must
@@ -494,34 +397,6 @@ __device__ void rocshmem_put_wave(rocshmem_ctx_t ctx, T *dest,
 template <typename T>
 __device__ void rocshmem_put_wave(T *dest, const T *source, size_t nelems,
                                     int pe);
-
-/**
- * @brief Writes contiguous data of \p nelems elements from \p source on the
- * calling PE to \p dest at \p pe. The caller will block until the operation
- * completes locally (it is safe to reuse \p source). The caller must
- * call into rocshmem_quiet() if remote completion is required.
- *
- * This function can be called from divergent control paths at per-workgroub
- * (WG) granularity. However, All threads in a WG must collectivelly participate
- * in the call using the same arguments.
- *
- * @param[in] ctx    Context with which to perform this operation.
- * @param[in] dest   Destination address. Must be an address on the symmetric
- *                   heap.
- * @param[in] source Source address. Must be an address on the symmetric heap.
- * @param[in] nelems Size of the transfer in number of elements.
- * @param[in] pe     PE of the remote process.
- *
- * @return void.
- *
- */
-template <typename T>
-__device__ void rocshmem_put_wg(rocshmem_ctx_t ctx, T *dest, const T *source,
-                                  size_t nelems, int pe);
-
-template <typename T>
-__device__ void rocshmem_put_wg(T *dest, const T *source, size_t nelems,
-                                  int pe);
 
 /**
  * @brief Reads contiguous data of \p nelems elements from \p source on \p pe
@@ -551,33 +426,6 @@ __device__ void rocshmem_get_wave(T *dest, const T *source, size_t nelems,
                                     int pe);
 
 /**
- * @brief Reads contiguous data of \p nelems elements from \p source on \p pe
- * to \p dest on the calling PE. The calling work-group will block until the
- * operation completes (data has been placed in \p dest).
- *
- * This function can be called from divergent control paths at per-workgroup
- * granularity. However,  all threads in a the workgroup must participate in the
- * call using the same parameters
- *
- * @param[in] ctx     Context with which to perform this operation.
- * @param[in] dest    Destination address. Must be an address on the symmetric
- *                    heap.
- * @param[in] source  Source address. Must be an address on the symmetric heap.
- * @param[in] nelems  Size of the transfer in bytes.
- * @param[in] pe      PE of the remote process.
- *
- * @return void.
- *
- */
-template <typename T>
-__device__ void rocshmem_get_wg(rocshmem_ctx_t ctx, T *dest, const T *source,
-                                  size_t nelems, int pe);
-
-template <typename T>
-__device__ void rocshmem_get_wg(T *dest, const T *source, size_t nelems,
-                                  int pe);
-
-/**
  * @brief Writes contiguous data of \p nelems elements from \p source on the
  * calling PE to \p dest on \p pe. The operation is not blocking. The caller
  * will return as soon as the request is posted. The caller must call
@@ -604,34 +452,6 @@ __device__ void rocshmem_put_nbi_wave(rocshmem_ctx_t ctx, T *dest,
 template <typename T>
 __device__ void rocshmem_put_nbi_wave(T *dest, const T *src, size_t nelems,
                                         int pe);
-
-/**
- * @brief Writes contiguous data of \p nelems elements from \p source on the
- * calling PE to \p dest on \p pe. The operation is not blocking. The caller
- * will return as soon as the request is posted. The caller must call
- * rocshmem_quiet() on the same context if completion notification is
- * required.
- *
- * This function can be called from divergent control paths at per-workgroup
- * granularity. However, all threads in the WG must call in with the same args
- *
- * @param[in] ctx     Context with which to perform this operation.
- * @param[in] dest    Destination address. Must be an address on the symmetric
-                      heap.
- * @param[in] source  Source address. Must be an address on the symmetric heap.
- * @param[in] nelems  Size of the transfer in bytes.
- * @param[in] pe      PE of the remote process.
- *
- * @return void.
- *
- */
-template <typename T>
-__device__ void rocshmem_put_nbi_wg(rocshmem_ctx_t ctx, T *dest,
-                                      const T *src, size_t nelems, int pe);
-
-template <typename T>
-__device__ void rocshmem_put_nbi_wg(T *dest, const T *src, size_t nelems,
-                                      int pe);
 
 /**
  * @brief Reads contiguous data of \p nelems elements from \p source on \p pe
@@ -681,45 +501,15 @@ __device__ void rocshmem_get_nbi_wave(T *dest, const T *source, size_t nelems,
  * @return void.
  *
  */
-template <typename T>
-__device__ void rocshmem_get_nbi_wg(rocshmem_ctx_t ctx, T *dest,
-                                      const T *source, size_t nelems, int pe);
-
-template <typename T>
-__device__ void rocshmem_get_nbi_wg(T *dest, const T *source, size_t nelems,
-                                      int pe);
-
 __device__ void rocshmem_putmem_wave(void *dest, const void *source,
                                        size_t nelems, int pe) {
   rocshmem_ctx_putmem_wave(ROCSHMEM_CTX_DEFAULT, dest, source, nelems, pe);
-}
-
-__device__ void rocshmem_putmem_wg(void *dest, const void *source,
-                                     size_t nelems, int pe) {
-  rocshmem_ctx_putmem_wg(ROCSHMEM_CTX_DEFAULT, dest, source, nelems, pe);
 }
 
 template <typename T>
 __device__ void rocshmem_put_wave(T *dest, const T *source, size_t nelems,
                                     int pe) {
   rocshmem_put_wave(ROCSHMEM_CTX_DEFAULT, dest, source, nelems, pe);
-}
-
-template <typename T>
-__device__ void rocshmem_put_wg(T *dest, const T *source, size_t nelems,
-                                  int pe) {
-  rocshmem_put_wg(ROCSHMEM_CTX_DEFAULT, dest, source, nelems, pe);
-}
-
-__device__ void rocshmem_getmem_wg(void *dest, const void *source,
-                                     size_t nelems, int pe) {
-  rocshmem_ctx_getmem_wg(ROCSHMEM_CTX_DEFAULT, dest, source, nelems, pe);
-}
-
-template <typename T>
-__device__ void rocshmem_get_wg(T *dest, const T *source, size_t nelems,
-                                  int pe) {
-  rocshmem_get_wg(ROCSHMEM_CTX_DEFAULT, dest, source, nelems, pe);
 }
 
 __device__ void rocshmem_getmem_wave(void *dest, const void *source,
@@ -733,17 +523,6 @@ __device__ void rocshmem_get_wave(T *dest, const T *source, size_t nelems,
   rocshmem_get_wave(ROCSHMEM_CTX_DEFAULT, dest, source, nelems, pe);
 }
 
-__device__ void rocshmem_putmem_nbi_wg(void *dest, const void *source,
-                                         size_t nelems, int pe) {
-  rocshmem_ctx_putmem_nbi_wg(ROCSHMEM_CTX_DEFAULT, dest, source, nelems, pe);
-}
-
-template <typename T>
-__device__ void rocshmem_put_nbi_wg(T *dest, const T *source, size_t nelems,
-                                      int pe) {
-  rocshmem_put_nbi_wg(ROCSHMEM_CTX_DEFAULT, dest, source, nelems, pe);
-}
-
 __device__ void rocshmem_putmem_nbi_wave(void *dest, const void *source,
                                            size_t nelems, int pe) {
   rocshmem_ctx_putmem_nbi_wave(ROCSHMEM_CTX_DEFAULT, dest, source, nelems,
@@ -754,17 +533,6 @@ template <typename T>
 __device__ void rocshmem_put_nbi_wave(T *dest, const T *source, size_t nelems,
                                         int pe) {
   rocshmem_put_nbi_wave(ROCSHMEM_CTX_DEFAULT, dest, source, nelems, pe);
-}
-
-__device__ void rocshmem_getmem_nbi_wg(void *dest, const void *source,
-                                         size_t nelems, int pe) {
-  rocshmem_ctx_getmem_nbi_wg(ROCSHMEM_CTX_DEFAULT, dest, source, nelems, pe);
-}
-
-template <typename T>
-__device__ void rocshmem_get_nbi_wg(T *dest, const T *source, size_t nelems,
-                                      int pe) {
-  rocshmem_get_nbi_wg(ROCSHMEM_CTX_DEFAULT, dest, source, nelems, pe);
 }
 
 __device__ void rocshmem_getmem_nbi_wave(void *dest, const void *source,
