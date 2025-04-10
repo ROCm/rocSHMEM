@@ -53,11 +53,6 @@ class ReliableConnection : public Connection {
 
   QPInitAttr qpattr(ibv_qp_cap cap) override;
 
-  void create_qps_1() override;
-
-  void create_qps_2(int port, int my_rank,
-                      ibv_port_attr* ib_port_att) override;
-
   void create_qps_3(int port, ibv_qp* qp, int offset,
                       ibv_port_attr* ib_port_att) override;
 

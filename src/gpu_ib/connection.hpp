@@ -171,11 +171,6 @@ class Connection {
   template <typename T>
   void try_to_modify_qp(ibv_qp* qp, T state);
 
-  virtual void create_qps_1() = 0;
-
-  virtual void create_qps_2(int port, int my_rank,
-                              ibv_port_attr* ib_port_att) = 0;
-
   virtual void create_qps_3(int port, ibv_qp* qp, int offset,
                               ibv_port_attr* ib_port_att) = 0;
 

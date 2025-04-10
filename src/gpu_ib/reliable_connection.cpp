@@ -84,11 +84,6 @@ ibv_qp* ReliableConnection::create_qp_0(ibv_context* context,
   return qp;
 }
 
-void ReliableConnection::create_qps_1() { }
-
-void ReliableConnection::create_qps_2(int port, int my_rank,
-                                        ibv_port_attr* ib_port_att) { }
-
 void ReliableConnection::create_qps_3(int port, ibv_qp* qp, int offset,
                                         ibv_port_attr* ib_port_att) {
   init_qp_status(qp, port);

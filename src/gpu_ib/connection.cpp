@@ -184,8 +184,6 @@ void Connection::change_status_rts(ibv_qp* qp, dest_info_t* dest) {
 
 void Connection::create_qps(uint8_t port, int my_rank,
                               ibv_port_attr* ib_port_att) {
-  create_qps_1();
-
   ibv_qp_cap cap{};
   cap.max_send_wr = sq_size;
   cap.max_send_sge = 1;
@@ -204,8 +202,6 @@ void Connection::create_qps(uint8_t port, int my_rank,
       abort();
     }
   }
-
-  create_qps_2(port, my_rank, ib_port_att);
 
   for (int i = 0; i < qps.size(); i++) {
     qps[i] =
