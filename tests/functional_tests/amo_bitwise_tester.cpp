@@ -167,7 +167,7 @@ void AMOBitwiseTester<T>::verifyResults(uint64_t size) {
       rocshmem_ctx_quiet(ctx);                                                \
       end_time[wg_id] = wall_clock64();                                       \
       ret_val[wg_id] = ret;                                                   \
-      rocshmem_ctx_getmem(ctx, &s_buf[wg_id], r_buf, sizeof(T), 1);           \
+      /*rocshmem_ctx_getmem(ctx, &s_buf[wg_id], r_buf, sizeof(T), 1);*/       \
     }                                                                         \
     rocshmem_wg_ctx_destroy(&ctx);                                            \
     rocshmem_wg_finalize();                                                   \

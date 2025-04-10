@@ -34,32 +34,15 @@ __host__ void GPUIBHostContext::p(T *dest, T value, int pe) {
 }
 
 template <typename T>
-__host__ T GPUIBHostContext::g(const T *source, int pe) {
-  return host_interface->g<T>(source, pe, context_window_info);
-}
-
-template <typename T>
 __host__ void GPUIBHostContext::put(T *dest, const T *source, size_t nelems,
                                     int pe) {
   host_interface->put<T>(dest, source, nelems, pe, context_window_info);
 }
 
 template <typename T>
-__host__ void GPUIBHostContext::get(T *dest, const T *source, size_t nelems,
-                                    int pe) {
-  host_interface->get<T>(dest, source, nelems, pe, context_window_info);
-}
-
-template <typename T>
 __host__ void GPUIBHostContext::put_nbi(T *dest, const T *source, size_t nelems,
                                         int pe) {
   host_interface->put_nbi<T>(dest, source, nelems, pe, context_window_info);
-}
-
-template <typename T>
-__host__ void GPUIBHostContext::get_nbi(T *dest, const T *source, size_t nelems,
-                                        int pe) {
-  host_interface->get_nbi<T>(dest, source, nelems, pe, context_window_info);
 }
 
 template <typename T>

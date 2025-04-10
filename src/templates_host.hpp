@@ -54,32 +54,11 @@ template <typename T>
 __host__ void rocshmem_p(T *dest, T value, int pe);
 
 template <typename T>
-__host__ void rocshmem_get(rocshmem_ctx_t ctx, T *dest, const T *source,
-                            size_t nelems, int pe);
-
-template <typename T>
-__host__ void rocshmem_get(T *dest, const T *source, size_t nelems, int pe);
-
-template <typename T>
-__host__ T rocshmem_g(rocshmem_ctx_t ctx, const T *source, int pe);
-
-template <typename T>
-__host__ T rocshmem_g(const T *source, int pe);
-
-template <typename T>
 __host__ void rocshmem_put_nbi(rocshmem_ctx_t ctx, T *dest, const T *src,
                                 size_t nelems, int pe);
 
 template <typename T>
 __host__ void rocshmem_put_nbi(T *dest, const T *src, size_t nelems, int pe);
-
-template <typename T>
-__host__ void rocshmem_get_nbi(rocshmem_ctx_t ctx, T *dest, const T *source,
-                                size_t nelems, int pe);
-
-template <typename T>
-__host__ void rocshmem_get_nbi(T *dest, const T *source, size_t nelems,
-                                int pe);
 
 template <typename T>
 __host__ T rocshmem_atomic_fetch_add(rocshmem_ctx_t ctx, T *dest, T val,

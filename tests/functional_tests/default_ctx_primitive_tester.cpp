@@ -66,12 +66,6 @@
      }
  
      switch (type) {
-       case DefaultCTXGetTestType:
-         rocshmem_getmem(dest, source, size, 1);
-         break;
-       case DefaultCTXGetNBITestType:
-         rocshmem_getmem_nbi(dest, source, size, 1);
-         break;
        case DefaultCTXPutTestType:
          rocshmem_putmem(dest, source, size, 1);
          break;
@@ -82,12 +76,6 @@
          for (int s = 0; s < size; s++) {
            char val = source[s];
            rocshmem_char_p(&dest[s], val, 1);
-         }
-         break;
-       case DefaultCTXGTestType:
-         for (int s = 0; s < size; s++) {
-           char ret = rocshmem_char_g(&source[s], 1);
-           dest[s] = ret;
          }
          break;
        default:

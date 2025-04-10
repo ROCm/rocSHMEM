@@ -136,35 +136,18 @@ class HostInterface {
   __host__ void p(T* dest, T value, int pe, WindowInfo* window_info);
 
   template <typename T>
-  __host__ T g(const T* source, int pe, WindowInfo* window_info);
-
-  template <typename T>
   __host__ void put(T* dest, const T* source, size_t nelems, int pe,
-                    WindowInfo* window_info);
-
-  template <typename T>
-  __host__ void get(T* dest, const T* source, size_t nelems, int pe,
                     WindowInfo* window_info);
 
   template <typename T>
   __host__ void put_nbi(T* dest, const T* source, size_t nelems, int pe,
                         WindowInfo* window_info);
 
-  template <typename T>
-  __host__ void get_nbi(T* dest, const T* source, size_t nelems, int pe,
-                        WindowInfo* window_info);
-
   __host__ void putmem(void* dest, const void* source, size_t nelems, int pe,
-                       WindowInfo* window_info);
-
-  __host__ void getmem(void* dest, const void* source, size_t nelems, int pe,
                        WindowInfo* window_info);
 
   __host__ void putmem_nbi(void* dest, const void* source, size_t nelems,
                            int pe, WindowInfo* window_info);
-
-  __host__ void getmem_nbi(void* dest, const void* source, size_t size, int pe,
-                           WindowInfo* window_info);
 
   template <typename T>
   __host__ void amo_add(void* dst, T value, int pe, WindowInfo* window_info);
@@ -219,9 +202,6 @@ class HostInterface {
   __host__ void initiate_put(void* dest, const void* source, size_t nelems,
                              int pe, WindowInfo* window_info);
 
-  __host__ void initiate_get(void* dest, const void* source, size_t nelems,
-                             int pe, WindowInfo* window_info);
-
   __host__ void complete_all(MPI_Win win);
 
   __host__ MPI_Aint compute_offset(const void* dest, void* win_start,
@@ -240,14 +220,6 @@ class HostInterface {
   template <typename T>
   __host__ int test_and_compare(MPI_Aint offset, MPI_Datatype mpi_type,
                                 int cmp, T val, MPI_Win win);
-
-  template <typename T, ROCSHMEM_OP Op>
-  __host__ void to_all_internal(MPI_Comm mpi_comm, T* dest, const T* source,
-                                int nreduce);
-
-  template <typename T>
-  __host__ void broadcast_internal(MPI_Comm mpi_comm, T* dest, const T* source,
-                                   int nelems, int pe_root);
 
   /**************************************************************************
    **************************** INTERNAL MEMBERS ****************************

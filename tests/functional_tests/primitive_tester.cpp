@@ -67,12 +67,6 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
     }
 
     switch (type) {
-      case GetTestType:
-        rocshmem_ctx_getmem(ctx, dest, source, size, 1);
-        break;
-      case GetNBITestType:
-        rocshmem_ctx_getmem_nbi(ctx, dest, source, size, 1);
-        break;
       case PutTestType:
         rocshmem_ctx_putmem(ctx, dest, source, size, 1);
         break;
@@ -83,12 +77,6 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
         for (int s = 0; s < size; s++) {
           char val = source[s];
           rocshmem_ctx_char_p(ctx, &dest[s], val, 1);
-        }
-        break;
-      case GTestType:
-        for (int s = 0; s < size; s++) {
-          char ret = rocshmem_ctx_char_g(ctx, &source[s], 1);
-          dest[s] = ret;
         }
         break;
       default:

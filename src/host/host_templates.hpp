@@ -49,36 +49,6 @@ __host__ void HostInterface::put_nbi(T* dest, const T* source, size_t nelems,
   putmem_nbi(dest, source, sizeof(T) * nelems, pe, window_info);
 }
 
-template <typename T>
-__host__ T HostInterface::g(const T* source, int pe, WindowInfo* window_info) {
-
-  T ret{};
-
-  /*
-   * We don't call getmem directly here
-   * since it flushes the local HDP. We
-   * don't need the flush because the
-   * destination buffer is on the CPU.
-   */
-  getmem_nbi(&ret, source, sizeof(T), pe, window_info);
-
-  MPI_Win_flush_local(pe, window_info->get_win());
-
-  return ret;
-}
-
-template <typename T>
-__host__ void HostInterface::get(T* dest, const T* source, size_t nelems,
-                                 int pe, WindowInfo* window_info) {
-  getmem(dest, source, sizeof(T) * nelems, pe, window_info);
-}
-
-template <typename T>
-__host__ void HostInterface::get_nbi(T* dest, const T* source, size_t nelems,
-                                     int pe, WindowInfo* window_info) {
-  getmem_nbi(dest, source, sizeof(T) * nelems, pe, window_info);
-}
-
 __host__ MPI_Comm HostInterface::get_mpi_comm(int pe_start, int log_pe_stride,
                                               int pe_size) {
   MPI_Comm active_set_comm{};

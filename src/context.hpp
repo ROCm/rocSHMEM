@@ -94,13 +94,7 @@ class Context {
   void putmem(void* dest, const void* source, size_t nelems, int pe);
 
   __device__
-  void getmem(void* dest, const void* source, size_t nelems, int pe);
-
-  __device__
   void putmem_nbi(void* dest, const void* source, size_t nelems, int pe);
-
-  __device__
-  void getmem_nbi(void* dest, const void* source, size_t size, int pe);
 
   __device__
   void fence();
@@ -184,35 +178,17 @@ class Context {
 
   template <typename T>
   __device__
-  T g(T* source, int pe);
-
-  template <typename T>
-  __device__
   void put(T* dest, const T* source, size_t nelems, int pe);
 
   template <typename T>
   __device__
   void put_nbi(T* dest, const T* source, size_t nelems, int pe);
 
-  template <typename T>
-  __device__
-  void get(T* dest, const T* source, size_t nelems, int pe);
-
-  template <typename T>
-  __device__
-  void get_nbi(T* dest, const T* source, size_t nelems, int pe);
-
   __device__
   void putmem_wave(void* dest, const void* source, size_t nelems, int pe);
 
   __device__
-  void getmem_wave(void* dest, const void* source, size_t nelems, int pe);
-
-  __device__
   void putmem_nbi_wave(void* dest, const void* source, size_t nelems, int pe);
-
-  __device__
-  void getmem_nbi_wave(void* dest, const void* source, size_t size, int pe);
 
   template <typename T>
   __device__
@@ -221,14 +197,6 @@ class Context {
   template <typename T>
   __device__
   void put_nbi_wave(T* dest, const T* source, size_t nelems, int pe);
-
-  template <typename T>
-  __device__
-  void get_wave(T* dest, const T* source, size_t nelems, int pe);
-
-  template <typename T>
-  __device__
-  void get_nbi_wave(T* dest, const T* source, size_t nelems, int pe);
 
   /**************************************************************************
    ****************************** HOST METHODS ******************************
@@ -239,35 +207,17 @@ class Context {
 
   template <typename T>
   __host__
-  T g(const T* source, int pe);
-
-  template <typename T>
-  __host__
   void put(T* dest, const T* source, size_t nelems, int pe);
-
-  template <typename T>
-  __host__
-  void get(T* dest, const T* source, size_t nelems, int pe);
 
   template <typename T>
   __host__
   void put_nbi(T* dest, const T* source, size_t nelems, int pe);
 
-  template <typename T>
-  __host__
-  void get_nbi(T* dest, const T* source, size_t nelems, int pe);
-
   __host__
   void putmem(void* dest, const void* source, size_t nelems, int pe);
 
   __host__
-  void getmem(void* dest, const void* source, size_t nelems, int pe);
-
-  __host__
   void putmem_nbi(void* dest, const void* source, size_t nelems, int pe);
-
-  __host__
-  void getmem_nbi(void* dest, const void* source, size_t size, int pe);
 
   template <typename T>
   __host__

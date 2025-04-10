@@ -36,13 +36,6 @@ void Context::p(T *dest, T value, int pe) {
 
 template <typename T>
 __host__
-T Context::g(const T *source, int pe) {
-  auto ret_val = static_cast<GPUIBHostContext*>(this)->g(source, pe);
-  return ret_val;
-}
-
-template <typename T>
-__host__
 void Context::put(T *dest, const T *source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
@@ -52,29 +45,11 @@ void Context::put(T *dest, const T *source, size_t nelems, int pe) {
 
 template <typename T>
 __host__
-void Context::get(T *dest, const T *source, size_t nelems, int pe) {
-  if (nelems == 0) {
-    return;
-  }
-  static_cast<GPUIBHostContext*>(this)->get(dest, source, nelems, pe);
-}
-
-template <typename T>
-__host__
 void Context::put_nbi(T *dest, const T *source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
   static_cast<GPUIBHostContext*>(this)->put_nbi(dest, source, nelems, pe);
-}
-
-template <typename T>
-__host__ 
-void Context::get_nbi(T *dest, const T *source, size_t nelems, int pe) {
-  if (nelems == 0) {
-    return;
-  }
-  static_cast<GPUIBHostContext*>(this)->get_nbi(dest, source, nelems, pe);
 }
 
 template <typename T>

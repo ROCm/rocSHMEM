@@ -72,27 +72,11 @@ void Context::putmem(void* dest, const void* source, size_t nelems, int pe) {
 }
 
 __device__ 
-void Context::getmem(void* dest, const void* source, size_t nelems, int pe) {
-  if (nelems == 0) {
-    return;
-  }
-  static_cast<GPUIBContext*>(this)->getmem(dest, source, nelems, pe);
-}
-
-__device__ 
 void Context::putmem_nbi(void* dest, const void* source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
   static_cast<GPUIBContext*>(this)->putmem_nbi(dest, source, nelems, pe);
-}
-
-__device__ 
-void Context::getmem_nbi(void* dest, const void* source, size_t size, int pe) {
-  if (size == 0) {
-    return;
-  }
-  static_cast<GPUIBContext*>(this)->getmem_nbi(dest, source, size, pe);
 }
 
 __device__ 
@@ -146,27 +130,11 @@ void Context::putmem_wave(void* dest, const void* source, size_t nelems, int pe)
 }
 
 __device__ 
-void Context::getmem_wave(void* dest, const void* source, size_t nelems, int pe) {
-  if (nelems == 0) {
-    return;
-  }
-  static_cast<GPUIBContext*>(this)->getmem_wave(dest, source, nelems, pe);
-}
-
-__device__ 
 void Context::putmem_nbi_wave(void* dest, const void* source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
   static_cast<GPUIBContext*>(this)->putmem_nbi_wave(dest, source, nelems, pe);
-}
-
-__device__ 
-void Context::getmem_nbi_wave(void* dest, const void* source, size_t size, int pe) {
-  if (size == 0) {
-    return;
-  }
-  static_cast<GPUIBContext*>(this)->getmem_nbi_wave(dest, source, size, pe);
 }
 
 }  // namespace rocshmem

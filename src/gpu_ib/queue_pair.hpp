@@ -137,39 +137,6 @@ class QueuePair {
   __device__ void fence(int pe);
 
   /**
-   * @brief Create and enqueue a non-blocking get work queue entry (wqe).
-   *
-   * @tparam level Implements specific behaviors for thread, warp, block access.
-   *
-   * @param[in] dest Destination address for data transmission.
-   * @param[in] source Source address for data transmission.
-   * @param[in] nelems Size in bytes of data transmission.
-   * @param[in] pe Destination processing element of data transmission.
-   * @param[in] db_ring Denotes whether send queue door bell should be rung.
-   */
-  template <class level>
-  __device__ void get_nbi(void *dest, const void *source, size_t nelems, int pe,
-                          bool db_ring);
-
-  /**
-   * @brief Create and enqueue a non-blocking get work queue entry (wqe).
-   *
-   * @note This variant differs from get_nbi by requesting that a completion
-   * queue entry is generated in the completion queue.
-   *
-   * @tparam level Implements specific behaviors for thread, warp, block access.
-   *
-   * @param[in] dest Destination address for data transmission.
-   * @param[in] source Source address for data transmission.
-   * @param[in] nelems Size in bytes of data transmission.
-   * @param[in] pe Destination processing element of data transmission.
-   * @param[in] db_ring Denotes whether send queue door bell should be rung.
-   */
-  template <class level>
-  __device__ void get_nbi_cqe(void *dest, const void *source, size_t nelems,
-                              int pe, bool db_ring);
-
-  /**
    * @brief Create and enqueue a zero-byte read to enforce write ordering.
    *
    * @tparam level Implements specific behaviors for thread, warp, block access.

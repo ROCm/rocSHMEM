@@ -401,21 +401,6 @@ __host__ void rocshmem_p(T *dest, T value, int pe) {
 }
 
 template <typename T>
-__host__ void rocshmem_get(T *dest, const T *source, size_t nelems, int pe) {
-  rocshmem_get(ROCSHMEM_HOST_CTX_DEFAULT, dest, source, nelems, pe);
-}
-
-__host__ void rocshmem_getmem(void *dest, const void *source, size_t nelems,
-                               int pe) {
-  rocshmem_ctx_getmem(ROCSHMEM_HOST_CTX_DEFAULT, dest, source, nelems, pe);
-}
-
-template <typename T>
-__host__ T rocshmem_g(const T *source, int pe) {
-  return rocshmem_g(ROCSHMEM_HOST_CTX_DEFAULT, source, pe);
-}
-
-template <typename T>
 __host__ void rocshmem_put_nbi(T *dest, const T *source, size_t nelems,
                                 int pe) {
   rocshmem_put_nbi(ROCSHMEM_HOST_CTX_DEFAULT, dest, source, nelems, pe);
@@ -424,18 +409,6 @@ __host__ void rocshmem_put_nbi(T *dest, const T *source, size_t nelems,
 __host__ void rocshmem_putmem_nbi(void *dest, const void *source,
                                    size_t nelems, int pe) {
   rocshmem_ctx_putmem_nbi(ROCSHMEM_HOST_CTX_DEFAULT, dest, source, nelems,
-                           pe);
-}
-
-template <typename T>
-__host__ void rocshmem_get_nbi(T *dest, const T *source, size_t nelems,
-                                int pe) {
-  rocshmem_get_nbi(ROCSHMEM_HOST_CTX_DEFAULT, dest, source, nelems, pe);
-}
-
-__host__ void rocshmem_getmem_nbi(void *dest, const void *source,
-                                   size_t nelems, int pe) {
-  rocshmem_ctx_getmem_nbi(ROCSHMEM_HOST_CTX_DEFAULT, dest, source, nelems,
                            pe);
 }
 
@@ -567,22 +540,6 @@ __host__ void rocshmem_p(rocshmem_ctx_t ctx, T *dest, T value, int pe) {
 }
 
 template <typename T>
-__host__ void rocshmem_get(rocshmem_ctx_t ctx, T *dest, const T *source,
-                            size_t nelems, int pe) {
-  get_internal_ctx(ctx)->get(dest, source, nelems, pe);
-}
-
-__host__ void rocshmem_ctx_getmem(rocshmem_ctx_t ctx, void *dest,
-                                   const void *source, size_t nelems, int pe) {
-  get_internal_ctx(ctx)->getmem(dest, source, nelems, pe);
-}
-
-template <typename T>
-__host__ T rocshmem_g(rocshmem_ctx_t ctx, const T *source, int pe) {
-  return get_internal_ctx(ctx)->g(source, pe);
-}
-
-template <typename T>
 __host__ void rocshmem_put_nbi(rocshmem_ctx_t ctx, T *dest, const T *source,
                                 size_t nelems, int pe) {
   get_internal_ctx(ctx)->put_nbi(dest, source, nelems, pe);
@@ -592,18 +549,6 @@ __host__ void rocshmem_ctx_putmem_nbi(rocshmem_ctx_t ctx, void *dest,
                                        const void *source, size_t nelems,
                                        int pe) {
   get_internal_ctx(ctx)->putmem_nbi(dest, source, nelems, pe);
-}
-
-template <typename T>
-__host__ void rocshmem_get_nbi(rocshmem_ctx_t ctx, T *dest, const T *source,
-                                size_t nelems, int pe) {
-  get_internal_ctx(ctx)->get_nbi(dest, source, nelems, pe);
-}
-
-__host__ void rocshmem_ctx_getmem_nbi(rocshmem_ctx_t ctx, void *dest,
-                                       const void *source, size_t nelems,
-                                       int pe) {
-  get_internal_ctx(ctx)->getmem_nbi(dest, source, nelems, pe);
 }
 
 template <typename T>
@@ -739,22 +684,11 @@ __host__ int rocshmem_test(T *ivars, int cmp, T val) {
       rocshmem_ctx_t ctx, T * dest, const T *source, size_t nelems, int pe);  \
   template __host__ void rocshmem_p<T>(rocshmem_ctx_t ctx, T * dest,          \
                                         T value, int pe);                     \
-  template __host__ void rocshmem_get<T>(                                     \
-      rocshmem_ctx_t ctx, T * dest, const T *source, size_t nelems, int pe);  \
-  template __host__ void rocshmem_get_nbi<T>(                                 \
-      rocshmem_ctx_t ctx, T * dest, const T *source, size_t nelems, int pe);  \
-  template __host__ T rocshmem_g<T>(rocshmem_ctx_t ctx, const T *source,      \
-                                     int pe);                                 \
   template __host__ void rocshmem_put<T>(T * dest, const T *source,           \
                                           size_t nelems, int pe);             \
   template __host__ void rocshmem_put_nbi<T>(T * dest, const T *source,       \
                                               size_t nelems, int pe);         \
-  template __host__ void rocshmem_p<T>(T * dest, T value, int pe);            \
-  template __host__ void rocshmem_get<T>(T * dest, const T *source,           \
-                                          size_t nelems, int pe);             \
-  template __host__ void rocshmem_get_nbi<T>(T * dest, const T *source,       \
-                                              size_t nelems, int pe);         \
-  template __host__ T rocshmem_g<T>(const T *source, int pe);
+  template __host__ void rocshmem_p<T>(T * dest, T value, int pe);
 
 /**
  * Declare templates for the standard amo types
@@ -854,18 +788,6 @@ __host__ int rocshmem_test(T *ivars, int cmp, T val) {
                                           T value, int pe) {                  \
     rocshmem_p<T>(ctx, dest, value, pe);                                      \
   }                                                                           \
-  __host__ void rocshmem_ctx_##TNAME##_get(                                   \
-      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {  \
-    rocshmem_get<T>(ctx, dest, source, nelems, pe);                           \
-  }                                                                           \
-  __host__ void rocshmem_ctx_##TNAME##_get_nbi(                               \
-      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {  \
-    rocshmem_get_nbi<T>(ctx, dest, source, nelems, pe);                       \
-  }                                                                           \
-  __host__ T rocshmem_ctx_##TNAME##_g(rocshmem_ctx_t ctx, const T *source,    \
-                                       int pe) {                              \
-    return rocshmem_g<T>(ctx, source, pe);                                    \
-  }                                                                           \
   __host__ void rocshmem_##TNAME##_put(T *dest, const T *source,              \
                                         size_t nelems, int pe) {              \
     rocshmem_put<T>(dest, source, nelems, pe);                                \
@@ -876,17 +798,6 @@ __host__ int rocshmem_test(T *ivars, int cmp, T val) {
   }                                                                           \
   __host__ void rocshmem_##TNAME##_p(T *dest, T value, int pe) {              \
     rocshmem_p<T>(dest, value, pe);                                           \
-  }                                                                           \
-  __host__ void rocshmem_##TNAME##_get(T *dest, const T *source,              \
-                                        size_t nelems, int pe) {              \
-    rocshmem_get<T>(dest, source, nelems, pe);                                \
-  }                                                                           \
-  __host__ void rocshmem_##TNAME##_get_nbi(T *dest, const T *source,          \
-                                            size_t nelems, int pe) {          \
-    rocshmem_get_nbi<T>(dest, source, nelems, pe);                            \
-  }                                                                           \
-  __host__ T rocshmem_##TNAME##_g(const T *source, int pe) {                  \
-    return rocshmem_g<T>(source, pe);                                         \
   }
 
 #define AMO_STANDARD_DEF_GEN(T, TNAME)                                        \

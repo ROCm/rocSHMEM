@@ -24,7 +24,6 @@
 # SOURCES
 ###############################################################################
 set(EXAMPLE_SOURCES
-  rocshmem_getmem_test.cc
   rocshmem_init_attr_test.cc
 )
 

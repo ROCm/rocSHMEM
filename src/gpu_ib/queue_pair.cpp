@@ -269,26 +269,6 @@ __device__ void QueuePair::put_nbi_cqe(void *dest, const void *source,
 }
 
 template <class level>
-__device__ void QueuePair::get_nbi(void *dest, const void *source,
-                                   size_t nelems, int pe, bool db_ring) {
-  uintptr_t *src = reinterpret_cast<uintptr_t *>(const_cast<void *>(source));
-  uintptr_t *dst = reinterpret_cast<uintptr_t *>(dest);
-
-  update_posted_wqe_generic<level, false>(
-      pe, nelems, src, dst, MLX5_OPCODE_RDMA_READ, 0, 0, db_ring, 0);
-}
-
-template <class level>
-__device__ void QueuePair::get_nbi_cqe(void *dest, const void *source,
-                                       size_t nelems, int pe, bool db_ring) {
-  uintptr_t *src = reinterpret_cast<uintptr_t *>(const_cast<void *>(source));
-  uintptr_t *dst = reinterpret_cast<uintptr_t *>(dest);
-
-  update_posted_wqe_generic<level, true>(
-      pe, nelems, src, dst, MLX5_OPCODE_RDMA_READ, 0, 0, db_ring, 0);
-}
-
-template <class level>
 __device__ void QueuePair::zero_b_rd(int pe) {
   uintptr_t *dst = reinterpret_cast<uintptr_t *>(base_heap[pe]);
 
@@ -385,10 +365,6 @@ void QueuePair::setDBval(uint64_t val) { db_val = val; }
   template __device__ void QueuePair::put_nbi<T>(                           \
       void *dest, const void *source, size_t nelems, int pe, bool db_ring); \
   template __device__ void QueuePair::put_nbi_cqe<T>(                       \
-      void *dest, const void *source, size_t nelems, int pe, bool db_ring); \
-  template __device__ void QueuePair::get_nbi<T>(                           \
-      void *dest, const void *source, size_t nelems, int pe, bool db_ring); \
-  template __device__ void QueuePair::get_nbi_cqe<T>(                       \
       void *dest, const void *source, size_t nelems, int pe, bool db_ring); \
   template __device__ void QueuePair::zero_b_rd<T>(int pe);                 \
   template __device__ void QueuePair::quiet_single<T>();                    \

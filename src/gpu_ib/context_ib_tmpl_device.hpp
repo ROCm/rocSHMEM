@@ -45,47 +45,9 @@ __device__ void GPUIBContext::put(T *dest, const T *source, size_t nelems,
 }
 
 template <typename T>
-__device__ T GPUIBContext::g(const T *source, int pe) {
-  T ret;
-  auto *src_const_cast = reinterpret_cast<const char *>(source);
-  uint64_t L_offset = const_cast<char *>(src_const_cast) - base_heap[my_pe];
-  int thread_id = get_flat_block_id();
-  int block_size = get_flat_block_size();
-  int offset = ctx_idx * block_size + thread_id;
-
-  char *base_dest = g_ret;
-  char *dest = &base_dest[offset * sizeof(int64_t)];
-  size_t nelems = sizeof(T);
-
-  bool must_send_message = wf_coal_.coalesce(pe, source, dest, &nelems);
-  if (!must_send_message) {
-    return ret;
-  }
-  getQueuePair(pe)->get_nbi<THREAD>(base_heap[pe] + L_offset, dest, nelems,
-                                      pe, true);
-  getQueuePair(pe)->quiet_single<THREAD>();
-
-  __threadfence();
-  ret = *(reinterpret_cast<T *>(dest));
-  return ret;
-}
-
-template <typename T>
 __device__ void GPUIBContext::put_nbi(T *dest, const T *source, size_t nelems,
                                       int pe) {
   putmem_nbi(dest, source, sizeof(T) * nelems, pe);
-}
-
-template <typename T>
-__device__ void GPUIBContext::get(T *dest, const T *source, size_t nelems,
-                                  int pe) {
-  getmem(dest, source, sizeof(T) * nelems, pe);
-}
-
-template <typename T>
-__device__ void GPUIBContext::get_nbi(T *dest, const T *source, size_t nelems,
-                                      int pe) {
-  getmem_nbi(dest, source, sizeof(T) * nelems, pe);
 }
 
 template <typename T>
@@ -193,18 +155,6 @@ template <typename T>
 __device__ void GPUIBContext::put_nbi_wave(T *dest, const T *source,
                                            size_t nelems, int pe) {
   putmem_nbi_wave(dest, source, nelems * sizeof(T), pe);
-}
-
-template <typename T>
-__device__ void GPUIBContext::get_wave(T *dest, const T *source, size_t nelems,
-                                       int pe) {
-  getmem_wave(dest, source, nelems * sizeof(T), pe);
-}
-
-template <typename T>
-__device__ void GPUIBContext::get_nbi_wave(T *dest, const T *source,
-                                           size_t nelems, int pe) {
-  getmem_nbi_wave(dest, source, nelems * sizeof(T), pe);
 }
 
 }  // namespace rocshmem

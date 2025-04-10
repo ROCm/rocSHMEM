@@ -61,12 +61,6 @@ __global__ void WaveFrontPrimitiveTest(int loop, int skip,
       start_time[idx] = wall_clock64();
     }
     switch (type) {
-      case WAVEGetTestType:
-        rocshmem_ctx_getmem_wave(ctx, dest, source, size, 1);
-        break;
-      case WAVEGetNBITestType:
-        rocshmem_ctx_getmem_nbi_wave(ctx, dest, source, size, 1);
-        break;
       case WAVEPutTestType:
         rocshmem_ctx_putmem_wave(ctx, dest, source, size, 1);
         break;

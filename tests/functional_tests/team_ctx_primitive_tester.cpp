@@ -70,12 +70,6 @@ __global__ void TeamCtxPrimitiveTest(int loop, int skip, long long int *start_ti
       wf_start_time[wf_id] = wall_clock64();
     }
     switch (type) {
-      case TeamCtxGetTestType:
-        rocshmem_ctx_getmem(ctx, dest, source, size, 1);
-        break;
-      case TeamCtxGetNBITestType:
-        rocshmem_ctx_getmem_nbi(ctx, dest, source, size, 1);
-        break;
       case TeamCtxPutTestType:
         rocshmem_ctx_putmem(ctx, dest, source, size, 1);
         break;

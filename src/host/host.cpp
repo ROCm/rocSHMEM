@@ -127,24 +127,10 @@ __host__ void HostInterface::putmem_nbi(void* dest, const void* source,
   initiate_put(dest, source, nelems, pe, window_info);
 }
 
-__host__ void HostInterface::getmem_nbi(void* dest, const void* source,
-                                        size_t nelems, int pe,
-                                        WindowInfo* window_info) {
-  initiate_get(dest, source, nelems, pe, window_info);
-}
-
 __host__ void HostInterface::putmem(void* dest, const void* source,
                                     size_t nelems, int pe,
                                     WindowInfo* window_info) {
   initiate_put(dest, source, nelems, pe, window_info);
-
-  MPI_Win_flush_local(pe, window_info->get_win());
-}
-
-__host__ void HostInterface::getmem(void* dest, const void* source,
-                                    size_t nelems, int pe,
-                                    WindowInfo* window_info) {
-  initiate_get(dest, source, nelems, pe, window_info);
 
   MPI_Win_flush_local(pe, window_info->get_win());
 }

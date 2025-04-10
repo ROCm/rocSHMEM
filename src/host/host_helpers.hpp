@@ -63,20 +63,6 @@ __host__ inline void HostInterface::initiate_put(void* dest, const void* source,
   MPI_Put(source, nelems, MPI_CHAR, pe, offset, nelems, MPI_CHAR, win);
 }
 
-__host__ inline void HostInterface::initiate_get(void* dest, const void* source,
-                                                 size_t nelems, int pe,
-                                                 WindowInfo* window_info) {
-  MPI_Win win{window_info->get_win()};
-  void* win_start{window_info->get_start()};
-  void* win_end{window_info->get_end()};
-
-  /* Calculate offset of remote source from base address of window */
-  MPI_Aint offset = compute_offset(source, win_start, win_end);
-
-  /* Offload remote fetch operation to MPI */
-  MPI_Get(dest, nelems, MPI_CHAR, pe, offset, nelems, MPI_CHAR, win);
-}
-
 }  // namespace rocshmem
 
 #endif  // LIBRARY_SRC_HOST_HOST_HELPERS_HPP_

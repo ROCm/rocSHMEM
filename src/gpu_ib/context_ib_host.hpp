@@ -37,28 +37,15 @@ class GPUIBHostContext : public Context {
   __host__ void p(T *dest, T value, int pe);
 
   template <typename T>
-  __host__ T g(const T *source, int pe);
-
-  template <typename T>
   __host__ void put(T *dest, const T *source, size_t nelems, int pe);
-
-  template <typename T>
-  __host__ void get(T *dest, const T *source, size_t nelems, int pe);
 
   template <typename T>
   __host__ void put_nbi(T *dest, const T *source, size_t nelems, int pe);
 
-  template <typename T>
-  __host__ void get_nbi(T *dest, const T *source, size_t nelems, int pe);
-
   __host__ void putmem(void *dest, const void *source, size_t nelems, int pe);
-
-  __host__ void getmem(void *dest, const void *source, size_t nelems, int pe);
 
   __host__ void putmem_nbi(void *dest, const void *source, size_t nelems,
                            int pe);
-
-  __host__ void getmem_nbi(void *dest, const void *source, size_t size, int pe);
 
   template <typename T>
   __host__ void amo_add(void *dst, T value, int pe);

@@ -44,27 +44,11 @@ void Context::putmem(void* dest, const void* source, size_t nelems, int pe) {
 }
 
 __host__
-void Context::getmem(void* dest, const void* source, size_t nelems, int pe) {
-  if (nelems == 0) {
-    return;
-  }
-  static_cast<GPUIBHostContext*>(this)->getmem(dest, source, nelems, pe);
-}
-
-__host__
 void Context::putmem_nbi(void* dest, const void* source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
   }
   static_cast<GPUIBHostContext*>(this)->putmem_nbi(dest, source, nelems, pe);
-}
-
-__host__
-void Context::getmem_nbi(void* dest, const void* source, size_t nelems, int pe) {
-  if (nelems == 0) {
-    return;
-  }
-  static_cast<GPUIBHostContext*>(this)->getmem_nbi(dest, source, nelems, pe);
 }
 
 __host__

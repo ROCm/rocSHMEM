@@ -48,11 +48,7 @@ class GPUIBContext : public Context {
 
   __device__ void putmem(void *dest, const void *source, size_t nelems, int pe);
 
-  __device__ void getmem(void *dest, const void *source, size_t nelems, int pe);
-
   __device__ void putmem_nbi(void *dest, const void *source, size_t nelems, int pe);
-
-  __device__ void getmem_nbi(void *dest, const void *source, size_t size, int pe);
 
   __device__ void fence();
 
@@ -108,33 +104,14 @@ class GPUIBContext : public Context {
   __device__ void p(T *dest, T value, int pe);
 
   template <typename T>
-  __device__ T g(const T *source, int pe);
-
-  template <typename T, ROCSHMEM_OP Op>
-  __device__ void to_all(T *dest, const T *source, int nreduce, int PE_start, int logPE_stride, int PE_size, T *pWrk, long *pSync);
-
-  template <typename T, ROCSHMEM_OP Op>
-  __device__ void to_all(rocshmem_team_t team, T *dest, const T *source, int nreduce);
-
-  template <typename T>
   __device__ void put(T *dest, const T *source, size_t nelems, int pe);
 
   template <typename T>
   __device__ void put_nbi(T *dest, const T *source, size_t nelems, int pe);
 
-  template <typename T>
-  __device__ void get(T *dest, const T *source, size_t nelems, int pe);
-
-  template <typename T>
-  __device__ void get_nbi(T *dest, const T *source, size_t nelems, int pe);
-
   __device__ void putmem_wave(void *dest, const void *source, size_t nelems, int pe);
 
-  __device__ void getmem_wave(void *dest, const void *source, size_t nelems, int pe);
-
   __device__ void putmem_nbi_wave(void *dest, const void *source, size_t nelems, int pe);
-
-  __device__ void getmem_nbi_wave(void *dest, const void *source, size_t size, int pe);
 
   template <typename T>
   __device__ void put_wave(T *dest, const T *source, size_t nelems, int pe);
@@ -142,16 +119,7 @@ class GPUIBContext : public Context {
   template <typename T>
   __device__ void put_nbi_wave(T *dest, const T *source, size_t nelems, int pe);
 
-  template <typename T>
-  __device__ void get_wave(T *dest, const T *source, size_t nelems, int pe);
-
-  template <typename T>
-  __device__ void get_nbi_wave(T *dest, const T *source, size_t nelems, int pe);
-
  private:
-  template <typename T>
-  __device__ void internal_get_broadcast(T *dst, const T *src, int nelems, int pe_root, long *pSync);
-
   __device__ void internal_direct_barrier(int pe, int PE_start, int stride, int n_pes, int64_t *pSync);
 
   __device__ void internal_atomic_barrier(int pe, int PE_start, int stride, int n_pes, int64_t *pSync);

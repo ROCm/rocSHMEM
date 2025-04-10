@@ -74,9 +74,6 @@ __global__ void RandomAccessTest(int loop, int skip, long long int *start_time,
         start_time[wg_id] = wall_clock64();
       }
       switch (type) {
-        case GetType:
-          rocshmem_ctx_getmem(ctx, r_buf, s_buf, size, PE);
-          break;
         case PutType:
           rocshmem_ctx_putmem(ctx, (char *)r_buf, (char *)s_buf, size, PE);
           break;

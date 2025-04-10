@@ -49,18 +49,8 @@ void GPUIBHostContext::putmem_nbi(void *dest, const void *source, size_t nelems,
 }
 
 __host__ 
-void GPUIBHostContext::getmem_nbi(void *dest, const void *source, size_t nelems, int pe) {
-  host_interface->getmem_nbi(dest, source, nelems, pe, context_window_info);
-}
-
-__host__ 
 void GPUIBHostContext::putmem(void *dest, const void *source, size_t nelems, int pe) {
   host_interface->putmem(dest, source, nelems, pe, context_window_info);
-}
-
-__host__ 
-void GPUIBHostContext::getmem(void *dest, const void *source, size_t nelems, int pe) {
-  host_interface->getmem(dest, source, nelems, pe, context_window_info);
 }
 
 __host__ 
