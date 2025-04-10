@@ -77,7 +77,6 @@ target_sources(
     bin_gtest.cpp
     binner_gtest.cpp
     address_record_gtest.cpp
-    index_strategy_gtest.cpp
     single_heap_gtest.cpp
     symmetric_heap_gtest.cpp
     pow2_bins_gtest.cpp
