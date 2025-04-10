@@ -76,7 +76,6 @@ target_sources(
     hipmalloc_gtest.cpp
     bin_gtest.cpp
     binner_gtest.cpp
-    #bitwise_gtest.cpp # Test is disabled becasue of compilation errors
     address_record_gtest.cpp
     index_strategy_gtest.cpp
     single_heap_gtest.cpp
