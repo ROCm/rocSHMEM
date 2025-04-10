@@ -44,13 +44,9 @@
 #include "shmem_ptr_tester.hpp"
 #include "signaling_operations_tester.hpp"
 #include "sync_tester.hpp"
-#include "team_alltoall_tester.hpp"
-#include "team_broadcast_tester.hpp"
 #include "team_barrier_tester.hpp"
 #include "team_ctx_infra_tester.hpp"
 #include "team_ctx_primitive_tester.hpp"
-#include "team_fcollect_tester.hpp"
-#include "team_reduction_tester.hpp"
 #include "wavefront_primitives.hpp"
 #include "workgroup_primitives.hpp"
 
@@ -167,59 +163,6 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
     case GTestType:
       if (rank == 0) std::cout << "G Test ###" << std::endl;
       testers.push_back(new PrimitiveTester(args));
-      return testers;
-    case TeamReductionTestType:
-      if (rank == 0)
-        std::cout << "All-to-All Team-based Reduction ###" << std::endl;
-      testers.push_back(new TeamReductionTester<float, ROCSHMEM_SUM>(
-          args,
-          [](float& f1, float& f2) {
-            f1 = 1;
-            f2 = 1;
-          },
-          [](float v, float n_pes) {
-            return (v == n_pes)
-                       ? std::make_pair(true, "")
-                       : std::make_pair(false, "Got " + std::to_string(v) +
-                                                   ", Expect " +
-                                                   std::to_string(n_pes));
-          }));
-      return testers;
-    case TeamBroadcastTestType:
-      if (rank == 0) {
-        std::cout << "Team Broadcast Test ###" << std::endl;
-      }
-      testers.push_back(new TeamBroadcastTester<int64_t>(args));
-      testers.push_back(new TeamBroadcastTester<int>(args));
-      testers.push_back(new TeamBroadcastTester<long long>(args));
-      testers.push_back(new TeamBroadcastTester<float>(args));
-      testers.push_back(new TeamBroadcastTester<double>(args));
-      testers.push_back(new TeamBroadcastTester<char>(args));
-      testers.push_back(new TeamBroadcastTester<unsigned char>(args));
-      return testers;
-    case TeamAllToAllTestType:
-      if (rank == 0) {
-        std::cout << "Alltoall Test ###" << std::endl;
-      }
-      testers.push_back(new TeamAlltoallTester<int64_t>(args));
-      testers.push_back(new TeamAlltoallTester<int>(args));
-      testers.push_back(new TeamAlltoallTester<long long>(args));
-      testers.push_back(new TeamAlltoallTester<float>(args));
-      testers.push_back(new TeamAlltoallTester<double>(args));
-      testers.push_back(new TeamAlltoallTester<char>(args));
-      testers.push_back(new TeamAlltoallTester<unsigned char>(args));
-      return testers;
-    case TeamFCollectTestType:
-      if (rank == 0) {
-        std::cout << "Fcollect Test ###" << std::endl;
-      }
-      testers.push_back(new TeamFcollectTester<int64_t>(args));
-      testers.push_back(new TeamFcollectTester<int>(args));
-      testers.push_back(new TeamFcollectTester<long long>(args));
-      testers.push_back(new TeamFcollectTester<float>(args));
-      testers.push_back(new TeamFcollectTester<double>(args));
-      testers.push_back(new TeamFcollectTester<char>(args));
-      testers.push_back(new TeamFcollectTester<unsigned char>(args));
       return testers;
     case AMO_FAddTestType:
       if (rank == 0) std::cout << "AMO Fetch_Add ###" << std::endl;
@@ -506,9 +449,8 @@ bool Tester::peLaunchesKernel() {
   /**
    * Some test types are active on both sides.
    */
-  is_launcher = is_launcher || (_type == TeamReductionTestType) ||
-                (_type == TeamBroadcastTestType) || (_type == TeamCtxInfraTestType) ||
-                (_type == TeamAllToAllTestType) || (_type == TeamFCollectTestType) ||
+  is_launcher = is_launcher ||
+                (_type == TeamCtxInfraTestType) ||
                 (_type == PingPongTestType) || (_type == BarrierAllTestType) ||
                 (_type == SyncTestType) || (_type == SyncAllTestType) ||
                 (_type == RandomAccessTestType) || (_type == PingAllTestType) ||

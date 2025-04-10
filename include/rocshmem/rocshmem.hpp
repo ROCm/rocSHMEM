@@ -31,7 +31,6 @@
 #include "rocshmem_RMA.hpp"
 #include "rocshmem_AMO.hpp"
 #include "rocshmem_SIG_OP.hpp"
-#include "rocshmem_COLL.hpp"
 #include "rocshmem_P2P_SYNC.hpp"
 #include "rocshmem_RMA_X.hpp"
 /**

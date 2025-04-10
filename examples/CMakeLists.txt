@@ -24,9 +24,6 @@
 # SOURCES
 ###############################################################################
 set(EXAMPLE_SOURCES
-  rocshmem_allreduce_test.cc
-  rocshmem_alltoall_test.cc
-  rocshmem_broadcast_test.cc
   rocshmem_getmem_test.cc
   rocshmem_put_signal_test.cc
   rocshmem_init_attr_test.cc

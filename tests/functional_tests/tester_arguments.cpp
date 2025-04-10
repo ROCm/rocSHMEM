@@ -99,11 +99,6 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
     case RandomAccessTestType:
       min_msg_size = 4;
       break;
-    case TeamFCollectTestType:
-    case TeamAllToAllTestType:
-    case TeamBroadcastTestType:
-      min_msg_size = 8;
-      break;
     case TeamCtxInfraTestType:
       max_msg_size = min_msg_size;
       break;
@@ -134,9 +129,7 @@ void TesterArguments::get_rocshmem_arguments() {
 
   TestType type = (TestType)algorithm;
   if ((type != BarrierAllTestType) && (type != SyncAllTestType) &&
-      (type != SyncTestType) && (type != TeamAllToAllTestType) &&
-      (type != TeamFCollectTestType) && (type != TeamReductionTestType) &&
-      (type != TeamBroadcastTestType) && (type != PingAllTestType) &&
+      (type != SyncTestType) && (type != PingAllTestType) &&
       (type != TeamBarrierTestType)) {
     if (numprocs != 2) {
       if (myid == 0) {
