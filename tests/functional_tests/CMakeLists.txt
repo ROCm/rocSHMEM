@@ -53,8 +53,6 @@ target_sources(
     amo_standard_tester.cpp
     random_access_tester.cpp
     shmem_ptr_tester.cpp
-    signaling_operations_tester.cpp
-    signaling_operations_tester.hpp
     workgroup_primitives.cpp
     empty_tester.cpp
     wavefront_primitives.cpp
