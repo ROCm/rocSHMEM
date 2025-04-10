@@ -388,7 +388,6 @@ class QueuePair {
   friend WG;
   friend WAVE;
   friend RCConnectionImpl;
-  friend DCConnectionImpl;
 };
 
 }  // namespace rocshmem

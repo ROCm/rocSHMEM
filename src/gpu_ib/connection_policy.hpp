@@ -92,38 +92,9 @@ class RCConnectionImpl : public ConnectionBase<RCConnectionImpl> {
 };
 
 /*
- * Connection policy corresponding to a DC connection type.
- */
-class DCConnectionImpl : public ConnectionBase<DCConnectionImpl> {
- public:
-  DCConnectionImpl(Connection* conn, uint32_t* _vec_rkey);
-
-  __device__ int wqeCntrlOffsetImpl() { return 1; }
-
-  __device__ bool forcePostDivergenceImpl() { return false; }
-
-  __device__ uint32_t getNumWqesImpl(uint8_t opcode);
-
-  __device__ bool updateConnectionSegmentImpl(ib_mlx5_base_av_t* wqe, int pe);
-
-  __device__ void setRkeyImpl(uint32_t* rkey, int pe);
-
- private:
-  uint32_t* vec_dct_num{nullptr};
-
-  uint32_t* vec_rkey{nullptr};
-
-  uint16_t* vec_lids{nullptr};
-};
-
-/*
  * Select which one of our connection policies to use at compile time.
  */
-#ifdef USE_DC
-typedef DCConnectionImpl ConnectionImpl;
-#else
 typedef RCConnectionImpl ConnectionImpl;
-#endif
 
 }  // namespace rocshmem
 

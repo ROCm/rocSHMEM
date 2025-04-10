@@ -29,7 +29,6 @@
 #include "context_incl.hpp"
 #include "backend_ib.hpp"
 #include "connection.hpp"
-#include "dynamic_connection.hpp"
 #include "queue_pair.hpp"
 #include "reliable_connection.hpp"
 
@@ -156,11 +155,7 @@ __host__ void NetworkOnImpl::networkHostSetup(GPUIBBackend *B) {
   my_pe = B->my_pe;
   num_blocks = B->num_blocks_;
 
-#ifdef USE_DC
-  connection = new DynamicConnection(B);
-#else
   connection = new ReliableConnection(B);
-#endif
 
   connection->initialize(B->num_blocks_);
 
@@ -210,7 +205,6 @@ __host__ void NetworkOnImpl::networkHostInit(GPUIBContext *ctx, int buffer_id) {
      * Each num_pe entry contains num_block QPs connected to that PE.
      * For RC, we need to iterate gpu_qp[i][buffer_id] to collect a
      * single QP for each connected PE in order to build context.
-     * For DC, NUM_PE = 1 so can just use buffer_id directly.
      */
     int offset = num_blocks * i + buffer_id;
     new (ctx->getQueuePair(i)) QueuePair(gpu_qps[offset]);
@@ -244,19 +238,11 @@ __device__ void NetworkOnImpl::networkGpuInit(GPUIBContext *ctx,
 
 __device__ __host__ QueuePair *NetworkOnImpl::getQueuePair(QueuePair *qp_handle,
                                                            int pe) {
-#ifdef USE_DC
-  return qp_handle;
-#else
   return &qp_handle[pe];
-#endif
 }
 
 __device__ __host__ int NetworkOnImpl::getNumQueuePairs() {
-#ifdef USE_DC
-  return 1;
-#else
   return num_pes;
-#endif
 }
 
 void NetworkOffImpl::networkHostSetup(GPUIBBackend *B) {

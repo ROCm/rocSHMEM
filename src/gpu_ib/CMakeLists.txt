@@ -33,7 +33,6 @@ target_sources(
     context_ib_device_coll.cpp
     context_ib_host.cpp
     debug.cpp
-    dynamic_connection.cpp
     endian.cpp
     gpu_ib_team.cpp
     network_policy.cpp

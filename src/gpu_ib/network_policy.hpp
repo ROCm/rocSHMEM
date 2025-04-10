@@ -83,9 +83,7 @@ class NetworkOnImpl {
 
   static uint32_t externSharedBytes(int num_pes) {
     int remote_conn{1};
-#ifndef USE_DC
     remote_conn = num_pes;
-#endif
     return remote_conn * sizeof(QueuePair);
   }
 
@@ -194,10 +192,6 @@ class NetworkOnImpl {
 
   /**
    * @brief Compile-time configuration policy for InfiniBand connections.
-   *
-   * The configuration option "USE_DC" can be enabled to create
-   * Dynamic connection types. By default, Reliable connections are
-   * created.
    */
   ConnectionImpl *connection_policy{nullptr};
 };
