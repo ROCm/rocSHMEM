@@ -21,9 +21,9 @@
  *****************************************************************************/
 
 #include "rocshmem/rocshmem.hpp"
-#include "../context_incl.hpp"
+#include "context_incl.hpp"
 #include "context_ib_tmpl_device.hpp"
-#include "../util.hpp"
+#include "util.hpp"
 
 namespace rocshmem {
 

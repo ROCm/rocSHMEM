@@ -25,7 +25,7 @@
 
 #include <hip/hip_runtime.h>
 
-#include "../device_proxy.hpp"
+#include "device_proxy.hpp"
 
 namespace rocshmem {
 

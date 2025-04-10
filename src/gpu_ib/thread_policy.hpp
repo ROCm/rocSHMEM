@@ -24,7 +24,7 @@
 #define LIBRARY_SRC_GPU_IB_THREAD_POLICY_HPP_
 
 #include "rocshmem_config.h"  // NOLINT(build/include_subdir)
-#include "../util.hpp"
+#include "util.hpp"
 
 namespace rocshmem {
 

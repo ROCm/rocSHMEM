@@ -30,7 +30,7 @@
 
 #include "backend_ib.hpp"
 #include "queue_pair.hpp"
-#include "../util.hpp"
+#include "util.hpp"
 
 namespace rocshmem {
 

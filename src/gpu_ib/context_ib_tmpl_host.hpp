@@ -24,7 +24,7 @@
 #define LIBRARY_SRC_GPU_IB_CONTEXT_IB_TMPL_HOST_HPP_
 
 #include "rocshmem_config.h"  // NOLINT(build/include_subdir)
-#include "../host/host_templates.hpp"
+#include "host/host_templates.hpp"
 
 namespace rocshmem {
 

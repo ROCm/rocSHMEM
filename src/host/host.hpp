@@ -37,8 +37,8 @@
 #include <map>
 
 #include "rocshmem/rocshmem.hpp"
-#include "../memory/symmetric_heap.hpp"
-#include "../memory/window_info.hpp"
+#include "memory/symmetric_heap.hpp"
+#include "memory/window_info.hpp"
 
 namespace rocshmem {
 

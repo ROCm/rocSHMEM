@@ -20,9 +20,9 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "../sync/abql_block_mutex.hpp"
+#include "sync/abql_block_mutex.hpp"
 
-#include "../util.hpp"
+#include "util.hpp"
 
 namespace rocshmem {
 

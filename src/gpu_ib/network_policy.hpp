@@ -30,8 +30,8 @@
 #include "rocshmem/rocshmem.hpp"
 #include "connection_policy.hpp"
 #include "queue_pair.hpp"
-#include "../memory/symmetric_heap.hpp"
-#include "../util.hpp"
+#include "memory/symmetric_heap.hpp"
+#include "util.hpp"
 
 struct ibv_mr;
 

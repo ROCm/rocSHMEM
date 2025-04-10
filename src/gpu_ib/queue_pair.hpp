@@ -35,7 +35,7 @@
 #include <infiniband/mlx5dv.h>
 
 #include "rocshmem_config.h"  // NOLINT(build/include_subdir)
-#include "../atomic_return.hpp"
+#include "atomic_return.hpp"
 #include "connection_policy.hpp"
 #include "thread_policy.hpp"
 

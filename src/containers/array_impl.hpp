@@ -26,7 +26,7 @@
 #include <cassert>
 
 #include "array.hpp"
-#include "../constants.hpp"
+#include "constants.hpp"
 
 namespace rocshmem {
 

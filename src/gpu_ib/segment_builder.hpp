@@ -27,7 +27,7 @@
 
 #include "connection_policy.hpp"
 #include "infiniband_structs.hpp"
-#include "../util.hpp"
+#include "util.hpp"
 
 namespace rocshmem {
 

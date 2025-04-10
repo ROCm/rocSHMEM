@@ -26,8 +26,8 @@
 
 #include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "host_helpers.hpp"
-#include "../memory/window_info.hpp"
-#include "../team.hpp"
+#include "memory/window_info.hpp"
+#include "team.hpp"
 
 namespace rocshmem {
 

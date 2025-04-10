@@ -173,6 +173,7 @@ if (NOT BUILD_TESTS_ONLY)
     ${PROJECT_NAME}
     PUBLIC
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
       $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>               # rocshmem_config.h
       $<INSTALL_INTERFACE:include>
       ${MPI_CXX_HEADER_DIR}

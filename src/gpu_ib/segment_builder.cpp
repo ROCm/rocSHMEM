@@ -22,7 +22,7 @@
 
 #include "segment_builder.hpp"
 
-#include "../util.hpp"
+#include "util.hpp"
 #include "endian.hpp"
 
 namespace rocshmem {

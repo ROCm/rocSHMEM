@@ -26,7 +26,7 @@
 #include <cassert>
 
 #include "shmem_allocator_strategy.hpp"
-#include "../util.hpp"
+#include "util.hpp"
 
 /**
  * @file dev_mono_linear.hpp

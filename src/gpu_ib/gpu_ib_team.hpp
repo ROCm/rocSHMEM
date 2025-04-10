@@ -23,7 +23,7 @@
 #ifndef LIBRARY_SRC_GPU_IB_GPU_IB_TEAM_HPP_
 #define LIBRARY_SRC_GPU_IB_GPU_IB_TEAM_HPP_
 
-#include "../team.hpp"
+#include "team.hpp"
 
 namespace rocshmem {
 

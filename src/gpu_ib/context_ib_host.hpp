@@ -23,7 +23,7 @@
 #ifndef LIBRARY_SRC_GPU_IB_CONTEXT_IB_HOST_HPP_
 #define LIBRARY_SRC_GPU_IB_CONTEXT_IB_HOST_HPP_
 
-#include "../context.hpp"
+#include "context.hpp"
 
 namespace rocshmem {
 
