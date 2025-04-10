@@ -67,18 +67,6 @@ class Context {
 
   template <typename T>
   __device__
-  void wait_until_all_vector(T *ivars, size_t nelems, const int *status, int cmp, T* vals);
-
-  template <typename T>
-  __device__
-  size_t wait_until_any_vector(T *ivars, size_t nelems, const int *status, int cmp, T* vals);
-
-  template <typename T>
-  __device__
-  size_t wait_until_some_vector(T *ivars, size_t nelems, size_t* indices, const int *status, int cmp, T* vals);
-
-  template <typename T>
-  __device__
   int test(T *ivars, int cmp, T val);
 
   __device__
