@@ -81,24 +81,6 @@ class GPUIBHostContext : public Context {
   __host__ void sync_all();
 
   template <typename T>
-  __host__ void broadcast(T *dest, const T *source, int nelems, int pe_root,
-                          int pe_start, int log_pe_stride, int pe_size,
-                          long *p_sync);  // NOLINT(runtime/int)
-
-  template <typename T>
-  __host__ void broadcast(rocshmem_team_t team, T *dest, const T *source,
-                          int nelems, int pe_root);
-
-  template <typename T, ROCSHMEM_OP Op>
-  __host__ void to_all(T *dest, const T *source, int nreduce, int pe_start,
-                       int log_pe_stride, int pe_size, T *p_wrk,
-                       long *p_sync);  // NOLINT(runtime/int)
-
-  template <typename T, ROCSHMEM_OP Op>
-  __host__ void to_all(rocshmem_team_t team, T *dest, const T *source,
-                       int nreduce);
-
-  template <typename T>
   __host__ void wait_until(T *ivars, int cmp, T val);
 
   template <typename T>
@@ -116,22 +98,6 @@ class GPUIBHostContext : public Context {
                                 size_t* indices,
                                 const int *status,
                                 int cmp, T val);
-
-  template <typename T>
-  __host__ void wait_until_all_vector(T *ivars, size_t nelems,
-                                      const int *status,
-                                      int cmp, T* vals);
-
-  template <typename T>
-  __host__ size_t wait_until_any_vector(T *ivars, size_t nelems,
-                                        const int *status,
-                                        int cmp, T* vals);
-
-  template <typename T>
-  __host__ size_t wait_until_some_vector(T *ivars, size_t nelems,
-                                         size_t* indices,
-                                         const int *status,
-                                         int cmp, T* vals);
 
   template <typename T>
   __host__ int test(T *ivars, int cmp, T val);

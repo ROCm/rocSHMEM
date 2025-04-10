@@ -84,37 +84,6 @@ __host__ T GPUIBHostContext::amo_fetch_cas(void *dst, T value, T cond, int pe) {
 }
 
 template <typename T>
-__host__ void GPUIBHostContext::broadcast(
-    T *dest, const T *source, int nelems, int pe_root, int pe_start,
-    int log_pe_stride, int pe_size,
-    long *p_sync) {  // NOLINT(runtime/int)
-  host_interface->broadcast<T>(dest, source, nelems, pe_root, pe_start,
-                               log_pe_stride, pe_size, p_sync);
-}
-
-template <typename T>
-__host__ void GPUIBHostContext::broadcast(rocshmem_team_t team, T *dest,
-                                          const T *source, int nelems,
-                                          int pe_root) {
-  host_interface->broadcast<T>(team, dest, source, nelems, pe_root);
-}
-
-template <typename T, ROCSHMEM_OP Op>
-__host__ void GPUIBHostContext::to_all(T *dest, const T *source, int nreduce,
-                                       int pe_start, int log_pe_stride,
-                                       int pe_size, T *p_wrk,
-                                       long *p_sync) {  // NOLINT(runtime/int)
-  host_interface->to_all<T, Op>(dest, source, nreduce, pe_start, log_pe_stride,
-                                pe_size, p_wrk, p_sync);
-}
-
-template <typename T, ROCSHMEM_OP Op>
-__host__ void GPUIBHostContext::to_all(rocshmem_team_t team, T *dest,
-                                       const T *source, int nreduce) {
-  host_interface->to_all<T, Op>(team, dest, source, nreduce);
-}
-
-template <typename T>
 __host__ void GPUIBHostContext::wait_until(T *ivars, int cmp, T val) {
   host_interface->wait_until<T>(ivars, cmp, val, context_window_info);
 }
@@ -139,28 +108,6 @@ __host__ size_t GPUIBHostContext::wait_until_some(T *ivars, size_t nelems,
                                                  const int* status,
                                                  int cmp, T val) {
   return host_interface->wait_until_some<T>(ivars, nelems, indices, status, cmp, val, context_window_info);
-}
-
-template <typename T>
-__host__ void GPUIBHostContext::wait_until_all_vector(T *ivars, size_t nelems,
-                                                      const int* status,
-                                                      int cmp, T* vals) {
-  host_interface->wait_until_all_vector<T>(ivars, nelems, status, cmp, vals, context_window_info);
-}
-
-template <typename T>
-__host__ size_t GPUIBHostContext::wait_until_any_vector(T *ivars, size_t nelems,
-                                                        const int* status,
-                                                        int cmp, T* vals) {
-  return host_interface->wait_until_any_vector<T>(ivars, nelems, status, cmp, vals, context_window_info);
-}
-
-template <typename T>
-__host__ size_t GPUIBHostContext::wait_until_some_vector(T *ivars, size_t nelems,
-                                                         size_t* indices,
-                                                         const int* status,
-                                                         int cmp, T* vals) {
-  return host_interface->wait_until_some_vector<T>(ivars, nelems, indices, status, cmp, vals, context_window_info);
 }
 
 template <typename T>

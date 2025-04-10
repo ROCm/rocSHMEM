@@ -138,38 +138,6 @@ void Context::sync(rocshmem_team_t team) {
 }
 
 __device__ 
-void Context::putmem_wg(void* dest, const void* source, size_t nelems, int pe) {
-  if (nelems == 0) {
-    return;
-  }
-  static_cast<GPUIBContext*>(this)->putmem_wg(dest, source, nelems, pe);
-}
-
-__device__ 
-void Context::getmem_wg(void* dest, const void* source, size_t nelems, int pe) {
-  if (nelems == 0) {
-    return;
-  }
-  static_cast<GPUIBContext*>(this)->getmem_wg(dest, source, nelems, pe);
-}
-
-__device__ 
-void Context::putmem_nbi_wg(void* dest, const void* source, size_t nelems, int pe) {
-  if (nelems == 0) {
-    return;
-  }
-  static_cast<GPUIBContext*>(this)->putmem_nbi_wg(dest, source, nelems, pe);
-}
-
-__device__ 
-void Context::getmem_nbi_wg(void* dest, const void* source, size_t size, int pe) {
-  if (size == 0) {
-    return;
-  }
-  static_cast<GPUIBContext*>(this)->getmem_nbi_wg(dest, source, size, pe);
-}
-
-__device__ 
 void Context::putmem_wave(void* dest, const void* source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
@@ -200,33 +168,5 @@ void Context::getmem_nbi_wave(void* dest, const void* source, size_t size, int p
   }
   static_cast<GPUIBContext*>(this)->getmem_nbi_wave(dest, source, size, pe);
 }
-
-#define CONTEXT_PUTMEM_SIGNAL_DEF(SUFFIX)                                                                        \
-  __device__ void Context::putmem_signal##SUFFIX(void *dest, const void *source, size_t nelems,                  \
-                                                 uint64_t *sig_addr, uint64_t signal, int sig_op,                \
-                                                 int pe) {                                                       \
-    if (nelems == 0) {                                                                                           \
-      return;                                                                                                    \
-    }                                                                                                            \
-                                                                                                                 \
-    static_cast<GPUIBContext*>(this)->putmem_signal##SUFFIX(dest, source, nelems, sig_addr, signal, sig_op, pe); \
-  }
-
-CONTEXT_PUTMEM_SIGNAL_DEF()
-CONTEXT_PUTMEM_SIGNAL_DEF(_wg)
-CONTEXT_PUTMEM_SIGNAL_DEF(_wave)
-CONTEXT_PUTMEM_SIGNAL_DEF(_nbi)
-CONTEXT_PUTMEM_SIGNAL_DEF(_nbi_wg)
-CONTEXT_PUTMEM_SIGNAL_DEF(_nbi_wave)
-
-#define CONTEXT_SIGNAL_FETCH_DEF(SUFFIX)                                               \
-__device__ uint64_t Context::signal_fetch##SUFFIX(const uint64_t *sig_addr) {          \
-    auto ret_val = static_cast<GPUIBContext*>(this)->signal_fetch##SUFFIX(sig_addr);   \
-    return ret_val;                                                                    \
-}
-
-CONTEXT_SIGNAL_FETCH_DEF()
-CONTEXT_SIGNAL_FETCH_DEF(_wg)
-CONTEXT_SIGNAL_FETCH_DEF(_wave)
 
 }  // namespace rocshmem

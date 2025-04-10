@@ -41,25 +41,6 @@ T Context::g(T *source, int pe) {
   return ret_val;
 }
 
-template <typename T, ROCSHMEM_OP Op>
-__device__
-void Context::to_all(T *dest, const T *source, int nreduce, int PE_start, int logPE_stride, int PE_size, T *pWrk, long *pSync) {
-  if (nreduce == 0) {
-    return;
-  }
-  static_cast<GPUIBContext*>(this)->to_all<T, Op>(dest, source, nreduce, PE_start, logPE_stride, PE_size, pWrk, pSync);
-}
-
-template <typename T, ROCSHMEM_OP Op>
-__device__
-int Context::reduce(rocshmem_team_t team, T *dest, const T *source, int nreduce) {
-  if (nreduce == 0) {
-    return ROCSHMEM_SUCCESS;
-  }
-  auto ret_val = static_cast<GPUIBContext*>(this)->reduce<T, Op>(team, dest, source, nreduce);
-  return ret_val;
-}
-
 template <typename T>
 __device__
 void Context::put(T *dest, const T *source, size_t nelems, int pe) {
@@ -94,42 +75,6 @@ void Context::get_nbi(T *dest, const T *source, size_t nelems, int pe) {
     return;
   }
   static_cast<GPUIBContext*>(this)->get_nbi(dest, source, nelems, pe);
-}
-
-template <typename T>
-__device__
-void Context::alltoall(rocshmem_team_t team, T *dest, const T *source, int nelems) {
-  if (nelems == 0) {
-    return;
-  }
-  static_cast<GPUIBContext*>(this)->alltoall<T>(team, dest, source, nelems);
-}
-
-template <typename T>
-__device__ 
-void Context::fcollect(rocshmem_team_t team, T *dest, const T *source, int nelems) {
-  if (nelems == 0) {
-    return;
-  }
-  static_cast<GPUIBContext*>(this)->fcollect<T>(team, dest, source, nelems);
-}
-
-template <typename T>
-__device__
-void Context::broadcast(rocshmem_team_t team, T *dest, const T *source, int nelems, int pe_root) {
-  if (nelems == 0) {
-    return;
-  }
-  static_cast<GPUIBContext*>(this)->broadcast<T>(team, dest, source, nelems, pe_root);
-}
-
-template <typename T>
-__device__
-void Context::broadcast(T *dest, const T *source, int nelems, int pe_root, int pe_start, int log_pe_stride, int pe_size, long *p_sync) {
-  if (nelems == 0) {
-    return;
-  }
-  static_cast<GPUIBContext*>(this)->broadcast<T>(dest, source, nelems, pe_root, pe_start, log_pe_stride, pe_size, p_sync);
 }
 
 template <typename T>
@@ -239,24 +184,6 @@ size_t Context::wait_until_some(T *ivars, size_t nelems, size_t* indices, const 
 
 template <typename T>
 __device__ __forceinline__
-void Context::wait_until_all_vector(T *ivars, size_t nelems, const int *status, int cmp, T* vals) {
-  ;
-}
-
-template <typename T>
-__device__ __forceinline__
-size_t Context::wait_until_any_vector(T *ivars, size_t nelems, const int *status, int cmp, T* vals) {
-  return 0;
-}
-
-template <typename T>
-__device__ __forceinline__
-size_t Context::wait_until_some_vector(T *ivars, size_t nelems, size_t* indices, const int *status, int cmp, T* vals) {
-  return 0;
-}
-
-template <typename T>
-__device__ __forceinline__
 int Context::test(T *ivars, int cmp, T val) {
   int ret = 0;
   volatile T *vol_ivars = reinterpret_cast<T *>(ivars);
@@ -295,42 +222,6 @@ int Context::test(T *ivars, int cmp, T val) {
       break;
   }
   return ret;
-}
-
-template <typename T>
-__device__
-void Context::put_wg(T *dest, const T *source, size_t nelems, int pe) {
-  if (nelems == 0) {
-    return;
-  }
-  static_cast<GPUIBContext*>(this)->put_wg(dest, source, nelems, pe);
-}
-
-template <typename T>
-__device__
-void Context::put_nbi_wg(T *dest, const T *source, size_t nelems, int pe) {
-  if (nelems == 0) {
-    return;
-  }
-  static_cast<GPUIBContext*>(this)->put_nbi_wg(dest, source, nelems, pe);
-}
-
-template <typename T>
-__device__
-void Context::get_wg(T *dest, const T *source, size_t nelems, int pe) {
-  if (nelems == 0) {
-    return;
-  }
-  static_cast<GPUIBContext*>(this)->get_wg(dest, source, nelems, pe);
-}
-
-template <typename T>
-__device__
-void Context::get_nbi_wg(T *dest, const T *source, size_t nelems, int pe) {
-  if (nelems == 0) {
-    return;
-  }
-  static_cast<GPUIBContext*>(this)->get_nbi_wg(dest, source, nelems, pe);
 }
 
 template <typename T>
@@ -446,24 +337,6 @@ __device__
 void Context::amo_cas(void *dst, T value, T cond, int pe) {
   static_cast<GPUIBContext*>(this)->amo_cas(dst, value, cond, pe);
 }
-
-#define CONTEXT_PUT_SIGNAL_DEF(SUFFIX)                                                         \
-  template <typename T>                                                                        \
-  __device__                                                                                   \
-  void Context::put_signal##SUFFIX(T *dest, const T *source, size_t nelems,                    \
-                                   uint64_t *sig_addr, uint64_t signal, int sig_op, int pe) {  \
-    if (nelems == 0) {                                                                         \
-      return;                                                                                  \
-    }                                                                                          \
-    static_cast<GPUIBContext*>(this)->put_signal##SUFFIX(dest, source, nelems, sig_addr, signal, sig_op, pe); \
-  }
-
-CONTEXT_PUT_SIGNAL_DEF()
-CONTEXT_PUT_SIGNAL_DEF(_wg)
-CONTEXT_PUT_SIGNAL_DEF(_wave)
-CONTEXT_PUT_SIGNAL_DEF(_nbi)
-CONTEXT_PUT_SIGNAL_DEF(_nbi_wg)
-CONTEXT_PUT_SIGNAL_DEF(_nbi_wave)
 
 }  // namespace rocshmem
 

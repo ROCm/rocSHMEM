@@ -157,43 +157,6 @@ void Context::amo_cas(void *dst, T value, T cond, int pe) {
 
 template <typename T>
 __host__ 
-void Context::broadcast(T *dest, const T *source, int nelems, int pe_root, int pe_start, int log_pe_stride, int pe_size, long *p_sync) {
-  if (nelems == 0) {
-    return;
-  }
-  static_cast<GPUIBHostContext*>(this)->broadcast<T>(dest, source, nelems, pe_root, pe_start, log_pe_stride, pe_size, p_sync);
-}
-
-template <typename T>
-__host__ 
-void Context::broadcast(rocshmem_team_t team, T *dest, const T *source, int nelems, int pe_root) {
-  if (nelems == 0) {
-    return;
-  }
-  static_cast<GPUIBHostContext*>(this)->broadcast<T>(team, dest, source, nelems, pe_root);
-}
-
-template <typename T, ROCSHMEM_OP Op>
-__host__ 
-void Context::to_all(T *dest, const T *source, int nreduce, int PE_start, int logPE_stride, int PE_size, T *pWrk, long *pSync) {
-  if (nreduce == 0) {
-    return;
-  }
-  static_cast<GPUIBHostContext*>(this)->to_all<T, Op>(dest, source, nreduce, PE_start, logPE_stride, PE_size, pWrk, pSync);
-}
-
-template <typename T, ROCSHMEM_OP Op>
-__host__ 
-int Context::reduce(rocshmem_team_t team, T *dest, const T *source, int nreduce) {
-  if (nreduce == 0) {
-    return ROCSHMEM_SUCCESS;
-  }
-  auto ret_val = static_cast<GPUIBHostContext*>(this)->reduce<T, Op>(team, dest, source, nreduce);
-  return ret_val;
-}
-
-template <typename T>
-__host__ 
 void Context::wait_until(T *ivars, int cmp, T val) {
   static_cast<GPUIBHostContext*>(this)->wait_until<T>(ivars, cmp, val);
 }
@@ -214,26 +177,6 @@ template <typename T>
 __host__ 
 size_t Context::wait_until_some(T *ivars, size_t nelems, size_t* indices, const int* status, int cmp, T val) {
   auto ret_val = static_cast<GPUIBHostContext*>(this)->wait_until_some<T>(ivars, nelems, indices, status, cmp, val);
-  return ret_val;
-}
-
-template <typename T>
-__host__ 
-void Context::wait_until_all_vector(T *ivars, size_t nelems, const int *status, int cmp, T* vals) {
-  static_cast<GPUIBHostContext*>(this)->wait_until_all_vector<T>(ivars, nelems, status, cmp, vals);
-}
-
-template <typename T>
-__host__ 
-size_t Context::wait_until_any_vector(T *ivars, size_t nelems, const int *status, int cmp, T* vals) {
-  auto ret_val = static_cast<GPUIBHostContext*>(this)->wait_until_any_vector<T>(ivars, nelems, status, cmp, vals);
-  return ret_val;
-}
-
-template <typename T>
-__host__
-size_t Context::wait_until_some_vector(T *ivars, size_t nelems, size_t* indices, const int *status, int cmp, T* vals) {
-  auto ret_val = static_cast<GPUIBHostContext*>(this)->wait_until_some_vector<T>(ivars, nelems, indices, status, cmp, vals);
   return ret_val;
 }
 

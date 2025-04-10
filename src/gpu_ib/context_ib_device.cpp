@@ -154,16 +154,6 @@ __device__ void GPUIBContext::putmem(void *dest, const void *source,
 /******************************************************************************
  ************************ WORKGROUP/WAVE-LEVEL RMA API ************************
  *****************************************************************************/
-__device__ void GPUIBContext::putmem_nbi_wg(void *dest, const void *source,
-                                            size_t nelems, int pe) {
-  uint64_t L_offset = reinterpret_cast<char *>(dest) - base_heap[my_pe];
-  if (is_thread_zero_in_block()) {
-    auto *qp = getQueuePair(pe);
-    qp->put_nbi<WG>(base_heap[pe] + L_offset, source, nelems, pe, true);
-  }
-  __syncthreads();
-}
-
 __device__ void GPUIBContext::putmem_nbi_wave(void *dest, const void *source,
                                               size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dest) - base_heap[my_pe];
@@ -171,18 +161,6 @@ __device__ void GPUIBContext::putmem_nbi_wave(void *dest, const void *source,
     auto *qp = getQueuePair(pe);
     qp->put_nbi<WAVE>(base_heap[pe] + L_offset, source, nelems, pe, true);
   }
-}
-
-__device__ void GPUIBContext::putmem_wg(void *dest, const void *source,
-                                        size_t nelems, int pe) {
-  uint64_t L_offset = reinterpret_cast<char *>(dest) - base_heap[my_pe];
-  auto *qp = getQueuePair(pe);
-  if (is_thread_zero_in_block()) {
-    qp->put_nbi_cqe<WG>(base_heap[pe] + L_offset, source, nelems, pe, true);
-  }
-  qp->quiet_single<WG>();
-  __syncthreads();
-  fence_.flush();
 }
 
 __device__ void GPUIBContext::putmem_wave(void *dest, const void *source,
@@ -196,19 +174,6 @@ __device__ void GPUIBContext::putmem_wave(void *dest, const void *source,
   fence_.flush();
 }
 
-__device__ void GPUIBContext::getmem_wg(void *dest, const void *source,
-                                        size_t nelems, int pe) {
-  const char *src_typed = reinterpret_cast<const char *>(source);
-  uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
-  auto *qp = getQueuePair(pe);
-  if (is_thread_zero_in_block()) {
-    qp->get_nbi_cqe<WG>(base_heap[pe] + L_offset, dest, nelems, pe, true);
-  }
-  qp->quiet_single<WG>();
-  __syncthreads();
-  fence_.flush();
-}
-
 __device__ void GPUIBContext::getmem_wave(void *dest, const void *source,
                                           size_t nelems, int pe) {
   const char *src_typed = reinterpret_cast<const char *>(source);
@@ -219,17 +184,6 @@ __device__ void GPUIBContext::getmem_wave(void *dest, const void *source,
   }
   qp->quiet_single<WAVE>();
   fence_.flush();
-}
-
-__device__ void GPUIBContext::getmem_nbi_wg(void *dest, const void *source,
-                                            size_t nelems, int pe) {
-  const char *src_typed = reinterpret_cast<const char *>(source);
-  uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
-  if (is_thread_zero_in_block()) {
-    auto *qp = getQueuePair(pe);
-    qp->get_nbi<WG>(base_heap[pe] + L_offset, dest, nelems, pe, true);
-  }
-  __syncthreads();
 }
 
 __device__ void GPUIBContext::getmem_nbi_wave(void *dest, const void *source,

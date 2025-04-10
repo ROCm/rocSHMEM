@@ -186,14 +186,6 @@ class Context {
   __device__
   T g(T* source, int pe);
 
-  template <typename T, ROCSHMEM_OP Op>
-  __device__
-  void to_all(T* dest, const T* source, int nreduce, int PE_start, int logPE_stride, int PE_size, T* pWrk, long* pSync);
-
-  template <typename T, ROCSHMEM_OP Op>
-  __device__
-  int reduce(rocshmem_team_t team, T* dest, const T* source, int nreduce);
-
   template <typename T>
   __device__
   void put(T* dest, const T* source, size_t nelems, int pe);
@@ -210,34 +202,6 @@ class Context {
   __device__
   void get_nbi(T* dest, const T* source, size_t nelems, int pe);
 
-  template <typename T>
-  __device__
-  void alltoall(rocshmem_team_t team, T* dest, const T* source, int nelems);
-
-  template <typename T>
-  __device__
-  void fcollect(rocshmem_team_t team, T* dest, const T* source, int nelems);
-
-  template <typename T>
-  __device__
-  void broadcast(rocshmem_team_t team, T* dest, const T* source, int nelems, int pe_root);
-
-  template <typename T>
-  __device__
-  void broadcast(T* dest, const T* source, int nelems, int pe_root, int pe_start, int log_pe_stride, int pe_size, long* p_sync);
-
-  __device__
-  void putmem_wg(void* dest, const void* source, size_t nelems, int pe);
-
-  __device__
-  void getmem_wg(void* dest, const void* source, size_t nelems, int pe);
-
-  __device__
-  void putmem_nbi_wg(void* dest, const void* source, size_t nelems, int pe);
-
-  __device__
-  void getmem_nbi_wg(void* dest, const void* source, size_t size, int pe);
-
   __device__
   void putmem_wave(void* dest, const void* source, size_t nelems, int pe);
 
@@ -249,22 +213,6 @@ class Context {
 
   __device__
   void getmem_nbi_wave(void* dest, const void* source, size_t size, int pe);
-
-  template <typename T>
-  __device__
-  void put_wg(T* dest, const T* source, size_t nelems, int pe);
-
-  template <typename T>
-  __device__
-  void put_nbi_wg(T* dest, const T* source, size_t nelems, int pe);
-
-  template <typename T>
-  __device__
-  void get_wg(T* dest, const T* source, size_t nelems, int pe);
-
-  template <typename T>
-  __device__
-  void get_nbi_wg(T* dest, const T* source, size_t nelems, int pe);
 
   template <typename T>
   __device__
@@ -281,33 +229,6 @@ class Context {
   template <typename T>
   __device__
   void get_nbi_wave(T* dest, const T* source, size_t nelems, int pe);
-
-#define CONTEXT_PUTMEM_SIGNAL_DEC(SUFFIX)                                              \
-  __device__ void putmem_signal##SUFFIX(void *dest, const void *source, size_t nelems, \
-                                        uint64_t *sig_addr, uint64_t signal, int sig_op, int pe);
-
-  CONTEXT_PUTMEM_SIGNAL_DEC()
-  CONTEXT_PUTMEM_SIGNAL_DEC(_wg)
-  CONTEXT_PUTMEM_SIGNAL_DEC(_wave)
-  CONTEXT_PUTMEM_SIGNAL_DEC(_nbi)
-  CONTEXT_PUTMEM_SIGNAL_DEC(_nbi_wg)
-  CONTEXT_PUTMEM_SIGNAL_DEC(_nbi_wave)
-
-#define CONTEXT_PUT_SIGNAL_DEC(SUFFIX)                                        \
-  template <typename T>                                                       \
-  __device__ void put_signal##SUFFIX(T *dest, const T *source, size_t nelems, \
-                                     uint64_t *sig_addr, uint64_t signal, int sig_op, int pe);
-
-  CONTEXT_PUT_SIGNAL_DEC()
-  CONTEXT_PUT_SIGNAL_DEC(_wg)
-  CONTEXT_PUT_SIGNAL_DEC(_wave)
-  CONTEXT_PUT_SIGNAL_DEC(_nbi)
-  CONTEXT_PUT_SIGNAL_DEC(_nbi_wg)
-  CONTEXT_PUT_SIGNAL_DEC(_nbi_wave)
-
-  __device__ uint64_t signal_fetch(const uint64_t *sig_addr);
-  __device__ uint64_t signal_fetch_wg(const uint64_t *sig_addr);
-  __device__ uint64_t signal_fetch_wave(const uint64_t *sig_addr);
 
   /**************************************************************************
    ****************************** HOST METHODS ******************************
@@ -410,22 +331,6 @@ class Context {
 
   template <typename T>
   __host__
-  void broadcast(T* dest, const T* source, int nelems, int pe_root, int pe_start, int log_pe_stride, int pe_size, long* p_sync);
-
-  template <typename T>
-  __host__
-  void broadcast(rocshmem_team_t team, T* dest, const T* source, int nelems, int pe_root);
-
-  template <typename T, ROCSHMEM_OP Op>
-  __host__
-  void to_all(T* dest, const T* source, int nreduce, int PE_start, int logPE_stride, int PE_size, T* pWrk, long* pSync);
-
-  template <typename T, ROCSHMEM_OP Op>
-  __host__
-  int reduce(rocshmem_team_t team, T* dest, const T* source, int nreduce);
-
-  template <typename T>
-  __host__
   void wait_until(T *ivars, int cmp, T val);
 
   template <typename T>
@@ -439,18 +344,6 @@ class Context {
   template <typename T>
   __host__
   size_t wait_until_some(T *ivars, size_t nelems, size_t* indices, const int *status, int cmp, T val);
-
-  template <typename T>
-  __host__
-  void wait_until_all_vector(T *ivars, size_t nelems, const int *status, int cmp, T* vals);
-
-  template <typename T>
-  __host__
-  size_t wait_until_any_vector(T *ivars, size_t nelems, const int *status, int cmp, T* vals);
-
-  template <typename T>
-  __host__
-  size_t wait_until_some_vector(T *ivars, size_t nelems, size_t* indices, const int *status, int cmp, T* vals);
 
   template <typename T>
   __host__

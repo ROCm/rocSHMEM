@@ -126,16 +126,6 @@ template <typename T>
 __host__ void rocshmem_atomic_set(rocshmem_ctx_t ctx, T *dest, T val, int pe);
 
 template <typename T>
-__host__ void rocshmem_broadcast(rocshmem_ctx_t ctx, T *dest, const T *source,
-                                  int nelement, int PE_root, int PE_start,
-                                  int logPE_stride, int PE_size, long *pSync);
-
-template <typename T, ROCSHMEM_OP Op>
-__host__ void rocshmem_to_all(rocshmem_ctx_t ctx, T *dest, const T *source,
-                               int nreduce, int PE_start, int logPE_stride,
-                               int PE_size, T *pWrk, long *pSync);
-
-template <typename T>
 __host__ void rocshmem_wait_until(T *ivars, int cmp, T val);
 
 template <typename T>
@@ -149,19 +139,6 @@ __host__ size_t wait_until_any(T* ivars, size_t nelems, const int *status,
 template <typename T>
 __host__ size_t wait_until_some(T* ivars, size_t nelems, size_t* indices,
                               const int *status, int cmp, T val);
-
-template <typename T>
-__host__ void wait_until_all_vector(T* ivars, size_t nelems, const int *status,
-                                    int cmp, T* vals);
-
-template <typename T>
-__host__ size_t wait_until_any_vector(T* ivars, size_t nelems, const int *status,
-                                      int cmp, T* vals);
-
-template <typename T>
-__host__ size_t wait_until_some_vector(T* ivars, size_t nelems,
-                                     size_t* indices, const int *status,
-                                     int cmp, T* vals);
 
 template <typename T>
 __host__ int rocshmem_test(T *ivars, int cmp, T val);

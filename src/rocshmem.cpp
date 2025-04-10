@@ -697,46 +697,6 @@ __host__ void rocshmem_barrier_all() {
   get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->barrier_all();
 }
 
-__host__ void rocshmem_sync_all() {
-  get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->sync_all();
-}
-
-template <typename T>
-__host__ void rocshmem_broadcast([[maybe_unused]] rocshmem_ctx_t ctx, T *dest,
-                                  const T *source, int nelem, int pe_root,
-                                  int pe_start, int log_pe_stride, int pe_size,
-                                  long *p_sync) {
-  get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)
-      ->broadcast<T>(dest, source, nelem, pe_root, pe_start, log_pe_stride,
-                     pe_size, p_sync);
-}
-
-template <typename T>
-__host__ void rocshmem_broadcast([[maybe_unused]] rocshmem_ctx_t ctx,
-                                  rocshmem_team_t team, T *dest,
-                                  const T *source, int nelem, int pe_root) {
-  get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)
-      ->broadcast<T>(team, dest, source, nelem, pe_root);
-}
-
-template <typename T, ROCSHMEM_OP Op>
-__host__ void rocshmem_to_all([[maybe_unused]] rocshmem_ctx_t ctx, T *dest,
-                               const T *source, int nreduce, int PE_start,
-                               int logPE_stride, int PE_size, T *pWrk,
-                               long *pSync) {
-  get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)
-      ->to_all<T, Op>(dest, source, nreduce, PE_start, logPE_stride, PE_size,
-                      pWrk, pSync);
-}
-
-template <typename T, ROCSHMEM_OP Op>
-__host__ int rocshmem_reduce([[maybe_unused]] rocshmem_ctx_t ctx,
-                               rocshmem_team_t team, T *dest, const T *source,
-                               int nreduce) {
-  return get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)
-              ->reduce<T, Op>(team, dest, source, nreduce);
-}
-
 template <typename T>
 __host__ void rocshmem_wait_until(T *ivars, int cmp, T val) {
   get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->wait_until(ivars, cmp, val);
@@ -765,60 +725,9 @@ __host__ size_t rocshmem_wait_until_some(T *ivars, size_t nelems, size_t* indice
 }
 
 template <typename T>
-__host__ size_t rocshmem_wait_until_any_vector(T *ivars, size_t nelems, const int* status,
-                                                int cmp, T* vals) {
-  return get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->wait_until_any_vector(ivars,
-      nelems, status, cmp, vals);
-}
-
-template <typename T>
-__host__ void rocshmem_wait_until_all_vector(T *ivars, size_t nelems, const int* status,
-                                              int cmp, T* vals) {
-  get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->wait_until_all_vector(ivars,
-      nelems, status, cmp, vals);
-}
-
-template <typename T>
-__host__ size_t rocshmem_wait_until_some_vector(T *ivars, size_t nelems,
-                                               size_t* indices,
-                                               const int* status,
-                                               int cmp, T* vals) {
-  return get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->wait_until_some_vector(ivars,
-      nelems, indices, status, cmp, vals);
-}
-
-template <typename T>
 __host__ int rocshmem_test(T *ivars, int cmp, T val) {
   return get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->test(ivars, cmp, val);
 }
-
-/**
- * Template generator for reductions
- **/
-#define REDUCTION_GEN(T, Op)                                                  \
-  template __host__ void rocshmem_to_all<T, Op>(                              \
-      rocshmem_ctx_t ctx, T * dest, const T *source, int nreduce,             \
-      int PE_start, int logPE_stride, int PE_size, T *pWrk, long *pSync);     \
-  template __host__ int rocshmem_reduce<T, Op>(                               \
-      rocshmem_ctx_t ctx, rocshmem_team_t team, T * dest, const T *source,    \
-      int nreduce);
-
-#define ARITH_REDUCTION_GEN(T)    \
-  REDUCTION_GEN(T, ROCSHMEM_SUM) \
-  REDUCTION_GEN(T, ROCSHMEM_MIN) \
-  REDUCTION_GEN(T, ROCSHMEM_MAX) \
-  REDUCTION_GEN(T, ROCSHMEM_PROD)
-
-#define BITWISE_REDUCTION_GEN(T)  \
-  REDUCTION_GEN(T, ROCSHMEM_OR)  \
-  REDUCTION_GEN(T, ROCSHMEM_AND) \
-  REDUCTION_GEN(T, ROCSHMEM_XOR)
-
-#define INT_REDUCTION_GEN(T) \
-  ARITH_REDUCTION_GEN(T)     \
-  BITWISE_REDUCTION_GEN(T)
-
-#define FLOAT_REDUCTION_GEN(T) ARITH_REDUCTION_GEN(T)
 
 /**
  * Declare templates for the required datatypes (for the compiler)
@@ -845,13 +754,7 @@ __host__ int rocshmem_test(T *ivars, int cmp, T val) {
                                           size_t nelems, int pe);             \
   template __host__ void rocshmem_get_nbi<T>(T * dest, const T *source,       \
                                               size_t nelems, int pe);         \
-  template __host__ T rocshmem_g<T>(const T *source, int pe);                 \
-  template __host__ void rocshmem_broadcast<T>(                               \
-      rocshmem_ctx_t ctx, T * dest, const T *source, int nelem, int pe_root,  \
-      int pe_start, int log_pe_stride, int pe_size, long *p_sync);            \
-  template __host__ void rocshmem_broadcast<T>(                               \
-      rocshmem_ctx_t ctx, rocshmem_team_t team, T * dest, const T *source,    \
-      int nelem, int pe_root);
+  template __host__ T rocshmem_g<T>(const T *source, int pe);
 
 /**
  * Declare templates for the standard amo types
@@ -932,51 +835,11 @@ __host__ int rocshmem_test(T *ivars, int cmp, T val) {
   template __host__ size_t rocshmem_wait_until_some<T>(T *ivars, size_t nelems,\
                                       size_t* indices, const int* status,     \
                                       int cmp, T val);                        \
-  template __host__ size_t rocshmem_wait_until_any_vector<T>(T *ivars,        \
-                                      size_t nelems, const int* status,       \
-                                      int cmp, T* vals);                      \
-  template __host__ void rocshmem_wait_until_all_vector<T>(T *ivars,          \
-                                      size_t nelems, const int* status,       \
-                                      int cmp, T* vals);                      \
-  template __host__ size_t rocshmem_wait_until_some_vector<T>(T *ivars,       \
-                                      size_t nelems, size_t* indices,         \
-                                      const int* status, int cmp,             \
-                                      T* vals);                               \
   template __host__ int Context::test<T>(T *ivars, int cmp, T val);
 
 /**
  * Define APIs to call the template functions
  **/
-
-#define REDUCTION_DEF_GEN(T, TNAME, Op_API, Op)                               \
-  __host__ void rocshmem_ctx_##TNAME##_##Op_API##_to_all(                     \
-      rocshmem_ctx_t ctx, T *dest, const T *source, int nreduce,              \
-      int PE_start, int logPE_stride, int PE_size, T *pWrk, long *pSync) {    \
-    rocshmem_to_all<T, Op>(ctx, dest, source, nreduce, PE_start,              \
-                            logPE_stride, PE_size, pWrk, pSync);              \
-  }                                                                           \
-  __host__ int rocshmem_ctx_##TNAME##_##Op_API##_reduce(                      \
-      rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source,     \
-      int nreduce) {                                                          \
-    return rocshmem_reduce<T, Op>(ctx, team, dest, source, nreduce);          \
-  }
-
-#define ARITH_REDUCTION_DEF_GEN(T, TNAME)                                     \
-  REDUCTION_DEF_GEN(T, TNAME, sum, ROCSHMEM_SUM)                              \
-  REDUCTION_DEF_GEN(T, TNAME, min, ROCSHMEM_MIN)                              \
-  REDUCTION_DEF_GEN(T, TNAME, max, ROCSHMEM_MAX)                              \
-  REDUCTION_DEF_GEN(T, TNAME, prod, ROCSHMEM_PROD)
-
-#define BITWISE_REDUCTION_DEF_GEN(T, TNAME)                                   \
-  REDUCTION_DEF_GEN(T, TNAME, or, ROCSHMEM_OR)                                \
-  REDUCTION_DEF_GEN(T, TNAME, and, ROCSHMEM_AND)                              \
-  REDUCTION_DEF_GEN(T, TNAME, xor, ROCSHMEM_XOR)
-
-#define INT_REDUCTION_DEF_GEN(T, TNAME)                                       \
-  ARITH_REDUCTION_DEF_GEN(T, TNAME)                                           \
-  BITWISE_REDUCTION_DEF_GEN(T, TNAME)
-
-#define FLOAT_REDUCTION_DEF_GEN(T, TNAME) ARITH_REDUCTION_DEF_GEN(T, TNAME)
 
 #define RMA_DEF_GEN(T, TNAME)                                                 \
   __host__ void rocshmem_ctx_##TNAME##_put(                                   \
@@ -1024,17 +887,6 @@ __host__ int rocshmem_test(T *ivars, int cmp, T val) {
   }                                                                           \
   __host__ T rocshmem_##TNAME##_g(const T *source, int pe) {                  \
     return rocshmem_g<T>(source, pe);                                         \
-  }                                                                           \
-  __host__ void rocshmem_ctx_##TNAME##_broadcast(                             \
-      rocshmem_ctx_t ctx, T *dest, const T *source, int nelem, int pe_root,   \
-      int pe_start, int log_pe_stride, int pe_size, long *p_sync) {           \
-    rocshmem_broadcast<T>(ctx, dest, source, nelem, pe_root, pe_start,        \
-                           log_pe_stride, pe_size, p_sync);                   \
-  }                                                                           \
-  __host__ void rocshmem_ctx_##TNAME##_broadcast(                             \
-      rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source,     \
-      int nelem, int pe_root) {                                               \
-    rocshmem_broadcast<T>(ctx, team, dest, source, nelem, pe_root);           \
   }
 
 #define AMO_STANDARD_DEF_GEN(T, TNAME)                                        \
@@ -1166,30 +1018,6 @@ __host__ int rocshmem_test(T *ivars, int cmp, T val) {
                                                     T val) {                  \
     return rocshmem_wait_until_some<T>(ivars, nelems, indices, status, cmp, val); \
   }                                                                           \
-  __host__ size_t rocshmem_##TNAME##_wait_until_any_vector(T *ivars,          \
-                                                          size_t nelems,      \
-                                                          const int* status,  \
-                                                          int cmp,            \
-                                                          T* vals) {          \
-    return rocshmem_wait_until_any_vector<T>(ivars, nelems, status, cmp,      \
-                                              vals);                          \
-  }                                                                           \
-  __host__ void rocshmem_##TNAME##_wait_until_all_vector(T *ivars,            \
-                                                          size_t nelems,      \
-                                                          const int* status,  \
-                                                          int cmp,            \
-                                                          T* vals) {          \
-    rocshmem_wait_until_all_vector<T>(ivars, nelems, status, cmp, vals);      \
-  }                                                                           \
-  __host__ size_t rocshmem_##TNAME##_wait_until_some_vector(T *ivars,         \
-                                                           size_t nelems,     \
-                                                           size_t* indices,   \
-                                                           const int* status, \
-                                                           int cmp,           \
-                                                           T* vals) {         \
-    return rocshmem_wait_until_some_vector<T>(ivars, nelems, indices,         \
-        status, cmp, vals);                                                   \
-  }                                                                           \
   __host__ int rocshmem_##TNAME##_test(T *ivars, int cmp, T val) {            \
     return rocshmem_test<T>(ivars, cmp, val);                                 \
   }
@@ -1199,15 +1027,6 @@ __host__ int rocshmem_test(T *ivars, int cmp, T val) {
  *****************************************************************************/
 
 // clang-format off
-INT_REDUCTION_GEN(int)
-INT_REDUCTION_GEN(short)
-INT_REDUCTION_GEN(long)
-INT_REDUCTION_GEN(long long)
-FLOAT_REDUCTION_GEN(float)
-FLOAT_REDUCTION_GEN(double)
-// long double reduction fails. hipcc/device may not support long double.
-// so disable it for now.
-// FLOAT_REDUCTION_GEN(long double)
 
 RMA_GEN(float)
 RMA_GEN(double)
@@ -1259,16 +1078,6 @@ WAIT_GEN(long long)
 WAIT_GEN(unsigned int)
 WAIT_GEN(unsigned long)
 WAIT_GEN(unsigned long long)
-
-INT_REDUCTION_DEF_GEN(int, int)
-INT_REDUCTION_DEF_GEN(short, short)
-INT_REDUCTION_DEF_GEN(long, long)
-INT_REDUCTION_DEF_GEN(long long, longlong)
-FLOAT_REDUCTION_DEF_GEN(float, float)
-FLOAT_REDUCTION_DEF_GEN(double, double)
-// long double reduction fails. hipcc/device may not support long double.
-// so disable it for now.
-// FLOAT_REDUCTION_DEF_GEN(long double, longdouble)
 
 RMA_DEF_GEN(float, float)
 RMA_DEF_GEN(double, double)

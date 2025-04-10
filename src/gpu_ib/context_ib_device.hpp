@@ -128,51 +128,6 @@ class GPUIBContext : public Context {
   template <typename T>
   __device__ void get_nbi(T *dest, const T *source, size_t nelems, int pe);
 
-  template <typename T>
-  __device__ void broadcast(rocshmem_team_t team, T *dest, const T *source,
-                            int nelems, int pe_root);
-
-  template <typename T>
-  __device__ void broadcast(T *dest, const T *source, int nelems, int pe_root, int pe_start, int log_pe_stride, int pe_size, long *p_sync);
-
-  template <typename T>
-  __device__ void alltoall(rocshmem_team_t team, T *dest, const T *source, int nelems);
-
-  template <typename T>
-  __device__ void alltoall_broadcast(rocshmem_team_t team, T *dest, const T *source, int nelems);
-
-  template <typename T>
-  __device__ void alltoall_brucks(rocshmem_team_t team, T *dest, const T *source, int nelems);
-
-  template <typename T>
-  __device__ void alltoall_gcen(rocshmem_team_t team, T *dest, const T *source, int nelems);
-
-  template <typename T>
-  __device__ void alltoall_gcen2(rocshmem_team_t team, T *dest, const T *source, int nelems);
-
-  template <typename T>
-  __device__ void fcollect(rocshmem_team_t team, T *dest, const T *source, int nelems);
-
-  template <typename T>
-  __device__ void fcollect_broadcast(rocshmem_team_t team, T *dest, const T *source, int nelems);
-
-  template <typename T>
-  __device__ void fcollect_brucks(rocshmem_team_t team, T *dest, const T *source, int nelems);
-
-  template <typename T>
-  __device__ void fcollect_gcen(rocshmem_team_t team, T *dest, const T *source, int nelems);
-
-  template <typename T>
-  __device__ void fcollect_gcen2(rocshmem_team_t team, T *dest, const T *source, int nelems);
-
-  __device__ void putmem_wg(void *dest, const void *source, size_t nelems, int pe);
-
-  __device__ void getmem_wg(void *dest, const void *source, size_t nelems, int pe);
-
-  __device__ void putmem_nbi_wg(void *dest, const void *source, size_t nelems, int pe);
-
-  __device__ void getmem_nbi_wg(void *dest, const void *source, size_t size, int pe);
-
   __device__ void putmem_wave(void *dest, const void *source, size_t nelems, int pe);
 
   __device__ void getmem_wave(void *dest, const void *source, size_t nelems, int pe);
@@ -180,18 +135,6 @@ class GPUIBContext : public Context {
   __device__ void putmem_nbi_wave(void *dest, const void *source, size_t nelems, int pe);
 
   __device__ void getmem_nbi_wave(void *dest, const void *source, size_t size, int pe);
-
-  template <typename T>
-  __device__ void put_wg(T *dest, const T *source, size_t nelems, int pe);
-
-  template <typename T>
-  __device__ void put_nbi_wg(T *dest, const T *source, size_t nelems, int pe);
-
-  template <typename T>
-  __device__ void get_wg(T *dest, const T *source, size_t nelems, int pe);
-
-  template <typename T>
-  __device__ void get_nbi_wg(T *dest, const T *source, size_t nelems, int pe);
 
   template <typename T>
   __device__ void put_wave(T *dest, const T *source, size_t nelems, int pe);
@@ -206,15 +149,6 @@ class GPUIBContext : public Context {
   __device__ void get_nbi_wave(T *dest, const T *source, size_t nelems, int pe);
 
  private:
-  template <typename T, ROCSHMEM_OP Op>
-  __device__ void internal_direct_allreduce(T *dst, const T *src, int nelems, int PE_start, int logPE_stride, int PE_size, T *pWrk, long *pSync);
-
-  template <typename T, ROCSHMEM_OP Op>
-  __device__ void internal_ring_allreduce(T *dst, const T *src, int nelems, int PE_start, int logPE_stride, int PE_size, T *pWrk, long *pSync, int n_seg, int seg_size, int chunk_size);
-
-  template <typename T>
-  __device__ void internal_put_broadcast(T *dst, const T *src, int nelems, int pe_root, int PE_start, int logPE_stride, int PE_size, long *pSync);
-
   template <typename T>
   __device__ void internal_get_broadcast(T *dst, const T *src, int nelems, int pe_root, long *pSync);
 
