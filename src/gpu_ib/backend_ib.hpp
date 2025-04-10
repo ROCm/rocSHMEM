@@ -27,8 +27,7 @@
 #include <vector>
 
 #include <rocshmem/rocshmem.hpp>
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
-			      //
+#include "rocshmem_config.h"
 #include "context_incl.hpp"
 #include "containers/free_list_impl.hpp"
 #include "memory/hip_allocator.hpp"
