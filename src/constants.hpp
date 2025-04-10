@@ -40,13 +40,6 @@ inline const unsigned ALIGNMENT{128};
 
 /**
  * @brief Constant number which holds maximum workgroup size.
- *
- * @todo Remove this member from this class. It belongs in a class
- * that specifically holds device hardware information. If this
- * device class existed, we could consolidate the various flavours of
- * the Instinct cards into their own groups and then set these
- * hard-coded fields by querying the rocm runtime during our library
- * initialization.
  */
 inline const unsigned MAX_WG_SIZE{1024};
 

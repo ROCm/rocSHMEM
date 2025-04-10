@@ -156,9 +156,6 @@ class GPUIBBackend {
    * @brief initialize MPI.
    *
    * GPUIB relies on MPI just to exchange the connection information.
-   *
-   * todo: remove the dependency on MPI and make it generic to PMI-X or just
-   * to OpenSHMEM to have support for both CPU and GPU
    */
   void init_mpi_once(MPI_Comm comm);
 
@@ -169,9 +166,6 @@ class GPUIBBackend {
 
   /**
    * @brief Allocate and initialize the ROCSHMEM_CTX_DEFAULT variable.
-   *
-   * @todo The default_ctx member looks unused after it is copied into
-   * the ROCSHMEM_CTX_DEFAULT variable.
    */
   void setup_default_ctx();
   void setup_ctxs();
@@ -305,9 +299,6 @@ class GPUIBBackend {
   /**
    * @brief Holds a copy of the default context (see OpenSHMEM
    * specification).
-   *
-   * @todo Remove this member from the backend class. There is another
-   * copy stored in ROCSHMEM_CTX_DEFAULT.
    */
   GPUIBContext *default_ctx_{nullptr};
 
@@ -318,16 +309,12 @@ class GPUIBBackend {
 
   /**
    * @brief Number of processing elements running in job.
-   *
-   * @todo Change to size_t.
    */
   int num_pes{0};
 
   /**
    * @brief Unique numeric identifier ranging from 0 (inclusive) to
    * num_pes (exclusive) [0 ... num_pes).
-   *
-   * @todo Change to size_t and set invalid entry to max size.
    */
   int my_pe{-1};
 
@@ -337,10 +324,6 @@ class GPUIBBackend {
    */
   uint8_t* done_init{nullptr};
 
-  /**
-   * @todo document where this is used and try to coalesce this into another
-   * class
-   */
   MPI_Comm thread_comm{};
 
   /**

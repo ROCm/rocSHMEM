@@ -358,7 +358,6 @@ __device__ void QueuePair::waitCQSpace(int num_msgs) {
         "adding %d cq_size %d\n",
         quiet_counter, num_msgs, cq_size);
 
-    // TODO(khamidou): More targeted flush would be better here.
     quiet_single<THREAD>();
   }
 }

@@ -93,11 +93,6 @@ __device__ void GPUIBContext::sync(rocshmem_team_t team) {
 
   double dbl_log_pe_stride = team_obj->tinfo_wrt_world->log_stride;
   int log_pe_stride = static_cast<int>(dbl_log_pe_stride);
-  /**
-   * Ensure that the stride is a multiple of 2 for GPU_IB.
-   * TODO: enable GPU_IB to work with non-powers-of-2 strides
-   * and remove this assert.
-   */
   assert((dbl_log_pe_stride - log_pe_stride) == 0);
 
   int pe = team_obj->my_pe_in_world;

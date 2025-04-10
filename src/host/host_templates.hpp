@@ -96,11 +96,6 @@ __host__ MPI_Comm HostInterface::get_mpi_comm(int pe_start, int log_pe_stride,
   MPI_Comm_size(host_comm_world_, &comm_world_size);
 
   if (pe_start == 0 && log_pe_stride == 0 && pe_size == comm_world_size) {
-    /*
-     * Use the host interface's copy of MPI_COMM_WORLD
-     * TODO: replace with a per-context copy of MPI_COMM_WORLD when we
-     * have multiple contexts
-     */
     active_set_comm = host_comm_world_;
     return active_set_comm;
   }

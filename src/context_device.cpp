@@ -40,12 +40,6 @@ Context::Context(GPUIBBackend* handle)
    * top of each other for all the default values in context.hh (and the
    * initializer list). It's not incorrect, but it is weird and probably
    * wasteful.
-   *
-   * TODO: Might consider refactoring so that constructor is always called
-   * from a single thread, and the parallel portion of initialization can be
-   * a separate function. This requires reworking all the derived classes
-   * since their constructors actually make use of all the threads to boost
-   * performance.
    */
   __syncthreads();
 }

@@ -172,11 +172,6 @@ __device__ void GPUIBContext::to_all(rocshmem_team_t team, T *dest,
 
   double dbl_log_pe_stride = team_obj->tinfo_wrt_world->log_stride;
   int log_pe_stride = static_cast<int>(dbl_log_pe_stride);
-  /**
-   * Ensure that the stride is a multiple of 2 for GPU_IB.
-   * TODO(bpotter): enable GPU_IB to work with non-power-of-2 strides
-   * and remove this assert.
-   */
   assert((dbl_log_pe_stride - log_pe_stride) == 0);
 
   int pe_start = team_obj->tinfo_wrt_world->pe_start;
@@ -203,11 +198,6 @@ __device__ void GPUIBContext::to_all(T *dest, const T *source, int nreduce,
       max(nreduce / 2 + 1, ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE);
   size_t provided_pSync = ROCSHMEM_REDUCE_SYNC_SIZE;
 
-  // TODO(bpotter):
-  // We basically do a direct reduce if pWrk is big enough, else we
-  // give up. In the future we will want to design algorithms to work
-  // with nreduce/2 + 1 space, which would cover every case per the
-  // standard.
   if (provided_pWrk >= direct_pWrk && provided_pSync >= direct_pSync) {
     internal_direct_allreduce<T, Op>(dest, source, nreduce, PE_start,
                                      logPE_stride, PE_size, pWrk, pSync);
@@ -409,11 +399,7 @@ __device__ void GPUIBContext::broadcast(rocshmem_team_t team, T *dst,
 
   double dbl_log_pe_stride = team_obj->tinfo_wrt_world->log_stride;
   int log_pe_stride = static_cast<int>(dbl_log_pe_stride);
-  /**
-   * Ensure that the stride is a multiple of 2 for GPU_IB.
-   * TODO(bpotter): enable GPU_IB to work with non-powers-of-2 strides
-   * and remove this assert.
-   */
+
   assert((dbl_log_pe_stride - log_pe_stride) == 0);
 
   int pe_start = team_obj->tinfo_wrt_world->pe_start;
@@ -458,11 +444,6 @@ __device__ void GPUIBContext::alltoall_broadcast(rocshmem_team_t team, T *dst,
 
   double dbl_log_pe_stride = team_obj->tinfo_wrt_world->log_stride;
   int log_pe_stride = static_cast<int>(dbl_log_pe_stride);
-  /**
-   * Ensure that the stride is a multiple of 2 for GPU_IB.
-   * TODO(bpotter): enable GPU_IB to work with non-powers-of-2 strides
-   * and remove this assert.
-   */
   assert((dbl_log_pe_stride - log_pe_stride) == 0);
   int pe_start = team_obj->tinfo_wrt_world->pe_start;
   int pe_size = team_obj->num_pes;
@@ -490,11 +471,6 @@ __device__ void GPUIBContext::alltoall_brucks(rocshmem_team_t team, T *dst,
 
   double dbl_log_pe_stride = team_obj->tinfo_wrt_world->log_stride;
   int log_pe_stride = static_cast<int>(dbl_log_pe_stride);
-  /**
-   * Ensure that the stride is a multiple of 2 for GPU_IB.
-   * TODO(bpotter): enable GPU_IB to work with non-powers-of-2 strides
-   * and remove this assert.
-   */
   assert((dbl_log_pe_stride - log_pe_stride) == 0);
   int pe_start = team_obj->tinfo_wrt_world->pe_start;
   int pe_size = team_obj->num_pes;
@@ -588,11 +564,6 @@ __device__ void GPUIBContext::alltoall_gcen(rocshmem_team_t team, T *dst,
 
   double dbl_log_pe_stride = team_obj->tinfo_wrt_world->log_stride;
   int log_pe_stride = static_cast<int>(dbl_log_pe_stride);
-  /**
-   * Ensure that the stride is a multiple of 2 for GPU_IB.
-   * TODO(bpotter): enable GPU_IB to work with non-powers-of-2 strides
-   * and remove this assert.
-   */
   assert((dbl_log_pe_stride - log_pe_stride) == 0);
   int pe_size = team_obj->num_pes;
   int stride = 1 << log_pe_stride;
@@ -611,7 +582,6 @@ __device__ void GPUIBContext::alltoall_gcen(rocshmem_team_t team, T *dst,
   // Works when number of PEs divisible by root(PE_size)
   int num_clust = sqrt(pe_size);
   int clust_size = (pe_size + num_clust - 1) / num_clust;
-  // TODO(bpotter): Allow any size of cluster
   assert(num_clust * clust_size == pe_size);
   int clust_id = my_pe_in_team / clust_size;
 
@@ -684,11 +654,6 @@ __device__ void GPUIBContext::alltoall_gcen2(rocshmem_team_t team, T *dst,
 
   double dbl_log_pe_stride = team_obj->tinfo_wrt_world->log_stride;
   int log_pe_stride = static_cast<int>(dbl_log_pe_stride);
-  /**
-   * Ensure that the stride is a multiple of 2 for GPU_IB.
-   * TODO(bpotter): enable GPU_IB to work with non-powers-of-2 strides
-   * and remove this assert.
-   */
   assert((dbl_log_pe_stride - log_pe_stride) == 0);
   int pe_size = team_obj->num_pes;
   int stride = 1 << log_pe_stride;
@@ -707,7 +672,6 @@ __device__ void GPUIBContext::alltoall_gcen2(rocshmem_team_t team, T *dst,
   // Works when number of PEs divisible by root(PE_size)
   int num_clust = sqrt(pe_size);
   int clust_size = (pe_size + num_clust - 1) / num_clust;
-  // TODO(bpotter): Allow any size of cluster
   assert(num_clust * clust_size == pe_size);
   int clust_id = my_pe_in_team / clust_size;
 
@@ -775,11 +739,6 @@ __device__ void GPUIBContext::fcollect_broadcast(rocshmem_team_t team, T *dst,
 
   double dbl_log_pe_stride = team_obj->tinfo_wrt_world->log_stride;
   int log_pe_stride = static_cast<int>(dbl_log_pe_stride);
-  /**
-   * Ensure that the stride is a multiple of 2 for GPU_IB.
-   * TODO(bpotter): enable GPU_IB to work with non-powers-of-2 strides
-   * and remove this assert.
-   */
   assert((dbl_log_pe_stride - log_pe_stride) == 0);
   int pe_start = team_obj->tinfo_wrt_world->pe_start;
   int pe_size = team_obj->num_pes;
@@ -808,11 +767,6 @@ __device__ void GPUIBContext::fcollect_brucks(rocshmem_team_t team, T *dst,
 
   double dbl_log_pe_stride = team_obj->tinfo_wrt_world->log_stride;
   int log_pe_stride = static_cast<int>(dbl_log_pe_stride);
-  /**
-   * Ensure that the stride is a multiple of 2 for GPU_IB.
-   * TODO(bpotter): enable GPU_IB to work with non-powers-of-2 strides
-   * and remove this assert.
-   */
   assert((dbl_log_pe_stride - log_pe_stride) == 0);
   int pe_start = team_obj->tinfo_wrt_world->pe_start;
   int pe_size = team_obj->num_pes;
@@ -871,11 +825,6 @@ __device__ void GPUIBContext::fcollect_gcen(rocshmem_team_t team, T *dst,
 
   double dbl_log_pe_stride = team_obj->tinfo_wrt_world->log_stride;
   int log_pe_stride = static_cast<int>(dbl_log_pe_stride);
-  /**
-   * Ensure that the stride is a multiple of 2 for GPU_IB.
-   * TODO(bpotter): enable GPU_IB to work with non-powers-of-2 strides
-   * and remove this assert.
-   */
   assert((dbl_log_pe_stride - log_pe_stride) == 0);
   int pe_size = team_obj->num_pes;
   int stride = 1 << log_pe_stride;
@@ -894,7 +843,6 @@ __device__ void GPUIBContext::fcollect_gcen(rocshmem_team_t team, T *dst,
   // Works when number of PEs divisible by root(PE_size)
   int num_clust = sqrt(pe_size);
   int clust_size = (pe_size + num_clust - 1) / num_clust;
-  // TODO(bpotter): Allow any size of cluster
   assert(num_clust * clust_size == pe_size);
   int clust_id = my_pe_in_team / clust_size;
 
@@ -953,11 +901,6 @@ __device__ void GPUIBContext::fcollect_gcen2(rocshmem_team_t team, T *dst,
 
   double dbl_log_pe_stride = team_obj->tinfo_wrt_world->log_stride;
   int log_pe_stride = static_cast<int>(dbl_log_pe_stride);
-  /**
-   * Ensure that the stride is a multiple of 2 for GPU_IB.
-   * TODO(bpotter): enable GPU_IB to work with non-powers-of-2 strides
-   * and remove this assert.
-   */
   assert((dbl_log_pe_stride - log_pe_stride) == 0);
   int pe_size = team_obj->num_pes;
   int stride = 1 << log_pe_stride;
@@ -975,7 +918,6 @@ __device__ void GPUIBContext::fcollect_gcen2(rocshmem_team_t team, T *dst,
   // Works when number of PEs divisible by root(PE_size)
   int num_clust = sqrt(pe_size);
   int clust_size = (pe_size + num_clust - 1) / num_clust;
-  // TODO(bpotter): Allow any size of cluster
   assert(num_clust * clust_size == pe_size);
   int clust_id = my_pe_in_team / clust_size;
 

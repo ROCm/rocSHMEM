@@ -360,7 +360,6 @@ void DynamicConnection::post_dv_dc_wqe(int remote_conn) {
   }
 }
 
-// TODO(bpotter): remove redundancies with the other derived class
 void DynamicConnection::post_wqes() {
   int remote_conn;
   get_remote_conn(&remote_conn);

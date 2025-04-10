@@ -188,7 +188,6 @@ void ReliableConnection::post_dv_rc_wqe(int remote_conn) {
   }
 }
 
-// TODO(bpotter): remove redundancies with the other derived class
 void ReliableConnection::post_wqes() {
   int remote_conn;
   get_remote_conn(&remote_conn);

@@ -113,7 +113,6 @@ __device__ void SegmentBuilder::update_inl_data_seg(uintptr_t *laddr,
   swap_endian_store(&inl_data_seg.byte_count, (size & 0x3FF) | 0x80000000);
 
   // Assume fence HDP flush
-  // TODO(khamidou): Rework fence interface to avoid this
   size_t field_size{sizeof(mlx5_wqe_inl_data_seg)};
   if (!laddr) {
     uint8_t flush_val = 1;

@@ -215,11 +215,6 @@ class Connection {
   ibv_qp* create_qp(ibv_pd* pd, ibv_context* context,
                     ibv_qp_init_attr_ex* qp_attr, ibv_cq* rcq);
 
-  /*
-   * TODO: Remove this eventually. Goal is to have backend delegate
-   * connection stuff to this class, while this class knows nothing about
-   * GPUs or backends.
-   */
   GPUIBBackend* backend{nullptr};
 
   uint32_t sq_size{1024};

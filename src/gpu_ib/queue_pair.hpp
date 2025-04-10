@@ -133,10 +133,6 @@ class QueuePair {
    * @brief Create and enqueue a HDP flush work queue entry on the remote PE.
    *
    * @param[in] pe Processing element id to send the HDP flush operation.
-   *
-   * TODO(@khamidou): does this require a zero_b_rd to enforce write ordering
-   * The HDP flush is itself a write. Could this write be reordered with
-   * respect to other write on the network and arrive out-of-order?
    */
   __device__ void fence(int pe);
 
@@ -307,7 +303,6 @@ class QueuePair {
  private:
   const int inline_threshold{8};
 
-  /* TODO(bpotter): Most of these should be private/protected */
  public:
 
   /*
@@ -317,7 +312,6 @@ class QueuePair {
 
   /*
    * Base pointer of this QP's SQ
-   * TODO(bpotter): Use the correct struct type for this.
    */
   uint64_t *current_sq{nullptr};
   uint64_t *current_sq_H{nullptr};

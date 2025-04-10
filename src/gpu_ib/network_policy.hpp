@@ -148,13 +148,6 @@ class NetworkOnImpl {
    * @brief Set of QueuePairs used by device to do networking.
    *
    * The member is used during Context creation.
-   *
-   * @todo What we really need here is a collection of Contexts that can
-   * either be copied into LDS or used directly by the GPU depending on
-   * what type of context it is (shareable, serialized, or private).
-   * No need to pool up QueuePairs, they can just be managed by their
-   * owning Context. Should then consider pushing into base class since
-   * it's not gpu-ib specific.
    */
   QueuePair *gpu_qps{nullptr};
 
@@ -188,8 +181,6 @@ class NetworkOnImpl {
 
   /**
    * @brief Handle for the atomic memory region.
-   *
-   * @todo Provide more descriptive variable name.
    */
   ibv_mr *mr{nullptr};
 

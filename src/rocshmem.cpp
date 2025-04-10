@@ -298,7 +298,7 @@ __host__ int rocshmem_team_split_strided(
   }
 
   if (parent_team == ROCSHMEM_TEAM_INVALID) {
-    return 0;  // TODO(bpotter): is this the right return value?
+    return 0;
   }
 
   Team *parent_team_obj = get_internal_team(parent_team);
@@ -349,7 +349,6 @@ __host__ int rocshmem_team_split_strided(
   /**
    * Allocate new team for GPU-inittiated communication with backend-specific
    * objects
-   * TODO: are there any backend specific objects?
    */
   if (my_pe_in_new_team < 0) {
     *new_team = ROCSHMEM_TEAM_INVALID;
@@ -544,8 +543,6 @@ __host__ int rocshmem_ctx_create(rocshmem_ctx_t *ctx) {
 }
 
 __host__ void rocshmem_ctx_destroy(rocshmem_ctx_t ctx) {
-  /* TODO: Implicit quiet on this context */
-
   Context *phys_ctx = get_internal_ctx(ctx);
 
   backend->untrack_ctx(phys_ctx);

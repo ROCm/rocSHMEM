@@ -27,11 +27,6 @@
 namespace rocshmem {
 
 /**
- * TODO: Determine tradeoffs between number of instructions, LDS utilization,
- * and quality of coalescing.
- */
-
-/**
  * About the current algorithm:
  *   1) The algorithm is low overhead. It uses no LDS (shared) space or
  *      rounds of a tree reduction (which may cause it to miss some
