@@ -127,9 +127,6 @@ void AMOExtendedTester<T>::verifyResults(uint64_t size) {
           start_time[wg_id] = wall_clock64();                                 \
         }                                                                     \
         switch (type) {                                                       \
-          case AMO_FetchTestType:                                             \
-            ret = rocshmem_ctx_##TNAME##_atomic_fetch(ctx, (T *)r_buf, 1);    \
-            break;                                                            \
           case AMO_SetTestType:                                               \
             rocshmem_ctx_##TNAME##_atomic_set(ctx, (T *)r_buf, 44, 1);        \
             break;                                                            \

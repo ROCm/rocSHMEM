@@ -424,23 +424,8 @@ __host__ T rocshmem_atomic_compare_swap(T *dest, T cond, T val, int pe) {
 }
 
 template <typename T>
-__host__ T rocshmem_atomic_fetch_inc(T *dest, int pe) {
-  return rocshmem_atomic_fetch_inc(ROCSHMEM_HOST_CTX_DEFAULT, dest, pe);
-}
-
-template <typename T>
-__host__ T rocshmem_atomic_fetch(T *source, int pe) {
-  return rocshmem_atomic_fetch(ROCSHMEM_HOST_CTX_DEFAULT, source, pe);
-}
-
-template <typename T>
 __host__ void rocshmem_atomic_add(T *dest, T val, int pe) {
   rocshmem_atomic_add(ROCSHMEM_HOST_CTX_DEFAULT, dest, val, pe);
-}
-
-template <typename T>
-__host__ void rocshmem_atomic_inc(T *dest, int pe) {
-  rocshmem_atomic_inc(ROCSHMEM_HOST_CTX_DEFAULT, dest, pe);
 }
 
 template <typename T>
@@ -451,38 +436,6 @@ __host__ void rocshmem_atomic_set(T *dest, T val, int pe) {
 template <typename T>
 __host__ T rocshmem_atomic_swap(T *dest, T value, int pe) {
   return rocshmem_atomic_swap(ROCSHMEM_HOST_CTX_DEFAULT, dest, value, pe);
-}
-
-template <typename T>
-__host__ T rocshmem_atomic_fetch_and(T *dest, T value, int pe) {
-  return rocshmem_atomic_fetch_and(ROCSHMEM_HOST_CTX_DEFAULT, dest, value,
-                                    pe);
-}
-
-template <typename T>
-__host__ void rocshmem_atomic_and(T *dest, T value, int pe) {
-  rocshmem_atomic_and(ROCSHMEM_HOST_CTX_DEFAULT, dest, value, pe);
-}
-
-template <typename T>
-__host__ T rocshmem_atomic_fetch_or(T *dest, T value, int pe) {
-  return rocshmem_atomic_fetch_or(ROCSHMEM_HOST_CTX_DEFAULT, dest, value, pe);
-}
-
-template <typename T>
-__host__ void rocshmem_atomic_or(T *dest, T value, int pe) {
-  rocshmem_atomic_or(ROCSHMEM_HOST_CTX_DEFAULT, dest, value, pe);
-}
-
-template <typename T>
-__host__ T rocshmem_atomic_fetch_xor(T *dest, T value, int pe) {
-  return rocshmem_atomic_fetch_xor(ROCSHMEM_HOST_CTX_DEFAULT, dest, value,
-                                    pe);
-}
-
-template <typename T>
-__host__ void rocshmem_atomic_xor(T *dest, T value, int pe) {
-  rocshmem_atomic_xor(ROCSHMEM_HOST_CTX_DEFAULT, dest, value, pe);
 }
 
 __host__ void rocshmem_fence() {
@@ -564,24 +517,9 @@ __host__ T rocshmem_atomic_compare_swap(rocshmem_ctx_t ctx, T *dest, T cond,
 }
 
 template <typename T>
-__host__ T rocshmem_atomic_fetch_inc(rocshmem_ctx_t ctx, T *dest, int pe) {
-  return get_internal_ctx(ctx)->amo_fetch_add<T>(dest, 1, pe);
-}
-
-template <typename T>
-__host__ T rocshmem_atomic_fetch(rocshmem_ctx_t ctx, T *source, int pe) {
-  return get_internal_ctx(ctx)->amo_fetch_add<T>(source, 0, pe);
-}
-
-template <typename T>
 __host__ void rocshmem_atomic_add(rocshmem_ctx_t ctx, T *dest, T val,
                                    int pe) {
   get_internal_ctx(ctx)->amo_add<T>(dest, val, pe);
-}
-
-template <typename T>
-__host__ void rocshmem_atomic_inc(rocshmem_ctx_t ctx, T *dest, int pe) {
-  get_internal_ctx(ctx)->amo_add<T>(dest, 1, pe);
 }
 
 template <typename T>
@@ -593,41 +531,6 @@ __host__ void rocshmem_atomic_set(rocshmem_ctx_t ctx, T *dest, T val,
 template <typename T>
 __host__ T rocshmem_atomic_swap(rocshmem_ctx_t ctx, T *dest, T val, int pe) {
   return get_internal_ctx(ctx)->amo_swap(dest, val, pe);
-}
-
-template <typename T>
-__host__ T rocshmem_atomic_fetch_and(rocshmem_ctx_t ctx, T *dest, T val,
-                                      int pe) {
-  return get_internal_ctx(ctx)->amo_fetch_and(dest, val, pe);
-}
-
-template <typename T>
-__host__ void rocshmem_atomic_and(rocshmem_ctx_t ctx, T *dest, T val,
-                                   int pe) {
-  get_internal_ctx(ctx)->amo_and(dest, val, pe);
-}
-
-template <typename T>
-__host__ T rocshmem_atomic_fetch_or(rocshmem_ctx_t ctx, T *dest, T val,
-                                     int pe) {
-  return get_internal_ctx(ctx)->amo_fetch_or(dest, val, pe);
-}
-
-template <typename T>
-__host__ void rocshmem_atomic_or(rocshmem_ctx_t ctx, T *dest, T val, int pe) {
-  get_internal_ctx(ctx)->amo_or(dest, val, pe);
-}
-
-template <typename T>
-__host__ T rocshmem_atomic_fetch_xor(rocshmem_ctx_t ctx, T *dest, T val,
-                                      int pe) {
-  return get_internal_ctx(ctx)->amo_fetch_xor(dest, val, pe);
-}
-
-template <typename T>
-__host__ void rocshmem_atomic_xor(rocshmem_ctx_t ctx, T *dest, T val,
-                                   int pe) {
-  get_internal_ctx(ctx)->amo_xor(dest, val, pe);
 }
 
 __host__ void rocshmem_ctx_fence(rocshmem_ctx_t ctx) {
@@ -698,12 +601,6 @@ __host__ int rocshmem_test(T *ivars, int cmp, T val) {
       rocshmem_ctx_t ctx, T * dest, T cond, T value, int pe);                 \
   template __host__ T rocshmem_atomic_compare_swap<T>(T * dest, T cond,       \
                                                        T value, int pe);      \
-  template __host__ T rocshmem_atomic_fetch_inc<T>(rocshmem_ctx_t ctx,        \
-                                                    T * dest, int pe);        \
-  template __host__ T rocshmem_atomic_fetch_inc<T>(T * dest, int pe);         \
-  template __host__ void rocshmem_atomic_inc<T>(rocshmem_ctx_t ctx,           \
-                                                 T * dest, int pe);           \
-  template __host__ void rocshmem_atomic_inc<T>(T * dest, int pe);            \
   template __host__ T rocshmem_atomic_fetch_add<T>(                           \
       rocshmem_ctx_t ctx, T * dest, T value, int pe);                         \
   template __host__ T rocshmem_atomic_fetch_add<T>(T * dest, T value,         \
@@ -716,40 +613,12 @@ __host__ int rocshmem_test(T *ivars, int cmp, T val) {
  * Declare templates for the extended amo types
  */
 #define AMO_EXTENDED_GEN(T)                                                   \
-  template __host__ T rocshmem_atomic_fetch<T>(rocshmem_ctx_t ctx, T * dest,  \
-                                                int pe);                      \
-  template __host__ T rocshmem_atomic_fetch<T>(T * dest, int pe);             \
   template __host__ void rocshmem_atomic_set<T>(rocshmem_ctx_t ctx,           \
                                                  T * dest, T value, int pe);  \
   template __host__ void rocshmem_atomic_set<T>(T * dest, T value, int pe);   \
   template __host__ T rocshmem_atomic_swap<T>(rocshmem_ctx_t ctx, T * dest,   \
                                                T value, int pe);              \
   template __host__ T rocshmem_atomic_swap<T>(T * dest, T value, int pe);
-
-/**
- * Declare templates for the bitwise amo types
- */
-#define AMO_BITWISE_GEN(T)                                                    \
-  template __host__ T rocshmem_atomic_fetch_and<T>(                           \
-      rocshmem_ctx_t ctx, T * dest, T value, int pe);                         \
-  template __host__ T rocshmem_atomic_fetch_and<T>(T * dest, T value,         \
-                                                    int pe);                  \
-  template __host__ void rocshmem_atomic_and<T>(rocshmem_ctx_t ctx,           \
-                                                 T * dest, T value, int pe);  \
-  template __host__ void rocshmem_atomic_and<T>(T * dest, T value, int pe);   \
-  template __host__ T rocshmem_atomic_fetch_or<T>(rocshmem_ctx_t ctx,         \
-                                                   T * dest, T value, int pe);\
-  template __host__ T rocshmem_atomic_fetch_or<T>(T * dest, T value, int pe); \
-  template __host__ void rocshmem_atomic_or<T>(rocshmem_ctx_t ctx, T * dest,  \
-                                                T value, int pe);             \
-  template __host__ void rocshmem_atomic_or<T>(T * dest, T value, int pe);    \
-  template __host__ T rocshmem_atomic_fetch_xor<T>(                           \
-      rocshmem_ctx_t ctx, T * dest, T value, int pe);                         \
-  template __host__ T rocshmem_atomic_fetch_xor<T>(T * dest, T value,         \
-                                                    int pe);                  \
-  template __host__ void rocshmem_atomic_xor<T>(rocshmem_ctx_t ctx,           \
-                                                 T * dest, T value, int pe);  \
-  template __host__ void rocshmem_atomic_xor<T>(T * dest, T value, int pe);
 
 /**
  * Declare templates for the wait types
@@ -809,20 +678,6 @@ __host__ int rocshmem_test(T *ivars, int cmp, T val) {
                                                      int pe) {                \
     return rocshmem_atomic_compare_swap<T>(dest, cond, value, pe);            \
   }                                                                           \
-  __host__ T rocshmem_ctx_##TNAME##_atomic_fetch_inc(rocshmem_ctx_t ctx,      \
-                                                      T *dest, int pe) {      \
-    return rocshmem_atomic_fetch_inc<T>(ctx, dest, pe);                       \
-  }                                                                           \
-  __host__ T rocshmem_##TNAME##_atomic_fetch_inc(T *dest, int pe) {           \
-    return rocshmem_atomic_fetch_inc<T>(dest, pe);                            \
-  }                                                                           \
-  __host__ void rocshmem_ctx_##TNAME##_atomic_inc(rocshmem_ctx_t ctx,         \
-                                                   T *dest, int pe) {         \
-    rocshmem_atomic_inc<T>(ctx, dest, pe);                                    \
-  }                                                                           \
-  __host__ void rocshmem_##TNAME##_atomic_inc(T *dest, int pe) {              \
-    rocshmem_atomic_inc<T>(dest, pe);                                         \
-  }                                                                           \
   __host__ T rocshmem_ctx_##TNAME##_atomic_fetch_add(                         \
       rocshmem_ctx_t ctx, T *dest, T value, int pe) {                         \
     return rocshmem_atomic_fetch_add<T>(ctx, dest, value, pe);                \
@@ -839,13 +694,6 @@ __host__ int rocshmem_test(T *ivars, int cmp, T val) {
   }
 
 #define AMO_EXTENDED_DEF_GEN(T, TNAME)                                        \
-  __host__ T rocshmem_ctx_##TNAME##_atomic_fetch(rocshmem_ctx_t ctx,          \
-                                                  T *source, int pe) {        \
-    return rocshmem_atomic_fetch<T>(ctx, source, pe);                         \
-  }                                                                           \
-  __host__ T rocshmem_##TNAME##_atomic_fetch(T *source, int pe) {             \
-    return rocshmem_atomic_fetch<T>(source, pe);                              \
-  }                                                                           \
   __host__ void rocshmem_ctx_##TNAME##_atomic_set(rocshmem_ctx_t ctx,         \
                                                    T *dest, T value, int pe) {\
     rocshmem_atomic_set<T>(ctx, dest, value, pe);                             \
@@ -859,50 +707,6 @@ __host__ int rocshmem_test(T *ivars, int cmp, T val) {
   }                                                                           \
   __host__ T rocshmem_##TNAME##_atomic_swap(T *dest, T value, int pe) {       \
     return rocshmem_atomic_swap<T>(dest, value, pe);                          \
-  }
-
-#define AMO_BITWISE_DEF_GEN(T, TNAME)                                         \
-  __host__ T rocshmem_ctx_##TNAME##_atomic_fetch_and(                         \
-      rocshmem_ctx_t ctx, T *dest, T value, int pe) {                         \
-    return rocshmem_atomic_fetch_and<T>(ctx, dest, value, pe);                \
-  }                                                                           \
-  __host__ T rocshmem_##TNAME##_atomic_fetch_and(T *dest, T value, int pe) {  \
-    return rocshmem_atomic_fetch_and<T>(dest, value, pe);                     \
-  }                                                                           \
-  __host__ void rocshmem_ctx_##TNAME##_atomic_and(rocshmem_ctx_t ctx,         \
-                                                   T *dest, T value, int pe) {\
-    rocshmem_atomic_and<T>(ctx, dest, value, pe);                             \
-  }                                                                           \
-  __host__ void rocshmem_##TNAME##_atomic_and(T *dest, T value, int pe) {     \
-    rocshmem_atomic_and<T>(dest, value, pe);                                  \
-  }                                                                           \
-  __host__ T rocshmem_ctx_##TNAME##_atomic_fetch_or(                          \
-      rocshmem_ctx_t ctx, T *dest, T value, int pe) {                         \
-    return rocshmem_atomic_fetch_or<T>(ctx, dest, value, pe);                 \
-  }                                                                           \
-  __host__ T rocshmem_##TNAME##_atomic_fetch_or(T *dest, T value, int pe) {   \
-    return rocshmem_atomic_fetch_or<T>(dest, value, pe);                      \
-  }                                                                           \
-  __host__ void rocshmem_ctx_##TNAME##_atomic_or(rocshmem_ctx_t ctx,          \
-                                                  T *dest, T value, int pe) { \
-    rocshmem_atomic_or<T>(ctx, dest, value, pe);                              \
-  }                                                                           \
-  __host__ void rocshmem_##TNAME##_atomic_or(T *dest, T value, int pe) {      \
-    rocshmem_atomic_or<T>(dest, value, pe);                                   \
-  }                                                                           \
-  __host__ T rocshmem_ctx_##TNAME##_atomic_fetch_xor(                         \
-      rocshmem_ctx_t ctx, T *dest, T value, int pe) {                         \
-    return rocshmem_atomic_fetch_xor<T>(ctx, dest, value, pe);                \
-  }                                                                           \
-  __host__ T rocshmem_##TNAME##_atomic_fetch_xor(T *dest, T value, int pe) {  \
-    return rocshmem_atomic_fetch_xor<T>(dest, value, pe);                     \
-  }                                                                           \
-  __host__ void rocshmem_ctx_##TNAME##_atomic_xor(rocshmem_ctx_t ctx,         \
-                                                   T *dest, T value, int pe) {\
-    rocshmem_atomic_xor<T>(ctx, dest, value, pe);                             \
-  }                                                                           \
-  __host__ void rocshmem_##TNAME##_atomic_xor(T *dest, T value, int pe) {     \
-    rocshmem_atomic_xor<T>(dest, value, pe);                                  \
   }
 
 #define WAIT_DEF_GEN(T, TNAME)                                                \
@@ -969,10 +773,6 @@ AMO_EXTENDED_GEN(long long)
 AMO_EXTENDED_GEN(unsigned int)
 AMO_EXTENDED_GEN(unsigned long)
 AMO_EXTENDED_GEN(unsigned long long)
-
-AMO_BITWISE_GEN(unsigned int)
-AMO_BITWISE_GEN(unsigned long)
-AMO_BITWISE_GEN(unsigned long long)
 
 /* Supported synchronization types */
 WAIT_GEN(float)
@@ -1042,14 +842,6 @@ AMO_EXTENDED_DEF_GEN(uint32_t, uint32)
 AMO_EXTENDED_DEF_GEN(uint64_t, uint64)
 AMO_EXTENDED_DEF_GEN(size_t, size)
 AMO_EXTENDED_DEF_GEN(ptrdiff_t, ptrdiff)
-
-AMO_BITWISE_DEF_GEN(unsigned int, uint)
-AMO_BITWISE_DEF_GEN(unsigned long, ulong)
-AMO_BITWISE_DEF_GEN(unsigned long long, ulonglong)
-AMO_BITWISE_DEF_GEN(int32_t, int32)
-AMO_BITWISE_DEF_GEN(int64_t, int64)
-AMO_BITWISE_DEF_GEN(uint32_t, uint32)
-AMO_BITWISE_DEF_GEN(uint64_t, uint64)
 
 WAIT_DEF_GEN(float, float)
 WAIT_DEF_GEN(double, double)

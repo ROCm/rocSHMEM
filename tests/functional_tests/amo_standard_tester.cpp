@@ -83,14 +83,8 @@ void AMOStandardTester<T>::verifyResults(uint64_t size) {
       case AMO_FAddTestType:
         expected_val = 2 * (num_msgs - 1);
         break;
-      case AMO_FIncTestType:
-        expected_val = num_msgs - 1;
-        break;
       case AMO_AddTestType:
         expected_val = 2 * num_msgs;
-        break;
-      case AMO_IncTestType:
-        expected_val = num_msgs;
         break;
       case AMO_FCswapTestType:
         expected_val = (num_msgs - 2) / _gridSize.x;
@@ -99,8 +93,7 @@ void AMOStandardTester<T>::verifyResults(uint64_t size) {
         break;
     }
 
-    int fetch_op = (_type == AMO_FAddTestType || _type == AMO_FIncTestType ||
-                    _type == AMO_FCswapTestType)
+    int fetch_op = (_type == AMO_FAddTestType || _type == AMO_FCswapTestType)
                        ? 1
                        : 0;
 
@@ -139,10 +132,6 @@ void AMOStandardTester<T>::verifyResults(uint64_t size) {
             ret = rocshmem_ctx_##TNAME##_atomic_fetch_add(ctx, (T *)r_buf, 2,  \
                                                            1);                 \
             break;                                                             \
-          case AMO_FIncTestType:                                               \
-            ret =                                                              \
-                rocshmem_ctx_##TNAME##_atomic_fetch_inc(ctx, (T *)r_buf, 1);   \
-            break;                                                             \
           case AMO_FCswapTestType:                                             \
             ret = rocshmem_ctx_##TNAME##_atomic_compare_swap(ctx, (T *)r_buf,  \
                                                               cond, (T)i, 1);  \
@@ -150,9 +139,6 @@ void AMOStandardTester<T>::verifyResults(uint64_t size) {
             break;                                                             \
           case AMO_AddTestType:                                                \
             rocshmem_ctx_##TNAME##_atomic_add(ctx, (T *)r_buf, 2, 1);          \
-            break;                                                             \
-          case AMO_IncTestType:                                                \
-            rocshmem_ctx_##TNAME##_atomic_inc(ctx, (T *)r_buf, 1);             \
             break;                                                             \
           default:                                                             \
             break;                                                             \

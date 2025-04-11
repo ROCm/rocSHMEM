@@ -30,7 +30,6 @@
 #include <rocshmem/rocshmem.hpp>
 #include <vector>
 
-#include "amo_bitwise_tester.hpp"
 #include "amo_extended_tester.hpp"
 #include "amo_standard_tester.hpp"
 #include "default_ctx_primitive_tester.hpp"
@@ -201,42 +200,6 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       testers.push_back(new AMOExtendedTester<long long>(args));
       testers.push_back(new AMOExtendedTester<long>(args));
       testers.push_back(new AMOExtendedTester<int>(args));
-      return testers;
-    case AMO_FetchAndTestType:
-      if (rank == 0) std::cout << "AMO Fetch And ###" << std::endl;
-      testers.push_back(new AMOBitwiseTester<unsigned long long>(args));
-      testers.push_back(new AMOBitwiseTester<unsigned long>(args));
-      testers.push_back(new AMOBitwiseTester<unsigned int>(args));
-      return testers;
-    case AMO_AndTestType:
-      if (rank == 0) std::cout << "AMO And ###" << std::endl;
-      testers.push_back(new AMOBitwiseTester<unsigned long long>(args));
-      testers.push_back(new AMOBitwiseTester<unsigned long>(args));
-      testers.push_back(new AMOBitwiseTester<unsigned int>(args));
-      return testers;
-    case AMO_FetchOrTestType:
-      if (rank == 0) std::cout << "AMO Fetch Or ###" << std::endl;
-      testers.push_back(new AMOBitwiseTester<unsigned long long>(args));
-      testers.push_back(new AMOBitwiseTester<unsigned long>(args));
-      testers.push_back(new AMOBitwiseTester<unsigned int>(args));
-      return testers;
-    case AMO_OrTestType:
-      if (rank == 0) std::cout << "AMO Or ###" << std::endl;
-      testers.push_back(new AMOBitwiseTester<unsigned long long>(args));
-      testers.push_back(new AMOBitwiseTester<unsigned long>(args));
-      testers.push_back(new AMOBitwiseTester<unsigned int>(args));
-      return testers;
-    case AMO_FetchXorTestType:
-      if (rank == 0) std::cout << "AMO Fetch Xor ###" << std::endl;
-      testers.push_back(new AMOBitwiseTester<unsigned long long>(args));
-      testers.push_back(new AMOBitwiseTester<unsigned long>(args));
-      testers.push_back(new AMOBitwiseTester<unsigned int>(args));
-      return testers;
-    case AMO_XorTestType:
-      if (rank == 0) std::cout << "AMO Xor ###" << std::endl;
-      testers.push_back(new AMOBitwiseTester<unsigned long long>(args));
-      testers.push_back(new AMOBitwiseTester<unsigned long>(args));
-      testers.push_back(new AMOBitwiseTester<unsigned int>(args));
       return testers;
     case AMO_IncTestType:
       if (rank == 0) std::cout << "AMO Inc ###" << std::endl;
