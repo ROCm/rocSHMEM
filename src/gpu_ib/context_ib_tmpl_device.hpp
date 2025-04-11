@@ -100,39 +100,6 @@ __device__ T GPUIBContext::amo_swap(void *dst, T value, int pe) {
 }
 
 template <typename T>
-__device__ T GPUIBContext::amo_fetch_and(void *dst, T value, int pe) {
-  assert(false);
-  return 0;
-}
-
-template <typename T>
-__device__ void GPUIBContext::amo_and(void *dst, T value, int pe) {
-  assert(false);
-}
-
-template <typename T>
-__device__ T GPUIBContext::amo_fetch_or(void *dst, T value, int pe) {
-  assert(false);
-  return 0;
-}
-
-template <typename T>
-__device__ void GPUIBContext::amo_or(void *dst, T value, int pe) {
-  assert(false);
-}
-
-template <typename T>
-__device__ T GPUIBContext::amo_fetch_xor(void *dst, T value, int pe) {
-  assert(false);
-  return 0;
-}
-
-template <typename T>
-__device__ void GPUIBContext::amo_xor(void *dst, T value, int pe) {
-  assert(false);
-}
-
-template <typename T>
 __device__ void GPUIBContext::amo_cas(void *dst, T value, T cond, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
   auto *qp = getQueuePair(pe);

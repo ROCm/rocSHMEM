@@ -110,10 +110,6 @@ class Context {
 
   template <typename T>
   __device__
-  T amo_fetch(void* dst, T value, T cond, int pe, uint8_t atomic_op);
-
-  template <typename T>
-  __device__
   void amo_add(void* dst, T value, int pe);
 
   template <typename T>
@@ -123,30 +119,6 @@ class Context {
   template <typename T>
   __device__
   T amo_swap(void* dst, T value, int pe);
-
-  template <typename T>
-  __device__
-  T amo_fetch_and(void* dst, T value, int pe);
-
-  template <typename T>
-  __device__
-  void amo_and(void* dst, T value, int pe);
-
-  template <typename T>
-  __device__
-  T amo_fetch_or(void* dst, T value, int pe);
-
-  template <typename T>
-  __device__
-  void amo_or(void* dst, T value, int pe);
-
-  template <typename T>
-  __device__
-  T amo_fetch_xor(void* dst, T value, int pe);
-
-  template <typename T>
-  __device__
-  void amo_xor(void* dst, T value, int pe);
 
   template <typename T>
   __device__
@@ -218,30 +190,6 @@ class Context {
   template <typename T>
   __host__
   T amo_swap(void* dst, T value, int pe);
-
-  template <typename T>
-  __host__
-  T amo_fetch_and(void* dst, T value, int pe);
-
-  template <typename T>
-  __host__
-  void amo_and(void* dst, T value, int pe);
-
-  template <typename T>
-  __host__
-  T amo_fetch_or(void* dst, T value, int pe);
-
-  template <typename T>
-  __host__
-  void amo_or(void* dst, T value, int pe);
-
-  template <typename T>
-  __host__
-  T amo_fetch_xor(void* dst, T value, int pe);
-
-  template <typename T>
-  __host__
-  void amo_xor(void* dst, T value, int pe);
 
   template <typename T>
   __host__

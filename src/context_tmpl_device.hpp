@@ -245,45 +245,6 @@ T Context::amo_swap(void *dst, T value, int pe) {
 
 template <typename T>
 __device__
-T Context::amo_fetch_and(void *dst, T value, int pe) {
-  auto ret_val = static_cast<GPUIBContext*>(this)->amo_fetch_and(dst, value, pe);
-  return ret_val;
-}
-
-template <typename T>
-__device__
-void Context::amo_and(void *dst, T value, int pe) {
-  static_cast<GPUIBContext*>(this)->amo_and(dst, value, pe);
-}
-
-template <typename T>
-__device__
-T Context::amo_fetch_or(void *dst, T value, int pe) {
-  auto ret_val = static_cast<GPUIBContext*>(this)->amo_fetch_or(dst, value, pe);
-  return ret_val;
-}
-
-template <typename T>
-__device__
-void Context::amo_or(void *dst, T value, int pe) {
-  static_cast<GPUIBContext*>(this)->amo_or(dst, value, pe);
-}
-
-template <typename T>
-__device__
-T Context::amo_fetch_xor(void *dst, T value, int pe) {
-  auto ret_val = static_cast<GPUIBContext*>(this)->amo_fetch_xor(dst, value, pe);
-  return ret_val;
-}
-
-template <typename T>
-__device__
-void Context::amo_xor(void *dst, T value, int pe) {
-  static_cast<GPUIBContext*>(this)->amo_xor(dst, value, pe);
-}
-
-template <typename T>
-__device__
 T Context::amo_fetch_cas(void *dst, T value, T cond, int pe) {
   auto ret_val = static_cast<GPUIBContext*>(this)->amo_fetch_cas(dst, value, cond, pe);
   return ret_val;

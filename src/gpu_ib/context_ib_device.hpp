@@ -74,24 +74,6 @@ class GPUIBContext : public Context {
   __device__ T amo_swap(void *dst, T value, int pe);
 
   template <typename T>
-  __device__ T amo_fetch_and(void *dst, T value, int pe);
-
-  template <typename T>
-  __device__ void amo_and(void *dst, T value, int pe);
-
-  template <typename T>
-  __device__ T amo_fetch_or(void *dst, T value, int pe);
-
-  template <typename T>
-  __device__ void amo_or(void *dst, T value, int pe);
-
-  template <typename T>
-  __device__ T amo_fetch_xor(void *dst, T value, int pe);
-
-  template <typename T>
-  __device__ void amo_xor(void *dst, T value, int pe);
-
-  template <typename T>
   __device__ void amo_cas(void *dst, T value, T cond, int pe);
 
   template <typename T>
