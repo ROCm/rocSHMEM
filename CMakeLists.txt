@@ -51,7 +51,6 @@ option(USE_HOST_HEAP "Enable host memory using malloc/free" OFF)
 option(USE_HIP_HOST_HEAP "Enable host memory using hip api" OFF)
 option(USE_FUNC_CALL "Force compiler to use function calls on library API" OFF)
 option(USE_SHARED_CTX "Request support for shared ctx between WG" OFF)
-option(USE_SINGLE_NODE "Enable single node support only." OFF)
 option(USE_HOST_SIDE_HDP_FLUSH "Use a polling thread to flush the HDP cache on the host." OFF)
 
 option(BUILD_FUNCTIONAL_TESTS "Build the functional tests" ON)
