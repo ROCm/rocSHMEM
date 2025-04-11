@@ -12,5 +12,4 @@
 #cmakedefine USE_HOST_HEAP
 #cmakedefine USE_HIP_HOST_HEAP
 #cmakedefine USE_FUNC_CALL
-#cmakedefine USE_SINGLE_NODE
 #cmakedefine USE_HOST_SIDE_HDP_FLUSH

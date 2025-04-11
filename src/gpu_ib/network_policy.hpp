@@ -28,7 +28,6 @@
 
 #include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "rocshmem/rocshmem.hpp"
-#include "connection_policy.hpp"
 #include "queue_pair.hpp"
 #include "memory/symmetric_heap.hpp"
 #include "util.hpp"
@@ -43,7 +42,7 @@ class GPUIBContext;
 class GPUIBHostContext;
 class Connection;
 
-class NetworkOnImpl {
+class NetworkImpl {
  public:
   /**
    * @brief setup the network resources and initialization for the
@@ -189,69 +188,7 @@ class NetworkOnImpl {
    * must manage one.
    */
   char *g_ret{nullptr};
-
-  /**
-   * @brief Compile-time configuration policy for InfiniBand connections.
-   */
-  ConnectionImpl *connection_policy{nullptr};
 };
-
-// clang-format off
-NOWARN(-Wunused-parameter,
-class NetworkOffImpl {
- public:
-  __host__ void networkHostSetup(GPUIBBackend *B);
-
-  __host__ void networkHostFinalize();
-
-  __host__ void networkHostInit(GPUIBContext *ctx, int buffer_id) {}
-
-  __device__ void networkGpuInit(GPUIBContext *ctx, int buffer_id) {}
-
-  __device__ __host__ QueuePair *getQueuePair(QueuePair *qp, int pe) {
-    return nullptr;
-  }
-
-  __device__ __host__ int getNumQueuePairs() { return 0; }
-
-  __device__ __host__ int getNumDest() { return 0; }
-
-  static uint32_t externSharedBytes(int num_pes) { return 0; }
-
- public:
-  int num_pes{0};
-
-  int my_pe{-1};
-
-  int num_blocks{0};
-
-  QueuePair *gpu_qps{nullptr};
-
-  uint32_t *heap_rkey{nullptr};
-
-  ibv_mr *heap_mr{nullptr};
-
-  uint32_t lkey{0};
-
-  atomic_ret_t *atomic_ret{nullptr};
-
-  ibv_mr *mr{nullptr};
-
-  char *g_ret{nullptr};
-
-  ConnectionImpl *connection_policy{nullptr};
-};
-)
-// clang-format on
-
-/*
- * Select which one of our IPC policies to use at compile time.
- */
-#ifdef USE_SINGLE_NODE
-typedef NetworkOffImpl NetworkImpl;
-#else
-typedef NetworkOnImpl NetworkImpl;
-#endif
 
 }  // namespace rocshmem
 

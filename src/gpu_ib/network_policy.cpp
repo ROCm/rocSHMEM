@@ -30,11 +30,10 @@
 #include "backend_ib.hpp"
 #include "connection.hpp"
 #include "queue_pair.hpp"
-#include "reliable_connection.hpp"
 
 namespace rocshmem {
 
-void NetworkOnImpl::setup_atomic_region() {
+void NetworkImpl::setup_atomic_region() {
   /*
    * Allocate fine-grained device-side memory for the atomic return
    * region.
@@ -53,7 +52,7 @@ void NetworkOnImpl::setup_atomic_region() {
   atomic_ret->atomic_lkey = htobe32(mr->lkey);
 }
 
-void NetworkOnImpl::heap_memory_rkey(char *local_heap_base, size_t heap_size,
+void NetworkImpl::heap_memory_rkey(char *local_heap_base, size_t heap_size,
                                      MPI_Comm thread_comm, bool is_managed) {
   /*
    * Allocate host-side memory to hold remote keys for all processing
@@ -121,7 +120,7 @@ void NetworkOnImpl::heap_memory_rkey(char *local_heap_base, size_t heap_size,
   lkey = heap_mr->lkey;
 }
 
-void NetworkOnImpl::setup_gpu_qps(GPUIBBackend *B) {
+void NetworkImpl::setup_gpu_qps(GPUIBBackend *B) {
   /*
    * Determine how many connections are needed.
    * The number of connections depends on the connection type and the
@@ -145,17 +144,17 @@ void NetworkOnImpl::setup_gpu_qps(GPUIBBackend *B) {
   }
 }
 
-void NetworkOnImpl::rocshmem_g_init(SymmetricHeap *heap_handle,
+void NetworkImpl::rocshmem_g_init(SymmetricHeap *heap_handle,
                                      MPI_Comm thread_comm) {
   init_g_ret(heap_handle, thread_comm, num_blocks, &g_ret);
 }
 
-__host__ void NetworkOnImpl::networkHostSetup(GPUIBBackend *B) {
+__host__ void NetworkImpl::networkHostSetup(GPUIBBackend *B) {
   num_pes = B->num_pes;
   my_pe = B->my_pe;
   num_blocks = B->num_blocks_;
 
-  connection = new ReliableConnection(B);
+  connection = new Connection(B, 0);
 
   connection->initialize(B->num_blocks_);
 
@@ -168,8 +167,6 @@ __host__ void NetworkOnImpl::networkHostSetup(GPUIBBackend *B) {
 
   setup_atomic_region();
 
-  connection->initialize_gpu_policy(&connection_policy, heap_rkey);
-
   rocshmem_g_init(&B->heap, B->thread_comm);
 
   connection->post_wqes();
@@ -177,15 +174,12 @@ __host__ void NetworkOnImpl::networkHostSetup(GPUIBBackend *B) {
   setup_gpu_qps(B);
 }
 
-__host__ void NetworkOnImpl::networkHostFinalize() {
+__host__ void NetworkImpl::networkHostFinalize() {
   CHECK_HIP(hipFree(atomic_ret));
   atomic_ret = nullptr;
 
   CHECK_HIP(hipFree(gpu_qps));
   gpu_qps = nullptr;
-
-  CHECK_HIP(hipFree(connection_policy));
-  connection_policy = nullptr;
 
   connection->free_rkey_handle(heap_rkey);
 
@@ -194,7 +188,7 @@ __host__ void NetworkOnImpl::networkHostFinalize() {
   connection = nullptr;
 }
 
-__host__ void NetworkOnImpl::networkHostInit(GPUIBContext *ctx, int buffer_id) {
+__host__ void NetworkImpl::networkHostInit(GPUIBContext *ctx, int buffer_id) {
   int remote_conn = getNumQueuePairs();
 
   CHECK_HIP(hipMalloc(&ctx->device_qp_proxy, remote_conn * sizeof(QueuePair)));
@@ -219,7 +213,7 @@ __host__ void NetworkOnImpl::networkHostInit(GPUIBContext *ctx, int buffer_id) {
   ctx->g_ret = g_ret;
 }
 
-__device__ void NetworkOnImpl::networkGpuInit(GPUIBContext *ctx,
+__device__ void NetworkImpl::networkGpuInit(GPUIBContext *ctx,
                                               int buffer_id) {
   for (int i = 0; i < getNumQueuePairs(); i++) {
     int offset = num_blocks * i + buffer_id;
@@ -236,22 +230,13 @@ __device__ void NetworkOnImpl::networkGpuInit(GPUIBContext *ctx,
   ctx->g_ret = g_ret;
 }
 
-__device__ __host__ QueuePair *NetworkOnImpl::getQueuePair(QueuePair *qp_handle,
+__device__ __host__ QueuePair *NetworkImpl::getQueuePair(QueuePair *qp_handle,
                                                            int pe) {
   return &qp_handle[pe];
 }
 
-__device__ __host__ int NetworkOnImpl::getNumQueuePairs() {
+__device__ __host__ int NetworkImpl::getNumQueuePairs() {
   return num_pes;
 }
-
-void NetworkOffImpl::networkHostSetup(GPUIBBackend *B) {
-  num_pes = B->num_pes;
-  my_pe = B->my_pe;
-  num_blocks = B->num_blocks_;
-
-}
-
-void NetworkOffImpl::networkHostFinalize() { }
 
 }  // namespace rocshmem

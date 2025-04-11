@@ -29,7 +29,6 @@
 #include "gpu_ib_team.hpp"
 #include "queue_pair.hpp"
 #include "util.hpp"
-#include "rocshmem_calc.hpp"
 
 namespace rocshmem {
 

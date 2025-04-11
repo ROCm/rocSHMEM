@@ -25,7 +25,6 @@
 
 #include <infiniband/mlx5dv.h>
 
-#include "connection_policy.hpp"
 #include "infiniband_structs.hpp"
 #include "util.hpp"
 
@@ -37,11 +36,7 @@ class SegmentBuilder {
 
   __device__ void update_cntrl_seg(uint8_t opcode, uint16_t wqe_idx,
                                    uint32_t ctrl_qp_sq, uint64_t ctrl_sig,
-                                   ConnectionImpl *connection_policy,
                                    bool zero_byte_rd);
-
-  __device__ void update_connection_seg(int pe,
-                                        ConnectionImpl *connection_policy);
 
   __device__ void update_atomic_data_seg(uint64_t atomic_data,
                                          uint64_t atomic_cmp);

@@ -60,25 +60,16 @@ __device__ __host__ int GPUIBContext::getNumDest() {
 }
 
 __device__ void GPUIBContext::fence() {
-#ifdef USE_SINGLE_NODE
-  threadfence_system();
-#else
-
   for (int k = 0; k < getNumDest(); k++) {
     getQueuePair(k)->fence(k);
   }
 
   fence_.flush();
-#endif
 }
 
 __device__ void GPUIBContext::fence(int pe) {
-#ifdef USE_SINGLE_NODE
-  threadfence_system();
-#else
   getQueuePair(pe)->fence(pe);
   fence_.flush();
-#endif
 }
 
 __device__ void GPUIBContext::putmem_nbi(void *dest, const void *source,
