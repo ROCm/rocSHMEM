@@ -36,7 +36,6 @@
 
 #include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "atomic_return.hpp"
-#include "connection_policy.hpp"
 #include "thread_policy.hpp"
 
 namespace rocshmem {
@@ -303,8 +302,6 @@ class QueuePair {
 
   ThreadImpl threadImpl{};
 
-  ConnectionImpl connection_policy;
-
   char *const *base_heap{nullptr};
   /*
    * Current index into the SQ (non-modulo size).
@@ -354,7 +351,6 @@ class QueuePair {
   friend THREAD;
   friend WG;
   friend WAVE;
-  friend RCConnectionImpl;
 };
 
 }  // namespace rocshmem

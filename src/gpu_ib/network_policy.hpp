@@ -28,7 +28,6 @@
 
 #include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "rocshmem/rocshmem.hpp"
-#include "connection_policy.hpp"
 #include "queue_pair.hpp"
 #include "memory/symmetric_heap.hpp"
 #include "util.hpp"
@@ -189,11 +188,6 @@ class NetworkOnImpl {
    * must manage one.
    */
   char *g_ret{nullptr};
-
-  /**
-   * @brief Compile-time configuration policy for InfiniBand connections.
-   */
-  ConnectionImpl *connection_policy{nullptr};
 };
 
 // clang-format off
@@ -238,8 +232,6 @@ class NetworkOffImpl {
   ibv_mr *mr{nullptr};
 
   char *g_ret{nullptr};
-
-  ConnectionImpl *connection_policy{nullptr};
 };
 )
 // clang-format on

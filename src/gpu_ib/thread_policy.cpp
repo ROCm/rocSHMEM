@@ -152,7 +152,7 @@ __device__ void MultiThreadImpl::finishPost(QueuePair *handle, bool ring_db,
    * numbers of PEs, but we might want a different solution for large
    * numbers.
    */
-  if (handle->connection_policy.forcePostDivergence()) {
+  if (true) {
     for (int i = 0; i < handle->num_cqs; i++) {
       if (i != pe) {
         continue;
@@ -258,7 +258,7 @@ __device__ void MultiThreadImpl::postLock(QueuePair *handle, int pe) {
    * numbers of PEs, but we might want a different solution for large
    * numbers.
    */
-  if (handle->connection_policy.forcePostDivergence()) {
+  if (true) {
     for (int i = 0; i < handle->num_cqs; i++) {
       if (i != pe) {
         continue;

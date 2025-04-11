@@ -32,8 +32,7 @@
 
 namespace rocshmem {
 
-QueuePair::QueuePair(GPUIBBackend *backend)
-     : connection_policy(*backend->networkImpl.connection_policy) {
+QueuePair::QueuePair(GPUIBBackend *backend) {
   atomic_ret.atomic_lkey = backend->networkImpl.atomic_ret->atomic_lkey;
   atomic_ret.atomic_counter = 0;
 }
@@ -192,7 +191,7 @@ __device__ void QueuePair::update_posted_wqe_generic(
 
   level L;
   L.postLock(this, pe);
-  uint32_t num_wqes = connection_policy.getNumWqes(opcode);
+  uint32_t num_wqes = 1;
 
   // Get the index for my thread's put in the SQ.
   uint64_t my_sq_counter = L.threadAtomicAdd(&sq_counter, num_wqes);
@@ -210,8 +209,6 @@ __device__ void QueuePair::update_posted_wqe_generic(
   uint32_t ctrl_qp_sq_in_stack_frame = ctrl_qp_sq;
   uint64_t ctrl_sig_in_stack_frame = ctrl_sig;
 
-  connection_policy.setRkey(&rkey_in_stack_frame, pe);
-
   if (opcode == MLX5_OPCODE_RDMA_WRITE && !size) {
     size = 4;
   }
@@ -223,9 +220,7 @@ __device__ void QueuePair::update_posted_wqe_generic(
    */
   SegmentBuilder seg_build(my_sq_index, current_sq);
   seg_build.update_cntrl_seg(opcode, le_sq_counter, ctrl_qp_sq_in_stack_frame,
-                             ctrl_sig_in_stack_frame, &connection_policy,
-                             zero_byte_rd);
-  seg_build.update_connection_seg(pe, &connection_policy);
+                             ctrl_sig_in_stack_frame, zero_byte_rd);
   seg_build.update_rdma_seg(raddr, rkey_in_stack_frame);
 
   if (opcode == MLX5_OPCODE_ATOMIC_FA || opcode == MLX5_OPCODE_ATOMIC_CS) {

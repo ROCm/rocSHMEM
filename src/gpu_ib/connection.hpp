@@ -32,7 +32,6 @@ extern "C" {
 #include <vector>
 
 #include "rocshmem/rocshmem.hpp"
-#include "connection_policy.hpp"
 
 namespace rocshmem {
 
@@ -129,36 +128,37 @@ class Connection {
 
   void finalize();
 
-  virtual void post_wqes() = 0;
+  void post_wqes();
+
+  void post_dv_rc_wqe(int remote_conn);
 
   void reg_mr(void* ptr, size_t size, ibv_mr** mr, bool is_managed);
 
-  virtual void get_remote_conn(int* remote_conn) = 0;
+  void get_remote_conn(int* remote_conn);
 
   unsigned total_number_connections();
 
-  virtual void initialize_rkey_handle(uint32_t** heap_rkey_handle,
-                                        ibv_mr* mr) = 0;
+  void initialize_rkey_handle(uint32_t** heap_rkey_handle, ibv_mr* mr);
 
-  virtual void free_rkey_handle(uint32_t* heap_rkey_handle) = 0;
-
-  void initialize_gpu_policy(ConnectionImpl** conn, uint32_t* heap_rkey);
+  void free_rkey_handle(uint32_t* heap_rkey_handle);
 
   /*
    * Populate a QueuePair for use on the GPU from the internal IB state.
    */
   void init_gpu_qp_from_connection(QueuePair* qp, int conn_num);
 
+  std::vector<dest_info_t> all_qp;
+
  protected:
   Connection() = default;
 
-  virtual InitQPState initqp(uint8_t port) = 0;
+  InitQPState initqp(uint8_t port);
 
-  virtual RtrState rtr(dest_info_t* dest, uint8_t port) = 0;
+  RtrState rtr(dest_info_t* dest, uint8_t port);
 
-  virtual RtsState rts(dest_info_t* dest) = 0;
+  RtsState rts(dest_info_t* dest);
 
-  virtual QPInitAttr qpattr(ibv_qp_cap cap) = 0;
+  QPInitAttr qpattr(ibv_qp_cap cap);
 
   void init_qp_status(ibv_qp* qp, uint8_t port);
 
@@ -171,24 +171,13 @@ class Connection {
   template <typename T>
   void try_to_modify_qp(ibv_qp* qp, T state);
 
-  virtual void create_qps_3(int port, ibv_qp* qp, int offset,
-                              ibv_port_attr* ib_port_att) = 0;
+  void create_qps_3(int port, ibv_qp* qp, int offset, ibv_port_attr* ib_port_att);
 
-  virtual ibv_qp* create_qp_0(ibv_context* context,
-                              ibv_qp_init_attr_ex* qp_attr) = 0;
+  ibv_qp* create_qp_0(ibv_context* context, ibv_qp_init_attr_ex* qp_attr);
 
-  virtual void allocate_dynamic_members(int num_block) = 0;
+  void allocate_dynamic_members(int num_block);
 
-  virtual void free_dynamic_members() = 0;
-
-  virtual void initialize_1(int port, int num_block) = 0;
-
-  virtual void initialize_wr_fields(ibv_send_wr* wr, ibv_ah* ah,
-                                    int dc_key) = 0;
-
-  virtual int get_sq_dv_offset(int pe_idx, int num_qps, int wg_idx) = 0;
-
-  void set_sq_dv(int num_block, int wg_idx, int pe_idx);
+  void initialize_1(int port, int num_block);
 
   /*
    * ibv interface functions must be static.

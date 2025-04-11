@@ -35,7 +35,7 @@ __device__ SegmentBuilder::SegmentBuilder(uint64_t wqe_idx, void *base) {
 
 __device__ void SegmentBuilder::update_cntrl_seg(
     uint8_t opcode, uint16_t wqe_idx, uint32_t ctrl_qp_sq, uint64_t ctrl_sig,
-    ConnectionImpl *connection_policy, bool zero_byte_rd) {
+    bool zero_byte_rd) {
   mlx5_wqe_ctrl_seg ctrl_seg;
 
   ctrl_seg.opmod_idx_opcode = (opcode << 24) | (wqe_idx << 8);
@@ -47,7 +47,7 @@ __device__ void SegmentBuilder::update_cntrl_seg(
              : 4;
   }
 
-  DS += connection_policy->wqeCntrlOffset();
+  DS += 0;
 
   ctrl_seg.qpn_ds = (DS << 24) | ctrl_qp_sq;
 
@@ -126,12 +126,4 @@ __device__ void SegmentBuilder::update_inl_data_seg(uintptr_t *laddr,
   memcpy(&seg_ptr->inl_data_seg, &inl_data_seg, field_size);
   seg_ptr++;
 }
-
-__device__ void SegmentBuilder::update_connection_seg(
-    int pe, ConnectionImpl *conn_policy) {
-  if (conn_policy->updateConnectionSegmentImpl(&seg_ptr->base_av, pe)) {
-    seg_ptr++;
-  }
-}
-
 }  // namespace rocshmem

@@ -30,7 +30,6 @@
 #include "backend_ib.hpp"
 #include "connection.hpp"
 #include "queue_pair.hpp"
-#include "reliable_connection.hpp"
 
 namespace rocshmem {
 
@@ -155,7 +154,7 @@ __host__ void NetworkOnImpl::networkHostSetup(GPUIBBackend *B) {
   my_pe = B->my_pe;
   num_blocks = B->num_blocks_;
 
-  connection = new ReliableConnection(B);
+  connection = new Connection(B, 0);
 
   connection->initialize(B->num_blocks_);
 
@@ -167,8 +166,6 @@ __host__ void NetworkOnImpl::networkHostSetup(GPUIBBackend *B) {
   network_init_done = true;
 
   setup_atomic_region();
-
-  connection->initialize_gpu_policy(&connection_policy, heap_rkey);
 
   rocshmem_g_init(&B->heap, B->thread_comm);
 
@@ -183,9 +180,6 @@ __host__ void NetworkOnImpl::networkHostFinalize() {
 
   CHECK_HIP(hipFree(gpu_qps));
   gpu_qps = nullptr;
-
-  CHECK_HIP(hipFree(connection_policy));
-  connection_policy = nullptr;
 
   connection->free_rkey_handle(heap_rkey);
 

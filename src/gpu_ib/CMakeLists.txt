@@ -28,7 +28,6 @@ target_sources(
   PRIVATE
     backend_ib.cpp
     connection.cpp
-    connection_policy.cpp
     context_ib_device.cpp
     context_ib_device_coll.cpp
     context_ib_host.cpp
@@ -36,7 +35,6 @@ target_sources(
     gpu_ib_team.cpp
     network_policy.cpp
     queue_pair.cpp
-    reliable_connection.cpp
     segment_builder.cpp
     thread_policy.cpp
 )
