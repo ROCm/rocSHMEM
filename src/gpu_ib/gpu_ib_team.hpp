@@ -36,11 +36,6 @@ class GPUIBTeam : public Team {
   virtual ~GPUIBTeam();
 
   long* barrier_pSync{nullptr};
-  long* reduce_pSync{nullptr};
-  long* bcast_pSync{nullptr};
-  long* alltoall_pSync{nullptr};
-  void* pWrk{nullptr};
-  void* pAta{nullptr};
 
   int pool_index_{-1};
 };

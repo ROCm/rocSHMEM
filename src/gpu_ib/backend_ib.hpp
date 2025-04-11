@@ -212,31 +212,6 @@ class GPUIBBackend {
   long *barrier_pSync_pool{nullptr};
 
   /**
-   * @brief Handle for raw memory for reduce sync
-   */
-  long *reduce_pSync_pool{nullptr};
-
-  /**
-   * @brief Handle for raw memory for broadcast sync
-   */
-  long *bcast_pSync_pool{nullptr};
-
-  /**
-   * @brief Handle for raw memory for alltoall sync
-   */
-  long *alltoall_pSync_pool{nullptr};
-
-  /**
-   * @brief Handle for raw memory for work
-   */
-  void *pWrk_pool{nullptr};
-
-  /**
-   * @brief Handle for raw memory for alltoall
-   */
-  void *pAta_pool{nullptr};
-
-  /**
    * @brief rocSHMEM's copy of MPI_COMM_WORLD (for interoperability
    * with orthogonal MPI usage in an MPI+rocSHMEM program).
    */

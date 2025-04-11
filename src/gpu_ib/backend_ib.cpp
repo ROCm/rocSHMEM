@@ -304,44 +304,17 @@ void GPUIBBackend::teams_init() {
   auto max_num_teams{team_tracker.get_max_num_teams()};
   barrier_pSync_pool = reinterpret_cast<long *>(rocshmem_malloc(
       sizeof(long) * ROCSHMEM_BARRIER_SYNC_SIZE * max_num_teams));
-  reduce_pSync_pool = reinterpret_cast<long *>(rocshmem_malloc(
-      sizeof(long) * ROCSHMEM_REDUCE_SYNC_SIZE * max_num_teams));
-  bcast_pSync_pool = reinterpret_cast<long *>(rocshmem_malloc(
-      sizeof(long) * ROCSHMEM_BCAST_SYNC_SIZE * max_num_teams));
-  alltoall_pSync_pool = reinterpret_cast<long *>(rocshmem_malloc(
-      sizeof(long) * ROCSHMEM_ALLTOALL_SYNC_SIZE * max_num_teams));
-
-  /* Accommodating for largest possible data type for pWrk */
-  pWrk_pool = rocshmem_malloc(
-      sizeof(double) * ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE * max_num_teams);
-  pAta_pool = rocshmem_malloc(sizeof(double) * ROCSHMEM_ATA_MAX_WRKDATA_SIZE *
-                               max_num_teams);
 
   /*
    * Initialize the sync arrays in the pool with default values.
    */
-  long *barrier_pSync, *reduce_pSync, *bcast_pSync, *alltoall_pSync;
+  long *barrier_pSync;
   for (int team_i = 0; team_i < max_num_teams; team_i++) {
     barrier_pSync = reinterpret_cast<long *>(
         &barrier_pSync_pool[team_i * ROCSHMEM_BARRIER_SYNC_SIZE]);
-    reduce_pSync = reinterpret_cast<long *>(
-        &reduce_pSync_pool[team_i * ROCSHMEM_REDUCE_SYNC_SIZE]);
-    bcast_pSync = reinterpret_cast<long *>(
-        &bcast_pSync_pool[team_i * ROCSHMEM_BCAST_SYNC_SIZE]);
-    alltoall_pSync = reinterpret_cast<long *>(
-        &alltoall_pSync_pool[team_i * ROCSHMEM_ALLTOALL_SYNC_SIZE]);
 
     for (int i = 0; i < ROCSHMEM_BARRIER_SYNC_SIZE; i++) {
       barrier_pSync[i] = ROCSHMEM_SYNC_VALUE;
-    }
-    for (int i = 0; i < ROCSHMEM_REDUCE_SYNC_SIZE; i++) {
-      reduce_pSync[i] = ROCSHMEM_SYNC_VALUE;
-    }
-    for (int i = 0; i < ROCSHMEM_BCAST_SYNC_SIZE; i++) {
-      bcast_pSync[i] = ROCSHMEM_SYNC_VALUE;
-    }
-    for (int i = 0; i < ROCSHMEM_ALLTOALL_SYNC_SIZE; i++) {
-      alltoall_pSync[i] = ROCSHMEM_SYNC_VALUE;
     }
   }
 
@@ -379,11 +352,6 @@ void GPUIBBackend::teams_init() {
 
 void GPUIBBackend::teams_destroy() {
   rocshmem_free(barrier_pSync_pool);
-  rocshmem_free(reduce_pSync_pool);
-  rocshmem_free(bcast_pSync_pool);
-  rocshmem_free(alltoall_pSync_pool);
-  rocshmem_free(pWrk_pool);
-  rocshmem_free(pAta_pool);
 
   free(pool_bitmask_);
   free(reduced_bitmask_);
