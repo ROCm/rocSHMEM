@@ -154,7 +154,15 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
       MPI_Comm_group (MPI_COMM_WORLD, &world_group);
 
       TcpBootstrap bootstr(attr->rank, attr->nranks);
-      bootstr.initialize(attr->uid, 5);
+
+      int timeout = 5;
+      char *value;
+      value = getenv("ROCSHMEM_BOOTSTRAP_TIMEOUT");
+      if (value != nullptr) {
+	timeout = atoi(value);
+      }
+
+      bootstr.initialize(attr->uid, timeout);
       int *inc_ranks = new int[attr->nranks];
       inc_ranks[attr->rank] = world_rank;
 
