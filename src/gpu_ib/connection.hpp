@@ -207,8 +207,6 @@ class Connection {
 
   const int key_offset{0};
 
-  sq_post_dv_t* sq_post_dv{nullptr};
-
   std::vector<ibv_cq*> cqs;
 
   std::vector<ibv_qp*> qps;

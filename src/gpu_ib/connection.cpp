@@ -93,13 +93,6 @@ void Connection::initialize(int num_block) {
   int ib_fork_err = ibv_fork_init();
   GPUIB_CHECK_ZERO(ib_fork_err, "ibv_fork_init");
 
-  sq_post_dv = static_cast<sq_post_dv_t*>(
-      malloc(sizeof(sq_post_dv_t) * total_number_connections()));
-
-  if (sq_post_dv == nullptr) {
-    abort();
-  }
-
   create_qps(port, backend->my_pe, &ib_state->portinfo);
   initialize_1(port, num_block);
 
