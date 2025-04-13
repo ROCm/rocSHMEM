@@ -80,12 +80,6 @@ class NetworkImpl {
    */
   __device__ __host__ int getNumDest() { return num_pes; }
 
-  static uint32_t externSharedBytes(int num_pes) {
-    int remote_conn{1};
-    remote_conn = num_pes;
-    return remote_conn * sizeof(QueuePair);
-  }
-
  protected:
   /**
    * @brief flag to indicated that the helper thread reach this milestone
