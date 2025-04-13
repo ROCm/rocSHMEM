@@ -32,30 +32,28 @@ namespace rocshmem {
 
 class WfCoalOn {
  public:
-  /**
+  /*
    * Coalesce contiguous messages from a single wavefront.
    *
    * With regards to calling threads, the command must already be the
    * same for active threads otherwise they must have diverged at the
    * function call level.
    */
-  __device__ bool coalesce(int pe, const void *source, const void *dest,
-                           size_t *size);
+  __device__ bool coalesce(int pe, const void *source, const void *dest, size_t *size);
 };
 
 // clang-format off
 NOWARN(-Wunused-parameter,
 class WfCoalOff {
  public:
-  __device__ bool coalesce(int pe, const void *source, const void *dest,
-                           size_t *size) {
+  __device__ bool coalesce(int pe, const void *source, const void *dest, size_t *size) {
     return true;
   }
 };
 )
 // clang-format on
 
-/**
+/*
  * Compile time configuration options will enable or disable this feature.
  */
 #ifdef USE_WF_COAL

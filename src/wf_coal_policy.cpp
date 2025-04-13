@@ -26,7 +26,7 @@
 
 namespace rocshmem {
 
-/**
+/*
  * About the current algorithm:
  *   1) The algorithm is low overhead. It uses no LDS (shared) space or
  *      rounds of a tree reduction (which may cause it to miss some
@@ -49,12 +49,11 @@ namespace rocshmem {
  *   3) The algorithm misses opportunities when threads have coalescable
  *      messages but the message sizes are different.
  */
-__device__ bool WfCoalOn::coalesce(int pe, const void *source, const void *dest,
-                                   size_t *size) {
+__device__ bool WfCoalOn::coalesce(int pe, const void *source, const void *dest, size_t *size) {
   const uint64_t src = (const uint64_t)source;
   const uint64_t dst = (const uint64_t)dest;
 
-  /**
+  /*
    * Split 64-bit values into high and low for 32-bit shuffles.
    * Unfortunately, the shuffle operations only support 32-bit widths.
    */
@@ -63,7 +62,7 @@ __device__ bool WfCoalOn::coalesce(int pe, const void *source, const void *dest,
   uint32_t dst_low = uint32_t(dst & 0xFFFFFFFF);
   uint32_t dst_high = uint32_t((dst >> 32) & 0xFFFFFFFF);
 
-  /**
+  /*
    * Shuffle message info to upwards neighboring threads.
    * +----------------------------------------------------------------+
    * | Thread_0 Thread_1  ...   ...   ...   ...   Thread_62 Thread_63 |
@@ -72,7 +71,7 @@ __device__ bool WfCoalOn::coalesce(int pe, const void *source, const void *dest,
    * +----------------------------------------------------------------+
    *
    * The implementation of __shfl_up comes from the hip header files.
-   * In rocm 2.10, the filename is device_functions.h.
+   * In rocm, the filename is device_functions.h.
    */
   uint64_t lower_src_low = __shfl_up(src_low, 1);
   uint64_t lower_src_high = __shfl_up(src_high, 1);
@@ -81,20 +80,20 @@ __device__ bool WfCoalOn::coalesce(int pe, const void *source, const void *dest,
   int lower_pe = __shfl_up(pe, 1);
   size_t lower_size = __shfl_up((unsigned int)*size, 1);
 
-  /**
+  /*
    * Recombine the incoming 64-bit values from neighbor.
    */
   uint64_t lower_src = (lower_src_high << 32) | lower_src_low;
   uint64_t lower_dst = (lower_dst_high << 32) | lower_dst_low;
 
-  /**
+  /*
    * The mask variable tells us which threads are active in the wavefront.
    * An active thread will call into this function with a value '1' which
    * notifies the other threads that the lane is active.
    */
   uint64_t mask = __ballot(1);
 
-  /**
+  /*
    * The wv_id variable holds the wavefront id number. To set it, we
    * flatten the thread block out (to make it one-dimensional) and then
    * modulo based of the wavefront size (which is a characteristic of
@@ -102,7 +101,7 @@ __device__ bool WfCoalOn::coalesce(int pe, const void *source, const void *dest,
    */
   int wv_id = get_flat_block_id() % WF_SIZE;
 
-  /**
+  /*
    * If coalescable evaluates to true, this thread is __NOT__ responsible
    * for sending a message (another thread will send the message on its
    * behalf). In other words, the thread's message is coalesced, yay.
@@ -119,7 +118,7 @@ __device__ bool WfCoalOn::coalesce(int pe, const void *source, const void *dest,
       (pe == lower_pe) &&               // Must be sending to the same pe
       (wv_id != 0);                     // Thread_0 is never coalescable
 
-  /**
+  /*
    * Share the lower neighbor coalescability status with all the active
    * threads in the wavefront.
    *
@@ -128,7 +127,7 @@ __device__ bool WfCoalOn::coalesce(int pe, const void *source, const void *dest,
    */
   uint64_t lowerNeighborCoal = __ballot(coalescable);
 
-  /**
+  /*
    * If the thread is not coalescable, it must send a message.
    * It needs to check how many threads are considered coalesced above it
    * to adjust its message size.
@@ -141,12 +140,12 @@ __device__ bool WfCoalOn::coalesce(int pe, const void *source, const void *dest,
   if (!coalescable) {
     int coal_size = *size;
 
-    /**
+    /*
      * Ignore the lower threads and the thread's own position.
      */
     lowerNeighborCoal >>= (wv_id + 1);
 
-    /**
+    /*
      * Invert and find the first bit index set to zero. This bit
      * indicates the first higher thread which is not coalescable with
      * its lower neighbor.
