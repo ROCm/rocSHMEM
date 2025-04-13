@@ -23,10 +23,6 @@
 /**
  * @file rocshmem.cpp
  * @brief Public header for rocSHMEM device and host libraries.
- *
- * This is the implementation for the public rocshmem.hpp header file.  This
- * guy just extracts the transport from the opaque public handles and delegates
- * to the appropriate backend.
  */
 
 #include "rocshmem/rocshmem.hpp"
@@ -48,24 +44,20 @@
 
 namespace rocshmem {
 
-#define VERIFY_BACKEND()                                                      \
-  {                                                                           \
-    if (!backend) {                                                           \
-      fprintf(stderr, "ROCSHMEM_ERROR: %s in file '%s' in line %d\n",         \
-              "Call 'rocshmem_init'", __FILE__, __LINE__);                    \
-      abort();                                                                \
-    }                                                                         \
+#define VERIFY_BACKEND()                                              \
+  {                                                                   \
+    if (!backend) {                                                   \
+      fprintf(stderr, "ROCSHMEM_ERROR: %s in file '%s' in line %d\n", \
+              "Call 'rocshmem_init'", __FILE__, __LINE__);            \
+      abort();                                                        \
+    }                                                                 \
   }
 
 GPUIBBackend *backend = nullptr;
 
 rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
-/**
- * Begin Host Code
- **/
-
-[[maybe_unused]] __host__ void inline library_init(MPI_Comm comm) {
+[[maybe_unused]] void inline library_init(MPI_Comm comm) {
   assert(!backend);
   int count = 0;
   if (hipGetDeviceCount(&count) != hipSuccess) {
@@ -73,7 +65,7 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   }
 
   if (count == 0) {
-    printf("No GPU found! \n");
+    printf("No GPU found!\n");
     abort();
   }
 
@@ -89,8 +81,7 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   }
 }
 
-[[maybe_unused]] __host__ int rocshmem_init_attr(unsigned int flags,
-						 rocshmem_init_attr_t *attr) {
+[[maybe_unused]] int rocshmem_init_attr(unsigned int flags, rocshmem_init_attr_t *attr) {
   MPI_Comm comm = MPI_COMM_WORLD;
 
   if ((attr == nullptr) || 
@@ -106,58 +97,44 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
     comm = *(static_cast<MPI_Comm*>(attr->mpi_comm));
   }
 
-  // As of right now, we require initialization through the MPI library.
   library_init(comm);
 
-  // The unique Id can be used to verify that the processes participating matches
-  // (i.e. they all need to have the same unique Id, as well as the number of ranks.
   if (flags == ROCSHMEM_INIT_WITH_UNIQUEID) {
     int worldsize = backend->getNumPEs();
     if (worldsize != attr->nranks) {
       fprintf(stderr, "ROCSHMEM_ERROR: %s in file '%s' in line %d\n",
               "Call 'rocshmem_init_attr: mismatch between world-team size and "
 	      "attribute value'",  __FILE__, __LINE__);
-      // This is a fatal error, a fundamental mismatch between what was requested
-      // and what we have.
       abort();
     }
   }
-
   return ROCSHMEM_SUCCESS;
 }
 
-[[maybe_unused]] __host__ int rocshmem_set_attr_uniqueid_args(int rank, int nranks,
-							       rocshmem_uniqueid_t *uid,
-							       rocshmem_init_attr_t *attr) {
+[[maybe_unused]] int rocshmem_set_attr_uniqueid_args(int rank, int nranks, rocshmem_uniqueid_t *uid, rocshmem_init_attr_t *attr) {
   if (uid == nullptr || attr == nullptr) {
       fprintf(stderr, "ROCSHMEM_ERROR: %s in file '%s' in line %d\n",
               "Call 'rocshmem_get_uniqueid: invalid input argument'",
 	      __FILE__, __LINE__);
       return ROCSHMEM_ERROR;
   }
-
   attr->rank = rank;
   attr->nranks = nranks;
   attr->uid = *uid;
   attr->mpi_comm = nullptr;
-
   return ROCSHMEM_SUCCESS;
 }
 
-// Note: this function will be called before rocshmem_init_*, so one
-// cannot assume that a backend is already set
-[[maybe_unused]] __host__ int rocshmem_get_uniqueid(rocshmem_uniqueid_t *uid) {
+[[maybe_unused]] int rocshmem_get_uniqueid(rocshmem_uniqueid_t *uid) {
   if (uid == nullptr) {
       fprintf(stderr, "ROCSHMEM_ERROR: %s in file '%s' in line %d\n",
               "Call 'rocshmem_get_uniqueid: invalid input argument'",
 	      __FILE__, __LINE__);
       return ROCSHMEM_ERROR;
   }
-
   std::random_device dev;
   std::mt19937_64 rng(dev());
   std::uniform_int_distribution<uint64_t> dist(0, std::numeric_limits<uint64_t>::max());
-
   char hostname[HOST_NAME_MAX+1];
   if (0 != gethostname(hostname, HOST_NAME_MAX)) {
       fprintf(stderr, "ROCSHMEM_ERROR: %s in file '%s' in line %d\n",
@@ -165,77 +142,51 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 	      __FILE__, __LINE__);
       return ROCSHMEM_ERROR;
   }
-
   uid->random = dist(rng);
   std::memcpy(uid->hostname, hostname, ROCSHMEM_HOSTNAME_LEN);
   uid->pid = static_cast<uint32_t>(getpid());
-
   return ROCSHMEM_SUCCESS;
 }
 
-[[maybe_unused]] __host__ void rocshmem_init(MPI_Comm comm) {
+[[maybe_unused]] void rocshmem_init(MPI_Comm comm) {
   library_init(comm);
 }
 
-[[maybe_unused]] __host__ int rocshmem_init_thread(
-    [[maybe_unused]] int required, int *provided, MPI_Comm comm) {
-  library_init(comm);
-  return ROCSHMEM_SUCCESS;
-}
-
-[[maybe_unused]] __host__ int rocshmem_my_pe() {
+[[maybe_unused]] int rocshmem_my_pe() {
   MPIInitSingleton *s = s->GetInstance();
   return s->get_rank();
 }
 
-[[maybe_unused]] __host__ int rocshmem_n_pes() {
+[[maybe_unused]] int rocshmem_n_pes() {
   MPIInitSingleton *s = s->GetInstance();
   return s->get_nprocs();
 }
 
-[[maybe_unused]] __host__ void *rocshmem_malloc(size_t size) {
+[[maybe_unused]] void *rocshmem_malloc(size_t size) {
   VERIFY_BACKEND();
-
   void *ptr;
   backend->heap.malloc(&ptr, size);
-
   rocshmem_barrier_all();
-
   return ptr;
 }
 
-[[maybe_unused]] __host__ void rocshmem_free(void *ptr) {
+[[maybe_unused]] void rocshmem_free(void *ptr) {
   VERIFY_BACKEND();
-
   rocshmem_barrier_all();
-
   backend->heap.free(ptr);
 }
 
-[[maybe_unused]] __host__ void rocshmem_finalize() {
+[[maybe_unused]] void rocshmem_finalize() {
   VERIFY_BACKEND();
-
-  /*
-   * Destroy all the ctxs that the user
-   * created but did not manually destroy
-   */
   backend->destroy_remaining_ctxs();
-
-  /*
-   * Destroy all the teams that the user
-   * created but did not manually destroy
-   */
-  auto team_destroy{
-      std::bind(&GPUIBBackend::team_destroy, backend, std::placeholders::_1)};
+  auto team_destroy{std::bind(&GPUIBBackend::team_destroy, backend, std::placeholders::_1)};
   backend->team_tracker.destroy_all(team_destroy);
-
   backend->~GPUIBBackend();
   CHECK_HIP(hipHostFree(backend));
-
   delete MPIInitSingleton::GetInstance();
 }
 
-__host__ void rocshmem_global_exit(int status) {
+void rocshmem_global_exit(int status) {
   VERIFY_BACKEND();
   backend->global_exit(status);
 }
@@ -244,7 +195,7 @@ __host__ void rocshmem_global_exit(int status) {
  ****************************** Teams Interface *******************************
  *****************************************************************************/
 
-__host__ int rocshmem_team_n_pes(rocshmem_team_t team) {
+int rocshmem_team_n_pes(rocshmem_team_t team) {
   if (team == ROCSHMEM_TEAM_INVALID) {
     return -1;
   } else {
@@ -252,7 +203,7 @@ __host__ int rocshmem_team_n_pes(rocshmem_team_t team) {
   }
 }
 
-__host__ int rocshmem_team_my_pe(rocshmem_team_t team) {
+int rocshmem_team_my_pe(rocshmem_team_t team) {
   if (team == ROCSHMEM_TEAM_INVALID) {
     return -1;
   } else {
@@ -260,20 +211,15 @@ __host__ int rocshmem_team_my_pe(rocshmem_team_t team) {
   }
 }
 
-__host__ inline int pe_in_active_set(int start, int stride, int size, int pe) {
-  /* Active set triplet is described with respect to team world */
-
+inline int pe_in_active_set(int start, int stride, int size, int pe) {
   int translated_pe = (pe - start) / stride;
-
   if ((pe < start) || ((pe - start) % stride) || (translated_pe >= size)) {
     translated_pe = -1;
   }
-
   return translated_pe;
 }
 
-__host__ int rocshmem_team_split_strided(
-    rocshmem_team_t parent_team, int start, int stride, int size,
+int rocshmem_team_split_strided(rocshmem_team_t parent_team, int start, int stride, int size,
     [[maybe_unused]] const rocshmem_team_config_t *config,
     [[maybe_unused]] long config_mask, rocshmem_team_t *new_team) {
   VERIFY_BACKEND();
@@ -283,7 +229,6 @@ __host__ int rocshmem_team_split_strided(
   auto num_user_teams{backend->team_tracker.get_num_user_teams()};
   auto max_num_teams{backend->team_tracker.get_max_num_teams()};
   if (num_user_teams >= max_num_teams - 1) {
-    /* Exceeded maximum number of teams */
     return -1;
   }
 
@@ -293,39 +238,28 @@ __host__ int rocshmem_team_split_strided(
 
   Team *parent_team_obj = get_internal_team(parent_team);
 
-  /* Santity check inputs */
-  if (start < 0 || start >= parent_team_obj->num_pes || size < 1 ||
-      size > parent_team_obj->num_pes || stride < 1) {
+  if (start < 0 || start >= parent_team_obj->num_pes || size < 1 || size > parent_team_obj->num_pes || stride < 1) {
     return -1;
   }
 
-  /* Calculate pe_start, stride, and pe_end wrt team world */
   int pe_start_in_world = parent_team_obj->get_pe_in_world(start);
   int stride_in_world = stride * parent_team_obj->tinfo_wrt_world->stride;
   int pe_end_in_world = pe_start_in_world + stride_in_world * (size - 1);
 
-  /* Check if size is out of bounds */
   if (pe_end_in_world > backend->num_pes) {
     return -1;
   }
 
-  /* Calculate my PE in the new team */
   int my_pe_in_world = backend->my_pe;
-  int my_pe_in_new_team = pe_in_active_set(pe_start_in_world, stride_in_world,
-                                           size, my_pe_in_world);
+  int my_pe_in_new_team = pe_in_active_set(pe_start_in_world, stride_in_world, size, my_pe_in_world);
 
-  /* Create team infos */
   TeamInfo *team_info_wrt_parent, *team_info_wrt_world;
-
   CHECK_HIP(hipMalloc(&team_info_wrt_parent, sizeof(TeamInfo)));
   new (team_info_wrt_parent) TeamInfo(parent_team_obj, start, stride, size);
-
   auto *team_world{backend->team_tracker.get_team_world()};
   CHECK_HIP(hipMalloc(&team_info_wrt_world, sizeof(TeamInfo)));
-  new (team_info_wrt_world)
-      TeamInfo(team_world, pe_start_in_world, stride_in_world, size);
+  new (team_info_wrt_world) TeamInfo(team_world, pe_start_in_world, stride_in_world, size);
 
-  /* Create a new MPI communicator for this team */
   int color;
   if (my_pe_in_new_team < 0) {
     color = MPI_UNDEFINED;
@@ -336,38 +270,24 @@ __host__ int rocshmem_team_split_strided(
   MPI_Comm team_comm;
   MPI_Comm_split(parent_team_obj->mpi_comm, color, my_pe_in_world, &team_comm);
 
-  /**
-   * Allocate new team for GPU-inittiated communication with backend-specific
-   * objects
-   */
   if (my_pe_in_new_team < 0) {
     *new_team = ROCSHMEM_TEAM_INVALID;
   } else {
-    backend->create_new_team(parent_team_obj, team_info_wrt_parent,
-                             team_info_wrt_world, size, my_pe_in_new_team,
-                             team_comm, new_team);
-
-    /* Track the newly created team to destroy it in finalize if the user does
-     * not */
+    backend->create_new_team(parent_team_obj, team_info_wrt_parent, team_info_wrt_world, size, my_pe_in_new_team, team_comm, new_team);
     backend->team_tracker.track(*new_team);
   }
-
   return 0;
 }
 
-__host__ void rocshmem_team_destroy(rocshmem_team_t team) {
+void rocshmem_team_destroy(rocshmem_team_t team) {
   if (team == ROCSHMEM_TEAM_INVALID || team == ROCSHMEM_TEAM_WORLD) {
-    /* Do nothing */
     return;
   }
-
   backend->team_tracker.untrack(team);
-
   backend->team_destroy(team);
 }
 
-__host__ int rocshmem_team_translate_pe(rocshmem_team_t src_team, int src_pe,
-                                         rocshmem_team_t dst_team) {
+int rocshmem_team_translate_pe(rocshmem_team_t src_team, int src_pe, rocshmem_team_t dst_team) {
   return team_translate_pe(src_team, src_pe, dst_team);
 }
 
@@ -376,63 +296,58 @@ __host__ int rocshmem_team_translate_pe(rocshmem_team_t src_team, int src_pe,
  *****************************************************************************/
 
 template <typename T>
-__host__ void rocshmem_put(T *dest, const T *source, size_t nelems, int pe) {
+void rocshmem_put(T *dest, const T *source, size_t nelems, int pe) {
   rocshmem_put(ROCSHMEM_HOST_CTX_DEFAULT, dest, source, nelems, pe);
 }
 
-__host__ void rocshmem_putmem(void *dest, const void *source, size_t nelems,
-                               int pe) {
+void rocshmem_putmem(void *dest, const void *source, size_t nelems, int pe) {
   rocshmem_ctx_putmem(ROCSHMEM_HOST_CTX_DEFAULT, dest, source, nelems, pe);
 }
 
 template <typename T>
-__host__ void rocshmem_p(T *dest, T value, int pe) {
+void rocshmem_p(T *dest, T value, int pe) {
   rocshmem_p(ROCSHMEM_HOST_CTX_DEFAULT, dest, value, pe);
 }
 
 template <typename T>
-__host__ void rocshmem_put_nbi(T *dest, const T *source, size_t nelems,
-                                int pe) {
+void rocshmem_put_nbi(T *dest, const T *source, size_t nelems, int pe) {
   rocshmem_put_nbi(ROCSHMEM_HOST_CTX_DEFAULT, dest, source, nelems, pe);
 }
 
-__host__ void rocshmem_putmem_nbi(void *dest, const void *source,
-                                   size_t nelems, int pe) {
-  rocshmem_ctx_putmem_nbi(ROCSHMEM_HOST_CTX_DEFAULT, dest, source, nelems,
-                           pe);
+void rocshmem_putmem_nbi(void *dest, const void *source, size_t nelems, int pe) {
+  rocshmem_ctx_putmem_nbi(ROCSHMEM_HOST_CTX_DEFAULT, dest, source, nelems, pe);
 }
 
 template <typename T>
-__host__ T rocshmem_atomic_fetch_add(T *dest, T val, int pe) {
+T rocshmem_atomic_fetch_add(T *dest, T val, int pe) {
   return rocshmem_atomic_fetch_add(ROCSHMEM_HOST_CTX_DEFAULT, dest, val, pe);
 }
 
 template <typename T>
-__host__ T rocshmem_atomic_compare_swap(T *dest, T cond, T val, int pe) {
-  return rocshmem_atomic_compare_swap(ROCSHMEM_HOST_CTX_DEFAULT, dest, cond,
-                                       val, pe);
+T rocshmem_atomic_compare_swap(T *dest, T cond, T val, int pe) {
+  return rocshmem_atomic_compare_swap(ROCSHMEM_HOST_CTX_DEFAULT, dest, cond, val, pe);
 }
 
 template <typename T>
-__host__ void rocshmem_atomic_add(T *dest, T val, int pe) {
+void rocshmem_atomic_add(T *dest, T val, int pe) {
   rocshmem_atomic_add(ROCSHMEM_HOST_CTX_DEFAULT, dest, val, pe);
 }
 
 template <typename T>
-__host__ void rocshmem_atomic_set(T *dest, T val, int pe) {
+void rocshmem_atomic_set(T *dest, T val, int pe) {
   rocshmem_atomic_set(ROCSHMEM_HOST_CTX_DEFAULT, dest, val, pe);
 }
 
 template <typename T>
-__host__ T rocshmem_atomic_swap(T *dest, T value, int pe) {
+T rocshmem_atomic_swap(T *dest, T value, int pe) {
   return rocshmem_atomic_swap(ROCSHMEM_HOST_CTX_DEFAULT, dest, value, pe);
 }
 
-__host__ void rocshmem_fence() {
+void rocshmem_fence() {
   rocshmem_ctx_fence(ROCSHMEM_HOST_CTX_DEFAULT);
 }
 
-__host__ void rocshmem_quiet() {
+void rocshmem_quiet() {
   rocshmem_ctx_quiet(ROCSHMEM_HOST_CTX_DEFAULT);
 }
 
@@ -440,291 +355,226 @@ __host__ void rocshmem_quiet() {
  ************************* Private Context Interfaces *************************
  *****************************************************************************/
 
-__host__ Context *get_internal_ctx(rocshmem_ctx_t ctx) {
+Context *get_internal_ctx(rocshmem_ctx_t ctx) {
   return reinterpret_cast<Context *>(ctx.ctx_opaque);
 }
 
-__host__ int rocshmem_ctx_create(rocshmem_ctx_t *ctx) {
+int rocshmem_ctx_create(rocshmem_ctx_t *ctx) {
   void *phys_ctx;
   backend->ctx_create(&phys_ctx);
-
   ctx->ctx_opaque = phys_ctx;
-  /* This team in on TEAM_WORLD, no need for team info */
   ctx->team_opaque = nullptr;
-
-  /* Track this context, if needed. */
   backend->track_ctx(reinterpret_cast<Context *>(phys_ctx));
-
   return 0;
 }
 
-__host__ void rocshmem_ctx_destroy(rocshmem_ctx_t ctx) {
+void rocshmem_ctx_destroy(rocshmem_ctx_t ctx) {
   Context *phys_ctx = get_internal_ctx(ctx);
-
   backend->untrack_ctx(phys_ctx);
-
   backend->ctx_destroy(phys_ctx);
 }
 
 template <typename T>
-__host__ void rocshmem_put(rocshmem_ctx_t ctx, T *dest, const T *source,
-                            size_t nelems, int pe) {
+void rocshmem_put(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {
   get_internal_ctx(ctx)->put(dest, source, nelems, pe);
 }
 
-__host__ void rocshmem_ctx_putmem(rocshmem_ctx_t ctx, void *dest,
-                                   const void *source, size_t nelems, int pe) {
+void rocshmem_ctx_putmem(rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe) {
   get_internal_ctx(ctx)->putmem(dest, source, nelems, pe);
 }
 
 template <typename T>
-__host__ void rocshmem_p(rocshmem_ctx_t ctx, T *dest, T value, int pe) {
+void rocshmem_p(rocshmem_ctx_t ctx, T *dest, T value, int pe) {
   get_internal_ctx(ctx)->p(dest, value, pe);
 }
 
 template <typename T>
-__host__ void rocshmem_put_nbi(rocshmem_ctx_t ctx, T *dest, const T *source,
-                                size_t nelems, int pe) {
+void rocshmem_put_nbi(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {
   get_internal_ctx(ctx)->put_nbi(dest, source, nelems, pe);
 }
 
-__host__ void rocshmem_ctx_putmem_nbi(rocshmem_ctx_t ctx, void *dest,
-                                       const void *source, size_t nelems,
-                                       int pe) {
+void rocshmem_ctx_putmem_nbi(rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe) {
   get_internal_ctx(ctx)->putmem_nbi(dest, source, nelems, pe);
 }
 
 template <typename T>
-__host__ T rocshmem_atomic_fetch_add(rocshmem_ctx_t ctx, T *dest, T val,
-                                      int pe) {
+T rocshmem_atomic_fetch_add(rocshmem_ctx_t ctx, T *dest, T val, int pe) {
   return get_internal_ctx(ctx)->amo_fetch_add<T>(dest, val, pe);
 }
 
 template <typename T>
-__host__ T rocshmem_atomic_compare_swap(rocshmem_ctx_t ctx, T *dest, T cond,
-                                         T val, int pe) {
+T rocshmem_atomic_compare_swap(rocshmem_ctx_t ctx, T *dest, T cond, T val, int pe) {
   return get_internal_ctx(ctx)->amo_fetch_cas(dest, val, cond, pe);
 }
 
 template <typename T>
-__host__ void rocshmem_atomic_add(rocshmem_ctx_t ctx, T *dest, T val,
-                                   int pe) {
+void rocshmem_atomic_add(rocshmem_ctx_t ctx, T *dest, T val, int pe) {
   get_internal_ctx(ctx)->amo_add<T>(dest, val, pe);
 }
 
 template <typename T>
-__host__ void rocshmem_atomic_set(rocshmem_ctx_t ctx, T *dest, T val,
-                                   int pe) {
+void rocshmem_atomic_set(rocshmem_ctx_t ctx, T *dest, T val, int pe) {
   get_internal_ctx(ctx)->amo_set(dest, val, pe);
 }
 
 template <typename T>
-__host__ T rocshmem_atomic_swap(rocshmem_ctx_t ctx, T *dest, T val, int pe) {
+T rocshmem_atomic_swap(rocshmem_ctx_t ctx, T *dest, T val, int pe) {
   return get_internal_ctx(ctx)->amo_swap(dest, val, pe);
 }
 
-__host__ void rocshmem_ctx_fence(rocshmem_ctx_t ctx) {
+void rocshmem_ctx_fence(rocshmem_ctx_t ctx) {
   get_internal_ctx(ctx)->fence();
 }
 
-__host__ void rocshmem_ctx_quiet(rocshmem_ctx_t ctx) {
+void rocshmem_ctx_quiet(rocshmem_ctx_t ctx) {
   get_internal_ctx(ctx)->quiet();
 }
 
-__host__ void rocshmem_barrier_all() {
+void rocshmem_barrier_all() {
   get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->barrier_all();
 }
 
 template <typename T>
-__host__ void rocshmem_wait_until(T *ivars, int cmp, T val) {
+void rocshmem_wait_until(T *ivars, int cmp, T val) {
   get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->wait_until(ivars, cmp, val);
 }
 
 template <typename T>
-__host__ void rocshmem_wait_until_all(T *ivars, size_t nelems, const int* status,
-                                       int cmp, T val) {
-  get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->wait_until_all(ivars,
-      nelems, status, cmp, val);
+void rocshmem_wait_until_all(T *ivars, size_t nelems, const int* status, int cmp, T val) {
+  get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->wait_until_all(ivars, nelems, status, cmp, val);
 }
 
 template <typename T>
-__host__ size_t rocshmem_wait_until_any(T *ivars, size_t nelems, const int* status,
-                                       int cmp, T val) {
-  return get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->wait_until_any(ivars,
-      nelems, status, cmp, val);
+size_t rocshmem_wait_until_any(T *ivars, size_t nelems, const int* status, int cmp, T val) {
+  return get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->wait_until_any(ivars, nelems, status, cmp, val);
 }
 
 template <typename T>
-__host__ size_t rocshmem_wait_until_some(T *ivars, size_t nelems, size_t* indices,
-                                        const int* status, int cmp,
-                                        T val) {
-  return get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->wait_until_some(ivars, nelems,
-      indices, status, cmp, val);
+size_t rocshmem_wait_until_some(T *ivars, size_t nelems, size_t* indices, const int* status, int cmp, T val) {
+  return get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->wait_until_some(ivars, nelems, indices, status, cmp, val);
 }
 
 template <typename T>
-__host__ int rocshmem_test(T *ivars, int cmp, T val) {
+int rocshmem_test(T *ivars, int cmp, T val) {
   return get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->test(ivars, cmp, val);
 }
 
-/**
+/*
  * Declare templates for the required datatypes (for the compiler)
- **/
-#define RMA_GEN(T)                                                            \
-  template __host__ void rocshmem_put<T>(                                     \
-      rocshmem_ctx_t ctx, T * dest, const T *source, size_t nelems, int pe);  \
-  template __host__ void rocshmem_put_nbi<T>(                                 \
-      rocshmem_ctx_t ctx, T * dest, const T *source, size_t nelems, int pe);  \
-  template __host__ void rocshmem_p<T>(rocshmem_ctx_t ctx, T * dest,          \
-                                        T value, int pe);                     \
-  template __host__ void rocshmem_put<T>(T * dest, const T *source,           \
-                                          size_t nelems, int pe);             \
-  template __host__ void rocshmem_put_nbi<T>(T * dest, const T *source,       \
-                                              size_t nelems, int pe);         \
-  template __host__ void rocshmem_p<T>(T * dest, T value, int pe);
+ */
+#define RMA_GEN(T)                                                                                        \
+  template void rocshmem_put<T>(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe);     \
+  template void rocshmem_put_nbi<T>(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
+  template void rocshmem_p<T>(rocshmem_ctx_t ctx, T *dest, T value, int pe);                              \
+  template void rocshmem_put<T>(T *dest, const T *source, size_t nelems, int pe);                         \
+  template void rocshmem_put_nbi<T>(T *dest, const T *source, size_t nelems, int pe);                     \
+  template void rocshmem_p<T>(T *dest, T value, int pe);
 
-/**
+/*
  * Declare templates for the standard amo types
  */
-#define AMO_STANDARD_GEN(T)                                                   \
-  template __host__ T rocshmem_atomic_compare_swap<T>(                        \
-      rocshmem_ctx_t ctx, T * dest, T cond, T value, int pe);                 \
-  template __host__ T rocshmem_atomic_compare_swap<T>(T * dest, T cond,       \
-                                                       T value, int pe);      \
-  template __host__ T rocshmem_atomic_fetch_add<T>(                           \
-      rocshmem_ctx_t ctx, T * dest, T value, int pe);                         \
-  template __host__ T rocshmem_atomic_fetch_add<T>(T * dest, T value,         \
-                                                    int pe);                  \
-  template __host__ void rocshmem_atomic_add<T>(rocshmem_ctx_t ctx,           \
-                                                 T * dest, T value, int pe);  \
-  template __host__ void rocshmem_atomic_add<T>(T * dest, T value, int pe);
+#define AMO_STANDARD_GEN(T)                                                                         \
+  template T rocshmem_atomic_compare_swap<T>(rocshmem_ctx_t ctx, T *dest, T cond, T value, int pe); \
+  template T rocshmem_atomic_compare_swap<T>(T *dest, T cond, T value, int pe);                     \
+  template T rocshmem_atomic_fetch_add<T>(rocshmem_ctx_t ctx, T *dest, T value, int pe);            \
+  template T rocshmem_atomic_fetch_add<T>(T *dest, T value, int pe);                                \
+  template void rocshmem_atomic_add<T>(rocshmem_ctx_t ctx, T *dest, T value, int pe);               \
+  template void rocshmem_atomic_add<T>(T *dest, T value, int pe);
 
-/**
+/*
  * Declare templates for the extended amo types
  */
-#define AMO_EXTENDED_GEN(T)                                                   \
-  template __host__ void rocshmem_atomic_set<T>(rocshmem_ctx_t ctx,           \
-                                                 T * dest, T value, int pe);  \
-  template __host__ void rocshmem_atomic_set<T>(T * dest, T value, int pe);   \
-  template __host__ T rocshmem_atomic_swap<T>(rocshmem_ctx_t ctx, T * dest,   \
-                                               T value, int pe);              \
-  template __host__ T rocshmem_atomic_swap<T>(T * dest, T value, int pe);
+#define AMO_EXTENDED_GEN(T)                                                           \
+  template void rocshmem_atomic_set<T>(rocshmem_ctx_t ctx, T *dest, T value, int pe); \
+  template void rocshmem_atomic_set<T>(T *dest, T value, int pe);                     \
+  template T rocshmem_atomic_swap<T>(rocshmem_ctx_t ctx, T *dest, T value, int pe);   \
+  template T rocshmem_atomic_swap<T>(T *dest, T value, int pe);
 
-/**
+/*
  * Declare templates for the wait types
  */
-#define WAIT_GEN(T)                                                           \
-  template __host__ void rocshmem_wait_until<T>(T *ivars, int cmp,            \
-                                                 T val);                      \
-  template __host__ int rocshmem_test<T>(T *ivars, int cmp, T val);           \
-  template __host__ void Context::wait_until<T>(T *ivars, int cmp,            \
-                                                T val);                       \
-  template __host__ size_t rocshmem_wait_until_any<T>(T *ivars,               \
-                                      size_t nelems, const int* status,       \
-                                      int cmp, T val);                        \
-  template __host__ void rocshmem_wait_until_all<T>(T *ivars,                 \
-                                      size_t nelems, const int* status,       \
-                                      int cmp, T val);                        \
-  template __host__ size_t rocshmem_wait_until_some<T>(T *ivars, size_t nelems,\
-                                      size_t* indices, const int* status,     \
-                                      int cmp, T val);                        \
-  template __host__ int Context::test<T>(T *ivars, int cmp, T val);
+#define WAIT_GEN(T)                                                                                                         \
+  template void rocshmem_wait_until<T>(T *ivars, int cmp, T val);                                                           \
+  template int rocshmem_test<T>(T *ivars, int cmp, T val);                                                                  \
+  template void Context::wait_until<T>(T *ivars, int cmp, T val);                                                           \
+  template size_t rocshmem_wait_until_any<T>(T *ivars, size_t nelems, const int* status, int cmp, T val);                   \
+  template void rocshmem_wait_until_all<T>(T *ivars, size_t nelems, const int* status, int cmp, T val);                     \
+  template size_t rocshmem_wait_until_some<T>(T *ivars, size_t nelems, size_t* indices, const int* status, int cmp, T val); \
+  template int Context::test<T>(T *ivars, int cmp, T val);
 
-/**
+/*
  * Define APIs to call the template functions
- **/
+ */
 
-#define RMA_DEF_GEN(T, TNAME)                                                 \
-  __host__ void rocshmem_ctx_##TNAME##_put(                                   \
-      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {  \
-    rocshmem_put<T>(ctx, dest, source, nelems, pe);                           \
-  }                                                                           \
-  __host__ void rocshmem_ctx_##TNAME##_put_nbi(                               \
-      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {  \
-    rocshmem_put_nbi<T>(ctx, dest, source, nelems, pe);                       \
-  }                                                                           \
-  __host__ void rocshmem_ctx_##TNAME##_p(rocshmem_ctx_t ctx, T *dest,         \
-                                          T value, int pe) {                  \
-    rocshmem_p<T>(ctx, dest, value, pe);                                      \
-  }                                                                           \
-  __host__ void rocshmem_##TNAME##_put(T *dest, const T *source,              \
-                                        size_t nelems, int pe) {              \
-    rocshmem_put<T>(dest, source, nelems, pe);                                \
-  }                                                                           \
-  __host__ void rocshmem_##TNAME##_put_nbi(T *dest, const T *source,          \
-                                            size_t nelems, int pe) {          \
-    rocshmem_put_nbi<T>(dest, source, nelems, pe);                            \
-  }                                                                           \
-  __host__ void rocshmem_##TNAME##_p(T *dest, T value, int pe) {              \
-    rocshmem_p<T>(dest, value, pe);                                           \
+#define RMA_DEF_GEN(T, TNAME)                                                                                \
+  void rocshmem_ctx_##TNAME##_put(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {     \
+    rocshmem_put<T>(ctx, dest, source, nelems, pe);                                                          \
+  }                                                                                                          \
+  void rocshmem_ctx_##TNAME##_put_nbi(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) { \
+    rocshmem_put_nbi<T>(ctx, dest, source, nelems, pe);                                                      \
+  }                                                                                                          \
+  void rocshmem_ctx_##TNAME##_p(rocshmem_ctx_t ctx, T *dest, T value, int pe) {                              \
+    rocshmem_p<T>(ctx, dest, value, pe);                                                                     \
+  }                                                                                                          \
+  void rocshmem_##TNAME##_put(T *dest, const T *source, size_t nelems, int pe) {                             \
+    rocshmem_put<T>(dest, source, nelems, pe);                                                               \
+  }                                                                                                          \
+  void rocshmem_##TNAME##_put_nbi(T *dest, const T *source, size_t nelems, int pe) {                         \
+    rocshmem_put_nbi<T>(dest, source, nelems, pe);                                                           \
+  }                                                                                                          \
+  void rocshmem_##TNAME##_p(T *dest, T value, int pe) {                                                      \
+    rocshmem_p<T>(dest, value, pe);                                                                          \
   }
 
-#define AMO_STANDARD_DEF_GEN(T, TNAME)                                        \
-  __host__ T rocshmem_ctx_##TNAME##_atomic_compare_swap(                      \
-      rocshmem_ctx_t ctx, T *dest, T cond, T value, int pe) {                 \
-    return rocshmem_atomic_compare_swap<T>(ctx, dest, cond, value, pe);       \
-  }                                                                           \
-  __host__ T rocshmem_##TNAME##_atomic_compare_swap(T *dest, T cond, T value, \
-                                                     int pe) {                \
-    return rocshmem_atomic_compare_swap<T>(dest, cond, value, pe);            \
-  }                                                                           \
-  __host__ T rocshmem_ctx_##TNAME##_atomic_fetch_add(                         \
-      rocshmem_ctx_t ctx, T *dest, T value, int pe) {                         \
-    return rocshmem_atomic_fetch_add<T>(ctx, dest, value, pe);                \
-  }                                                                           \
-  __host__ T rocshmem_##TNAME##_atomic_fetch_add(T *dest, T value, int pe) {  \
-    return rocshmem_atomic_fetch_add<T>(dest, value, pe);                     \
-  }                                                                           \
-  __host__ void rocshmem_ctx_##TNAME##_atomic_add(rocshmem_ctx_t ctx,         \
-                                                   T *dest, T value, int pe) { \
-    rocshmem_atomic_add<T>(ctx, dest, value, pe);                             \
-  }                                                                           \
-  __host__ void rocshmem_##TNAME##_atomic_add(T *dest, T value, int pe) {     \
-    rocshmem_atomic_add<T>(dest, value, pe);                                  \
+#define AMO_STANDARD_DEF_GEN(T, TNAME)                                                                 \
+  T rocshmem_ctx_##TNAME##_atomic_compare_swap(rocshmem_ctx_t ctx, T *dest, T cond, T value, int pe) { \
+    return rocshmem_atomic_compare_swap<T>(ctx, dest, cond, value, pe);                                \
+  }                                                                                                    \
+  T rocshmem_##TNAME##_atomic_compare_swap(T *dest, T cond, T value, int pe) {                         \
+    return rocshmem_atomic_compare_swap<T>(dest, cond, value, pe);                                     \
+  }                                                                                                    \
+  T rocshmem_ctx_##TNAME##_atomic_fetch_add(rocshmem_ctx_t ctx, T *dest, T value, int pe) {            \
+    return rocshmem_atomic_fetch_add<T>(ctx, dest, value, pe);                                         \
+  }                                                                                                    \
+  T rocshmem_##TNAME##_atomic_fetch_add(T *dest, T value, int pe) {                                    \
+    return rocshmem_atomic_fetch_add<T>(dest, value, pe);                                              \
+  }                                                                                                    \
+  void rocshmem_ctx_##TNAME##_atomic_add(rocshmem_ctx_t ctx, T *dest, T value, int pe) {               \
+    rocshmem_atomic_add<T>(ctx, dest, value, pe);                                                      \
+  }                                                                                                    \
+  void rocshmem_##TNAME##_atomic_add(T *dest, T value, int pe) {                                       \
+    rocshmem_atomic_add<T>(dest, value, pe);                                                           \
   }
 
-#define AMO_EXTENDED_DEF_GEN(T, TNAME)                                        \
-  __host__ void rocshmem_ctx_##TNAME##_atomic_set(rocshmem_ctx_t ctx,         \
-                                                   T *dest, T value, int pe) {\
-    rocshmem_atomic_set<T>(ctx, dest, value, pe);                             \
-  }                                                                           \
-  __host__ void rocshmem_##TNAME##_atomic_set(T *dest, T value, int pe) {     \
-    rocshmem_atomic_set<T>(dest, value, pe);                                  \
-  }                                                                           \
-  __host__ T rocshmem_ctx_##TNAME##_atomic_swap(rocshmem_ctx_t ctx, T *dest,  \
-                                                 T value, int pe) {           \
-    return rocshmem_atomic_swap<T>(ctx, dest, value, pe);                     \
-  }                                                                           \
-  __host__ T rocshmem_##TNAME##_atomic_swap(T *dest, T value, int pe) {       \
-    return rocshmem_atomic_swap<T>(dest, value, pe);                          \
+#define AMO_EXTENDED_DEF_GEN(T, TNAME)                                                   \
+  void rocshmem_ctx_##TNAME##_atomic_set(rocshmem_ctx_t ctx, T *dest, T value, int pe) { \
+    rocshmem_atomic_set<T>(ctx, dest, value, pe);                                        \
+  }                                                                                      \
+  void rocshmem_##TNAME##_atomic_set(T *dest, T value, int pe) {                         \
+    rocshmem_atomic_set<T>(dest, value, pe);                                             \
+  }                                                                                      \
+  T rocshmem_ctx_##TNAME##_atomic_swap(rocshmem_ctx_t ctx, T *dest, T value, int pe) {   \
+    return rocshmem_atomic_swap<T>(ctx, dest, value, pe);                                \
+  }                                                                                      \
+  T rocshmem_##TNAME##_atomic_swap(T *dest, T value, int pe) {                           \
+    return rocshmem_atomic_swap<T>(dest, value, pe);                                     \
   }
 
-#define WAIT_DEF_GEN(T, TNAME)                                                \
-  __host__ void rocshmem_##TNAME##_wait_until(T *ivars, int cmp,              \
-                                               T val) {                       \
-    rocshmem_wait_until<T>(ivars, cmp, val);                                  \
-  }                                                                           \
-  __host__ size_t rocshmem_##TNAME##_wait_until_any(T *ivars, size_t nelems,  \
-                                                     const int* status,       \
-                                                     int cmp,                 \
-                                                     T val) {                 \
-    return rocshmem_wait_until_any<T>(ivars, nelems, status, cmp, val);       \
-  }                                                                           \
-  __host__ void rocshmem_##TNAME##_wait_until_all(T *ivars, size_t nelems,    \
-                                                   const int* status,         \
-                                                   int cmp,                   \
-                                                   T val) {                   \
-    rocshmem_wait_until_all<T>(ivars, nelems, status, cmp, val);              \
-  }                                                                           \
-  __host__ size_t rocshmem_##TNAME##_wait_until_some(T *ivars, size_t nelems, \
-                                                    size_t* indices,          \
-                                                    const int* status,        \
-                                                    int cmp,                  \
-                                                    T val) {                  \
-    return rocshmem_wait_until_some<T>(ivars, nelems, indices, status, cmp, val); \
-  }                                                                           \
-  __host__ int rocshmem_##TNAME##_test(T *ivars, int cmp, T val) {            \
-    return rocshmem_test<T>(ivars, cmp, val);                                 \
+#define WAIT_DEF_GEN(T, TNAME)                                                                                             \
+  void rocshmem_##TNAME##_wait_until(T *ivars, int cmp, T val) {                                                           \
+    rocshmem_wait_until<T>(ivars, cmp, val);                                                                               \
+  }                                                                                                                        \
+  size_t rocshmem_##TNAME##_wait_until_any(T *ivars, size_t nelems, const int* status, int cmp, T val) {                   \
+    return rocshmem_wait_until_any<T>(ivars, nelems, status, cmp, val);                                                    \
+  }                                                                                                                        \
+  void rocshmem_##TNAME##_wait_until_all(T *ivars, size_t nelems, const int* status, int cmp, T val) {                     \
+    rocshmem_wait_until_all<T>(ivars, nelems, status, cmp, val);                                                           \
+  }                                                                                                                        \
+  size_t rocshmem_##TNAME##_wait_until_some(T *ivars, size_t nelems, size_t* indices, const int* status, int cmp, T val) { \
+    return rocshmem_wait_until_some<T>(ivars, nelems, indices, status, cmp, val);                                          \
+  }                                                                                                                        \
+  int rocshmem_##TNAME##_test(T *ivars, int cmp, T val) {                                                                  \
+    return rocshmem_test<T>(ivars, cmp, val);                                                                              \
   }
 
 /******************************************************************************
