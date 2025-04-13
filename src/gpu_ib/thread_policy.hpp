@@ -30,12 +30,6 @@ namespace rocshmem {
 
 class QueuePair;
 
-/*
- * GPU single-thread policy class. Only a single work-item per work-group
- * is allowed to call into a rocSHMEM function (unless it is specifically
- * called out as a collective API. This thread policy is the fastest but
- * is not as flexible.
- */
 class SingleThreadImpl {
  public:
   uint32_t cq_lock = 0;
