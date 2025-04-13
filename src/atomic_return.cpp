@@ -59,26 +59,4 @@ void allocate_atomic_region(atomic_ret_t** atomic_ret, int num_wg) {
   *atomic_ret = tmp_ret;
 }
 
-void init_g_ret(SymmetricHeap* heap_handle, MPI_Comm thread_comm, int num_wg,
-                char** g_ret) {
-  /*
-   * Create space on the symmetric heap
-   */
-  void* ptr{nullptr};
-  size_t size_bytes{sizeof(int64_t) * MAX_WG_SIZE * num_wg};
-  heap_handle->malloc(&ptr, size_bytes);
-  assert(ptr);
-
-  /*
-   * Assign g_ret the output of the malloc
-   */
-  *g_ret = reinterpret_cast<char*>(ptr);
-
-  /*
-   * Make sure that all processing elements have done this before
-   * continuing.
-   */
-  MPI_Barrier(thread_comm);
-}
-
 }  // namespace rocshmem

@@ -144,11 +144,6 @@ void NetworkImpl::setup_gpu_qps(GPUIBBackend *B) {
   }
 }
 
-void NetworkImpl::rocshmem_g_init(SymmetricHeap *heap_handle,
-                                     MPI_Comm thread_comm) {
-  init_g_ret(heap_handle, thread_comm, num_blocks, &g_ret);
-}
-
 __host__ void NetworkImpl::networkHostSetup(GPUIBBackend *B) {
   num_pes = B->num_pes;
   my_pe = B->my_pe;
@@ -163,8 +158,6 @@ __host__ void NetworkImpl::networkHostSetup(GPUIBBackend *B) {
                    B->heap.is_managed());
 
   setup_atomic_region();
-
-  rocshmem_g_init(&B->heap, B->thread_comm);
 
   connection->post_wqes();
 
@@ -207,7 +200,6 @@ __host__ void NetworkImpl::networkHostInit(GPUIBContext *ctx, int buffer_id) {
         &atomic_ret->atomic_base_ptr[max_nb_atomic * buffer_id];
     qp->base_heap = ctx->base_heap;
   }
-  ctx->g_ret = g_ret;
 }
 
 __device__ void NetworkImpl::networkGpuInit(GPUIBContext *ctx,
@@ -224,7 +216,6 @@ __device__ void NetworkImpl::networkGpuInit(GPUIBContext *ctx,
         &atomic_ret->atomic_base_ptr[max_nb_atomic * buffer_id];
     qp->base_heap = ctx->base_heap;
   }
-  ctx->g_ret = g_ret;
 }
 
 __device__ __host__ QueuePair *NetworkImpl::getQueuePair(QueuePair *qp_handle,

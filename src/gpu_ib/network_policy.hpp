@@ -106,12 +106,6 @@ class NetworkImpl {
   void setup_gpu_qps(GPUIBBackend *B);
 
   /**
-   * @brief Allocate and initialize device-side memory that will be used for
-   * the return of g shmem ops (eg: shmem_int_g)
-   */
-  void rocshmem_g_init(SymmetricHeap *heap_handle, MPI_Comm thread_comm);
-
-  /**
    * @brief The backend delegates some InfiniBand connection setup to
    * the Connection class.
    */
@@ -172,14 +166,6 @@ class NetworkImpl {
    * @brief Handle for the atomic memory region.
    */
   ibv_mr *mr{nullptr};
-
-  /**
-   * @brief Buffer used to store the results of a *_g operation.
-   *
-   * These operations do not provide a destination buffer so the runtime
-   * must manage one.
-   */
-  char *g_ret{nullptr};
 };
 
 }  // namespace rocshmem

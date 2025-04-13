@@ -41,9 +41,6 @@ struct atomic_ret_t {
 
 void allocate_atomic_region(atomic_ret_t** atomic_ret, int num_wg);
 
-void init_g_ret(SymmetricHeap* heap_handle, MPI_Comm thread_comm, int num_wg,
-                char** g_ret);
-
 }  // namespace rocshmem
 
 #endif  // LIBRARY_SRC_ATOMIC_RETURN_HPP_
