@@ -41,14 +41,11 @@ void allocate_atomic_region(atomic_ret_t** atomic_ret, int num_wg) {
    * region.
    */
   size_t size_bytes{max_nb_atomic * num_wg * sizeof(uint64_t)};
-#ifdef HIP_SUPPORTS_MALLOC_UNCACHED
-  CHECK_HIP(
-      hipExtMallocWithFlags(reinterpret_cast<void**>(&tmp_ret->atomic_base_ptr),
-                            size_bytes, hipDeviceMallocUncached));
-#else
-  CHECK_HIP(
-      hipExtMallocWithFlags(reinterpret_cast<void**>(&tmp_ret->atomic_base_ptr),
-                            size_bytes, hipDeviceMallocFinegrained));
+#ifdef USE_UNCACHED_HEAP
+  CHECK_HIP(hipExtMallocWithFlags(reinterpret_cast<void**>(&tmp_ret->atomic_base_ptr), size_bytes, hipDeviceMallocUncached));
+#endif
+#ifdef USE_FINEGRAINED_HEAP
+  CHECK_HIP(hipExtMallocWithFlags(reinterpret_cast<void**>(&tmp_ret->atomic_base_ptr), size_bytes, hipDeviceMallocFinegrained));
 #endif
 
   /*

@@ -38,11 +38,10 @@
 
 namespace rocshmem {
 
-#if defined USE_FINEGRAINED_COHERENT_HEAP
+#ifdef  USE_FINEGRAINED_HEAP
 using HEAP_T = HeapMemory<HIPAllocatorFinegrained>;
-#elif defined USE_HIP_HOST_HEAP
-using HEAP_T = HeapMemory<HIPHostAllocator>;
-#else
+#endif
+#ifdef USE_UNCACHED_HEAP
 using HEAP_T = HeapMemory<HIPAllocatorUncached>;
 #endif
 

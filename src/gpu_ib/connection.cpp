@@ -47,12 +47,8 @@ Connection::Connection(GPUIBBackend* b, int k) : backend(b), key_offset(k) {
     sq_size = atoi(value);
   }
 
-  if ((value = getenv("ROCSHMEM_USE_CQ_GPU_MEM")) != nullptr) {
-    cq_use_gpu_mem = atoi(value);
-  }
-
-  if ((value = getenv("ROCSHMEM_USE_SQ_GPU_MEM")) != nullptr) {
-    sq_use_gpu_mem = atoi(value);
+  if ((value = getenv("ROCSHMEM_USE_GPU_MEM_QUEUES")) != nullptr) {
+    use_gpu_mem = atoi(value);
   }
 }
 
@@ -235,7 +231,7 @@ void* Connection::buf_alloc([[maybe_unused]] struct ibv_pd* pd,
                             [[maybe_unused]] uint64_t resource_type) {
   if (use_gpu_mem) {
     void* dev_ptr;
-#ifdef USE_FINEGRAINED_COHERENT_HEAP
+#ifdef USE_FINEGRAINED_HEAP
     CHECK_HIP(hipExtMallocWithFlags(reinterpret_cast<void**>(&dev_ptr), size, hipDeviceMallocFinegrained));
 #endif
 #ifdef USE_UNCACHED_HEAP
@@ -267,8 +263,6 @@ void Connection::init_parent_domain_attr(ibv_parent_domain_init_attr* attr1) {
 }
 
 ibv_cq* Connection::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
-  use_gpu_mem = cq_use_gpu_mem;
-
   ibv_cq_init_attr_ex cq_attr;
   memset(&cq_attr, 0, sizeof(ibv_cq_init_attr_ex));
   cq_attr.cqe = cqe;
@@ -291,7 +285,6 @@ ibv_cq* Connection::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
 void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   int hip_dev_id = 0;
   CHECK_HIP(hipGetDevice(&hip_dev_id));
-  use_gpu_mem = cq_use_gpu_mem;
   mlx5dv_cq cq_out;
   mlx5dv_obj mlx_obj;
   mlx_obj.cq.in = cqs[conn_num];
@@ -311,7 +304,6 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
     gpu_qp->dbrec_cq = reinterpret_cast<volatile uint32_t*>(gpu_ptr);
   }
   gpu_qp->current_cq_q_H = reinterpret_cast<mlx5_cqe64*>(cq_out.buf);
-  use_gpu_mem = sq_use_gpu_mem;
   mlx5dv_qp qp_out;
   mlx_obj.qp.in = qps[conn_num];
   mlx_obj.qp.out = &qp_out;
@@ -344,8 +336,6 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
 
 ibv_qp* Connection::create_qp(ibv_pd* pd, ibv_context* context,
                               ibv_qp_init_attr_ex* qp_attr, ibv_cq* cq) {
-  use_gpu_mem = sq_use_gpu_mem;
-
   ibv_qp* qp = nullptr;
 
   assert(pd);

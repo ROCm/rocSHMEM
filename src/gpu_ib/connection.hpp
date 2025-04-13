@@ -217,12 +217,6 @@ class Connection {
 
   static int use_gpu_mem;
 
-  static int coherent_cq;
-
-  int cq_use_gpu_mem{1};
-
-  int sq_use_gpu_mem{1};
-
  private:
   void init_shmem_handle();
 
