@@ -347,9 +347,7 @@ class QueuePair {
   QueuePair *global_qp{nullptr};
 
   friend SingleThreadImpl;
-  friend MultiThreadImpl;
   friend THREAD;
-  friend WG;
   friend WAVE;
 };
 

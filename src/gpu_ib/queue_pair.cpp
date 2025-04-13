@@ -367,7 +367,6 @@ void QueuePair::setDBval(uint64_t val) { db_val = val; }
   template __device__ void QueuePair::quiet_internal<T>();
 
 THREAD_LEVEL_GEN(THREAD)
-THREAD_LEVEL_GEN(WG)
 THREAD_LEVEL_GEN(WAVE)
 
 }  // namespace rocshmem

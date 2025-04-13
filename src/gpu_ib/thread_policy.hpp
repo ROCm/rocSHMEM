@@ -57,51 +57,7 @@ class SingleThreadImpl {
   __device__ T threadAtomicAdd(T *val, T value = 1);
 };
 
-/*
- * GPU multi-thread policy class. Multiple work-items per work-group are
- * allowed to call into a rocSHMEM function.  A bit slower than its
- * single-thread counterpart but it enables a much more flexible user-facing
- * API.
- */
-class MultiThreadImpl {
-  /*
-   * Per-wg locks for the CQ and the SQ, respectively.
-   */
-  template <bool cqe>
-  __device__ void finishPost_internal(QueuePair *handle, bool ring_db,
-                                      int num_wqes, int pe,
-                                      uint16_t le_sq_counter, uint8_t opcode);
-
-  __device__ void postLock_internal(QueuePair *handle);
-
- public:
-  uint32_t cq_lock = 0;
-  uint32_t sq_lock = 0;
-
-  __device__ void quiet(QueuePair *handle);
-
-  __device__ void quiet_heavy(QueuePair *handle, int pe);
-
-  __device__ void decQuietCounter(uint32_t *quiet_counter, int num);
-
-  template <bool cqe>
-  __device__ void finishPost(QueuePair *handle, bool ring_db, int num_wqes,
-                             int pe, uint16_t le_sq_counter, uint8_t opcode);
-
-  __device__ void postLock(QueuePair *handle, int pe);
-
-  template <typename T>
-  __device__ T threadAtomicAdd(T *val, T value = 1);
-};
-
-/*
- * Select which one of our thread policies to use at compile time.
- */
-#ifdef USE_THREADS
-typedef MultiThreadImpl ThreadImpl;
-#else
 typedef SingleThreadImpl ThreadImpl;
-#endif
 
 class THREAD {
  public:
@@ -136,24 +92,6 @@ class THREAD {
 };
 
 class WAVE {
- public:
-  __device__ void quiet(QueuePair *handle);
-
-  __device__ void quiet_heavy(QueuePair *handle, int pe);
-
-  __device__ void decQuietCounter(uint32_t *quiet_counter, int num);
-
-  template <bool cqe>
-  __device__ void finishPost(QueuePair *handle, bool ring_db, int num_wqes,
-                             int pe, uint16_t le_sq_counter, uint8_t opcode);
-
-  __device__ void postLock(QueuePair *handle, int pe);
-
-  template <typename T>
-  __device__ T threadAtomicAdd(T *val, T value = 1);
-};
-
-class WG {
  public:
   __device__ void quiet(QueuePair *handle);
 
