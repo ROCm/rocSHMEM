@@ -40,100 +40,59 @@ typedef struct device_agent {
 std::vector<device_agent_t> gpu_agents;
 std::vector<device_agent_t> cpu_agents;
 
-hsa_status_t rocm_hsa_amd_memory_pool_callback(
-    hsa_amd_memory_pool_t memory_pool, void* data) {
+hsa_status_t rocm_hsa_amd_memory_pool_callback(hsa_amd_memory_pool_t memory_pool, void* data) {
   hsa_amd_memory_pool_global_flag_t pool_flag{};
-
-  hsa_status_t status{hsa_amd_memory_pool_get_info(
-      memory_pool, HSA_AMD_MEMORY_POOL_INFO_GLOBAL_FLAGS, &pool_flag)};
-
+  hsa_status_t status{hsa_amd_memory_pool_get_info(memory_pool, HSA_AMD_MEMORY_POOL_INFO_GLOBAL_FLAGS, &pool_flag)};
   if (status != HSA_STATUS_SUCCESS) {
     printf("Failure to get pool info: 0x%x", status);
     return status;
   }
-
-  if (pool_flag == (HSA_AMD_MEMORY_POOL_GLOBAL_FLAG_KERNARG_INIT |
-                    HSA_AMD_MEMORY_POOL_GLOBAL_FLAG_FINE_GRAINED)) {
+  if (pool_flag == (HSA_AMD_MEMORY_POOL_GLOBAL_FLAG_KERNARG_INIT | HSA_AMD_MEMORY_POOL_GLOBAL_FLAG_FINE_GRAINED)) {
     *static_cast<hsa_amd_memory_pool_t*>(data) = memory_pool;
   }
-
   return HSA_STATUS_SUCCESS;
 }
 
-hsa_status_t rocm_hsa_agent_callback(hsa_agent_t agent,
-                                     [[maybe_unused]] void* data) {
+hsa_status_t rocm_hsa_agent_callback(hsa_agent_t agent, [[maybe_unused]] void* data) {
   hsa_device_type_t device_type{};
-
-  hsa_status_t status{
-      hsa_agent_get_info(agent, HSA_AGENT_INFO_DEVICE, &device_type)};
-
+  hsa_status_t status{hsa_agent_get_info(agent, HSA_AGENT_INFO_DEVICE, &device_type)};
   if (status != HSA_STATUS_SUCCESS) {
     printf("Failure to get device type: 0x%x", status);
     return status;
   }
-
   if (device_type == HSA_DEVICE_TYPE_GPU) {
     gpu_agents.emplace_back();
     gpu_agents.back().agent = agent;
-    status = hsa_amd_agent_iterate_memory_pools(
-        agent, rocm_hsa_amd_memory_pool_callback, &(gpu_agents.back().pool));
+    status = hsa_amd_agent_iterate_memory_pools(agent, rocm_hsa_amd_memory_pool_callback, &(gpu_agents.back().pool));
   }
-
   if (device_type == HSA_DEVICE_TYPE_CPU) {
     cpu_agents.emplace_back();
     cpu_agents.back().agent = agent;
-    status = hsa_amd_agent_iterate_memory_pools(
-        agent, rocm_hsa_amd_memory_pool_callback, &(cpu_agents.back().pool));
+    status = hsa_amd_agent_iterate_memory_pools(agent, rocm_hsa_amd_memory_pool_callback, &(cpu_agents.back().pool));
   }
-
   return status;
 }
 
 int rocm_init() {
   hsa_status_t status{hsa_init()};
-
   if (status != HSA_STATUS_SUCCESS) {
     printf("Failure to open HSA connection: 0x%x", status);
     return 1;
   }
-
   status = hsa_iterate_agents(rocm_hsa_agent_callback, nullptr);
-
   if (status != HSA_STATUS_SUCCESS && status != HSA_STATUS_INFO_BREAK) {
     printf("Failure to iterate HSA agents: 0x%x", status);
     return 1;
   }
-
   return 0;
 }
 
-void rocm_memory_lock_to_fine_grain(void* ptr, size_t size, void** gpu_ptr,
-                                    int gpu_id) {
-  hsa_status_t status{
-      hsa_amd_memory_lock_to_pool(ptr, size, &(gpu_agents[gpu_id].agent), 1,
-                                  cpu_agents[0].pool, 0, gpu_ptr)};
-
+void rocm_memory_lock_to_fine_grain(void* ptr, size_t size, void** gpu_ptr, int gpu_id) {
+  hsa_status_t status{hsa_amd_memory_lock_to_pool(ptr, size, &(gpu_agents[gpu_id].agent), 1, cpu_agents[0].pool, 0, gpu_ptr)};
   if (status != HSA_STATUS_SUCCESS) {
     printf("Failed to lock memory pool (%p): 0x%x\n", ptr, status);
     exit(-1);
   }
-}
-
-struct rocshmem_env_config_t rocshmem_env_config;
-
-void rocshmem_env_config_init(void) {
-  char* env_value = NULL;
-
-  env_value = getenv("ROCSHMEM_RO_DISABLE_IPC");
-  if (NULL != env_value) {
-    rocshmem_env_config.ro_disable_ipc = atoi(env_value);
-  }
-
-  env_value = getenv("ROCSHMEM_RO_PROGRESS_DELAY");
-  if (nullptr != env_value) {
-    rocshmem_env_config.ro_progress_delay = atoi(env_value);
-  }
-
 }
 
 }  // namespace rocshmem

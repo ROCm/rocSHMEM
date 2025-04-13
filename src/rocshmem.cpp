@@ -60,7 +60,6 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   if (count == 0) { abort(); }
 
   rocm_init();
-  rocshmem_env_config_init();
 
   CHECK_HIP(hipHostMalloc(&backend, sizeof(GPUIBBackend)));
   backend = new (backend) GPUIBBackend(comm);

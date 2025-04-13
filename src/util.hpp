@@ -247,16 +247,7 @@ __device__ __forceinline__ void memcpy_wave(void* dst, void* src, size_t size) {
 
 int rocm_init();
 
-void rocm_memory_lock_to_fine_grain(void* ptr, size_t size, void** gpu_ptr,
-                                    int gpu_id);
-
-struct rocshmem_env_config_t {
-  int ro_disable_ipc = 0;
-  int ro_progress_delay = 3;
-};
-extern struct rocshmem_env_config_t rocshmem_env_config;
-
-void rocshmem_env_config_init(void);
+void rocm_memory_lock_to_fine_grain(void* ptr, size_t size, void** gpu_ptr, int gpu_id);
 
 }  // namespace rocshmem
 
