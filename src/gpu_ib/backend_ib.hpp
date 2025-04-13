@@ -308,13 +308,6 @@ class GPUIBBackend {
   SymmetricHeap heap{};
 
   /**
-   * @brief Determines which device to launch device kernels onto.
-   *
-   * Multi-device nodes can specify which one they would like to use.
-   */
-  int hip_dev_id{0};
-
-  /**
    * @brief Maintains information about teams
    */
   TeamTracker team_tracker{};

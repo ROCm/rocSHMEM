@@ -90,8 +90,6 @@ class NetworkImpl {
   /**
    * @brief flag to indicated that the helper thread reach this milestone
    */
-  volatile bool network_init_done{false};
-
   void heap_memory_rkey(char *local_heap_base, size_t heap_size,
                         MPI_Comm thread_comm, bool is_managed);
 

@@ -34,7 +34,6 @@ namespace rocshmem {
 
 __host__ GPUIBContext::GPUIBContext(GPUIBBackend *b, int idx)
     : Context(b) {
-  ctx_idx = idx;
   networkImpl = b->networkImpl;
   base_heap = b->heap.get_heap_bases().data();
   networkImpl.networkHostInit(this, idx);

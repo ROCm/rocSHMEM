@@ -161,9 +161,6 @@ __host__ void NetworkImpl::networkHostSetup(GPUIBBackend *B) {
   const auto &heap_bases{B->heap.get_heap_bases()};
   heap_memory_rkey(heap_bases[my_pe], B->heap.get_size(), B->thread_comm,
                    B->heap.is_managed());
-  // The earliest we can allow the main thread to launch a kernel to
-  // avoid potential deadlock
-  network_init_done = true;
 
   setup_atomic_region();
 

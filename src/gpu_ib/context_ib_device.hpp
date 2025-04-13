@@ -135,8 +135,6 @@ class GPUIBContext : public Context {
    * Temporary scratchpad memory used by internal barrier algorithms.
    */
   int64_t *barrier_sync{nullptr};
-
-  int ctx_idx;
 };
 
 }  // namespace rocshmem

@@ -99,9 +99,6 @@ void Connection::initialize(int num_block) {
   uint8_t port = 1;
   ib_init(ib_dev, port);
 
-  int hip_dev_id = 0;
-  CHECK_HIP(hipGetDevice(&hip_dev_id));
-
   int ib_fork_err = ibv_fork_init();
   GPUIB_CHECK_ZERO(ib_fork_err, "ibv_fork_init");
 

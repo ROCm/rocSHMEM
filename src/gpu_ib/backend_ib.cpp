@@ -72,8 +72,6 @@ GPUIBBackend::GPUIBBackend(MPI_Comm comm) {
     abort();
   }
 
-  CHECK_HIP(hipGetDevice(&hip_dev_id));
-
   CHECK_HIP(hipMalloc(&print_lock, sizeof(*print_lock)));
   *print_lock = 0;
 
