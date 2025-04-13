@@ -20,16 +20,14 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "rocshmem_config.h"
 #include "context_incl.hpp"
 #include "gpu_ib/backend_ib.hpp"
 
 namespace rocshmem {
 
 __host__ Context::Context(GPUIBBackend* handle)
-    : num_pes(handle->getNumPEs()),
-      my_pe(handle->getMyPE()),
-      fence_() {}
+    : num_pes(handle->getNumPEs()), my_pe(handle->getMyPE()), fence_() {
+}
 
 /******************************************************************************
  ********************** CONTEXT DISPATCH IMPLEMENTATIONS **********************

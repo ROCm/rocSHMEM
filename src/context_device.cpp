@@ -20,27 +20,14 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "rocshmem_config.h"
 #include "context_incl.hpp"
 #include "gpu_ib/backend_ib.hpp"
-#include "util.hpp"
 
 namespace rocshmem {
 
 __device__ 
 Context::Context(GPUIBBackend* handle)
-    : num_pes(handle->getNumPEs()),
-      my_pe(handle->getMyPE()),
-      fence_() {
-  /*
-   * Device-side context constructor is a work-group collective, so make
-   * sure all the members have their default values before returning.
-   *
-   * Each thread is essentially initializing the same thing right over the
-   * top of each other for all the default values in context.hh (and the
-   * initializer list). It's not incorrect, but it is weird and probably
-   * wasteful.
-   */
+    : num_pes(handle->getNumPEs()), my_pe(handle->getMyPE()), fence_() {
   __syncthreads();
 }
 
@@ -96,8 +83,7 @@ void Context::quiet() {
 
 __device__ 
 void* Context::shmem_ptr(const void* dest, int pe) {
-  void *ret_val{nullptr};
-  ret_val = static_cast<GPUIBContext *>(this)->shmem_ptr(dest, pe);
+  void *ret_val = static_cast<GPUIBContext*>(this)->shmem_ptr(dest, pe);
   return ret_val;
 }
 
