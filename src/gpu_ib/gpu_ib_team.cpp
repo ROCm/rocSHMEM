@@ -26,13 +26,9 @@
 
 namespace rocshmem {
 
-GPUIBTeam::GPUIBTeam(GPUIBBackend *b, TeamInfo *team_info_parent,
-                     TeamInfo *team_info_world, int num_pes, int my_pe,
-                     MPI_Comm mpi_comm, int pool_index)
+GPUIBTeam::GPUIBTeam(GPUIBBackend *b, TeamInfo *team_info_parent, TeamInfo *team_info_world, int num_pes, int my_pe, MPI_Comm mpi_comm, int pool_index)
     : Team(b, team_info_parent, team_info_world, num_pes, my_pe, mpi_comm) {
-
   pool_index_ = pool_index;
-
   barrier_pSync = &(b->barrier_pSync_pool[pool_index * ROCSHMEM_BARRIER_SYNC_SIZE]);
 }
 

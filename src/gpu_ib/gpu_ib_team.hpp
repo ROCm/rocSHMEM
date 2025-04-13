@@ -29,9 +29,7 @@ namespace rocshmem {
 
 class GPUIBTeam : public Team {
  public:
-  GPUIBTeam(GPUIBBackend* handle, TeamInfo* team_info_wrt_parent,
-            TeamInfo* team_info_wrt_world, int num_pes, int my_pe,
-            MPI_Comm team_comm, int pool_index);
+  GPUIBTeam(GPUIBBackend* handle, TeamInfo* team_info_wrt_parent, TeamInfo* team_info_wrt_world, int num_pes, int my_pe, MPI_Comm team_comm, int pool_index);
 
   virtual ~GPUIBTeam();
 

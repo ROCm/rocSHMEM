@@ -25,18 +25,16 @@
  * @brief Public header for rocSHMEM device and host libraries.
  */
 
-#include <hip/hip_runtime.h>
+#include <rocshmem/rocshmem.hpp>
 
 #include <cstdlib>
+#include <hip/hip_runtime.h>
 
-#include "rocshmem_config.h"
-#include "rocshmem/rocshmem.hpp"
+#include "gpu_ib/backend_ib.hpp"
 #include "context_incl.hpp"
 #include "team.hpp"
 #include "templates.hpp"
 #include "util.hpp"
-
-#include "gpu_ib/context_ib_tmpl_device.hpp"
 
 /******************************************************************************
  **************************** Device Vars And Init ****************************

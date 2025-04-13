@@ -26,14 +26,11 @@
 #include <mpi.h>
 #include <rocshmem/rocshmem.hpp>
 
-#include "gpu_ib/backend_ib.hpp"
-
 namespace rocshmem {
 
 class Team;
-class ROTeam;
 class GPUIBTeam;
-class IPCTeam;
+class GPUIBBackend;
 
 class TeamInfo {
  public:
@@ -45,8 +42,7 @@ class TeamInfo {
   /**
    * @brief Primary constructor
    */
-  __host__ __device__ TeamInfo(Team* parent_team, int pe_start, int stride,
-                               int size);
+  __host__ __device__ TeamInfo(Team* parent_team, int pe_start, int stride, int size);
 
   /**
    * @brief The team from which this team was created.
@@ -86,14 +82,12 @@ class Team {
    * @param _my_pe the index of this PE in the team
    * @param _mpi_comm MPI Communicator representing the team
    */
-  Team(GPUIBBackend* handle, TeamInfo* team_info_wrt_parent,
-       TeamInfo* team_info_wrt_world, int num_pes, int my_pe,
-       MPI_Comm mpi_comm);
+  Team(GPUIBBackend* handle, TeamInfo* team_info_wrt_parent, TeamInfo* team_info_wrt_world, int num_pes, int my_pe, MPI_Comm mpi_comm);
 
   /**
    * @brief Destructor.
    */
-  virtual ~Team();
+  virtual ~Team() {};
 
   /**
    * @brief Returns the corresponding PE in team world.
@@ -149,16 +143,11 @@ class Team {
   MPI_Comm mpi_comm{MPI_COMM_NULL};
 };
 
-__host__ __device__ Team* get_internal_team(rocshmem_team_t team);
-
 GPUIBTeam* get_internal_gpu_ib_team(rocshmem_team_t team);
 
-ROTeam* get_internal_ro_team(rocshmem_team_t team);
+__host__ __device__ Team* get_internal_team(rocshmem_team_t team);
 
-IPCTeam* get_internal_ipc_team(rocshmem_team_t team);
-
-__host__ __device__ int team_translate_pe(rocshmem_team_t src_team, int src_pe,
-                                          rocshmem_team_t dst_team);
+__host__ __device__ int team_translate_pe(rocshmem_team_t src_team, int src_pe, rocshmem_team_t dst_team);
 
 }  // namespace rocshmem
 

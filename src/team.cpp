@@ -20,11 +20,12 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "team.hpp"
-
+#include <rocshmem/rocshmem.hpp>
 #include <cmath>
 
-#include "rocshmem/rocshmem.hpp"
+#include "team.hpp"
+
+#include "gpu_ib/backend_ib.hpp"
 #include "util.hpp"
 
 namespace rocshmem {
@@ -39,18 +40,8 @@ GPUIBTeam* get_internal_gpu_ib_team(rocshmem_team_t team) {
   return reinterpret_cast<GPUIBTeam*>(team);
 }
 
-ROTeam* get_internal_ro_team(rocshmem_team_t team) {
-  return reinterpret_cast<ROTeam*>(team);
-}
-
-IPCTeam* get_internal_ipc_team(rocshmem_team_t team) {
-  return reinterpret_cast<IPCTeam*>(team);
-}
-
-__host__ __device__ int team_translate_pe(rocshmem_team_t src_team, int src_pe,
-                                          rocshmem_team_t dst_team) {
-  if (src_team == ROCSHMEM_TEAM_INVALID ||
-      dst_team == ROCSHMEM_TEAM_INVALID) {
+__host__ __device__ int team_translate_pe(rocshmem_team_t src_team, int src_pe, rocshmem_team_t dst_team) {
+  if (src_team == ROCSHMEM_TEAM_INVALID || dst_team == ROCSHMEM_TEAM_INVALID) {
     return -1;
   }
 
@@ -62,25 +53,15 @@ __host__ __device__ int team_translate_pe(rocshmem_team_t src_team, int src_pe,
   return dst_pe;
 }
 
-__host__ __device__ TeamInfo::TeamInfo(Team* _parent_team, int _pe_start,
-                                       int _stride, int _size)
-    : parent_team(_parent_team),
-      pe_start(_pe_start),
-      stride(_stride),
-      size(_size) {
+__host__ __device__ TeamInfo::TeamInfo(Team* _parent_team, int _pe_start, int _stride, int _size)
+    : parent_team(_parent_team), pe_start(_pe_start), stride(_stride), size(_size) {
   log_stride = log2(stride);
 }
 
-__host__ Team::Team(GPUIBBackend* handle, TeamInfo* team_info_wrt_parent,
-                    TeamInfo* team_info_wrt_world, int _num_pes, int _my_pe,
-                    MPI_Comm _mpi_comm)
-    : world_size(handle->getNumPEs()),
-      my_pe_in_world(handle->getMyPE()),
-      tinfo_wrt_parent(team_info_wrt_parent),
-      tinfo_wrt_world(team_info_wrt_world),
-      num_pes(_num_pes),
-      my_pe(_my_pe),
-      mpi_comm(_mpi_comm) {}
+Team::Team(GPUIBBackend* handle, TeamInfo* team_info_wrt_parent, TeamInfo* team_info_wrt_world, int _num_pes, int _my_pe, MPI_Comm _mpi_comm)
+    : world_size(handle->getNumPEs()), my_pe_in_world(handle->getMyPE()), tinfo_wrt_parent(team_info_wrt_parent), tinfo_wrt_world(team_info_wrt_world),
+      num_pes(_num_pes), my_pe(_my_pe), mpi_comm(_mpi_comm) {
+}
 
 __host__ __device__ int Team::get_pe_in_world(int pe) {
   int pe_start{tinfo_wrt_world->pe_start};
@@ -94,21 +75,19 @@ __host__ __device__ int Team::get_pe_in_my_team(int pe_in_world) {
   int stride{tinfo_wrt_world->stride};
 
   if (pe_in_world < pe_start) {
-    return -1;  // Outside the start of the range
+    return -1;
   }
 
   if ((pe_in_world - pe_start) % stride) {
-    return -1;  // Not a multiple of stride
+    return -1;
   }
 
   int pe_in_my_team{(pe_in_world - pe_start) / stride};
   if (pe_in_my_team >= num_pes) {
-    return -1;  // Outside the end of the range
+    return -1;
   }
 
   return pe_in_my_team;
 }
-
-__host__ Team::~Team() {}
 
 }  // namespace rocshmem

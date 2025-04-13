@@ -27,6 +27,7 @@
 #include "context_tmpl_device.hpp"
 #include "context_tmpl_host.hpp"
 #include "gpu_ib/context_ib_device.hpp"
+#include "gpu_ib/context_ib_tmpl_device.hpp"
 #include "gpu_ib/context_ib_host.hpp"
 #include "gpu_ib/context_ib_tmpl_host.hpp"
 
