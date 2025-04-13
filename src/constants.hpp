@@ -30,18 +30,6 @@
  */
 
 namespace rocshmem {
-
-/**
- * @brief Minimum object alignment for symmetric heap.
- *
- * @note Cache line size on most systems is either 64 or 128.
- */
-
-/**
- * @brief Constant number which holds maximum workgroup size.
- */
-inline const unsigned MAX_WG_SIZE{1024};
-
 /**
  * @brief Constant number which holds the wavefront size
  *
