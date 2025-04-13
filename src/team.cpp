@@ -41,9 +41,7 @@ GPUIBTeam* get_internal_gpu_ib_team(rocshmem_team_t team) {
 }
 
 __host__ __device__ int team_translate_pe(rocshmem_team_t src_team, int src_pe, rocshmem_team_t dst_team) {
-  if (src_team == ROCSHMEM_TEAM_INVALID || dst_team == ROCSHMEM_TEAM_INVALID) {
-    return -1;
-  }
+  if (src_team == ROCSHMEM_TEAM_INVALID || dst_team == ROCSHMEM_TEAM_INVALID) { return -1; }
 
   Team* src_team_obj{get_internal_team(src_team)};
   Team* dst_team_obj{get_internal_team(dst_team)};
@@ -74,18 +72,12 @@ __host__ __device__ int Team::get_pe_in_my_team(int pe_in_world) {
   int pe_start{tinfo_wrt_world->pe_start};
   int stride{tinfo_wrt_world->stride};
 
-  if (pe_in_world < pe_start) {
-    return -1;
-  }
+  if (pe_in_world < pe_start) { return -1; }
 
-  if ((pe_in_world - pe_start) % stride) {
-    return -1;
-  }
+  if ((pe_in_world - pe_start) % stride) { return -1; }
 
   int pe_in_my_team{(pe_in_world - pe_start) / stride};
-  if (pe_in_my_team >= num_pes) {
-    return -1;
-  }
+  if (pe_in_my_team >= num_pes) { return -1; }
 
   return pe_in_my_team;
 }

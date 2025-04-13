@@ -30,8 +30,8 @@
 #include <cstdlib>
 #include <hip/hip_runtime.h>
 
-#include "gpu_ib/backend_ib.hpp"
 #include "context_incl.hpp"
+#include "gpu_ib/backend_ib.hpp"
 #include "team.hpp"
 #include "templates.hpp"
 #include "util.hpp"
@@ -135,7 +135,7 @@ T rocshmem_atomic_swap(T *dest, T value, int pe) {
 __device__ 
 int translate_pe(rocshmem_ctx_t ctx, int pe) {
   if (ctx.team_opaque) {
-    TeamInfo *tinfo = reinterpret_cast<TeamInfo *>(ctx.team_opaque);
+    TeamInfo *tinfo = reinterpret_cast<TeamInfo*>(ctx.team_opaque);
     return (tinfo->pe_start + tinfo->stride * pe);
   } else {
     return pe;
@@ -144,23 +144,21 @@ int translate_pe(rocshmem_ctx_t ctx, int pe) {
 
 __host__ 
 void set_internal_ctx(rocshmem_ctx_t *ctx) {
-  CHECK_HIP(hipMemcpyToSymbol(HIP_SYMBOL(ROCSHMEM_CTX_DEFAULT), ctx,
-                              sizeof(rocshmem_ctx_t), 0,
-                              hipMemcpyHostToDevice));
+  CHECK_HIP(hipMemcpyToSymbol(HIP_SYMBOL(ROCSHMEM_CTX_DEFAULT), ctx, sizeof(rocshmem_ctx_t), 0, hipMemcpyHostToDevice));
 }
 
 __device__ 
 Context *get_internal_ctx(rocshmem_ctx_t ctx) {
-  return reinterpret_cast<Context *>(ctx.ctx_opaque);
+  return reinterpret_cast<Context*>(ctx.ctx_opaque);
 }
 
 __device__ 
 int rocshmem_wg_ctx_create(rocshmem_ctx_t *ctx) {
   bool result{true};
   if (get_flat_block_id() == 0) {
-    ctx->team_opaque = reinterpret_cast<TeamInfo *>(ROCSHMEM_CTX_DEFAULT.team_opaque);
+    ctx->team_opaque = reinterpret_cast<TeamInfo*>(ROCSHMEM_CTX_DEFAULT.team_opaque);
     result = device_backend_proxy->create_ctx(ctx);
-    reinterpret_cast<Context *>(ctx->ctx_opaque)->setFence();
+    reinterpret_cast<Context*>(ctx->ctx_opaque)->setFence();
   }
   __syncthreads();
   return result == true ? 0 : -1;
@@ -178,7 +176,7 @@ int rocshmem_wg_team_create_ctx(rocshmem_team_t team, rocshmem_ctx_t *ctx) {
     TeamInfo *info_wrt_world = team_obj->tinfo_wrt_world;
     ctx->team_opaque = info_wrt_world;
     result = device_backend_proxy->create_ctx(ctx);
-    reinterpret_cast<Context *>(ctx->ctx_opaque)->setFence();
+    reinterpret_cast<Context*>(ctx->ctx_opaque)->setFence();
   }
   __syncthreads();
 
@@ -289,7 +287,7 @@ void rocshmem_wg_team_sync(rocshmem_team_t team) {
 
 __device__ 
 int rocshmem_ctx_n_pes(rocshmem_ctx_t ctx) {
-  TeamInfo *tinfo = reinterpret_cast<TeamInfo *>(ctx.team_opaque);
+  TeamInfo *tinfo = reinterpret_cast<TeamInfo*>(ctx.team_opaque);
   return tinfo->size;
 }
 
@@ -300,20 +298,16 @@ int rocshmem_n_pes() {
 
 __device__ 
 int rocshmem_ctx_my_pe(rocshmem_ctx_t ctx) {
-  TeamInfo *tinfo = reinterpret_cast<TeamInfo *>(ctx.team_opaque);
+  TeamInfo *tinfo = reinterpret_cast<TeamInfo*>(ctx.team_opaque);
   int my_pe{get_internal_ctx(ctx)->my_pe};
   int pe_start{tinfo->pe_start};
   int stride{tinfo->stride};
   int size{tinfo->size};
 
   int translated_pe = (my_pe - pe_start) / stride;
-
-  if ((my_pe < pe_start) ||
-     ((my_pe - pe_start) % stride) ||
-     (translated_pe >= size)) {
+  if ((my_pe < pe_start) || ((my_pe - pe_start) % stride) || (translated_pe >= size)) {
     translated_pe = -1;
   }
-
   return translated_pe;
 }
 
@@ -394,137 +388,105 @@ int rocshmem_team_translate_pe(rocshmem_team_t src_team, int src_pe, rocshmem_te
 /*
  * Declare templates for the required datatypes (for the compiler)
  */
-#define RMA_GEN(T)                                                             \
-  template __device__ void rocshmem_put<T>(                                    \
-      rocshmem_ctx_t ctx, T * dest, const T *source, size_t nelems, int pe);   \
-  template __device__ void rocshmem_put_nbi<T>(                                \
-      rocshmem_ctx_t ctx, T * dest, const T *source, size_t nelems, int pe);   \
-  template __device__ void rocshmem_p<T>(rocshmem_ctx_t ctx, T * dest,         \
-                                          T value, int pe);                    \
-  template __device__ void rocshmem_put<T>(T * dest, const T *source,          \
-                                            size_t nelems, int pe);            \
-  template __device__ void rocshmem_put_nbi<T>(T * dest, const T *source,      \
-                                                size_t nelems, int pe);        \
-  template __device__ void rocshmem_p<T>(T * dest, T value, int pe);           \
-  template __device__ void rocshmem_put_wave<T>(                               \
-      rocshmem_ctx_t ctx, T * dest, const T *source, size_t nelems, int pe);   \
-  template __device__ void rocshmem_put_wave<T>(T * dest, const T *source,     \
-                                                 size_t nelems, int pe);       \
-  template __device__ void rocshmem_put_nbi_wave<T>(                           \
-      rocshmem_ctx_t ctx, T * dest, const T *source, size_t nelems, int pe);   \
-  template __device__ void rocshmem_put_nbi_wave<T>(                           \
-      T * dest, const T *source, size_t nelems, int pe);
+#define RMA_GEN(T)                                                                                                        \
+  template __device__ void rocshmem_put<T>(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe);          \
+  template __device__ void rocshmem_put_nbi<T>(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe);      \
+  template __device__ void rocshmem_p<T>(rocshmem_ctx_t ctx, T *dest, T value, int pe);                                   \
+  template __device__ void rocshmem_put<T>(T *dest, const T *source, size_t nelems, int pe);                              \
+  template __device__ void rocshmem_put_nbi<T>(T *dest, const T *source, size_t nelems, int pe);                          \
+  template __device__ void rocshmem_p<T>(T *dest, T value, int pe);                                                       \
+  template __device__ void rocshmem_put_wave<T>(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe);     \
+  template __device__ void rocshmem_put_wave<T>(T *dest, const T *source, size_t nelems, int pe);                         \
+  template __device__ void rocshmem_put_nbi_wave<T>(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe); \
+  template __device__ void rocshmem_put_nbi_wave<T>(T *dest, const T *source, size_t nelems, int pe);
 
 /*
  * Declare templates for the standard amo types
  */
-#define AMO_STANDARD_GEN(T)                                                    \
-  template __device__ T rocshmem_atomic_compare_swap<T>(                       \
-      rocshmem_ctx_t ctx, T * dest, T cond, T value, int pe);                  \
-  template __device__ T rocshmem_atomic_compare_swap<T>(T * dest, T cond,      \
-                                                         T value, int pe);     \
-  template __device__ T rocshmem_atomic_fetch_add<T>(                          \
-      rocshmem_ctx_t ctx, T * dest, T value, int pe);                          \
-  template __device__ T rocshmem_atomic_fetch_add<T>(T * dest, T value,        \
-                                                      int pe);                 \
-  template __device__ void rocshmem_atomic_add<T>(rocshmem_ctx_t ctx,          \
-                                                   T * dest, T value, int pe); \
-  template __device__ void rocshmem_atomic_add<T>(T * dest, T value, int pe);
+#define AMO_STANDARD_GEN(T)                                                                                    \
+  template __device__ T rocshmem_atomic_compare_swap<T>(rocshmem_ctx_t ctx, T *dest, T cond, T value, int pe); \
+  template __device__ T rocshmem_atomic_compare_swap<T>(T *dest, T cond, T value, int pe);                     \
+  template __device__ T rocshmem_atomic_fetch_add<T>(rocshmem_ctx_t ctx, T *dest, T value, int pe);            \
+  template __device__ T rocshmem_atomic_fetch_add<T>(T *dest, T value, int pe);                                \
+  template __device__ void rocshmem_atomic_add<T>(rocshmem_ctx_t ctx, T *dest, T value, int pe);               \
+  template __device__ void rocshmem_atomic_add<T>(T *dest, T value, int pe);
 
 /*
  * Declare templates for the extended amo types
  */
-#define AMO_EXTENDED_GEN(T)                                                    \
-  template __device__ void rocshmem_atomic_set<T>(rocshmem_ctx_t ctx,          \
-                                                   T * dest, T value, int pe); \
-  template __device__ void rocshmem_atomic_set<T>(T * dest, T value, int pe);  \
-  template __device__ T rocshmem_atomic_swap<T>(rocshmem_ctx_t ctx,            \
-                                                 T * dest, T value, int pe);   \
-  template __device__ T rocshmem_atomic_swap<T>(T * dest, T value, int pe);
+#define AMO_EXTENDED_GEN(T)                                                                      \
+  template __device__ void rocshmem_atomic_set<T>(rocshmem_ctx_t ctx, T *dest, T value, int pe); \
+  template __device__ void rocshmem_atomic_set<T>(T *dest, T value, int pe);                     \
+  template __device__ T rocshmem_atomic_swap<T>(rocshmem_ctx_t ctx, T *dest, T value, int pe);   \
+  template __device__ T rocshmem_atomic_swap<T>(T *dest, T value, int pe);
 
 /*
  * Declare templates for the bitwise amo types
  */
-#define RMA_DEF_GEN(T, TNAME)                                                 \
-  __device__ void rocshmem_ctx_##TNAME##_put(                                 \
-      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {  \
-    rocshmem_put<T>(ctx, dest, source, nelems, pe);                           \
-  }                                                                           \
-  __device__ void rocshmem_ctx_##TNAME##_put_nbi(                             \
-      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {  \
-    rocshmem_put_nbi<T>(ctx, dest, source, nelems, pe);                       \
-  }                                                                           \
-  __device__ void rocshmem_ctx_##TNAME##_p(rocshmem_ctx_t ctx, T *dest,       \
-                                            T value, int pe) {                \
-    rocshmem_p<T>(ctx, dest, value, pe);                                      \
-  }                                                                           \
-  __device__ void rocshmem_##TNAME##_put(T *dest, const T *source,            \
-                                          size_t nelems, int pe) {            \
-    rocshmem_put<T>(dest, source, nelems, pe);                                \
-  }                                                                           \
-  __device__ void rocshmem_##TNAME##_put_nbi(T *dest, const T *source,        \
-                                              size_t nelems, int pe) {        \
-    rocshmem_put_nbi<T>(dest, source, nelems, pe);                            \
-  }                                                                           \
-  __device__ void rocshmem_##TNAME##_p(T *dest, T value, int pe) {            \
-    rocshmem_p<T>(dest, value, pe);                                           \
-  }                                                                           \
-  __device__ void rocshmem_ctx_##TNAME##_put_wave(                            \
-      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {  \
-    rocshmem_put_wave<T>(ctx, dest, source, nelems, pe);                      \
-  }                                                                           \
-  __device__ void rocshmem_##TNAME##_put_wave(T *dest, const T *source,       \
-                                               size_t nelems, int pe) {       \
-    rocshmem_put_wave<T>(dest, source, nelems, pe);                           \
-  }                                                                           \
-  __device__ void rocshmem_ctx_##TNAME##_put_nbi_wave(                        \
-      rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {  \
-    rocshmem_put_nbi_wave<T>(ctx, dest, source, nelems, pe);                  \
-  }                                                                           \
-  __device__ void rocshmem_##TNAME##_put_nbi_wave(T *dest, const T *source,   \
-                                                   size_t nelems, int pe) {   \
-    rocshmem_put_nbi_wave<T>(dest, source, nelems, pe);                       \
+#define RMA_DEF_GEN(T, TNAME)                                                                                                \
+  __device__ void rocshmem_ctx_##TNAME##_put(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {          \
+    rocshmem_put<T>(ctx, dest, source, nelems, pe);                                                                          \
+  }                                                                                                                          \
+  __device__ void rocshmem_ctx_##TNAME##_put_nbi(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {      \
+    rocshmem_put_nbi<T>(ctx, dest, source, nelems, pe);                                                                      \
+  }                                                                                                                          \
+  __device__ void rocshmem_ctx_##TNAME##_p(rocshmem_ctx_t ctx, T *dest, T value, int pe) {                                   \
+    rocshmem_p<T>(ctx, dest, value, pe);                                                                                     \
+  }                                                                                                                          \
+  __device__ void rocshmem_##TNAME##_put(T *dest, const T *source, size_t nelems, int pe) {                                  \
+    rocshmem_put<T>(dest, source, nelems, pe);                                                                               \
+  }                                                                                                                          \
+  __device__ void rocshmem_##TNAME##_put_nbi(T *dest, const T *source, size_t nelems, int pe) {                              \
+    rocshmem_put_nbi<T>(dest, source, nelems, pe);                                                                           \
+  }                                                                                                                          \
+  __device__ void rocshmem_##TNAME##_p(T *dest, T value, int pe) {                                                           \
+    rocshmem_p<T>(dest, value, pe);                                                                                          \
+  }                                                                                                                          \
+  __device__ void rocshmem_ctx_##TNAME##_put_wave(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {     \
+    rocshmem_put_wave<T>(ctx, dest, source, nelems, pe);                                                                     \
+  }                                                                                                                          \
+  __device__ void rocshmem_##TNAME##_put_wave(T *dest, const T *source, size_t nelems, int pe) {                             \
+    rocshmem_put_wave<T>(dest, source, nelems, pe);                                                                          \
+  }                                                                                                                          \
+  __device__ void rocshmem_ctx_##TNAME##_put_nbi_wave(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) { \
+    rocshmem_put_nbi_wave<T>(ctx, dest, source, nelems, pe);                                                                 \
+  }                                                                                                                          \
+  __device__ void rocshmem_##TNAME##_put_nbi_wave(T *dest, const T *source, size_t nelems, int pe) {                         \
+    rocshmem_put_nbi_wave<T>(dest, source, nelems, pe);                                                                      \
   }
 
-#define AMO_STANDARD_DEF_GEN(T, TNAME)                                        \
-  __device__ T rocshmem_ctx_##TNAME##_atomic_compare_swap(                    \
-      rocshmem_ctx_t ctx, T *dest, T cond, T value, int pe) {                 \
-    return rocshmem_atomic_compare_swap<T>(ctx, dest, cond, value, pe);       \
-  }                                                                           \
-  __device__ T rocshmem_##TNAME##_atomic_compare_swap(T *dest, T cond,        \
-                                                       T value, int pe) {     \
-    return rocshmem_atomic_compare_swap<T>(dest, cond, value, pe);            \
-  }                                                                           \
-  __device__ T rocshmem_ctx_##TNAME##_atomic_fetch_add(                       \
-      rocshmem_ctx_t ctx, T *dest, T value, int pe) {                         \
-    return rocshmem_atomic_fetch_add<T>(ctx, dest, value, pe);                \
-  }                                                                           \
-  __device__ T rocshmem_##TNAME##_atomic_fetch_add(T *dest, T value,          \
-                                                    int pe) {                 \
-    return rocshmem_atomic_fetch_add<T>(dest, value, pe);                     \
-  }                                                                           \
-  __device__ void rocshmem_ctx_##TNAME##_atomic_add(                          \
-      rocshmem_ctx_t ctx, T *dest, T value, int pe) {                         \
-    rocshmem_atomic_add<T>(ctx, dest, value, pe);                             \
-  }                                                                           \
-  __device__ void rocshmem_##TNAME##_atomic_add(T *dest, T value, int pe) {   \
-    rocshmem_atomic_add<T>(dest, value, pe);                                  \
+#define AMO_STANDARD_DEF_GEN(T, TNAME)                                                                            \
+  __device__ T rocshmem_ctx_##TNAME##_atomic_compare_swap(rocshmem_ctx_t ctx, T *dest, T cond, T value, int pe) { \
+    return rocshmem_atomic_compare_swap<T>(ctx, dest, cond, value, pe);                                           \
+  }                                                                                                               \
+  __device__ T rocshmem_##TNAME##_atomic_compare_swap(T *dest, T cond, T value, int pe) {                         \
+    return rocshmem_atomic_compare_swap<T>(dest, cond, value, pe);                                                \
+  }                                                                                                               \
+  __device__ T rocshmem_ctx_##TNAME##_atomic_fetch_add(rocshmem_ctx_t ctx, T *dest, T value, int pe) {            \
+    return rocshmem_atomic_fetch_add<T>(ctx, dest, value, pe);                                                    \
+  }                                                                                                               \
+  __device__ T rocshmem_##TNAME##_atomic_fetch_add(T *dest, T value, int pe) {                                    \
+    return rocshmem_atomic_fetch_add<T>(dest, value, pe);                                                         \
+  }                                                                                                               \
+  __device__ void rocshmem_ctx_##TNAME##_atomic_add(rocshmem_ctx_t ctx, T *dest, T value, int pe) {               \
+    rocshmem_atomic_add<T>(ctx, dest, value, pe);                                                                 \
+  }                                                                                                               \
+  __device__ void rocshmem_##TNAME##_atomic_add(T *dest, T value, int pe) {                                       \
+    rocshmem_atomic_add<T>(dest, value, pe);                                                                      \
   }
 
-#define AMO_EXTENDED_DEF_GEN(T, TNAME)                                        \
-  __device__ void rocshmem_ctx_##TNAME##_atomic_set(                          \
-      rocshmem_ctx_t ctx, T *dest, T value, int pe) {                         \
-    rocshmem_atomic_set<T>(ctx, dest, value, pe);                             \
-  }                                                                           \
-  __device__ void rocshmem_##TNAME##_atomic_set(T *dest, T value, int pe) {   \
-    rocshmem_atomic_set<T>(dest, value, pe);                                  \
-  }                                                                           \
-  __device__ T rocshmem_ctx_##TNAME##_atomic_swap(rocshmem_ctx_t ctx,         \
-                                                   T *dest, T value, int pe) {\
-    return rocshmem_atomic_swap<T>(ctx, dest, value, pe);                     \
-  }                                                                           \
-  __device__ T rocshmem_##TNAME##_atomic_swap(T *dest, T value, int pe) {     \
-    return rocshmem_atomic_swap<T>(dest, value, pe);                          \
+#define AMO_EXTENDED_DEF_GEN(T, TNAME)                                                              \
+  __device__ void rocshmem_ctx_##TNAME##_atomic_set(rocshmem_ctx_t ctx, T *dest, T value, int pe) { \
+    rocshmem_atomic_set<T>(ctx, dest, value, pe);                                                   \
+  }                                                                                                 \
+  __device__ void rocshmem_##TNAME##_atomic_set(T *dest, T value, int pe) {                         \
+    rocshmem_atomic_set<T>(dest, value, pe);                                                        \
+  }                                                                                                 \
+  __device__ T rocshmem_ctx_##TNAME##_atomic_swap(rocshmem_ctx_t ctx, T *dest, T value, int pe) {   \
+    return rocshmem_atomic_swap<T>(ctx, dest, value, pe);                                           \
+  }                                                                                                 \
+  __device__ T rocshmem_##TNAME##_atomic_swap(T *dest, T value, int pe) {                           \
+    return rocshmem_atomic_swap<T>(dest, value, pe);                                                \
   }
 
 /******************************************************************************
