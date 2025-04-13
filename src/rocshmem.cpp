@@ -25,27 +25,23 @@
  * @brief Public header for rocSHMEM device and host libraries.
  */
 
-#include "rocshmem/rocshmem.hpp"
+#include <rocshmem/rocshmem.hpp>
 
 #include <cstdlib>
 #include <cstring>
 #include <functional>
 #include <random>
+#include <unistd.h>
 
 #include "context_incl.hpp"
 #include "gpu_ib/backend_ib.hpp"
-#include "gpu_ib/context_ib_tmpl_host.hpp"
 #include "mpi_init_singleton.hpp"
 #include "team.hpp"
-#include "templates_host.hpp"
 #include "util.hpp"
-
-#include <unistd.h>
 
 namespace rocshmem {
 
-#define VERIFY_BACKEND()                                              \
-  {                                                                   \
+#define VERIFY_BACKEND() {                                            \
     if (!backend) {                                                   \
       fprintf(stderr, "ROCSHMEM_ERROR: %s in file '%s' in line %d\n", \
               "Call 'rocshmem_init'", __FILE__, __LINE__);            \
@@ -60,25 +56,15 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 [[maybe_unused]] void inline library_init(MPI_Comm comm) {
   assert(!backend);
   int count = 0;
-  if (hipGetDeviceCount(&count) != hipSuccess) {
-    abort();
-  }
-
-  if (count == 0) {
-    printf("No GPU found!\n");
-    abort();
-  }
+  if (hipGetDeviceCount(&count) != hipSuccess) { abort(); }
+  if (count == 0) { abort(); }
 
   rocm_init();
-
   rocshmem_env_config_init();
 
   CHECK_HIP(hipHostMalloc(&backend, sizeof(GPUIBBackend)));
   backend = new (backend) GPUIBBackend(comm);
-
-  if (!backend) {
-    abort();
-  }
+  if (!backend) { abort(); }
 }
 
 [[maybe_unused]] int rocshmem_init_attr(unsigned int flags, rocshmem_init_attr_t *attr) {

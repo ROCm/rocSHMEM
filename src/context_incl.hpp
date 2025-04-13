@@ -28,5 +28,6 @@
 #include "context_tmpl_host.hpp"
 #include "gpu_ib/context_ib_device.hpp"
 #include "gpu_ib/context_ib_host.hpp"
+#include "gpu_ib/context_ib_tmpl_host.hpp"
 
 #endif  // LIBRARY_SRC_CONTEXT_INCL_HPP_

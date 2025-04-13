@@ -46,7 +46,7 @@ void HostInterface::put_nbi(T* dest, const T* source, size_t nelems, int pe, Win
   putmem_nbi(dest, source, sizeof(T) * nelems, pe, window_info);
 }
 
-MPI_Comm HostInterface::get_mpi_comm(int pe_start, int log_pe_stride, int pe_size) {
+inline MPI_Comm HostInterface::get_mpi_comm(int pe_start, int log_pe_stride, int pe_size) {
   MPI_Comm active_set_comm{};
 
   /*
@@ -207,7 +207,7 @@ void HostInterface::wait_until(T *ivars, int cmp, T val, WindowInfo* window_info
   }
 }
 
-size_t status_entry(size_t nelems, const int *status, bool* done_flags) {
+inline size_t status_entry(size_t nelems, const int *status, bool* done_flags) {
   size_t i{0};
   size_t pos{SIZE_MAX};
   while (i < nelems) {
@@ -221,7 +221,7 @@ size_t status_entry(size_t nelems, const int *status, bool* done_flags) {
   return pos;
 }
 
-size_t status_entry(size_t nelems, const int *status) {
+inline size_t status_entry(size_t nelems, const int *status) {
   size_t i{0};
   while (i < nelems) {
     if (status[i] == 0) {
