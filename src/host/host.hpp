@@ -60,7 +60,7 @@ class HostContextWindowInfo {
   /**
    * @brief Destructor
    */
-  __host__ ~HostContextWindowInfo();
+  ~HostContextWindowInfo();
 
   /**
    * @brief Retrieve a pointer to the internal WindowInfo
@@ -103,12 +103,12 @@ class HostInterface {
   /**
    * @brief Primary constructor
    */
-  __host__ HostInterface(MPI_Comm rocshmem_comm, SymmetricHeap* heap);
+  HostInterface(MPI_Comm rocshmem_comm, SymmetricHeap* heap);
 
   /**
    * @brief Destructor
    */
-  __host__ ~HostInterface();
+  ~HostInterface();
 
   /**
    * @brief Accessor for copy of comm world
@@ -133,93 +133,77 @@ class HostInterface {
    ***************************** HOST FUNCTIONS *****************************
    *************************************************************************/
   template <typename T>
-  __host__ void p(T* dest, T value, int pe, WindowInfo* window_info);
+  void p(T* dest, T value, int pe, WindowInfo* window_info);
 
   template <typename T>
-  __host__ void put(T* dest, const T* source, size_t nelems, int pe,
-                    WindowInfo* window_info);
+  void put(T* dest, const T* source, size_t nelems, int pe, WindowInfo* window_info);
 
   template <typename T>
-  __host__ void put_nbi(T* dest, const T* source, size_t nelems, int pe,
-                        WindowInfo* window_info);
+  void put_nbi(T* dest, const T* source, size_t nelems, int pe, WindowInfo* window_info);
 
-  __host__ void putmem(void* dest, const void* source, size_t nelems, int pe,
-                       WindowInfo* window_info);
+  void putmem(void* dest, const void* source, size_t nelems, int pe, WindowInfo* window_info);
 
-  __host__ void putmem_nbi(void* dest, const void* source, size_t nelems,
-                           int pe, WindowInfo* window_info);
+  void putmem_nbi(void* dest, const void* source, size_t nelems, int pe, WindowInfo* window_info);
 
   template <typename T>
-  __host__ void amo_add(void* dst, T value, int pe, WindowInfo* window_info);
+  void amo_add(void* dst, T value, int pe, WindowInfo* window_info);
 
   template <typename T>
-  __host__ void amo_cas(void* dst, T value, T cond, int pe,
-                        WindowInfo* window_info);
+  void amo_cas(void* dst, T value, T cond, int pe, WindowInfo* window_info);
 
   template <typename T>
-  __host__ T amo_fetch_add(void* dst, T value, int pe, WindowInfo* window_info);
+  T amo_fetch_add(void* dst, T value, int pe, WindowInfo* window_info);
 
   template <typename T>
-  __host__ T amo_fetch_cas(void* dst, T value, T cond, int pe,
-                           WindowInfo* window_info);
+  T amo_fetch_cas(void* dst, T value, T cond, int pe, WindowInfo* window_info);
 
-  __host__ void fence(WindowInfo* window_info);
+  void fence(WindowInfo* window_info);
 
-  __host__ void quiet(WindowInfo* window_info);
+  void quiet(WindowInfo* window_info);
 
-  __host__ void barrier_all(WindowInfo* window_info);
+  void barrier_all(WindowInfo* window_info);
 
-  __host__ void barrier_for_sync();
+  void barrier_for_sync();
 
-  __host__ void sync_all(WindowInfo* window_info);
-
-  template <typename T>
-  __host__ void wait_until(T *ivars, int cmp, T val,
-                           WindowInfo* window_info);
+  void sync_all(WindowInfo* window_info);
 
   template <typename T>
-  __host__ void wait_until_all(T *ivars, size_t nelems, const int* status,
-                               int cmp, T val,
-                               WindowInfo* window_info);
+  void wait_until(T *ivars, int cmp, T val, WindowInfo* window_info);
 
   template <typename T>
-  __host__ size_t wait_until_any(T *ivars, size_t nelems, const int* status,
-                                 int cmp, T val,
-                                 WindowInfo* window_info);
+  void wait_until_all(T *ivars, size_t nelems, const int* status, int cmp, T val, WindowInfo* window_info);
 
   template <typename T>
-  __host__ size_t wait_until_some(T *ivars, size_t nelems, size_t* indices,
-                                  const int* status, int cmp, T val,
-                                  WindowInfo* window_info);
+  size_t wait_until_any(T *ivars, size_t nelems, const int* status, int cmp, T val, WindowInfo* window_info);
 
   template <typename T>
-  __host__ int test(T *ivars, int cmp, T val, WindowInfo* window_info);
+  size_t wait_until_some(T *ivars, size_t nelems, size_t* indices, const int* status, int cmp, T val, WindowInfo* window_info);
+
+  template <typename T>
+  int test(T *ivars, int cmp, T val, WindowInfo* window_info);
 
  private:
   /**************************************************************************
    **************************** INTERNAL METHODS ****************************
    *************************************************************************/
-  __host__ void initiate_put(void* dest, const void* source, size_t nelems,
-                             int pe, WindowInfo* window_info);
+  void initiate_put(void* dest, const void* source, size_t nelems, int pe, WindowInfo* window_info);
 
-  __host__ void complete_all(MPI_Win win);
+  void complete_all(MPI_Win win);
 
-  __host__ MPI_Aint compute_offset(const void* dest, void* win_start,
-                                   void* win_end);
+  MPI_Aint compute_offset(const void* dest, void* win_start, void* win_end);
 
-  __host__ MPI_Comm get_mpi_comm(int pe_start, int log_pe_stride, int pe_size);
+  MPI_Comm get_mpi_comm(int pe_start, int log_pe_stride, int pe_size);
 
-  __host__ MPI_Op get_mpi_op(ROCSHMEM_OP Op);
+  MPI_Op get_mpi_op(ROCSHMEM_OP Op);
 
   template <typename T>
-  __host__ MPI_Datatype get_mpi_type();
+  MPI_Datatype get_mpi_type();
 
   template <typename T>
-  __host__ int compare(int cmp, T input_val, T target_val);
+  int compare(int cmp, T input_val, T target_val);
 
   template <typename T>
-  __host__ int test_and_compare(MPI_Aint offset, MPI_Datatype mpi_type,
-                                int cmp, T val, MPI_Win win);
+  int test_and_compare(MPI_Aint offset, MPI_Datatype mpi_type, int cmp, T val, MPI_Win win);
 
   /**************************************************************************
    **************************** INTERNAL MEMBERS ****************************

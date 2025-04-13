@@ -32,25 +32,21 @@
 namespace rocshmem {
 
 template <typename T>
-__host__ void HostInterface::p(T* dest, T value, int pe,
-                               WindowInfo* window_info) {
+void HostInterface::p(T* dest, T value, int pe, WindowInfo* window_info) {
   putmem(dest, &value, sizeof(T), pe, window_info);
 }
 
 template <typename T>
-__host__ void HostInterface::put(T* dest, const T* source, size_t nelems,
-                                 int pe, WindowInfo* window_info) {
+void HostInterface::put(T* dest, const T* source, size_t nelems, int pe, WindowInfo* window_info) {
   putmem(dest, source, sizeof(T) * nelems, pe, window_info);
 }
 
 template <typename T>
-__host__ void HostInterface::put_nbi(T* dest, const T* source, size_t nelems,
-                                     int pe, WindowInfo* window_info) {
+void HostInterface::put_nbi(T* dest, const T* source, size_t nelems, int pe, WindowInfo* window_info) {
   putmem_nbi(dest, source, sizeof(T) * nelems, pe, window_info);
 }
 
-__host__ MPI_Comm HostInterface::get_mpi_comm(int pe_start, int log_pe_stride,
-                                              int pe_size) {
+MPI_Comm HostInterface::get_mpi_comm(int pe_start, int log_pe_stride, int pe_size) {
   MPI_Comm active_set_comm{};
 
   /*
@@ -88,31 +84,23 @@ __host__ MPI_Comm HostInterface::get_mpi_comm(int pe_start, int log_pe_stride,
 
   MPI_Group comm_world_group{};
   MPI_Group active_set_group{};
-
   MPI_Comm_group(host_comm_world_, &comm_world_group);
+  MPI_Group_incl(comm_world_group, pe_size, active_set_ranks.data(), &active_set_group);
+  MPI_Comm_create_group(host_comm_world_, active_set_group, 0, &active_set_comm);
 
-  MPI_Group_incl(comm_world_group, pe_size, active_set_ranks.data(),
-                 &active_set_group);
-
-  MPI_Comm_create_group(host_comm_world_, active_set_group, 0,
-                        &active_set_comm);
-
-  /*
-   * Cache the new communicator
-   */
   comm_map.insert(std::pair<ActiveSetKey, MPI_Comm>(key, active_set_comm));
 
   return active_set_comm;
 }
 
 template <typename T>
-__host__ inline MPI_Datatype HostInterface::get_mpi_type() {
+inline MPI_Datatype HostInterface::get_mpi_type() {
   fprintf(stderr, "Unknown or unimplemented datatype \n");
 }
 
 #define GET_MPI_TYPE(T, MPI_T)                                    \
   template <>                                                     \
-  __host__ inline MPI_Datatype HostInterface::get_mpi_type<T>() { \
+  inline MPI_Datatype HostInterface::get_mpi_type<T>() {          \
     return MPI_T;                                                 \
   }
 
@@ -131,8 +119,7 @@ GET_MPI_TYPE(signed char, MPI_SIGNED_CHAR)
 GET_MPI_TYPE(unsigned char, MPI_UNSIGNED_CHAR)
 
 template <typename T>
-__host__ void HostInterface::amo_add(void* dst, T value, int pe,
-                                     WindowInfo* window_info) {
+void HostInterface::amo_add(void* dst, T value, int pe, WindowInfo* window_info) {
   /*
    * Most MPI implementations tend to use active messages to implement
    * MPI_Accumulate. So, to eliminate the potential involvement of the
@@ -142,51 +129,35 @@ __host__ void HostInterface::amo_add(void* dst, T value, int pe,
 }
 
 template <typename T>
-__host__ void HostInterface::amo_cas(void* dst, T value, T cond, int pe,
-                                     WindowInfo* window_info) {
+void HostInterface::amo_cas(void* dst, T value, T cond, int pe, WindowInfo* window_info) {
   /* Perform the compare and swap and disregard the return value */
   [[maybe_unused]] T ret{amo_fetch_cas(dst, value, cond, pe, window_info)};
 }
 
 template <typename T>
-__host__ T HostInterface::amo_fetch_add(void* dst, T value, int pe,
-                                        WindowInfo* window_info) {
-  /* Calculate offset of remote dest from base address of window */
-  MPI_Aint offset{
-      compute_offset(dst, window_info->get_start(), window_info->get_end())};
-
-  /* Offload remote fetch and op operation to MPI */
-  T ret{};
+T HostInterface::amo_fetch_add(void* dst, T value, int pe, WindowInfo* window_info) {
+  MPI_Aint offset{compute_offset(dst, window_info->get_start(), window_info->get_end())};
   MPI_Win win{window_info->get_win()};
   MPI_Datatype mpi_type{get_mpi_type<T>()};
+  T ret{};
   MPI_Fetch_and_op(&value, &ret, mpi_type, pe, offset, MPI_SUM, win);
-
   MPI_Win_flush_local(pe, win);
-
   return ret;
 }
 
 template <typename T>
-__host__ T HostInterface::amo_fetch_cas(void* dst, T value, T cond, int pe,
-                                        WindowInfo* window_info) {
-  /* Calculate offset of remote dest from base address of window */
-  MPI_Aint offset{
-      compute_offset(dst, window_info->get_start(), window_info->get_end())};
-
-  /* Offload remote compare and swap operation to MPI */
-  T ret{};
+T HostInterface::amo_fetch_cas(void* dst, T value, T cond, int pe, WindowInfo* window_info) {
+  MPI_Aint offset{compute_offset(dst, window_info->get_start(), window_info->get_end())};
   MPI_Win win{window_info->get_win()};
   MPI_Datatype mpi_type{get_mpi_type<T>()};
+  T ret{};
   MPI_Compare_and_swap(&value, &cond, &ret, mpi_type, pe, offset, win);
-
   MPI_Win_flush_local(pe, win);
-
   return ret;
 }
 
 template <typename T>
-__host__ inline int HostInterface::compare(int cmp, T input_val,
-                                           T target_val) {
+inline int HostInterface::compare(int cmp, T input_val, T target_val) {
   int cond_satisfied{0};
 
   switch (cmp) {
@@ -217,49 +188,26 @@ __host__ inline int HostInterface::compare(int cmp, T input_val,
 }
 
 template <typename T>
-__host__ inline int HostInterface::test_and_compare(MPI_Aint offset,
-                                                    MPI_Datatype mpi_type,
-                                                    int cmp, T val,
-                                                    MPI_Win win) {
+inline int HostInterface::test_and_compare(MPI_Aint offset, MPI_Datatype mpi_type, int cmp, T val, MPI_Win win) {
   T fetched_val{};
-
-  MPI_Fetch_and_op(nullptr,  // because no operation happening here
-                   &fetched_val, mpi_type, my_pe_, offset, MPI_NO_OP, win);
+  MPI_Fetch_and_op(nullptr /*no-op*/, &fetched_val, mpi_type, my_pe_, offset, MPI_NO_OP, win);
   MPI_Win_flush_local(my_pe_, win);
-
-  /*
-   * Compare based on the operation
-   */
   return compare(cmp, fetched_val, val);
 }
 
 template <typename T>
-__host__ void HostInterface::wait_until(T *ivars, int cmp, T val,
-                                        WindowInfo* window_info) {
-  /*
-   * Find the offset of this memory in the window
-   */
-  MPI_Aint offset{
-      compute_offset(ivars, window_info->get_start(), window_info->get_end())};
-
+void HostInterface::wait_until(T *ivars, int cmp, T val, WindowInfo* window_info) {
+  MPI_Aint offset{compute_offset(ivars, window_info->get_start(), window_info->get_end())};
   MPI_Datatype mpi_type{get_mpi_type<T>()};
   MPI_Win win{window_info->get_win()};
 
-  /*
-   * Continuously read the ivars atomically until it satisfies the condition
-   */
   while (1) {
     int cond_satisfied{test_and_compare(offset, mpi_type, cmp, val, win)};
-
-    if (cond_satisfied) {
-      break;
-    }
+    if (cond_satisfied) { break; }
   }
 }
 
-__host__ size_t status_entry(size_t nelems,
-                             const int *status,
-                             bool* done_flags) {
+size_t status_entry(size_t nelems, const int *status, bool* done_flags) {
   size_t i{0};
   size_t pos{SIZE_MAX};
   while (i < nelems) {
@@ -273,8 +221,7 @@ __host__ size_t status_entry(size_t nelems,
   return pos;
 }
 
-__host__ size_t status_entry(size_t nelems,
-                             const int *status) {
+size_t status_entry(size_t nelems, const int *status) {
   size_t i{0};
   while (i < nelems) {
     if (status[i] == 0) {
@@ -286,25 +233,13 @@ __host__ size_t status_entry(size_t nelems,
 }
 
 template <typename T>
-__host__ size_t HostInterface::wait_until_any(T* ivars, size_t nelems,
-                                              const int *status,
-                                              int cmp, T val,
-                                              WindowInfo* window_info) {
-  // zero nelems error condition
-  if (!nelems) {
-    return SIZE_MAX;
-  }
-
+size_t HostInterface::wait_until_any(T* ivars, size_t nelems, const int *status, int cmp, T val, WindowInfo* window_info) {
+  if (!nelems) { return SIZE_MAX; }
   size_t pos{status_entry(nelems, status)};
-
-  // invalid (empty) status array error condition
-  if (pos == nelems) {
-    return SIZE_MAX;
-  }
+  if (pos == nelems) { return SIZE_MAX; }
 
   while (true) {
     for (size_t i{pos}; i < nelems; i++) {
-      // skip entries marked with non-zero status
       if (status[i]) {
         continue;
       }
@@ -316,21 +251,10 @@ __host__ size_t HostInterface::wait_until_any(T* ivars, size_t nelems,
 }
 
 template <typename T>
-__host__ void HostInterface::wait_until_all(T* ivars, size_t nelems,
-                                            const int *status,
-                                            int cmp, T val,
-                                            WindowInfo* window_info) {
-  // zero nelems error condition
-  if (!nelems) {
-    return;
-  }
-
+void HostInterface::wait_until_all(T* ivars, size_t nelems, const int *status, int cmp, T val, WindowInfo* window_info) {
+  if (!nelems) { return; }
   size_t pos{status_entry(nelems, status)};
-
-  // invalid (empty) status array error condition
-  if (pos == nelems) {
-    return;
-  }
+  if (pos == nelems) { return; }
 
   for (size_t i{pos}; i < nelems; i++) {
     if (status[i]) {
@@ -342,28 +266,15 @@ __host__ void HostInterface::wait_until_all(T* ivars, size_t nelems,
 }
 
 template <typename T>
-__host__ size_t HostInterface::wait_until_some(T* ivars, size_t nelems,
-                                             size_t* indices,
-                                             const int *status,
-                                             int cmp, T val,
-                                             WindowInfo* window_info) {
-  // zero nelems error condition
-  if (!nelems) {
-    return 0;
-  }
-
+size_t HostInterface::wait_until_some(T* ivars, size_t nelems, size_t* indices, const int *status, int cmp, T val, WindowInfo* window_info) {
+  if (!nelems) { return 0; }
   size_t pos{status_entry(nelems, status)};
-
-  // invalid (empty) status array error condition
-  if (pos == nelems) {
-    return 0;
-  }
+  if (pos == nelems) { return 0; }
 
   bool done {false};
   size_t ncompleted {0};
   while (!done) {
     for (size_t i{pos}; i < nelems; i++) {
-      // skip entries marked with non-zero status
       if (status[i]) {
         continue;
       }
@@ -378,16 +289,9 @@ __host__ size_t HostInterface::wait_until_some(T* ivars, size_t nelems,
 }
 
 template <typename T>
-__host__ int HostInterface::test(T* ivars, int cmp, T val,
-                                 WindowInfo* window_info) {
-  /*
-   * Find the offset of this memory in the window
-   */
-  MPI_Aint offset{
-      compute_offset(ivars, window_info->get_start(), window_info->get_end())};
-
+int HostInterface::test(T* ivars, int cmp, T val, WindowInfo* window_info) {
+  MPI_Aint offset{compute_offset(ivars, window_info->get_start(), window_info->get_end())};
   MPI_Datatype mpi_type{get_mpi_type<T>()};
-
   return test_and_compare(offset, mpi_type, cmp, val, window_info->get_win());
 }
 

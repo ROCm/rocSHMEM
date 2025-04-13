@@ -24,36 +24,28 @@
 
 #include <mpi.h>
 
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "host_helpers.hpp"
 #include "memory/window_info.hpp"
-#include "util.hpp"
 
 namespace rocshmem {
 
-__host__ HostContextWindowInfo::HostContextWindowInfo(MPI_Comm comm_world,
-                                                      SymmetricHeap* heap) {
-  window_info_ =
-      new WindowInfo(comm_world, heap->get_local_heap_base(), heap->get_size());
+HostContextWindowInfo::HostContextWindowInfo(MPI_Comm comm_world, SymmetricHeap* heap) {
+  window_info_ = new WindowInfo(comm_world, heap->get_local_heap_base(), heap->get_size());
 }
 
-__host__ HostContextWindowInfo::~HostContextWindowInfo() {
+HostContextWindowInfo::~HostContextWindowInfo() {
   delete window_info_;
 }
 
 WindowInfo* HostInterface::acquire_window_context() {
   auto index{find_avail_pool_entry()};
-
   HostContextWindowInfo* acquired_win_info = host_window_context_pool_[index];
-
   acquired_win_info->mark_unavail();
-
   return acquired_win_info->get();
 }
 
-__host__ void HostInterface::release_window_context(WindowInfo* window_info) {
+void HostInterface::release_window_context(WindowInfo* window_info) {
   auto index{find_win_info_in_pool(window_info)};
-
   host_window_context_pool_[index]->mark_avail();
 }
 
@@ -63,7 +55,6 @@ int HostInterface::find_avail_pool_entry() {
       return i;
     }
   }
-  /* Entry should have been available; consider this as an error. */
   assert(false);
   return -1;
 }
@@ -77,100 +68,64 @@ int HostInterface::find_win_info_in_pool(WindowInfo* window_info) {
       return i;
     }
   }
-  /* Entry should have been present; consider this as an error. */
   assert(false);
   return -1;
 }
 
-__host__ HostInterface::HostInterface(MPI_Comm rocshmem_comm,
-                                      SymmetricHeap* heap) {
-  /*
-   * Duplicate a communicator from roc_shem's comm
-   * world for the host interface
-   */
+HostInterface::HostInterface(MPI_Comm rocshmem_comm, SymmetricHeap* heap) {
   MPI_Comm_dup(rocshmem_comm, &host_comm_world_);
   MPI_Comm_rank(host_comm_world_, &my_pe_);
   MPI_Comm_rank(host_comm_world_, &num_pes_);
-
-  /*
-   * Allocate and initialize pool of windows for contexts
-   */
   char* value{nullptr};
   if ((value = getenv("ROCSHMEM_MAX_NUM_HOST_CONTEXTS"))) {
     max_num_ctxs_ = atoi(value);
   }
-
   size_t pool_size = max_num_ctxs_ * sizeof(HostContextWindowInfo*);
-  host_window_context_pool_ =
-      reinterpret_cast<HostContextWindowInfo**>(malloc(pool_size));
-
+  host_window_context_pool_ = reinterpret_cast<HostContextWindowInfo**>(malloc(pool_size));
   for (int ctx_i = 0; ctx_i < max_num_ctxs_; ctx_i++) {
-    host_window_context_pool_[ctx_i] =
-        new HostContextWindowInfo(host_comm_world_, heap);
+    host_window_context_pool_[ctx_i] = new HostContextWindowInfo(host_comm_world_, heap);
   }
 }
 
-__host__ HostInterface::~HostInterface() {
-  /* Detroy the pool of contexts */
+HostInterface::~HostInterface() {
   for (int ctx_i = 0; ctx_i < max_num_ctxs_; ctx_i++) {
     delete host_window_context_pool_[ctx_i];
   }
-
   free(host_window_context_pool_);
-
   MPI_Comm_free(&host_comm_world_);
 }
 
-__host__ void HostInterface::putmem_nbi(void* dest, const void* source,
-                                        size_t nelems, int pe,
-                                        WindowInfo* window_info) {
+void HostInterface::putmem_nbi(void* dest, const void* source, size_t nelems, int pe, WindowInfo* window_info) {
   initiate_put(dest, source, nelems, pe, window_info);
 }
 
-__host__ void HostInterface::putmem(void* dest, const void* source,
-                                    size_t nelems, int pe,
-                                    WindowInfo* window_info) {
+void HostInterface::putmem(void* dest, const void* source, size_t nelems, int pe, WindowInfo* window_info) {
   initiate_put(dest, source, nelems, pe, window_info);
-
   MPI_Win_flush_local(pe, window_info->get_win());
 }
 
-__host__ void HostInterface::fence(WindowInfo* window_info) {
+void HostInterface::fence(WindowInfo* window_info) {
   complete_all(window_info->get_win());
   return;
 }
 
-__host__ void HostInterface::quiet(WindowInfo* window_info) {
+void HostInterface::quiet(WindowInfo* window_info) {
   complete_all(window_info->get_win());
   return;
 }
 
-__host__ void HostInterface::sync_all(WindowInfo* window_info) {
+void HostInterface::sync_all(WindowInfo* window_info) {
   MPI_Win_sync(window_info->get_win());
-
-  /*
-   * No need to flush remote
-   * HDPs here since all PEs are
-   * participating.
-   */
-
   MPI_Barrier(host_comm_world_);
-
   return;
 }
 
-__host__ void HostInterface::barrier_all(WindowInfo* window_info) {
+void HostInterface::barrier_all(WindowInfo* window_info) {
   complete_all(window_info->get_win());
-
-  /*
-   * Flush my HDP cache so remote NICs will
-   * see the latest values in device memory
-   */
-
   MPI_Barrier(host_comm_world_);
 }
 
-__host__ void HostInterface::barrier_for_sync() {
+void HostInterface::barrier_for_sync() {
   MPI_Barrier(host_comm_world_);
 }
 
