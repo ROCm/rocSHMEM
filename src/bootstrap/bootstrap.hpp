@@ -13,12 +13,9 @@
 #include <string>
 #include <vector>
 
+#include "rocshmem/rocshmem_common.hpp"
+
 namespace rocshmem {
-
-#define ROCSHMEM_UNIQUE_ID_BYTES 128
-
-/// Unique ID for a process. This is a ROCSHMEM_UNIQUE_ID_BYTES byte array that uniquely identifies a process.
-using UniqueId = std::array<uint8_t, ROCSHMEM_UNIQUE_ID_BYTES>;
 
 /// Return a version string.
 std::string version();
@@ -46,7 +43,7 @@ class TcpBootstrap : public Bootstrap {
  public:
   /// Create a random unique ID.
   /// @return The created unique ID.
-  static UniqueId createUniqueId();
+  static rocshmem_uniqueid_t createUniqueId();
 
   /// Constructor.
   /// @param rank The rank of the process.
@@ -58,12 +55,12 @@ class TcpBootstrap : public Bootstrap {
 
   /// Return the unique ID stored in the @ref TcpBootstrap.
   /// @return The unique ID stored in the @ref TcpBootstrap.
-  UniqueId getUniqueId() const;
+  rocshmem_uniqueid_t getUniqueId() const;
 
   /// Initialize the @ref TcpBootstrap with a given unique ID.
   /// @param uniqueId The unique ID to initialize the @ref TcpBootstrap with.
   /// @param timeoutSec The connection timeout in seconds.
-  void initialize(UniqueId uniqueId, int64_t timeoutSec = 30);
+  void initialize(rocshmem_uniqueid_t uniqueId, int64_t timeoutSec = 30);
 
   /// Initialize the @ref TcpBootstrap with a string formatted as "ip:port" or "interface:ip:port".
   /// @param ifIpPortTrio The string formatted as "ip:port" or "interface:ip:port".

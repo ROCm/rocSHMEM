@@ -53,7 +53,7 @@ struct ScopedTimer : public Timer {
 };
 
 std::string getHostName(int maxlen, const char delim);
-  
+
 // PCI Bus ID <-> int64 conversion functions
 std::string int64ToBusId(int64_t id);
 int64_t busIdToInt64(const std::string busId);

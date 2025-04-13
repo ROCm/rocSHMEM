@@ -1,5 +1,5 @@
 // Copyright (c) Microsoft Corporation.
-// Modifications Copyright (c) 2025 Advanced Micro Devices, Inc, 
+// Modifications Copyright (c) 2025 Advanced Micro Devices, Inc,
 // Licensed under the MIT license.
 
 #ifndef ROCSHMEM_ENV_HPP_

@@ -69,19 +69,19 @@ struct UniqueIdInternal {
   uint64_t magic;
   union SocketAddress addr;
 };
-static_assert(sizeof(UniqueIdInternal) <= sizeof(UniqueId), "UniqueIdInternal is too large to fit into UniqueId");
+static_assert(sizeof(UniqueIdInternal) <= sizeof(rocshmem_uniqueid_t), "UniqueIdInternal is too large to fit into rocshmem_uniqueid_t");
 
 class TcpBootstrap::Impl {
  public:
-  static UniqueId createUniqueId();
-  static UniqueId getUniqueId(const UniqueIdInternal& uniqueId);
+  static rocshmem_uniqueid_t createUniqueId();
+  static rocshmem_uniqueid_t getUniqueId(const UniqueIdInternal& uniqueId);
 
   Impl(int rank, int nRanks);
   ~Impl();
-  void initialize(const UniqueId& uniqueId, int64_t timeoutSec);
+  void initialize(const rocshmem_uniqueid_t& uniqueId, int64_t timeoutSec);
   void initialize(const std::string& ifIpPortTrio, int64_t timeoutSec);
   void establishConnections(int64_t timeoutSec);
-  UniqueId getUniqueId() const;
+  rocshmem_uniqueid_t getUniqueId() const;
   int getRank();
   int getNranks();
   int getNranksPerNode();
@@ -127,7 +127,7 @@ class TcpBootstrap::Impl {
                         const std::vector<SocketAddress>& rankAddressesRoot);
 };
 
-UniqueId TcpBootstrap::Impl::createUniqueId() {
+rocshmem_uniqueid_t TcpBootstrap::Impl::createUniqueId() {
   UniqueIdInternal uniqueId;
   SocketAddress netIfAddr;
   netInit("", "", netIfAddr);
@@ -137,8 +137,8 @@ UniqueId TcpBootstrap::Impl::createUniqueId() {
   return getUniqueId(uniqueId);
 }
 
-UniqueId TcpBootstrap::Impl::getUniqueId(const UniqueIdInternal& uniqueId) {
-  UniqueId ret;
+rocshmem_uniqueid_t TcpBootstrap::Impl::getUniqueId(const UniqueIdInternal& uniqueId) {
+  rocshmem_uniqueid_t ret;
   std::memcpy(&ret, &uniqueId, sizeof(uniqueId));
   return ret;
 }
@@ -153,13 +153,13 @@ TcpBootstrap::Impl::Impl(int rank, int nRanks)
       abortFlagStorage_(new uint32_t(0)),
       abortFlag_(abortFlagStorage_.get()) {}
 
-UniqueId TcpBootstrap::Impl::getUniqueId() const { return getUniqueId(uniqueId_); }
+rocshmem_uniqueid_t TcpBootstrap::Impl::getUniqueId() const { return getUniqueId(uniqueId_); }
 
 int TcpBootstrap::Impl::getRank() { return rank_; }
 
 int TcpBootstrap::Impl::getNranks() { return nRanks_; }
 
-void TcpBootstrap::Impl::initialize(const UniqueId& uniqueId, int64_t timeoutSec) {
+void TcpBootstrap::Impl::initialize(const rocshmem_uniqueid_t& uniqueId, int64_t timeoutSec) {
   if (!netInitialized) {
     netInit("", "", netIfAddr_);
     netInitialized = true;
@@ -552,11 +552,11 @@ void TcpBootstrap::Impl::close() {
   peerRecvSockets_.clear();
 }
 
- UniqueId TcpBootstrap::createUniqueId() { return Impl::createUniqueId(); }
+ rocshmem_uniqueid_t TcpBootstrap::createUniqueId() { return Impl::createUniqueId(); }
 
  TcpBootstrap::TcpBootstrap(int rank, int nRanks) { pimpl_ = std::make_unique<Impl>(rank, nRanks); }
 
- UniqueId TcpBootstrap::getUniqueId() const { return pimpl_->getUniqueId(); }
+ rocshmem_uniqueid_t TcpBootstrap::getUniqueId() const { return pimpl_->getUniqueId(); }
 
  int TcpBootstrap::getRank() { return pimpl_->getRank(); }
 
@@ -574,7 +574,7 @@ void TcpBootstrap::Impl::close() {
 
  void TcpBootstrap::allGather(void* allData, int size) { pimpl_->allGather(allData, size); }
 
- void TcpBootstrap::initialize(UniqueId uniqueId, int64_t timeoutSec) {
+ void TcpBootstrap::initialize(rocshmem_uniqueid_t uniqueId, int64_t timeoutSec) {
   pimpl_->initialize(uniqueId, timeoutSec);
 }
 
