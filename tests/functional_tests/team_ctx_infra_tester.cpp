@@ -41,8 +41,6 @@ __global__ void TeamCtxInfraTest(ShmemContextType ctx_type,
   __shared__ rocshmem_ctx_t ctx1, ctx2, ctx3;
   __shared__ rocshmem_ctx_t ctx[NUM_TEAMS];
 
-  rocshmem_wg_init();
-
   /**
    * Test 1: Assert team infos of different ctxs
    * from the same team are the same.
@@ -84,8 +82,6 @@ __global__ void TeamCtxInfraTest(ShmemContextType ctx_type,
   for (int team_i = 0; team_i < NUM_TEAMS; team_i++) {
     rocshmem_wg_ctx_destroy(&ctx[team_i]);
   }
-
-  rocshmem_wg_finalize();
 }
 
 /******************************************************************************

@@ -40,7 +40,6 @@ __global__ void WaveFrontPrimitiveTest(int loop, int skip,
   __shared__ rocshmem_ctx_t ctx;
   int wg_id = get_flat_grid_id();
 
-  rocshmem_wg_init();
   rocshmem_wg_ctx_create(&ctx);
 
   // Calculate start index for each wavefront
@@ -78,7 +77,6 @@ __global__ void WaveFrontPrimitiveTest(int loop, int skip,
   }
 
   rocshmem_wg_ctx_destroy(&ctx);
-  rocshmem_wg_finalize();
 }
 
 /******************************************************************************

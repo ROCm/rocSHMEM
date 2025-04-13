@@ -117,7 +117,6 @@ void AMOExtendedTester<T>::verifyResults(uint64_t size) {
       TestType type, ShmemContextType ctx_type) {                             \
     __shared__ rocshmem_ctx_t ctx;                                            \
     int wg_id = get_flat_grid_id();                                           \
-    rocshmem_wg_init();                                                       \
     rocshmem_wg_ctx_create(&ctx);                                             \
     if (hipThreadIdx_x == 0) {                                                \
       T ret = 0;                                                              \
@@ -144,7 +143,6 @@ void AMOExtendedTester<T>::verifyResults(uint64_t size) {
       /*rocshmem_ctx_getmem(ctx, &s_buf[wg_id], r_buf, sizeof(T), 1);*/       \
     }                                                                         \
     rocshmem_wg_ctx_destroy(&ctx);                                            \
-    rocshmem_wg_finalize();                                                   \
   }                                                                           \
   template class AMOExtendedTester<T>;
 

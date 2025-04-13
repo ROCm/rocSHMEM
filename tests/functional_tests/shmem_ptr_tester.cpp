@@ -29,8 +29,6 @@ using namespace rocshmem;
  * DEVICE TEST KERNEL
  *****************************************************************************/
 __global__ void ShmemPtrTest(char *r_buf, int *available) {
-  rocshmem_wg_init();
-
   if (hipThreadIdx_x == 0) {
     char *local_addr = r_buf + 4;
     void *remote_addr = rocshmem_ptr((void *)local_addr, 1);
@@ -39,8 +37,6 @@ __global__ void ShmemPtrTest(char *r_buf, int *available) {
       ((char *)remote_addr)[0] = '1';
     }
   }
-
-  rocshmem_wg_finalize();
 }
 
 /******************************************************************************

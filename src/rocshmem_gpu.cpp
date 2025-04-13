@@ -48,34 +48,6 @@ __device__ __constant__ rocshmem_ctx_t ROCSHMEM_CTX_DEFAULT{};
 
 __constant__ GPUIBBackend *device_backend_proxy;
 
-__device__ 
-void rocshmem_wg_init() {
-  int provided;
-
-  /*
-   * Non-threaded init is allowed to select any thread mode, so don't worry
-   * if provided is different.
-   */
-  rocshmem_wg_init_thread(ROCSHMEM_THREAD_WG_FUNNELED, &provided);
-}
-
-__device__ 
-void rocshmem_wg_init_thread([[maybe_unused]] int requested, int *provided) {
-  rocshmem_query_thread(provided);
-}
-
-__device__ 
-void rocshmem_query_thread(int *provided) {
-#ifdef USE_THREADS
-  *provided = ROCSHMEM_THREAD_MULTIPLE;
-#else
-  *provided = ROCSHMEM_THREAD_WG_FUNNELED;
-#endif
-}
-
-__device__ 
-void rocshmem_wg_finalize() {}
-
 /******************************************************************************
  ************************** Default Context Wrappers **************************
  *****************************************************************************/

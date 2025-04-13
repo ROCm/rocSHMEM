@@ -37,7 +37,6 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
   int wg_id = get_flat_grid_id();
   int t_id  = get_flat_block_id();
   int wf_id = t_id / wf_size;
-  rocshmem_wg_init();
   rocshmem_wg_ctx_create(&ctx);
 
   /**
@@ -109,7 +108,6 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
   }
 
   rocshmem_wg_ctx_destroy(&ctx);
-  rocshmem_wg_finalize();
 }
 
 /******************************************************************************

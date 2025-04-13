@@ -180,8 +180,6 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 [[maybe_unused]] __host__ int rocshmem_init_thread(
     [[maybe_unused]] int required, int *provided, MPI_Comm comm) {
   library_init(comm);
-  rocshmem_query_thread(provided);
-
   return ROCSHMEM_SUCCESS;
 }
 
@@ -235,14 +233,6 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   CHECK_HIP(hipHostFree(backend));
 
   delete MPIInitSingleton::GetInstance();
-}
-
-__host__ void rocshmem_query_thread(int *provided) {
-  /*
-   * Host-facing functions always support full
-   * thread flexibility i.e. THREAD_MULTIPLE.
-   */
-  *provided = ROCSHMEM_THREAD_MULTIPLE;
 }
 
 __host__ void rocshmem_global_exit(int status) {

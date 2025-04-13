@@ -113,15 +113,6 @@ __host__ int rocshmem_set_attr_uniqueid_args(int rank, int nranks,
                                              rocshmem_uniqueid_t *uid,
                                              rocshmem_init_attr_t *attr);
 /**
- * @brief Query the thread mode used by the runtime.
- *
- * @param[out] provided Thread mode the runtime is operating in.
- *
- * @return void.
- */
-__host__ void rocshmem_query_thread(int *provided);
-
-/**
  * @brief Function that dumps internal stats to stdout.
  */
 __host__ void rocshmem_dump_stats();
@@ -320,51 +311,6 @@ __host__ void rocshmem_global_exit(int status);
 /******************************************************************************
  **************************** DEVICE INTERFACE ********************************
  *****************************************************************************/
-
-/**
- * @brief Initializes device-side rocSHMEM resources. Must be called before
- * any threads in this work-group invoke other rocSHMEM functions.
- *
- * Must be called collectively by all threads in the work-group.
- *
- * @return void.
- */
-__device__ void rocshmem_wg_init();
-
-/**
- * @brief Finalizes device-side rocSHMEM resources. Must be called before
- * work-group completion if the work-group also called rocshmem_wg_init().
- *
- * Must be called collectively by all threads in the work-group.
- *
- * @return void.
- */
-__device__ void rocshmem_wg_finalize();
-
-/**
- * @brief Initializes device-side rocSHMEM resources. Must be called before
- * any threads in this work-group invoke other rocSHMEM functions. This is
- * a variant of rocshmem_wg_init that allows the caller to request a
- * threading mode.
- *
- * @param[in] requested Requested thread mode from rocshmem_thread_ops.
- * @param[out] provided Thread mode selected by the runtime. May not be equal
- *                      to requested thread mode.
- *
- * Must be called collectively by all threads in the work-group.
- *
- * @return void.
- */
-__device__ void rocshmem_wg_init_thread(int requested, int *provided);
-
-/**
- * @brief Query the thread mode used by the runtime.
- *
- * @param[out] provided Thread mode the runtime is operating in.
- *
- * @return void.
- */
-__device__ void rocshmem_query_thread(int *provided);
 
 /**
  * @brief Creates an OpenSHMEM context. By design, the context is private

@@ -41,7 +41,6 @@ __global__ void TeamCtxPrimitiveTest(int loop, int skip, long long int *start_ti
   int t_id  = get_flat_block_id();
   int wf_id = t_id / wf_size;
 
-  rocshmem_wg_init();
   rocshmem_wg_team_create_ctx(team, &ctx);
 
   /**
@@ -106,7 +105,6 @@ __global__ void TeamCtxPrimitiveTest(int loop, int skip, long long int *start_ti
   }
 
   rocshmem_wg_ctx_destroy(&ctx);
-  rocshmem_wg_finalize();
 }
 
 /******************************************************************************
