@@ -38,7 +38,7 @@ class FreeListProxy;
  ******************************* FREE LIST ***********************************
  *****************************************************************************/
 
-template <typename TYPE, typename ALLOC = HIPDefaultFinegrainedAllocator>
+template <typename TYPE, typename ALLOC = HIPAllocatorFinegrained>
 class FreeList {
   friend class FreeListProxy<ALLOC, TYPE>;
 

@@ -38,16 +38,12 @@
 
 namespace rocshmem {
 
-#if defined USE_MANAGED_HEAP
-using HEAP_T = HeapMemory<HIPAllocatorManaged>;
-#elif defined USE_COHERENT_HEAP
-using HEAP_T = HeapMemory<HIPAllocator>;
-#elif defined USE_HOST_HEAP
-using HEAP_T = HeapMemory<HostAllocator>;
+#if defined USE_FINEGRAINED_COHERENT_HEAP
+using HEAP_T = HeapMemory<HIPAllocatorFinegrained>;
 #elif defined USE_HIP_HOST_HEAP
 using HEAP_T = HeapMemory<HIPHostAllocator>;
 #else
-using HEAP_T = HeapMemory<HIPDefaultFinegrainedAllocator>;
+using HEAP_T = HeapMemory<HIPAllocatorUncached>;
 #endif
 
 }  // namespace rocshmem

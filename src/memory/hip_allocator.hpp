@@ -36,11 +36,6 @@
 
 #include "memory_allocator.hpp"
 
-// `hipDeviceMallocUncached` was introduced at ROCm 5.5
-#if (HIP_VERSION_MAJOR > 5) || \
-    (HIP_VERSION_MAJOR == 5 && HIP_VERSION_MINOR >= 5)
-#define HIP_SUPPORTS_MALLOC_UNCACHED
-#endif
 namespace rocshmem {
 
 class HIPAllocator : public MemoryAllocator {
@@ -51,30 +46,13 @@ class HIPAllocator : public MemoryAllocator {
 class HIPAllocatorFinegrained : public MemoryAllocator {
  public:
   HIPAllocatorFinegrained()
-      : MemoryAllocator(hipExtMallocWithFlags, hipFree,
-                        hipDeviceMallocFinegrained) {}
+      : MemoryAllocator(hipExtMallocWithFlags, hipFree, hipDeviceMallocFinegrained) {}
 };
 
-#ifdef HIP_SUPPORTS_MALLOC_UNCACHED
 class HIPAllocatorUncached : public MemoryAllocator {
  public:
   HIPAllocatorUncached()
-      : MemoryAllocator(hipExtMallocWithFlags, hipFree,
-                        hipDeviceMallocUncached) {}
-};
-// The default fine-grained coherence allocator is the uncached allocator
-using HIPDefaultFinegrainedAllocator = HIPAllocatorUncached;
-#else
-// The default fine-grained coherence allocator is the fine-grained allocator
-using HIPDefaultFinegrainedAllocator = HIPAllocatorFinegrained;
-#endif
-
-class HIPAllocatorManaged : public MemoryAllocator {
- public:
-  HIPAllocatorManaged()
-      : MemoryAllocator(hipMallocManaged, hipFree, hipMemAttachHost) {
-    _managed = true;
-  }
+      : MemoryAllocator(hipExtMallocWithFlags, hipFree, hipDeviceMallocUncached) {}
 };
 
 class HIPHostAllocator : public MemoryAllocator {
@@ -122,7 +100,7 @@ class StdAllocatorHIP {
   }
 
  private:
-  HIPDefaultFinegrainedAllocator allocator_{};
+  HIPAllocatorFinegrained allocator_{};
 };
 
 template <class T, class U>

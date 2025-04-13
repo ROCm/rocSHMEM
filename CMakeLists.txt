@@ -40,8 +40,9 @@ endif()
 option(DEBUG "Enable debug trace" OFF)
 option(PROFILE "Enable statistics and timing support" OFF)
 option(USE_WF_COAL "Enable wavefront message coalescing" OFF)
-option(USE_COHERENT_HEAP "Enable support for coherent systems" OFF)
+option(USE_FINEGRAINED_COHERENT_HEAP "Enable support for coherent systems" OFF)
 option(USE_HIP_HOST_HEAP "Enable host memory using hip api" OFF)
+option(USE_UNCACHED_HEAP "Enable support for coherent systems" OFF)
 
 option(BUILD_FUNCTIONAL_TESTS "Build the functional tests" ON)
 option(BUILD_EXAMPLES "Build the examples" ON)
@@ -147,9 +148,7 @@ if (NOT BUILD_TESTS_ONLY)
   find_package(hip REQUIRED)
   find_package(hsa-runtime64 REQUIRED)
 
-  if (USE_GPU_IB)
-    include(cmake/find_ibverbs.cmake)
-  endif()
+  include(cmake/find_ibverbs.cmake)
 
   set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
   set(THREADS_PREFER_PTHREAD_FLAG TRUE)
@@ -179,19 +178,17 @@ if (NOT BUILD_TESTS_ONLY)
       hsa-runtime64::hsa-runtime64
   )
 
-  if (USE_GPU_IB)
-    target_include_directories(
-      ${PROJECT_NAME}
-      PUBLIC
-        ${IBVERBS_INCLUDE_DIRS}
-    )
+  target_include_directories(
+    ${PROJECT_NAME}
+    PUBLIC
+      ${IBVERBS_INCLUDE_DIRS}
+  )
 
-    target_link_libraries(
-      ${PROJECT_NAME}
-      PUBLIC
-        ${IBVERBS_LIBRARIES}
-    )
-  endif()
+  target_link_libraries(
+    ${PROJECT_NAME}
+    PUBLIC
+      ${IBVERBS_LIBRARIES}
+  )
 endif()
 
 ###############################################################################

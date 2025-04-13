@@ -17,9 +17,8 @@ cmake \
     -DCMAKE_VERBOSE_MAKEFILE=OFF \
     -DDEBUG=OFF \
     -DPROFILE=OFF \
-    -DUSE_GPU_IB=ON \
     -DUSE_WF_COAL=OFF \
-    -DUSE_COHERENT_HEAP=ON \
+    -DUSE_FINEGRAINED_COHERENT_HEAP=ON \
     $src_path
 cmake --build . --parallel 8
 cmake --install .

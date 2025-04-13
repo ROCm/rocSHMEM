@@ -35,7 +35,6 @@
 namespace rocshmem {
 
 int Connection::use_gpu_mem = 0;
-int Connection::coherent_cq = 0;
 
 Connection::Connection(GPUIBBackend* b, int k) : backend(b), key_offset(k) {
   char* value = nullptr;
@@ -236,28 +235,12 @@ void* Connection::buf_alloc([[maybe_unused]] struct ibv_pd* pd,
                             [[maybe_unused]] uint64_t resource_type) {
   if (use_gpu_mem) {
     void* dev_ptr;
-    if (coherent_cq == 1) {
-#if defined USE_COHERENT_HEAP
-      CHECK_HIP(hipMalloc(reinterpret_cast<void**>(&dev_ptr), size));
-#else
-  #ifdef HIP_SUPPORTS_MALLOC_UNCACHED
-        CHECK_HIP(hipExtMallocWithFlags(reinterpret_cast<void**>(&dev_ptr), size,
-                                        hipDeviceMallocUncached));
-  #else
-        CHECK_HIP(hipExtMallocWithFlags(reinterpret_cast<void**>(&dev_ptr), size,
-                                        hipDeviceMallocFinegrained));
-  #endif
+#ifdef USE_FINEGRAINED_COHERENT_HEAP
+    CHECK_HIP(hipExtMallocWithFlags(reinterpret_cast<void**>(&dev_ptr), size, hipDeviceMallocFinegrained));
 #endif
-    } else {
-#ifdef HIP_SUPPORTS_MALLOC_UNCACHED
-      CHECK_HIP(hipExtMallocWithFlags(reinterpret_cast<void**>(&dev_ptr), size,
-                                      hipDeviceMallocUncached));
-#else
-      CHECK_HIP(hipExtMallocWithFlags(reinterpret_cast<void**>(&dev_ptr), size,
-                                      hipDeviceMallocFinegrained));
+#ifdef USE_UNCACHED_HEAP
+    CHECK_HIP(hipExtMallocWithFlags(reinterpret_cast<void**>(&dev_ptr), size, hipDeviceMallocUncached));
 #endif
-
-    }
     memset(dev_ptr, 0, size);
     return dev_ptr;
   }
@@ -296,9 +279,7 @@ ibv_cq* Connection::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
   cq_attr.comp_mask = IBV_CQ_INIT_ATTR_MASK_PD;
   cq_attr.parent_domain = pd;
 
-  coherent_cq = 1;
   ibv_cq_ex* cq_ex = ibv_create_cq_ex(context, &cq_attr);
-  coherent_cq = 0;
 
   GPUIB_CHECK_NNULL(cq_ex, "ibv_create_cq_ex");
 
@@ -307,17 +288,14 @@ ibv_cq* Connection::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
   return cq;
 }
 
-void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp,
-                                               int conn_num) {
+void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   int hip_dev_id = 0;
   CHECK_HIP(hipGetDevice(&hip_dev_id));
   use_gpu_mem = cq_use_gpu_mem;
-
   mlx5dv_cq cq_out;
   mlx5dv_obj mlx_obj;
   mlx_obj.cq.in = cqs[conn_num];
   mlx_obj.cq.out = &cq_out;
-
   mlx5dv_init_obj(&mlx_obj, MLX5DV_OBJ_CQ);
   gpu_qp->cq_log_size = log2(cq_out.cqe_cnt);
   gpu_qp->cq_size = cq_out.cqe_cnt;
@@ -327,27 +305,18 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp,
     gpu_qp->current_cq_q = reinterpret_cast<mlx5_cqe64*>(cq_out.buf);
     gpu_qp->dbrec_cq = reinterpret_cast<volatile uint32_t*>(cq_out.dbrec);
   } else {
-    rocm_memory_lock_to_fine_grain(reinterpret_cast<void*>(cq_out.buf),
-                                   cq_out.cqe_cnt * 64, &gpu_ptr, hip_dev_id);
+    rocm_memory_lock_to_fine_grain(reinterpret_cast<void*>(cq_out.buf), cq_out.cqe_cnt * 64, &gpu_ptr, hip_dev_id);
     gpu_qp->current_cq_q = reinterpret_cast<mlx5_cqe64*>(gpu_ptr);
-
-    rocm_memory_lock_to_fine_grain(reinterpret_cast<void*>(cq_out.dbrec), 64,
-                                   &gpu_ptr, hip_dev_id);
-
+    rocm_memory_lock_to_fine_grain(reinterpret_cast<void*>(cq_out.dbrec), 64, &gpu_ptr, hip_dev_id);
     gpu_qp->dbrec_cq = reinterpret_cast<volatile uint32_t*>(gpu_ptr);
   }
   gpu_qp->current_cq_q_H = reinterpret_cast<mlx5_cqe64*>(cq_out.buf);
-
   use_gpu_mem = sq_use_gpu_mem;
-
   mlx5dv_qp qp_out;
   mlx_obj.qp.in = qps[conn_num];
   mlx_obj.qp.out = &qp_out;
-
   mlx5dv_init_obj(&mlx_obj, MLX5DV_OBJ_QP);
-
   gpu_qp->max_nwqe = (qp_out.sq.wqe_cnt);
-
   volatile uint32_t* dbrec_send = qp_out.dbrec + 1;
 
   if (use_gpu_mem) {
@@ -355,28 +324,16 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp,
     gpu_qp->dbrec_send = reinterpret_cast<volatile uint32_t*>(dbrec_send);
   } else {
     gpu_ptr = nullptr;
-    rocm_memory_lock_to_fine_grain(reinterpret_cast<void*>(qp_out.sq.buf),
-                                   qp_out.sq.wqe_cnt * 64, &gpu_ptr,
-                                   hip_dev_id);
-
+    rocm_memory_lock_to_fine_grain(reinterpret_cast<void*>(qp_out.sq.buf), qp_out.sq.wqe_cnt * 64, &gpu_ptr, hip_dev_id);
     gpu_qp->current_sq = reinterpret_cast<uint64_t*>(gpu_ptr);
-
-    rocm_memory_lock_to_fine_grain(
-        reinterpret_cast<void*>(const_cast<uint32_t*>(dbrec_send)), 32,
-        &gpu_ptr, hip_dev_id);
-
+    rocm_memory_lock_to_fine_grain( reinterpret_cast<void*>(const_cast<uint32_t*>(dbrec_send)), 32, &gpu_ptr, hip_dev_id);
     gpu_qp->dbrec_send = reinterpret_cast<volatile uint32_t*>(gpu_ptr);
   }
 
   gpu_qp->current_sq_H = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
-
   gpu_qp->setDBval(*(reinterpret_cast<uint64_t*>(qp_out.sq.buf)));
-
-  rocm_memory_lock_to_fine_grain(qp_out.bf.reg, qp_out.bf.size * 2, &gpu_ptr,
-                                 hip_dev_id);
-
+  rocm_memory_lock_to_fine_grain(qp_out.bf.reg, qp_out.bf.size * 2, &gpu_ptr, hip_dev_id);
   gpu_qp->db.ptr = reinterpret_cast<uint64_t*>(gpu_ptr);
-
   uint32_t* sq = reinterpret_cast<uint32_t*>(qp_out.sq.buf);
   uint32_t ctrl_qp_sq = (reinterpret_cast<uint32_t*>(sq))[1];
   gpu_qp->ctrl_qp_sq = ctrl_qp_sq & 0xFFFFFF;
