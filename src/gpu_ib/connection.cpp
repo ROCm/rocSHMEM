@@ -59,13 +59,9 @@ Connection::Connection(GPUIBBackend* b, int k) : backend(b), key_offset(k) {
 
 Connection::~Connection() { delete ib_state; }
 
-void Connection::reg_mr(void* ptr, size_t size, ibv_mr** mr, bool managed) {
+void Connection::reg_mr(void* ptr, size_t size, ibv_mr** mr) {
   int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE |
                IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
-  if (managed) {
-    access |= IBV_ACCESS_ON_DEMAND;
-  }
-
   *mr = ibv_reg_mr(ib_state->pd, ptr, size, access);
   GPUIB_CHECK_NNULL(*mr, "ibv_reg_mr");
 }
@@ -121,7 +117,6 @@ void Connection::finalize() {
   int ret = ibv_dereg_mr(backend->networkImpl.heap_mr);
   GPUIB_CHECK_ZERO(ret, "ibv_dereg_mr");
 
-  // comment until rocm 4.5
   ret = ibv_dereg_mr(backend->networkImpl.mr);
   GPUIB_CHECK_ZERO(ret, "ibv_dereg_mr");
 }

@@ -43,8 +43,7 @@ void NetworkImpl::setup_atomic_region() {
   /*
    * Register the atomic return region on the InfiniBand network.
    */
-  connection->reg_mr(atomic_ret->atomic_base_ptr,
-                     sizeof(uint64_t) * max_nb_atomic * num_blocks, &mr, false);
+  connection->reg_mr(atomic_ret->atomic_base_ptr, sizeof(uint64_t) * max_nb_atomic * num_blocks, &mr);
 
   /*
    * Set member variable from class.
@@ -69,7 +68,7 @@ void NetworkImpl::heap_memory_rkey(char *local_heap_base, size_t heap_size,
    * InfiniBand network.
    */
   void *base_heap = local_heap_base;
-  connection->reg_mr(base_heap, heap_size, &heap_mr, is_managed);
+  connection->reg_mr(base_heap, heap_size, &heap_mr);
 
   /*
    * Using the memory region from the prior heap memory registration,

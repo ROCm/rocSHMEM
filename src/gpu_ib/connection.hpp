@@ -132,7 +132,7 @@ class Connection {
 
   void post_dv_rc_wqe(int remote_conn);
 
-  void reg_mr(void* ptr, size_t size, ibv_mr** mr, bool is_managed);
+  void reg_mr(void* ptr, size_t size, ibv_mr** mr);
 
   void get_remote_conn(int* remote_conn);
 
