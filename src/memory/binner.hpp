@@ -39,6 +39,8 @@
 
 namespace rocshmem {
 
+inline const unsigned ALIGNMENT{128};
+
 /**
  * @brief Helper to choose between clz variants
  *

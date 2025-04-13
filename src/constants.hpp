@@ -36,7 +36,6 @@ namespace rocshmem {
  *
  * @note Cache line size on most systems is either 64 or 128.
  */
-inline const unsigned ALIGNMENT{128};
 
 /**
  * @brief Constant number which holds maximum workgroup size.
