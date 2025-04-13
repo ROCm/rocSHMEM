@@ -59,15 +59,10 @@ __device__ __host__ int GPUIBContext::getNumDest() {
 }
 
 __device__ void GPUIBContext::fence() {
-  for (int k = 0; k < getNumDest(); k++) {
-    getQueuePair(k)->fence(k);
-  }
-
   fence_.flush();
 }
 
 __device__ void GPUIBContext::fence(int pe) {
-  getQueuePair(pe)->fence(pe);
   fence_.flush();
 }
 

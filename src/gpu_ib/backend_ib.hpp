@@ -230,22 +230,18 @@ class GPUIBBackend {
 
   /**
    * @brief Compile-time configuration policy for network (IB)
-   *
-   *
-   * The configuration option "USE_SINGLE_NODE" can be enabled to not build
-   * with network support.
    */
   NetworkImpl networkImpl{};
 
   /**
-   * @brief An array of @ref ROContexts that backs the context FreeList.
+   * @brief An array of contexts that backs the context FreeList.
    */
   GPUIBContext *ctx_array{nullptr};
 
   /**
    * @brief A free-list containing contexts.
    */
-  FreeListProxy<HIPAllocator, GPUIBContext *> ctx_free_list{};
+  FreeListProxy<HIPAllocator, GPUIBContext*> ctx_free_list{};
 
   /**
    * @brief Holds maximum number of contexts used in library
@@ -258,8 +254,7 @@ class GPUIBBackend {
   char *pool_bitmask_{nullptr};
 
   /**
-   * @brief Bitmask to store the reduced result of bitmasks on pariticipating
-   * PEs
+   * @brief Bitmask to store the reduced result of bitmasks on pariticipating PEs
    *
    * With no thread-safety for this bitmask, multithreaded creation of teams is
    * not supported.
@@ -272,8 +267,7 @@ class GPUIBBackend {
   int bitmask_size_{-1};
 
   /**
-   * @brief Holds a copy of the default context (see OpenSHMEM
-   * specification).
+   * @brief Holds a copy of the default context (see OpenSHMEM specification).
    */
   GPUIBContext *default_ctx_{nullptr};
 

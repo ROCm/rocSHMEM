@@ -129,13 +129,6 @@ class QueuePair {
   __device__ void quiet_single_heavy(int pe);
 
   /**
-   * @brief Create and enqueue a HDP flush work queue entry on the remote PE.
-   *
-   * @param[in] pe Processing element id to send the HDP flush operation.
-   */
-  __device__ void fence(int pe);
-
-  /**
    * @brief Create and enqueue a zero-byte read to enforce write ordering.
    *
    * @tparam level Implements specific behaviors for thread, warp, block access.

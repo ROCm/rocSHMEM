@@ -321,9 +321,6 @@ __device__ void QueuePair::atomic_nofetch(void *dest, int64_t value,
   quiet_single<THREAD>();
 }
 
-__device__ void QueuePair::fence(int pe) {
-}
-
 __device__ void QueuePair::waitCQSpace(int num_msgs) {
   // We cannot post more outstanding requests than the completion queue
   // size.  Force a quiet if we are out of space.

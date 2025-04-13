@@ -35,8 +35,7 @@ namespace rocshmem {
 
 void NetworkImpl::setup_atomic_region() {
   /*
-   * Allocate fine-grained device-side memory for the atomic return
-   * region.
+   * Allocate fine-grained device-side memory for the atomic return region.
    */
   allocate_atomic_region(&atomic_ret, num_blocks);
 
@@ -51,17 +50,13 @@ void NetworkImpl::setup_atomic_region() {
   atomic_ret->atomic_lkey = htobe32(mr->lkey);
 }
 
-void NetworkImpl::heap_memory_rkey(char *local_heap_base, size_t heap_size,
-                                     MPI_Comm thread_comm, bool is_managed) {
+void NetworkImpl::heap_memory_rkey(char *local_heap_base, size_t heap_size, MPI_Comm thread_comm, bool is_managed) {
   /*
-   * Allocate host-side memory to hold remote keys for all processing
-   * elements.
+   * Allocate host-side memory to hold remote keys for all processing elements.
    */
   const size_t rkeys_size = sizeof(uint32_t) * num_pes;
   uint32_t *host_rkey_cpy = reinterpret_cast<uint32_t *>(malloc(rkeys_size));
-  if (host_rkey_cpy == nullptr) {
-    abort();
-  }
+  if (host_rkey_cpy == nullptr) { abort(); }
 
   /*
    * Using the Connection class, register the symmetric heap with the
@@ -86,8 +81,7 @@ void NetworkImpl::heap_memory_rkey(char *local_heap_base, size_t heap_size,
    */
   hipStream_t stream;
   CHECK_HIP(hipStreamCreateWithFlags(&stream, hipStreamNonBlocking));
-  CHECK_HIP(hipMemcpyAsync(host_rkey_cpy, heap_rkey, rkeys_size,
-                           hipMemcpyDeviceToHost, stream));
+  CHECK_HIP(hipMemcpyAsync(host_rkey_cpy, heap_rkey, rkeys_size, hipMemcpyDeviceToHost, stream));
   CHECK_HIP(hipStreamSynchronize(stream));
 
   /*
@@ -101,8 +95,7 @@ void NetworkImpl::heap_memory_rkey(char *local_heap_base, size_t heap_size,
    * Copy the recently updated host-side heap base remote key array back
    * to the device-side memory.
    */
-  CHECK_HIP(hipMemcpyAsync(heap_rkey, host_rkey_cpy, rkeys_size,
-                           hipMemcpyHostToDevice, stream));
+  CHECK_HIP(hipMemcpyAsync(heap_rkey, host_rkey_cpy, rkeys_size, hipMemcpyHostToDevice, stream));
   CHECK_HIP(hipStreamSynchronize(stream));
   CHECK_HIP(hipStreamDestroy(stream));
 
@@ -120,105 +113,67 @@ void NetworkImpl::heap_memory_rkey(char *local_heap_base, size_t heap_size,
 }
 
 void NetworkImpl::setup_gpu_qps(GPUIBBackend *B) {
-  /*
-   * Determine how many connections are needed.
-   * The number of connections depends on the connection type and the
-   * number of workgroups.
-   */
   int connections;
   connection->get_remote_conn(&connections);
   connections *= num_blocks;
-
-  /*
-   * Allocate device-side memory for the queue pairs.
-   */
   CHECK_HIP(hipMalloc(&gpu_qps, sizeof(QueuePair) * connections));
-
-  /*
-   * For every connection, initialize the QueuePair.
-   */
   for (int i = 0; i < connections; i++) {
     new (&gpu_qps[i]) QueuePair(B);
     connection->init_gpu_qp_from_connection(&gpu_qps[i], i);
   }
 }
 
-__host__ void NetworkImpl::networkHostSetup(GPUIBBackend *B) {
+void NetworkImpl::networkHostSetup(GPUIBBackend *B) {
   num_pes = B->num_pes;
   my_pe = B->my_pe;
   num_blocks = B->num_blocks_;
-
   connection = new Connection(B, 0);
-
   connection->initialize(B->num_blocks_);
-
   const auto &heap_bases{B->heap.get_heap_bases()};
-  heap_memory_rkey(heap_bases[my_pe], B->heap.get_size(), B->thread_comm,
-                   B->heap.is_managed());
-
+  heap_memory_rkey(heap_bases[my_pe], B->heap.get_size(), B->thread_comm, B->heap.is_managed());
   setup_atomic_region();
-
   connection->post_wqes();
-
   setup_gpu_qps(B);
 }
 
-__host__ void NetworkImpl::networkHostFinalize() {
+void NetworkImpl::networkHostFinalize() {
   CHECK_HIP(hipFree(atomic_ret));
   atomic_ret = nullptr;
-
   CHECK_HIP(hipFree(gpu_qps));
   gpu_qps = nullptr;
-
   connection->free_rkey_handle(heap_rkey);
-
   connection->finalize();
   delete connection;
   connection = nullptr;
 }
 
-__host__ void NetworkImpl::networkHostInit(GPUIBContext *ctx, int buffer_id) {
+void NetworkImpl::networkHostInit(GPUIBContext *ctx, int buffer_id) {
   int remote_conn = getNumQueuePairs();
-
   CHECK_HIP(hipMalloc(&ctx->device_qp_proxy, remote_conn * sizeof(QueuePair)));
-
   for (int i = 0; i < getNumQueuePairs(); i++) {
-    /*
-     * RC gpu_qp is actually [NUM_PE][NUM_BLOCK] qps but is flattened.
-     * Each num_pe entry contains num_block QPs connected to that PE.
-     * For RC, we need to iterate gpu_qp[i][buffer_id] to collect a
-     * single QP for each connected PE in order to build context.
-     */
     int offset = num_blocks * i + buffer_id;
     new (ctx->getQueuePair(i)) QueuePair(gpu_qps[offset]);
-
     auto *qp = ctx->getQueuePair(i);
     qp->global_qp = &gpu_qps[offset];
     qp->num_cqs = getNumQueuePairs();
-    qp->atomic_ret.atomic_base_ptr =
-        &atomic_ret->atomic_base_ptr[max_nb_atomic * buffer_id];
+    qp->atomic_ret.atomic_base_ptr = &atomic_ret->atomic_base_ptr[max_nb_atomic * buffer_id];
     qp->base_heap = ctx->base_heap;
   }
 }
 
-__device__ void NetworkImpl::networkGpuInit(GPUIBContext *ctx,
-                                              int buffer_id) {
+__device__ void NetworkImpl::networkGpuInit(GPUIBContext *ctx, int buffer_id) {
   for (int i = 0; i < getNumQueuePairs(); i++) {
     int offset = num_blocks * i + buffer_id;
-
     auto *qp = ctx->getQueuePair(i);
     new (qp) QueuePair(gpu_qps[offset]);
-
     qp->global_qp = &gpu_qps[offset];
     qp->num_cqs = getNumQueuePairs();
-    qp->atomic_ret.atomic_base_ptr =
-        &atomic_ret->atomic_base_ptr[max_nb_atomic * buffer_id];
+    qp->atomic_ret.atomic_base_ptr = &atomic_ret->atomic_base_ptr[max_nb_atomic * buffer_id];
     qp->base_heap = ctx->base_heap;
   }
 }
 
-__device__ __host__ QueuePair *NetworkImpl::getQueuePair(QueuePair *qp_handle,
-                                                           int pe) {
+__device__ __host__ QueuePair *NetworkImpl::getQueuePair(QueuePair *qp_handle, int pe) {
   return &qp_handle[pe];
 }
 
