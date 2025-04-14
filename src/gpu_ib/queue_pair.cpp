@@ -24,7 +24,6 @@
 
 #include <hip/hip_runtime.h>
 
-#include "rocshmem_config.h"
 #include "backend_ib.hpp"
 #include "endian.hpp"
 #include "segment_builder.hpp"

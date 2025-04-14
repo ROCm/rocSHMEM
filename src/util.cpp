@@ -26,8 +26,6 @@
 #include <cstdlib>
 #include <vector>
 
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
-
 namespace rocshmem {
 
 __constant__ int* print_lock;

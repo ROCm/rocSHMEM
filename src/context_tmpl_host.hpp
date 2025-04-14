@@ -23,7 +23,6 @@
 #ifndef LIBRARY_SRC_CONTEXT_TMPL_HOST_HPP_
 #define LIBRARY_SRC_CONTEXT_TMPL_HOST_HPP_
 
-#include "rocshmem_config.h"
 #include "gpu_ib/context_ib_host.hpp"
 
 namespace rocshmem {

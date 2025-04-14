@@ -23,7 +23,6 @@
 #ifndef LIBRARY_SRC_CONTEXT_TMPL_DEVICE_HPP_
 #define LIBRARY_SRC_CONTEXT_TMPL_DEVICE_HPP_
 
-#include "rocshmem_config.h"
 #include "gpu_ib/context_ib_device.hpp"
 
 namespace rocshmem {
