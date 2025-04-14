@@ -226,22 +226,60 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   mlx_obj.cq.out = &cq_out;
   mlx5dv_init_obj(&mlx_obj, MLX5DV_OBJ_CQ);
 
-  gpu_qp->cq_log_size = log2(cq_out.cqe_cnt);
-  gpu_qp->cq_size = cq_out.cqe_cnt;
+  /*
+   * struct mlx5dv_cq {
+   *   void                    *buf;
+   *   __be32                  *dbrec;
+   *   uint32_t                cqe_cnt;
+   *   uint32_t                cqe_size;
+   *   void                    *cq_uar;
+   *   uint32_t                cqn;
+   *   uint64_t                comp_mask;
+   * };
+  */
+  gpu_qp->current_cq_q_H = reinterpret_cast<mlx5_cqe64*>(cq_out.buf);
+  gpu_qp->cq_cnt = cq_out.cqe_cnt;
+  gpu_qp->cq_log_cnt = log2(cq_out.cqe_cnt);
+  gpu_qp->cq_size = cq_out.cqe_size;
   gpu_qp->current_cq_q = reinterpret_cast<mlx5_cqe64*>(cq_out.buf);
   gpu_qp->dbrec_cq = reinterpret_cast<volatile uint32_t*>(cq_out.dbrec);
-  gpu_qp->current_cq_q_H = reinterpret_cast<mlx5_cqe64*>(cq_out.buf);
 
   mlx5dv_qp qp_out;
   mlx_obj.qp.in = qps[conn_num];
   mlx_obj.qp.out = &qp_out;
   mlx5dv_init_obj(&mlx_obj, MLX5DV_OBJ_QP);
 
-  gpu_qp->max_nwqe = qp_out.sq.wqe_cnt;
+  /*
+   * struct mlx5dv_qp {
+   *   __be32 *dbrec;
+   *   struct {
+   *     void *buf;
+   *     uint32_t wqe_cnt;
+   *     uint32_t stride;
+   *   } sq;
+   *   struct {
+   *     void *buf;
+   *     uint32_t wqe_cnt;
+   *     uint32_t stride;
+   *   } rq;
+   *   struct {
+   *     void *reg;
+   *     uint32_t size;
+   *   } bf;
+   *   uint64_t comp_mask;
+   *   off_t uar_mmap_offset;
+   *   uint32_t tirn;
+   *   uint32_t tisn;
+   *   uint32_t rqn;
+   *   uint32_t sqn;
+   *   uint64_t tir_icm_addr;
+   * };
+   */
   volatile uint32_t* dbrec_send = qp_out.dbrec + 1;
-  gpu_qp->current_sq = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
   gpu_qp->dbrec_send = reinterpret_cast<volatile uint32_t*>(dbrec_send);
   gpu_qp->current_sq_H = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
+  gpu_qp->current_sq = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
+  gpu_qp->max_nwqe = qp_out.sq.wqe_cnt;
   gpu_qp->setDBval(*(reinterpret_cast<uint64_t*>(qp_out.sq.buf)));
 
   int hip_dev_id{-1};

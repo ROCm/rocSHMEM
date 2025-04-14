@@ -118,8 +118,8 @@ __device__ void QueuePair::quiet_internal() {
    * Generate a pointer to the completion queue entry.
    */
   cq_consumer_counter = cq_consumer_counter + quiet_val - 1;
-  uint32_t indx = (cq_consumer_counter % cq_size);
-  mlx5_cqe64 *cqe_entry = &current_cq_q[indx];
+  uint32_t index = (cq_consumer_counter % cq_cnt);
+  mlx5_cqe64 *cqe_entry = &current_cq_q[index];
 
   /*
    * Access the op_own value in the completion queue entry.
@@ -130,8 +130,7 @@ __device__ void QueuePair::quiet_internal() {
   /*
    * If the completion queue entry is not valid, wait for it to become so.
    */
-  while (!((val_op_own & 0x1) == ((cq_consumer_counter >> cq_log_size) & 1)) ||
-         ((val_op_own) >> 4) == 0xF) {
+  while (!((val_op_own & 0x1) == ((cq_consumer_counter >> cq_log_cnt) & 1)) || ((val_op_own) >> 4) == 0xF) {
     val_ld = uncached_load_ubyte(&(cqe_entry->op_own));
     val_op_own = val_ld;
   }
@@ -324,11 +323,11 @@ __device__ void QueuePair::atomic_nofetch(void *dest, int64_t value,
 __device__ void QueuePair::waitCQSpace(int num_msgs) {
   // We cannot post more outstanding requests than the completion queue
   // size.  Force a quiet if we are out of space.
-  if ((quiet_counter + num_msgs) >= cq_size) {
+  if ((quiet_counter + num_msgs) >= cq_cnt) {
     GPU_DPRINTF(
         "*** inside post_cq forcing flush: outstanding %d "
-        "adding %d cq_size %d\n",
-        quiet_counter, num_msgs, cq_size);
+        "adding %d cq_cnt %d\n",
+        quiet_counter, num_msgs, cq_cnt);
 
     quiet_single<THREAD>();
   }

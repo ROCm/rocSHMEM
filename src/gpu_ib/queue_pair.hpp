@@ -278,18 +278,12 @@ class QueuePair {
   /*
    * Base pointer of this QP's CQ
    */
-  mlx5_cqe64 *current_cq_q{nullptr};
   mlx5_cqe64 *current_cq_q_H{nullptr};
 
   /*
    * Pointer to the doorbell record for this SQ.
    */
   volatile uint32_t *dbrec_send{nullptr};
-
-  /*
-   * Pointer to the doorbell record for the CQ.
-   */
-  volatile uint32_t *dbrec_cq{nullptr};
 
   atomic_ret_t atomic_ret{};
 
@@ -315,9 +309,22 @@ class QueuePair {
    */
   uint32_t cq_consumer_counter{0};
 
-  uint16_t cq_log_size{0};
-
-  uint16_t cq_size{0};
+  /*
+   * struct mlx5dv_cq {
+   *   void                    *buf;
+   *   __be32                  *dbrec;
+   *   uint32_t                cqe_cnt;
+   *   uint32_t                cqe_size;
+   *   void                    *cq_uar;
+   *   uint32_t                cqn;
+   *   uint64_t                comp_mask;
+   * };
+  */
+  mlx5_cqe64 *current_cq_q{nullptr};
+  volatile uint32_t *dbrec_cq{nullptr};
+  uint32_t cq_cnt{0};
+  uint32_t cq_log_cnt{0};
+  uint32_t cq_size{0};
 
   uint32_t ctrl_qp_sq{0};
 
