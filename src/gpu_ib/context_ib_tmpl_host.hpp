@@ -23,78 +23,67 @@
 #ifndef LIBRARY_SRC_GPU_IB_CONTEXT_IB_TMPL_HOST_HPP_
 #define LIBRARY_SRC_GPU_IB_CONTEXT_IB_TMPL_HOST_HPP_
 
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "host/host_templates.hpp"
 
 namespace rocshmem {
 
 template <typename T>
-__host__ void GPUIBHostContext::p(T *dest, T value, int pe) {
+void GPUIBHostContext::p(T *dest, T value, int pe) {
   host_interface->p<T>(dest, value, pe, context_window_info);
 }
 
 template <typename T>
-__host__ void GPUIBHostContext::put(T *dest, const T *source, size_t nelems,
-                                    int pe) {
+void GPUIBHostContext::put(T *dest, const T *source, size_t nelems, int pe) {
   host_interface->put<T>(dest, source, nelems, pe, context_window_info);
 }
 
 template <typename T>
-__host__ void GPUIBHostContext::put_nbi(T *dest, const T *source, size_t nelems,
-                                        int pe) {
+void GPUIBHostContext::put_nbi(T *dest, const T *source, size_t nelems, int pe) {
   host_interface->put_nbi<T>(dest, source, nelems, pe, context_window_info);
 }
 
 template <typename T>
-__host__ void GPUIBHostContext::amo_add(void *dst, T value, int pe) {
+void GPUIBHostContext::amo_add(void *dst, T value, int pe) {
   host_interface->amo_add(dst, value, pe, context_window_info);
 }
 
 template <typename T>
-__host__ void GPUIBHostContext::amo_cas(void *dst, T value, T cond, int pe) {
+void GPUIBHostContext::amo_cas(void *dst, T value, T cond, int pe) {
   host_interface->amo_cas(dst, value, cond, pe, context_window_info);
 }
 
 template <typename T>
-__host__ T GPUIBHostContext::amo_fetch_add(void *dst, T value, int pe) {
+T GPUIBHostContext::amo_fetch_add(void *dst, T value, int pe) {
   return host_interface->amo_fetch_add(dst, value, pe, context_window_info);
 }
 
 template <typename T>
-__host__ T GPUIBHostContext::amo_fetch_cas(void *dst, T value, T cond, int pe) {
-  return host_interface->amo_fetch_cas(dst, value, cond, pe,
-                                       context_window_info);
+T GPUIBHostContext::amo_fetch_cas(void *dst, T value, T cond, int pe) {
+  return host_interface->amo_fetch_cas(dst, value, cond, pe, context_window_info);
 }
 
 template <typename T>
-__host__ void GPUIBHostContext::wait_until(T *ivars, int cmp, T val) {
+void GPUIBHostContext::wait_until(T *ivars, int cmp, T val) {
   host_interface->wait_until<T>(ivars, cmp, val, context_window_info);
 }
 
 template <typename T>
-__host__ void GPUIBHostContext::wait_until_all(T *ivars, size_t nelems,
-                                               const int* status,
-                                               int cmp, T val) {
+void GPUIBHostContext::wait_until_all(T *ivars, size_t nelems, const int* status, int cmp, T val) {
   host_interface->wait_until_all<T>(ivars, nelems, status, cmp, val, context_window_info);
 }
 
 template <typename T>
-__host__ size_t GPUIBHostContext::wait_until_any(T *ivars, size_t nelems,
-                                               const int* status,
-                                               int cmp, T val) {
+size_t GPUIBHostContext::wait_until_any(T *ivars, size_t nelems, const int* status, int cmp, T val) {
   return host_interface->wait_until_any<T>(ivars, nelems, status, cmp, val, context_window_info);
 }
 
 template <typename T>
-__host__ size_t GPUIBHostContext::wait_until_some(T *ivars, size_t nelems,
-                                                 size_t* indices,
-                                                 const int* status,
-                                                 int cmp, T val) {
+size_t GPUIBHostContext::wait_until_some(T *ivars, size_t nelems, size_t* indices, const int* status, int cmp, T val) {
   return host_interface->wait_until_some<T>(ivars, nelems, indices, status, cmp, val, context_window_info);
 }
 
 template <typename T>
-__host__ int GPUIBHostContext::test(T *ivars, int cmp, T val) {
+int GPUIBHostContext::test(T *ivars, int cmp, T val) {
   return host_interface->test<T>(ivars, cmp, val, context_window_info);
 }
 

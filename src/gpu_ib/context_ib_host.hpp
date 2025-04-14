@@ -29,65 +29,57 @@ namespace rocshmem {
 
 class GPUIBHostContext : public Context {
  public:
-  __host__ GPUIBHostContext(GPUIBBackend *b);
+  GPUIBHostContext(GPUIBBackend *b);
 
-  __host__ ~GPUIBHostContext();
-
-  template <typename T>
-  __host__ void p(T *dest, T value, int pe);
+  ~GPUIBHostContext();
 
   template <typename T>
-  __host__ void put(T *dest, const T *source, size_t nelems, int pe);
+  void p(T *dest, T value, int pe);
 
   template <typename T>
-  __host__ void put_nbi(T *dest, const T *source, size_t nelems, int pe);
-
-  __host__ void putmem(void *dest, const void *source, size_t nelems, int pe);
-
-  __host__ void putmem_nbi(void *dest, const void *source, size_t nelems,
-                           int pe);
+  void put(T *dest, const T *source, size_t nelems, int pe);
 
   template <typename T>
-  __host__ void amo_add(void *dst, T value, int pe);
+  void put_nbi(T *dest, const T *source, size_t nelems, int pe);
+
+  void putmem(void *dest, const void *source, size_t nelems, int pe);
+
+  void putmem_nbi(void *dest, const void *source, size_t nelems, int pe);
 
   template <typename T>
-  __host__ void amo_cas(void *dst, T value, T cond, int pe);
+  void amo_add(void *dst, T value, int pe);
 
   template <typename T>
-  __host__ T amo_fetch_add(void *dst, T value, int pe);
+  void amo_cas(void *dst, T value, T cond, int pe);
 
   template <typename T>
-  __host__ T amo_fetch_cas(void *dst, T value, T cond, int pe);
-
-  __host__ void fence();
-
-  __host__ void quiet();
-
-  __host__ void barrier_all();
-
-  __host__ void sync_all();
+  T amo_fetch_add(void *dst, T value, int pe);
 
   template <typename T>
-  __host__ void wait_until(T *ivars, int cmp, T val);
+  T amo_fetch_cas(void *dst, T value, T cond, int pe);
+
+  void fence();
+
+  void quiet();
+
+  void barrier_all();
+
+  void sync_all();
 
   template <typename T>
-  __host__ size_t wait_until_any(T *ivars, size_t nelems,
-                                 const int *status,
-                                 int cmp, T val);
+  void wait_until(T *ivars, int cmp, T val);
 
   template <typename T>
-  __host__ void wait_until_all(T *ivars, size_t nelems,
-                               const int *status,
-                               int cmp, T val);
+  size_t wait_until_any(T *ivars, size_t nelems, const int *status, int cmp, T val);
 
   template <typename T>
-  __host__ size_t wait_until_some(T *ivars, size_t nelems,
-                                size_t* indices,
-                                const int *status,
-                                int cmp, T val);
+  void wait_until_all(T *ivars, size_t nelems, const int *status, int cmp, T val);
 
   template <typename T>
-  __host__ int test(T *ivars, int cmp, T val);
+  size_t wait_until_some(T *ivars, size_t nelems, size_t* indices, const int *status, int cmp, T val);
+
+  template <typename T>
+  int test(T *ivars, int cmp, T val);
 
  public:
   /* Pointer to the backend's host interface */

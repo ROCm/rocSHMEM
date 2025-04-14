@@ -24,51 +24,42 @@
 
 #include <mpi.h>
 
-#include "rocshmem_config.h"
 #include "context_incl.hpp"
 #include "backend_ib.hpp"
 #include "host/host.hpp"
 
 namespace rocshmem {
 
-__host__ 
 GPUIBHostContext::GPUIBHostContext(GPUIBBackend *b)
     : Context(b) {
   host_interface = b->host_interface;
   context_window_info = host_interface->acquire_window_context();
 }
 
-__host__ 
 GPUIBHostContext::~GPUIBHostContext() {
   host_interface->release_window_context(context_window_info);
 }
 
-__host__ 
 void GPUIBHostContext::putmem_nbi(void *dest, const void *source, size_t nelems, int pe) {
   host_interface->putmem_nbi(dest, source, nelems, pe, context_window_info);
 }
 
-__host__ 
 void GPUIBHostContext::putmem(void *dest, const void *source, size_t nelems, int pe) {
   host_interface->putmem(dest, source, nelems, pe, context_window_info);
 }
 
-__host__ 
 void GPUIBHostContext::fence() {
   host_interface->fence(context_window_info);
 }
 
-__host__ 
 void GPUIBHostContext::quiet() {
   host_interface->quiet(context_window_info);
 }
 
-__host__ 
 void GPUIBHostContext::sync_all() {
   host_interface->sync_all(context_window_info);
 }
 
-__host__ 
 void GPUIBHostContext::barrier_all() {
   host_interface->barrier_all(context_window_info);
 }

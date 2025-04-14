@@ -25,19 +25,17 @@
 #include <hip/hip_runtime.h>
 #include <rocshmem/rocshmem.hpp>
 
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "context_incl.hpp"
 #include "backend_ib.hpp"
 #include "queue_pair.hpp"
 
 namespace rocshmem {
 
-__host__ GPUIBContext::GPUIBContext(GPUIBBackend *backend, int idx)
+GPUIBContext::GPUIBContext(GPUIBBackend *backend, int idx)
     : Context(backend) {
   networkImpl = backend->networkImpl;
   base_heap = backend->heap.get_heap_bases().data();
   networkImpl.networkHostInit(this, idx);
-
   barrier_sync = backend->barrier_sync;
 }
 

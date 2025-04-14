@@ -32,7 +32,7 @@ class QueuePair;
 
 class GPUIBContext : public Context {
  public:
-  __host__ GPUIBContext(GPUIBBackend *b, int idx);
+  GPUIBContext(GPUIBBackend *b, int idx);
 
   __device__ __host__ QueuePair *getQueuePair(int pe);
 
