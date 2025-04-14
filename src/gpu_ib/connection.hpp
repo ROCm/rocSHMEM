@@ -24,14 +24,11 @@
 #define LIBRARY_SRC_GPU_IB_CONNECTION_HPP_
 
 #include <infiniband/verbs.h>
-
 extern "C" {
 #include <infiniband/mlx5dv.h>
 }
-
+#include <rocshmem/rocshmem.hpp>
 #include <vector>
-
-#include "rocshmem/rocshmem.hpp"
 
 namespace rocshmem {
 
@@ -112,7 +109,7 @@ class Connection {
 
   ~Connection();
 
-  void initialize(int num_block);
+  void initialize(int num_contexts);
 
   void finalize();
 
@@ -156,11 +153,8 @@ class Connection {
   template <typename T>
   void try_to_modify_qp(ibv_qp* qp, T state);
 
-  void allocate_dynamic_members(int num_block);
+  void allocate_dynamic_members(int num_contexts);
 
-  /*
-   * ibv interface functions must be static.
-   */
   static void* buf_alloc(ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type);
 
   static void buf_release(ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type);

@@ -219,11 +219,6 @@ class GPUIBBackend {
   MPI_Comm backend_comm{};
 
   /**
-   * @brief Holds number of blocks used in library
-   */
-  size_t num_blocks_{1};
-
-  /**
    * @brief Scratchpad for the internal barrier algorithms.
    */
   int64_t *barrier_sync{nullptr};

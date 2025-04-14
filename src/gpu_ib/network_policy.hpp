@@ -48,7 +48,7 @@ class NetworkImpl {
    * @brief setup the network resources and initialization for the
    * GPUIBBackend
    */
-  __host__ void networkHostSetup(GPUIBBackend *B);
+  __host__ void networkHostSetup(GPUIBBackend *backend);
 
   /**
    * @brief deallocate and close the network resources
@@ -71,11 +71,6 @@ class NetworkImpl {
   __device__ __host__ QueuePair *getQueuePair(QueuePair *qp, int pe);
 
   /**
-   * @brief returns the numbers of QPs used per the calling PE
-   */
-  __device__ __host__ int getNumQueuePairs();
-
-  /**
    * @brief returns the number of PEs accessible via network
    */
   __device__ __host__ int getNumDest() { return num_pes; }
@@ -84,8 +79,7 @@ class NetworkImpl {
   /**
    * @brief flag to indicated that the helper thread reach this milestone
    */
-  void heap_memory_rkey(char *local_heap_base, size_t heap_size,
-                        MPI_Comm thread_comm, bool is_managed);
+  void heap_memory_rkey(char *local_heap_base, size_t heap_size, MPI_Comm thread_comm);
 
   /**
    * @brief Allocate and initialize the atomic region.
@@ -103,7 +97,7 @@ class NetworkImpl {
    *
    * Upon completion, the gpu_qps member will be initialized.
    */
-  void setup_gpu_qps(GPUIBBackend *B);
+  void setup_gpu_qps(GPUIBBackend *backend);
 
   /**
    * @brief The backend delegates some InfiniBand connection setup to
@@ -123,9 +117,9 @@ class NetworkImpl {
   int my_pe{-1};
 
   /**
-   * @brief Number of WG that will be performing communication
+   * @brief Number of contexts that will be performing communication
    */
-  int num_blocks{0};
+  int num_contexts{0};
 
   /**
    * @brief Set of QueuePairs used by device to do networking.

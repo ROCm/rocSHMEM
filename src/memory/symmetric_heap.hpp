@@ -104,13 +104,6 @@ class SymmetricHeap {
     return remote_heap_info_.get_heap_bases();
   }
 
-  /**
-   * @brief Returns is the heap is allocated with managed memory
-   *
-   * @return bool
-   */
-  bool is_managed() { return single_heap_.is_managed(); }
-
  private:
   /**
    * @brief Processing element's implementation of heap
@@ -120,8 +113,7 @@ class SymmetricHeap {
   /**
    * @brief Implementation of remote heaps
    */
-  RemoteHeapInfoType remote_heap_info_{single_heap_.get_base_ptr(),
-                                       single_heap_.get_size()};
+  RemoteHeapInfoType remote_heap_info_{single_heap_.get_base_ptr(), single_heap_.get_size()};
 };
 
 }  // namespace rocshmem

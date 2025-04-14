@@ -74,10 +74,8 @@ GPUIBBackend::GPUIBBackend(MPI_Comm comm) {
 
   CHECK_HIP(hipMalloc(&print_lock, sizeof(*print_lock)));
   *print_lock = 0;
-
   int* print_lock_addr{nullptr};
   CHECK_HIP(hipGetSymbolAddress(reinterpret_cast<void**>(&print_lock_addr), HIP_SYMBOL(print_lock)));
-
   CHECK_HIP(hipMemcpy(print_lock_addr, &print_lock, sizeof(print_lock), hipMemcpyDefault));
 
   int* device_backend_proxy_addr{nullptr};
@@ -91,7 +89,6 @@ GPUIBBackend::GPUIBBackend(MPI_Comm comm) {
     std::stringstream sstream(maximum_num_contexts_str);
     sstream >> maximum_num_contexts_;
   }
-  num_blocks_ = maximum_num_contexts_;
 
   init_mpi_once(comm);
 

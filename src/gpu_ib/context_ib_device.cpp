@@ -32,30 +32,17 @@
 
 namespace rocshmem {
 
-__host__ GPUIBContext::GPUIBContext(GPUIBBackend *b, int idx)
-    : Context(b) {
-  networkImpl = b->networkImpl;
-  base_heap = b->heap.get_heap_bases().data();
+__host__ GPUIBContext::GPUIBContext(GPUIBBackend *backend, int idx)
+    : Context(backend) {
+  networkImpl = backend->networkImpl;
+  base_heap = backend->heap.get_heap_bases().data();
   networkImpl.networkHostInit(this, idx);
 
-  barrier_sync = b->barrier_sync;
-}
-
-__device__ void GPUIBContext::ctx_create() {
-  /* Nothing to do in the GPU_IB backend */
-  return;
+  barrier_sync = backend->barrier_sync;
 }
 
 __device__ __host__ QueuePair *GPUIBContext::getQueuePair(int pe) {
   return networkImpl.getQueuePair(device_qp_proxy, pe);
-}
-
-__device__ __host__ int GPUIBContext::getNumQueuePairs() {
-  return networkImpl.getNumQueuePairs();
-}
-
-__device__ __host__ int GPUIBContext::getNumDest() {
-  return networkImpl.getNumDest();
 }
 
 __device__ void GPUIBContext::fence() {
@@ -66,21 +53,16 @@ __device__ void GPUIBContext::fence(int pe) {
   fence_.flush();
 }
 
-__device__ void GPUIBContext::putmem_nbi(void *dest, const void *source,
-                                         size_t nelems, int pe) {
+__device__ void GPUIBContext::putmem_nbi(void *dest, const void *source, size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dest) - base_heap[my_pe];
-
   bool must_send_message = wf_coal_.coalesce(pe, source, dest, &nelems);
-  if (!must_send_message) {
-    return;
-  }
-
+  if (!must_send_message) return;
   auto *qp = getQueuePair(pe);
   qp->put_nbi<THREAD>(base_heap[pe] + L_offset, source, nelems, pe, true);
 }
 
 __device__ void GPUIBContext::quiet() {
-  for (int k = 0; k < getNumDest(); k++) {
+  for (int k = 0; k < networkImpl.num_pes; k++) {
     getQueuePair(k)->quiet_single_heavy<THREAD>(k);
   }
   fence_.flush();
@@ -92,17 +74,13 @@ __device__ void *GPUIBContext::shmem_ptr(const void *dest, int pe) {
 
 
 __device__ void GPUIBContext::threadfence_system() {
-  int thread_id = get_flat_block_id();
   __threadfence_system();
 }
 
-__device__ void GPUIBContext::putmem(void *dest, const void *source,
-                                     size_t nelems, int pe) {
+__device__ void GPUIBContext::putmem(void *dest, const void *source, size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dest) - base_heap[my_pe];
   bool must_send_message = wf_coal_.coalesce(pe, source, dest, &nelems);
-  if (!must_send_message) {
-    return;
-  }
+  if (!must_send_message) return;
   auto *qp = getQueuePair(pe);
   qp->put_nbi_cqe<THREAD>(base_heap[pe] + L_offset, source, nelems, pe, true);
   qp->quiet_single<THREAD>();
@@ -112,8 +90,7 @@ __device__ void GPUIBContext::putmem(void *dest, const void *source,
 /******************************************************************************
  ************************ WORKGROUP/WAVE-LEVEL RMA API ************************
  *****************************************************************************/
-__device__ void GPUIBContext::putmem_nbi_wave(void *dest, const void *source,
-                                              size_t nelems, int pe) {
+__device__ void GPUIBContext::putmem_nbi_wave(void *dest, const void *source, size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dest) - base_heap[my_pe];
   if (is_thread_zero_in_wave()) {
     auto *qp = getQueuePair(pe);
@@ -121,8 +98,7 @@ __device__ void GPUIBContext::putmem_nbi_wave(void *dest, const void *source,
   }
 }
 
-__device__ void GPUIBContext::putmem_wave(void *dest, const void *source,
-                                          size_t nelems, int pe) {
+__device__ void GPUIBContext::putmem_wave(void *dest, const void *source, size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dest) - base_heap[my_pe];
   auto *qp = getQueuePair(pe);
   if (is_thread_zero_in_wave()) {

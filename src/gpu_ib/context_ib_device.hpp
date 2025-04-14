@@ -36,13 +36,7 @@ class GPUIBContext : public Context {
 
   __device__ __host__ QueuePair *getQueuePair(int pe);
 
-  __device__ __host__ int getNumQueuePairs();
-
-  __device__ __host__ int getNumDest();
-
   __device__ __attribute__((noinline)) void threadfence_system();
-
-  __device__ void ctx_create();
 
   __device__ void ctx_destroy();
 

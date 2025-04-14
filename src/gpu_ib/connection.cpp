@@ -62,11 +62,11 @@ void Connection::reg_mr(void* ptr, size_t size, ibv_mr** mr) {
 unsigned Connection::total_number_connections() {
   int connections;
   get_remote_conn(&connections);
-  return backend->num_blocks_ * connections;
+  return backend->maximum_num_contexts_ * connections;
 }
 
-void Connection::initialize(int num_block) {
-  allocate_dynamic_members(num_block);
+void Connection::initialize(int num_contexts) {
+  allocate_dynamic_members(num_contexts);
   int ib_devices{0};
   dev_list = ibv_get_device_list(&ib_devices);
   GPUIB_CHECK_NNULL(dev_list, "ibv_get_device");
@@ -86,7 +86,7 @@ void Connection::initialize(int num_block) {
   int ib_fork_err = ibv_fork_init();
   GPUIB_CHECK_ZERO(ib_fork_err, "ibv_fork_init");
   create_qps(port, backend->my_pe, &ib_state->portinfo);
-  MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t) * num_block, MPI_CHAR, dest_info.data(), sizeof(dest_info_t) * num_block, MPI_CHAR, backend->thread_comm);
+  MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t) * num_contexts, MPI_CHAR, dest_info.data(), sizeof(dest_info_t) * num_contexts, MPI_CHAR, backend->thread_comm);
   for (int i{0}; i < qps.size(); i++) {
     change_status_rtr(qps[i], &dest_info[i], port);
   }
@@ -354,9 +354,9 @@ void Connection::post_dv_rc_wqe(int remote_conn) {
   mlx5_wqe_data_seg* data;
 
   for (int i{0}; i < remote_conn; i++) {
-    int num_blocks = backend->num_blocks_;
-    for (int j{0}; j < num_blocks; j++) {
-      int qp_index = i * num_blocks + j;
+    int num_contexts = backend->maximum_num_contexts_;
+    for (int j{0}; j < num_contexts; j++) {
+      int qp_index = i * num_contexts + j;
       uint64_t* ptr = get_address_sq(qp_index);
       const uint16_t nb_post = 1;
       for (uint16_t index{0}; index < nb_post; index++) {
@@ -394,8 +394,8 @@ void Connection::post_wqes() {
   post_dv_rc_wqe(remote_conn);
 }
 
-void Connection::allocate_dynamic_members(int num_blocks) {
-  dest_info.resize(backend->num_pes * num_blocks);
+void Connection::allocate_dynamic_members(int num_contexts) {
+  dest_info.resize(backend->num_pes * num_contexts);
 }
 
 }  // namespace rocshmem

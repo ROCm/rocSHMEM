@@ -79,13 +79,6 @@ class HeapMemory {
    */
   __host__ __device__ size_t get_size() { return size_; }
 
-  /**
-   * @brief Returns is the heap is allocated with managed memory
-   *
-   * @return bool
-   */
-  bool is_managed() { return allocator_.is_managed(); }
-
  private:
   /**
    * @brief Template type member with allocate and deallocate methods.

@@ -94,6 +94,4 @@ void MemoryAllocator::deallocate(void* ptr) {
   assert(false);
 }
 
-bool MemoryAllocator::is_managed() { return _managed; }
-
 }  // namespace rocshmem

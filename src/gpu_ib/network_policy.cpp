@@ -34,23 +34,12 @@
 namespace rocshmem {
 
 void NetworkImpl::setup_atomic_region() {
-  /*
-   * Allocate fine-grained device-side memory for the atomic return region.
-   */
-  allocate_atomic_region(&atomic_ret, num_blocks);
-
-  /*
-   * Register the atomic return region on the InfiniBand network.
-   */
-  connection->reg_mr(atomic_ret->atomic_base_ptr, sizeof(uint64_t) * max_nb_atomic * num_blocks, &mr);
-
-  /*
-   * Set member variable from class.
-   */
+  allocate_atomic_region(&atomic_ret, num_contexts);
+  connection->reg_mr(atomic_ret->atomic_base_ptr, sizeof(uint64_t) * max_nb_atomic * num_contexts, &mr);
   atomic_ret->atomic_lkey = htobe32(mr->lkey);
 }
 
-void NetworkImpl::heap_memory_rkey(char *local_heap_base, size_t heap_size, MPI_Comm thread_comm, bool is_managed) {
+void NetworkImpl::heap_memory_rkey(char *local_heap_base, size_t heap_size, MPI_Comm thread_comm) {
   /*
    * Allocate host-side memory to hold remote keys for all processing elements.
    */
@@ -88,8 +77,7 @@ void NetworkImpl::heap_memory_rkey(char *local_heap_base, size_t heap_size, MPI_
    * Do all-to-all exchange of symmetric heap base remote key between the
    * processing elements.
    */
-  MPI_Allgather(MPI_IN_PLACE, sizeof(uint32_t), MPI_CHAR, host_rkey_cpy,
-                sizeof(uint32_t), MPI_CHAR, thread_comm);
+  MPI_Allgather(MPI_IN_PLACE, sizeof(uint32_t), MPI_CHAR, host_rkey_cpy, sizeof(uint32_t), MPI_CHAR, thread_comm);
 
   /*
    * Copy the recently updated host-side heap base remote key array back
@@ -112,28 +100,28 @@ void NetworkImpl::heap_memory_rkey(char *local_heap_base, size_t heap_size, MPI_
   lkey = heap_mr->lkey;
 }
 
-void NetworkImpl::setup_gpu_qps(GPUIBBackend *B) {
+void NetworkImpl::setup_gpu_qps(GPUIBBackend *backend) {
   int connections;
   connection->get_remote_conn(&connections);
-  connections *= num_blocks;
+  connections *= num_contexts;
   CHECK_HIP(hipMalloc(&gpu_qps, sizeof(QueuePair) * connections));
-  for (int i = 0; i < connections; i++) {
-    new (&gpu_qps[i]) QueuePair(B);
+  for (int i{0}; i < connections; i++) {
+    new (&gpu_qps[i]) QueuePair(backend);
     connection->init_gpu_qp_from_connection(&gpu_qps[i], i);
   }
 }
 
-void NetworkImpl::networkHostSetup(GPUIBBackend *B) {
-  num_pes = B->num_pes;
-  my_pe = B->my_pe;
-  num_blocks = B->num_blocks_;
-  connection = new Connection(B);
-  connection->initialize(B->num_blocks_);
-  const auto &heap_bases{B->heap.get_heap_bases()};
-  heap_memory_rkey(heap_bases[my_pe], B->heap.get_size(), B->thread_comm, B->heap.is_managed());
+void NetworkImpl::networkHostSetup(GPUIBBackend *backend) {
+  num_pes = backend->num_pes;
+  my_pe = backend->my_pe;
+  num_contexts = backend->maximum_num_contexts_;
+  connection = new Connection(backend);
+  connection->initialize(num_contexts);
+  const auto &heap_bases{backend->heap.get_heap_bases()};
+  heap_memory_rkey(heap_bases[my_pe], backend->heap.get_size(), backend->thread_comm);
   setup_atomic_region();
   connection->post_wqes();
-  setup_gpu_qps(B);
+  setup_gpu_qps(backend);
 }
 
 void NetworkImpl::networkHostFinalize() {
@@ -148,26 +136,25 @@ void NetworkImpl::networkHostFinalize() {
 }
 
 void NetworkImpl::networkHostInit(GPUIBContext *ctx, int buffer_id) {
-  int remote_conn = getNumQueuePairs();
-  CHECK_HIP(hipMalloc(&ctx->device_qp_proxy, remote_conn * sizeof(QueuePair)));
-  for (int i = 0; i < getNumQueuePairs(); i++) {
-    int offset = num_blocks * i + buffer_id;
+  CHECK_HIP(hipMalloc(&ctx->device_qp_proxy, num_pes * sizeof(QueuePair)));
+  for (int i{0}; i < num_pes; i++) {
+    int offset = num_contexts * i + buffer_id;
     new (ctx->getQueuePair(i)) QueuePair(gpu_qps[offset]);
     auto *qp = ctx->getQueuePair(i);
     qp->global_qp = &gpu_qps[offset];
-    qp->num_cqs = getNumQueuePairs();
+    qp->num_cqs = num_pes;
     qp->atomic_ret.atomic_base_ptr = &atomic_ret->atomic_base_ptr[max_nb_atomic * buffer_id];
     qp->base_heap = ctx->base_heap;
   }
 }
 
 __device__ void NetworkImpl::networkGpuInit(GPUIBContext *ctx, int buffer_id) {
-  for (int i = 0; i < getNumQueuePairs(); i++) {
-    int offset = num_blocks * i + buffer_id;
+  for (int i{0}; i < num_pes; i++) {
+    int offset = num_contexts * i + buffer_id;
     auto *qp = ctx->getQueuePair(i);
     new (qp) QueuePair(gpu_qps[offset]);
     qp->global_qp = &gpu_qps[offset];
-    qp->num_cqs = getNumQueuePairs();
+    qp->num_cqs = num_pes;
     qp->atomic_ret.atomic_base_ptr = &atomic_ret->atomic_base_ptr[max_nb_atomic * buffer_id];
     qp->base_heap = ctx->base_heap;
   }
@@ -175,10 +162,6 @@ __device__ void NetworkImpl::networkGpuInit(GPUIBContext *ctx, int buffer_id) {
 
 __device__ __host__ QueuePair *NetworkImpl::getQueuePair(QueuePair *qp_handle, int pe) {
   return &qp_handle[pe];
-}
-
-__device__ __host__ int NetworkImpl::getNumQueuePairs() {
-  return num_pes;
 }
 
 }  // namespace rocshmem
