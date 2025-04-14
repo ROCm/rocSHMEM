@@ -24,28 +24,28 @@
 
 #include <cassert>
 
+#include "rocshmem_config.h"
 #include "constants.hpp"
 
 namespace rocshmem {
 
-void allocate_atomic_region(atomic_ret_t** atomic_ret, int num_wg) {
+void allocate_atomic_region(atomic_ret_t** atomic_ret, int num_contexts) {
   atomic_ret_t* tmp_ret{nullptr};
   /*
    * Allocate device-side control struct for the atomic return region.
    */
-  CHECK_HIP(
-      hipMalloc(reinterpret_cast<void**>(&tmp_ret), sizeof(atomic_ret_t)));
+  CHECK_HIP(hipMalloc(reinterpret_cast<void**>(&tmp_ret), sizeof(atomic_ret_t)));
 
   /*
    * Allocate fine-grained device-side memory for the atomic return
    * region.
    */
-  size_t size_bytes{max_nb_atomic * num_wg * sizeof(uint64_t)};
-#ifdef USE_UNCACHED_HEAP
-  CHECK_HIP(hipExtMallocWithFlags(reinterpret_cast<void**>(&tmp_ret->atomic_base_ptr), size_bytes, hipDeviceMallocUncached));
-#endif
+  size_t size_bytes{max_nb_atomic * num_contexts * sizeof(uint64_t)};
 #ifdef USE_FINEGRAINED_HEAP
   CHECK_HIP(hipExtMallocWithFlags(reinterpret_cast<void**>(&tmp_ret->atomic_base_ptr), size_bytes, hipDeviceMallocFinegrained));
+#endif
+#ifdef USE_UNCACHED_HEAP
+  CHECK_HIP(hipExtMallocWithFlags(reinterpret_cast<void**>(&tmp_ret->atomic_base_ptr), size_bytes, hipDeviceMallocUncached));
 #endif
 
   /*

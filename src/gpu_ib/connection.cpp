@@ -25,6 +25,7 @@
 
 #include "backend_ib.hpp"
 #include "queue_pair.hpp"
+#include "rocshmem_config.h"
 #include "util.hpp"
 
 namespace rocshmem {

@@ -27,6 +27,8 @@
 #include <hsa/hsa.h>
 #include <hsa/hsa_ext_amd.h>
 
+#include "rocshmem_config.h"
+
 namespace rocshmem {
 
 #define DO_PRAGMA(x) _Pragma(#x)

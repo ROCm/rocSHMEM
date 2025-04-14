@@ -39,7 +39,7 @@ struct atomic_ret_t {
   uint64_t atomic_counter;
 };
 
-void allocate_atomic_region(atomic_ret_t** atomic_ret, int num_wg);
+void allocate_atomic_region(atomic_ret_t** atomic_ret, int num_contexts);
 
 }  // namespace rocshmem
 
