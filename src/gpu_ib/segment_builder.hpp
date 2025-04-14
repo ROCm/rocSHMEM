@@ -34,14 +34,49 @@ class SegmentBuilder {
  public:
   __device__ SegmentBuilder(uint64_t wqe_idx, void *base);
 
+  /*
+   * struct mlx5_wqe_ctrl_seg {
+   *   __be32 opmod_idx_opcode;
+   *   __be32 qpn_ds;
+   *   uint8_t signature;
+   *   __be16 dci_stream_channel_id;
+   *   uint8_t fm_ce_se;
+   *   __be32 imm;
+   * } __attribute__((__packed__)) __attribute__((__aligned__(4)));
+   */
   __device__ void update_cntrl_seg(uint8_t opcode, uint16_t wqe_idx, uint32_t ctrl_qp_sq, uint64_t ctrl_sig, bool zero_byte_rd);
 
-  __device__ void update_atomic_data_seg(uint64_t atomic_data, uint64_t atomic_cmp);
+  /*
+   * struct mlx5_wqe_atomic_seg {
+   *   __be64 swap_add;
+   *   __be64 compare;
+   * };
+   */
+  __device__ void update_atomic_seg(uint64_t atomic_data, uint64_t atomic_cmp);
 
+  /*
+   * struct mlx5_wqe_raddr_seg {
+   *   __be64          raddr;
+   *   __be32          rkey;
+   *   __be32          reserved;
+   * };
+   */
   __device__ void update_rdma_seg(uintptr_t *raddr, uint32_t rkey);
 
+  /*
+   * struct mlx5_wqe_inl_data_seg {
+   *   uint32_t        byte_count;
+   * };
+   */
   __device__ void update_inl_data_seg(uintptr_t *laddr, int32_t size);
 
+  /*
+   * struct mlx5_wqe_data_seg {
+   * __be32 byte_count;
+   * __be32 lkey;
+   * __be64 addr;
+   * };
+   */
   __device__ void update_data_seg(uintptr_t *laddr, int32_t size, uint32_t lkey);
 
  private:

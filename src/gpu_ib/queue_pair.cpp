@@ -211,7 +211,7 @@ __device__ void QueuePair::update_posted_wqe_generic(int pe, int32_t size, uintp
   seg_build.update_rdma_seg(raddr, rkey_in_stack_frame);
 
   if (opcode == MLX5_OPCODE_ATOMIC_FA || opcode == MLX5_OPCODE_ATOMIC_CS) {
-    seg_build.update_atomic_data_seg(atomic_data, atomic_cmp);
+    seg_build.update_atomic_seg(atomic_data, atomic_cmp);
     size = 8;
     lkey_in_stack_frame = atomic_ret.atomic_lkey;
     laddr = &atomic_ret.atomic_base_ptr[atomic_ret_pos];
