@@ -269,7 +269,7 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
    *   uint64_t tir_icm_addr;
    * };
    */
-  volatile uint32_t* sq_dbrec = qp_out.dbrec + 1;
+  volatile uint32_t* sq_dbrec = qp_out.dbrec;
   gpu_qp->sq_dbrec = reinterpret_cast<volatile uint32_t*>(sq_dbrec);
   gpu_qp->sq_buf_head = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
   gpu_qp->sq_buf = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
