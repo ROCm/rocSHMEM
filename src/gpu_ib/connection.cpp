@@ -319,12 +319,12 @@ Connection::QPInitAttr Connection::qpattr(ibv_qp_cap cap) {
   return qpattr;
 }
 
-void Connection::post_dv_rc_wqe(int remote_conn) {
+void Connection::post_dv_rc_wqe() {
   mlx5_wqe_ctrl_seg* ctrl;
   mlx5_wqe_raddr_seg* rdma;
   mlx5_wqe_data_seg* data;
 
-  for (int i{0}; i < remote_conn; i++) {
+  for (int i{0}; i < backend->num_pes; i++) {
     int num_contexts = backend->maximum_num_contexts_;
     for (int j{0}; j < num_contexts; j++) {
       int qp_index = i * num_contexts + j;
@@ -354,10 +354,6 @@ void Connection::post_dv_rc_wqe(int remote_conn) {
       ptr = ptr + 4; // 32B
     }
   }
-}
-
-void Connection::post_wqes() {
-  post_dv_rc_wqe(backend->num_pes);
 }
 
 void Connection::allocate_dynamic_members(int num_contexts) {
