@@ -47,14 +47,9 @@ __device__ void SegmentBuilder::update_cntrl_seg(
              : 4;
   }
 
-  DS += 0;
-
   ctrl_seg.qpn_ds = (DS << 24) | ctrl_qp_sq;
-
   ctrl_seg.signature = ctrl_sig;
-
   ctrl_seg.fm_ce_se = ctrl_sig >> 24;
-
   ctrl_seg.imm = ctrl_sig >> 32;
 
   memcpy(&seg_ptr->ctrl_seg, &ctrl_seg, sizeof(mlx5_wqe_ctrl_seg));

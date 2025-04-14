@@ -87,8 +87,7 @@ class QueuePair {
    * @param[in] db_ring Denotes whether send queue door bell should be rung.
    */
   template <class level>
-  __device__ void put_nbi(void *dest, const void *source, size_t nelems, int pe,
-                          bool db_ring);
+  __device__ void put_nbi(void *dest, const void *source, size_t nelems, int pe, bool db_ring);
 
   /**
    * @brief Create and enqueue a non-blocking put work queue entry (wqe).
@@ -105,8 +104,7 @@ class QueuePair {
    * @param[in] db_ring Denotes whether send queue door bell should be rung.
    */
   template <class level>
-  __device__ void put_nbi_cqe(void *dest, const void *source, size_t nelems,
-                              int pe, bool db_ring);
+  __device__ void put_nbi_cqe(void *dest, const void *source, size_t nelems, int pe, bool db_ring);
 
   /**
    * @brief Consume a completion queue entry from this queue pair's
@@ -150,8 +148,7 @@ class QueuePair {
    *
    * @return An atomic value
    */
-  __device__ int64_t atomic_fetch(void *dest, int64_t value, int64_t cond,
-                                  int pe, bool db_ring, uint8_t atomic_op);
+  __device__ int64_t atomic_fetch(void *dest, int64_t value, int64_t cond, int pe, bool db_ring, uint8_t atomic_op);
 
   /**
    * @brief Create and enqueue an atomic fetch work queue entry (wqe).
@@ -163,8 +160,7 @@ class QueuePair {
    * @param[in] db_ring Denotes whether send queue door bell should be rung.
    * @param[in] atomic_op The atomic operation to perform.
    */
-  __device__ void atomic_nofetch(void *dest, int64_t value, int64_t cond,
-                                 int pe, bool db_ring, uint8_t atomic_op);
+  __device__ void atomic_nofetch(void *dest, int64_t value, int64_t cond, int pe, bool db_ring, uint8_t atomic_op);
 
   /**
    * @brief Helper method to set the doorbell's value.
@@ -214,8 +210,7 @@ class QueuePair {
    * @param[in] dbrec_val
    * @param[in] opcode
    */
-  __device__ void compute_db_val_opcode(uint64_t *db_val, uint16_t dbrec_val,
-                                        uint8_t opcode);
+  __device__ void compute_db_val_opcode(uint64_t *db_val, uint16_t dbrec_val, uint8_t opcode);
 
   /**
    * @brief Helper method that sets the field in a work queue entry to
