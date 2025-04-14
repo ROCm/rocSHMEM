@@ -326,9 +326,6 @@ Connection::RtsState Connection::rts(dest_info_t* dest) {
   return rts;
 }
 
-void Connection::get_remote_conn(int* remote_conn) {
-}
-
 void Connection::initialize_rkey_handle(uint32_t** heap_rkey_handle, ibv_mr* mr) {
   CHECK_HIP(hipHostMalloc(heap_rkey_handle, sizeof(uint32_t) * backend->num_pes));
   (*heap_rkey_handle)[backend->my_pe] = mr->rkey;

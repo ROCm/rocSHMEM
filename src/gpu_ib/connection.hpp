@@ -119,8 +119,6 @@ class Connection {
 
   void reg_mr(void* ptr, size_t size, ibv_mr** mr);
 
-  void get_remote_conn(int* remote_conn);
-
   unsigned total_number_connections();
 
   void initialize_rkey_handle(uint32_t** heap_rkey_handle, ibv_mr* mr);

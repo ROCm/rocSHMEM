@@ -101,9 +101,7 @@ void NetworkImpl::heap_memory_rkey(char *local_heap_base, size_t heap_size, MPI_
 }
 
 void NetworkImpl::setup_gpu_qps(GPUIBBackend *backend) {
-  int connections;
-  connection->get_remote_conn(&connections);
-  connections *= num_contexts;
+  int connections = connection->total_number_connections();
   CHECK_HIP(hipMalloc(&gpu_qps, sizeof(QueuePair) * connections));
   for (int i{0}; i < connections; i++) {
     new (&gpu_qps[i]) QueuePair(backend);
