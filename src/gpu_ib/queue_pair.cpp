@@ -179,11 +179,9 @@ __device__ void QueuePair::update_posted_wqe_generic(int pe, int32_t size, uintp
   uint64_t my_sq_counter = L.threadAtomicAdd(&sq_counter, num_wqes);
   uint64_t my_sq_index = my_sq_counter % sq_wqe_cnt;
 
-  // 16-bit little endian version of the SQ index needed to build the cntrl
-  // segment in the WQE.
-  uint16_t le_sq_counter;
+  uint16_t be_sq_counter;
   uint16_t sq_counter_u16 = my_sq_counter;
-  swap_endian_store(&le_sq_counter, sq_counter_u16);
+  swap_endian_store(&be_sq_counter, sq_counter_u16);
 
   uint32_t lkey_in_stack_frame = lkey;
   uint32_t rkey_in_stack_frame = rkey;
@@ -200,7 +198,7 @@ __device__ void QueuePair::update_posted_wqe_generic(int pe, int32_t size, uintp
    * keep track of placing the segments in the correct location.
    */
   SegmentBuilder seg_build(my_sq_index, sq_buf);
-  seg_build.update_cntrl_seg(opcode, le_sq_counter, ctrl_qp_sq_in_stack_frame, ctrl_sig_in_stack_frame, zero_byte_rd);
+  seg_build.update_cntrl_seg(opcode, be_sq_counter, ctrl_qp_sq_in_stack_frame, ctrl_sig_in_stack_frame, zero_byte_rd);
   seg_build.update_rdma_seg(raddr, rkey_in_stack_frame);
 
   if (opcode == MLX5_OPCODE_ATOMIC_FA || opcode == MLX5_OPCODE_ATOMIC_CS) {
@@ -216,7 +214,7 @@ __device__ void QueuePair::update_posted_wqe_generic(int pe, int32_t size, uintp
     seg_build.update_data_seg(laddr, size, lkey_in_stack_frame);
   }
 
-  L.template finishPost<cqe>(this, ring_db, num_wqes, pe, le_sq_counter, opcode);
+  L.template finishPost<cqe>(this, ring_db, num_wqes, pe, be_sq_counter, opcode);
 }
 
 /******************************************************************************
