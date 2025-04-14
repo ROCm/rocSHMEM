@@ -19,6 +19,13 @@
 # THE SOFTWARE.
 
 #!/bin/bash
+if true || tty -s; then
+  PRETTY_FAILED="\033[1;31mFAILED\033[0m"
+  PRETTY_PASSED="\033[1;32mPASSED\033[0m"
+else
+  PRETTY_FAILED="FAILED"
+  PRETTY_PASSED="PASSED"
+fi
 
 # This names/values should match the TestType enum in rocSHMEM/tests/functional_tests/tester.hpp
 declare -A TEST_NUMBERS=(
@@ -142,19 +149,19 @@ ExecTest() {
     TEST_LOG_NAME+=_"$MAX_MSG_SIZE"B
   fi
 
-  CMD+=" >> $LOG_DIR/$TEST_LOG_NAME.log"
+  CMD+=" >> $LOG_DIR/$TEST_LOG_NAME.log 2>&1"
 
   # Run Test
-  # echo $TEST_LOG_NAME
-  echo $CMD
+  echo $TEST_LOG_NAME
   echo "# $CMD" >"$LOG_DIR/$TEST_LOG_NAME.log"
   eval $CMD
 
   # Validate Test
   if [ $? -ne 0 ]
   then
-    echo "Failed $TEST_CONFIG" >&2
+    echo -e "$PRETTY_FAILED: $TEST_LOG_NAME" >&2
     DRIVER_RETURN_STATUS=1
+    FAILED_LIST="$FAILED_LIST $TEST_LOG_NAME"
   fi
 
   unset ROCSHMEM_MAX_NUM_CONTEXTS
@@ -486,4 +493,9 @@ case $TEST in
     ;;
 esac
 
+if [ -z "$FAILED_LIST" ]; then
+  echo -e "TESTS PASSED"
+else
+  echo -e "TESTS FAILED: $FAILED_LIST"
+fi
 exit $(($DRIVER_RETURN_STATUS || $?))
