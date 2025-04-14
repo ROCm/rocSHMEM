@@ -34,7 +34,6 @@
  * @param[in] str      Error string to print
  *
  */
-
 #define GPUIB_CHECK_NNULL(value, str)                  \
 {                                                      \
   if (GPUIB_UNLIKELY(NULL == value)) {                 \
@@ -54,7 +53,6 @@
  * @param[in] str      Error string to print
  *
  */
-
 #define GPUIB_CHECK_ZERO(value, str)                   \
 {                                                      \
   if (GPUIB_UNLIKELY(0 != value)) {                    \

@@ -60,9 +60,7 @@ void Connection::reg_mr(void* ptr, size_t size, ibv_mr** mr) {
 }
 
 unsigned Connection::total_number_connections() {
-  int connections;
-  get_remote_conn(&connections);
-  return backend->maximum_num_contexts_ * connections;
+  return backend->maximum_num_contexts_ * backend->num_pes;
 }
 
 void Connection::initialize(int num_contexts) {
@@ -85,7 +83,7 @@ void Connection::initialize(int num_contexts) {
   ib_init(ib_dev, port);
   int ib_fork_err = ibv_fork_init();
   GPUIB_CHECK_ZERO(ib_fork_err, "ibv_fork_init");
-  create_qps(port, backend->my_pe, &ib_state->portinfo);
+  create_qps(port, &ib_state->portinfo);
   MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t) * num_contexts, MPI_CHAR, dest_info.data(), sizeof(dest_info_t) * num_contexts, MPI_CHAR, backend->thread_comm);
   for (int i{0}; i < qps.size(); i++) {
     change_status_rtr(qps[i], &dest_info[i], port);
@@ -138,18 +136,17 @@ void Connection::change_status_rts(ibv_qp* qp, dest_info_t* dest) {
   try_to_modify_qp<RtsState>(qp, rts(dest));
 }
 
-void Connection::create_qps(uint8_t port, int my_rank, ibv_port_attr* ib_port_att) {
+void Connection::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
   ibv_qp_cap cap{};
   cap.max_send_wr = sq_size;
   cap.max_send_sge = 1;
   cap.max_inline_data = 4;
   QPInitAttr qp_init_attr{qpattr(cap)};
-  size_t qp_size = total_number_connections();
-  cqs.resize(qp_size);
-  qps.resize(qp_size);
-  int cqe = qp_init_attr.attr.cap.max_send_wr;
+  cqs.resize(total_number_connections());
+  qps.resize(total_number_connections());
+  int max_num_cqe = qp_init_attr.attr.cap.max_send_wr;
   for (auto& entry : cqs) {
-    entry = create_cq(ib_state->context, ib_state->pd, cqe);
+    entry = create_cq(ib_state->context, ib_state->pd, max_num_cqe);
     GPUIB_CHECK_NNULL(entry, "create_cq");
   }
   for (int i{0}; i < qps.size(); i++) {
@@ -330,7 +327,6 @@ Connection::RtsState Connection::rts(dest_info_t* dest) {
 }
 
 void Connection::get_remote_conn(int* remote_conn) {
-  *remote_conn = backend->num_pes;
 }
 
 void Connection::initialize_rkey_handle(uint32_t** heap_rkey_handle, ibv_mr* mr) {
@@ -389,9 +385,7 @@ void Connection::post_dv_rc_wqe(int remote_conn) {
 }
 
 void Connection::post_wqes() {
-  int remote_conn;
-  get_remote_conn(&remote_conn);
-  post_dv_rc_wqe(remote_conn);
+  post_dv_rc_wqe(backend->num_pes);
 }
 
 void Connection::allocate_dynamic_members(int num_contexts) {

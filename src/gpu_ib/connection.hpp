@@ -148,7 +148,7 @@ class Connection {
 
   void change_status_rts(ibv_qp* qp, dest_info_t* dest);
 
-  void create_qps(uint8_t port, int my_rank, ibv_port_attr* ib_port_att);
+  void create_qps(uint8_t port, ibv_port_attr* ib_port_att);
 
   template <typename T>
   void try_to_modify_qp(ibv_qp* qp, T state);
