@@ -52,9 +52,8 @@ rocshmem_team_t get_external_team(GPUIBTeam *team) {
 }
 
 int get_ls_non_zero_bit(char *bitmask, int mask_length) {
-  int position = -1;
-
-  for (int bit_i = 0; bit_i < mask_length; bit_i++) {
+  int position{-1};
+  for (int bit_i{0}; bit_i < mask_length; bit_i++) {
     int byte_i = bit_i / CHAR_BIT;
     if (bitmask[byte_i] & (1 << (bit_i % CHAR_BIT))) {
       position = bit_i;
@@ -67,7 +66,7 @@ int get_ls_non_zero_bit(char *bitmask, int mask_length) {
 
 GPUIBBackend::GPUIBBackend(MPI_Comm comm) {
   int num_cus{};
-  if (hipDeviceGetAttribute(&num_cus, hipDeviceAttributeMultiprocessorCount, 0)) { abort(); }
+  CHECK_HIP(hipDeviceGetAttribute(&num_cus, hipDeviceAttributeMultiprocessorCount, 0));
   CHECK_HIP(hipMalloc(&print_lock, sizeof(*print_lock)));
   *print_lock = 0;
   int* print_lock_addr{nullptr};

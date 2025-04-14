@@ -117,12 +117,6 @@ class GPUIBContext : public Context {
    */
   char *const *base_heap{nullptr};
 
-  /*
-   * Buffer used to store the results of a *_g operation. These ops do not
-   * provide a destination buffer, so the runtime must manage one.
-   */
-  char *g_ret{nullptr};
-
   NetworkImpl networkImpl{};
 
   /*
