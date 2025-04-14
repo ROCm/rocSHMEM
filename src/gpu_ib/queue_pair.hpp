@@ -325,8 +325,6 @@ class QueuePair {
   uint32_t lkey{0};
 
   uint64_t db_val{};
-
-  const int inline_threshold{8};
 };
 
 }  // namespace rocshmem

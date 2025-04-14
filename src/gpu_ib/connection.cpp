@@ -130,7 +130,7 @@ void Connection::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
   ibv_qp_cap cap{};
   cap.max_send_wr = sq_size;
   cap.max_send_sge = 1;
-  cap.max_inline_data = 4;
+  cap.max_inline_data = 0;
   QPInitAttr qp_init_attr{qpattr(cap)};
   cqs.resize(total_number_connections());
   qps.resize(total_number_connections());

@@ -207,11 +207,7 @@ __device__ void QueuePair::update_posted_wqe_generic(int pe, int32_t size, uintp
     laddr = &atomic_ret.atomic_base_ptr[atomic_ret_pos];
   }
 
-  if (size <= inline_threshold && opcode == MLX5_OPCODE_RDMA_WRITE) {
-    seg_build.update_inl_data_seg(laddr, size);
-  } else {
-    seg_build.update_data_seg(laddr, size, lkey_in_stack_frame);
-  }
+  seg_build.update_data_seg(laddr, size, lkey_in_stack_frame);
 
   L.template finishPost<cqe>(this, ring_db, num_wqes, pe, be_sq_counter, opcode);
 }

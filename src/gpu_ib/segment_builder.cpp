@@ -122,20 +122,4 @@ __device__ void SegmentBuilder::update_data_seg(uintptr_t *laddr, int32_t size, 
   seg_ptr++;
 }
 
-__device__ void SegmentBuilder::update_inl_data_seg(uintptr_t *laddr, int32_t size) {
-  mlx5_wqe_inl_data_seg inl_data_seg;
-  swap_endian_store(&inl_data_seg.byte_count, (size & 0x3FF) | 0x80000000);
-  size_t field_size{sizeof(mlx5_wqe_inl_data_seg)};
-  if (!laddr) {
-    uint8_t flush_val = 1;
-    memcpy(&inl_data_seg + 1, &flush_val, sizeof(flush_val));
-    field_size += sizeof(flush_val);
-  } else {
-    memcpy(&inl_data_seg + 1, laddr, size);
-    field_size += size;
-  }
-  memcpy(&seg_ptr->inl_data_seg, &inl_data_seg, field_size);
-  seg_ptr++;
-}
-
 }  // namespace rocshmem

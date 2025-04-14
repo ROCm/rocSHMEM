@@ -64,13 +64,6 @@ class SegmentBuilder {
   __device__ void update_rdma_seg(uintptr_t *raddr, uint32_t rkey);
 
   /*
-   * struct mlx5_wqe_inl_data_seg {
-   *   uint32_t byte_count;
-   * };
-   */
-  __device__ void update_inl_data_seg(uintptr_t *laddr, int32_t size);
-
-  /*
    * struct mlx5_wqe_data_seg {
    * __be32 byte_count;
    * __be32 lkey;
