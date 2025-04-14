@@ -21,21 +21,20 @@
  *****************************************************************************/
 
 #include "backend_ib.hpp"
-#include "gpuib_macros.inl"
-
-#include <endian.h>
-#include <mpi.h>
-#include <unistd.h>
 
 #include <cstdio>
 #include <cstdlib>
-#include <mutex>  // NOLINT(build/c++11)
+#include <endian.h>
+#include <mpi.h>
+#include <mutex>
+#include <rocshmem/rocshmem.hpp>
+#include <unistd.h>
 
-#include "rocshmem/rocshmem.hpp"
 #include "context_incl.hpp"
+#include "gpuib_macros.inl"
 #include "gpu_ib_team.hpp"
-#include "queue_pair.hpp"
 #include "host/host.hpp"
+#include "queue_pair.hpp"
 
 namespace rocshmem {
 
@@ -68,48 +67,32 @@ int get_ls_non_zero_bit(char *bitmask, int mask_length) {
 
 GPUIBBackend::GPUIBBackend(MPI_Comm comm) {
   int num_cus{};
-  if (hipDeviceGetAttribute(&num_cus, hipDeviceAttributeMultiprocessorCount, 0)) {
-    abort();
-  }
-
+  if (hipDeviceGetAttribute(&num_cus, hipDeviceAttributeMultiprocessorCount, 0)) { abort(); }
   CHECK_HIP(hipMalloc(&print_lock, sizeof(*print_lock)));
   *print_lock = 0;
   int* print_lock_addr{nullptr};
   CHECK_HIP(hipGetSymbolAddress(reinterpret_cast<void**>(&print_lock_addr), HIP_SYMBOL(print_lock)));
   CHECK_HIP(hipMemcpy(print_lock_addr, &print_lock, sizeof(print_lock), hipMemcpyDefault));
-
   int* device_backend_proxy_addr{nullptr};
   CHECK_HIP(hipGetSymbolAddress(reinterpret_cast<void**>(&device_backend_proxy_addr), HIP_SYMBOL(device_backend_proxy)));
-
   GPUIBBackend* this_temp_addr{this};
   CHECK_HIP(hipMemcpy(device_backend_proxy_addr, &this_temp_addr, sizeof(this), hipMemcpyDefault));
-
   CHECK_HIP( hipHostMalloc(reinterpret_cast<void**>(&done_init), sizeof(uint8_t)));
   if (auto maximum_num_contexts_str = getenv("ROCSHMEM_MAX_NUM_CONTEXTS")) {
     std::stringstream sstream(maximum_num_contexts_str);
     sstream >> maximum_num_contexts_;
   }
-
   init_mpi_once(comm);
-
   NET_CHECK(MPI_Comm_dup(backend_comm, &gpu_ib_comm_world));
   NET_CHECK(MPI_Comm_size(gpu_ib_comm_world, &num_pes));
   NET_CHECK(MPI_Comm_rank(gpu_ib_comm_world, &my_pe));
-
   host_interface = new HostInterface(gpu_ib_comm_world, &heap);
-
   setup_default_host_ctx();
-
   setup_team_world();
-
   rocshmem_collective_init();
-
   teams_init();
-
   thread_comm = gpu_ib_comm_world;
-
   NET_CHECK(MPI_Barrier(gpu_ib_comm_world));
-
   initialize_network();
   setup_ctxs();
   setup_default_ctx();
@@ -117,7 +100,6 @@ GPUIBBackend::GPUIBBackend(MPI_Comm comm) {
 
 __device__ bool GPUIBBackend::create_ctx(rocshmem_ctx_t *ctx) {
   GPUIBContext *ctx_;
-
   auto pop_result = ctx_free_list.get()->pop_front();
   if (!pop_result.success) {
     return false;
@@ -134,7 +116,7 @@ void GPUIBBackend::ctx_create(void **ctx) {
 }
 
 GPUIBHostContext *get_internal_gpu_ib_ctx(Context *ctx) {
-  return reinterpret_cast<GPUIBHostContext *>(ctx);
+  return reinterpret_cast<GPUIBHostContext*>(ctx);
 }
 
 void GPUIBBackend::ctx_destroy(Context *ctx) {
@@ -143,64 +125,39 @@ void GPUIBBackend::ctx_destroy(Context *ctx) {
 }
 
 __device__ void GPUIBBackend::destroy_ctx(rocshmem_ctx_t *ctx) {
-  ctx_free_list.get()->push_back(static_cast<GPUIBContext *>(ctx->ctx_opaque));
+  ctx_free_list.get()->push_back(static_cast<GPUIBContext*>(ctx->ctx_opaque));
 }
 
 __host__ void GPUIBBackend::global_exit(int status) {
   MPI_Abort(gpu_ib_comm_world, status);
 }
 
-void GPUIBBackend::create_new_team([[maybe_unused]] Team *parent_team,
-                                   TeamInfo *team_info_wrt_parent,
-                                   TeamInfo *team_info_wrt_world, int num_pes,
-                                   int my_pe_in_new_team, MPI_Comm team_comm,
-                                   rocshmem_team_t *new_team) {
-  /*
-   * Read the bit mask and find out a common index into
-   * the pool of available work arrays.
-   */
-  NET_CHECK(MPI_Allreduce(pool_bitmask_, reduced_bitmask_, bitmask_size_,
-                          MPI_CHAR, MPI_BAND, team_comm));
-
-  /* Pick the least significant non-zero bit (logical layout) in the reduced
-   * bitmask */
+void GPUIBBackend::create_new_team([[maybe_unused]] Team *parent_team, TeamInfo *team_info_wrt_parent, TeamInfo *team_info_wrt_world, int num_pes,
+                                   int my_pe_in_new_team, MPI_Comm team_comm, rocshmem_team_t *new_team) {
+  NET_CHECK(MPI_Allreduce(pool_bitmask_, reduced_bitmask_, bitmask_size_, MPI_CHAR, MPI_BAND, team_comm));
   auto max_num_teams{team_tracker.get_max_num_teams()};
   int common_index = get_ls_non_zero_bit(reduced_bitmask_, max_num_teams);
-  if (common_index < 0) {
-    /* No team available */
-    abort();
-  }
-
-  /* Mark the team as taken (by unsetting the bit in the pool bitmask) */
+  if (common_index < 0) { abort(); }
   int byte = common_index / CHAR_BIT;
   pool_bitmask_[byte] &= ~(1 << (common_index % CHAR_BIT));
-
-  /*
-   * Allocate device-side memory for team_world and
-   * construct a GPU_IB team in it
-   */
   GPUIBTeam *new_team_obj;
   CHECK_HIP(hipMalloc(&new_team_obj, sizeof(GPUIBTeam)));
-  new (new_team_obj)
-      GPUIBTeam(this, team_info_wrt_parent, team_info_wrt_world, num_pes,
-                my_pe_in_new_team, team_comm, common_index);
-
+  new (new_team_obj) GPUIBTeam(this, team_info_wrt_parent, team_info_wrt_world, num_pes, my_pe_in_new_team, team_comm, common_index);
   *new_team = get_external_team(new_team_obj);
 }
 
 void GPUIBBackend::team_destroy(rocshmem_team_t team) {
   GPUIBTeam *team_obj = get_internal_gpu_ib_team(team);
-
-  /* Mark the pool as available */
   int bit = team_obj->pool_index_;
   int byte_i = bit / CHAR_BIT;
   pool_bitmask_[byte_i] |= 1 << (bit % CHAR_BIT);
-
   team_obj->~GPUIBTeam();
   CHECK_HIP(hipFree(team_obj));
 }
 
-void GPUIBBackend::initialize_network() { networkImpl.networkHostSetup(this); }
+void GPUIBBackend::initialize_network() {
+  networkImpl.networkHostSetup(this);
+}
 
 void GPUIBBackend::setup_default_host_ctx() {
   default_host_ctx_ = new GPUIBHostContext(this);
@@ -208,12 +165,7 @@ void GPUIBBackend::setup_default_host_ctx() {
 }
 
 void GPUIBBackend::setup_ctxs() {
-  /*
-   * Allocate device-side memory for all context and construct an
-   * InfiniBand context in it.
-   */
-  CHECK_HIP(
-      hipMalloc(&ctx_array, sizeof(GPUIBContext) * maximum_num_contexts_));
+  CHECK_HIP(hipMalloc(&ctx_array, sizeof(GPUIBContext) * maximum_num_contexts_));
   for (int i = 0; i < maximum_num_contexts_; i++) {
     new (&ctx_array[i]) GPUIBContext(this, i);
     ctx_free_list.get()->push_back(ctx_array + i);
@@ -221,69 +173,42 @@ void GPUIBBackend::setup_ctxs() {
 }
 
 void GPUIBBackend::setup_default_ctx() {
-  /*
-   * Allocate device-side memory for default context and construct an
-   * InfiniBand context in it.
-   */
   CHECK_HIP(hipMalloc(&default_ctx_, sizeof(GPUIBContext)));
   new (default_ctx_) GPUIBContext(this, 0);
-
-  /*
-   * Set the ROCSHMEM_CTX_DEFAULT in constant memory.
-   */
   int *symbol_address;
-  CHECK_HIP(hipGetSymbolAddress(reinterpret_cast<void **>(&symbol_address),
-                                HIP_SYMBOL(ROCSHMEM_CTX_DEFAULT)));
-
+  CHECK_HIP(hipGetSymbolAddress(reinterpret_cast<void**>(&symbol_address), HIP_SYMBOL(ROCSHMEM_CTX_DEFAULT)));
   TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
   rocshmem_ctx_t ctx_default_host{default_ctx_, tinfo};
-
   hipStream_t stream;
   CHECK_HIP(hipStreamCreateWithFlags(&stream, hipStreamNonBlocking));
-  CHECK_HIP(hipMemcpyAsync(symbol_address, &ctx_default_host,
-                           sizeof(rocshmem_ctx_t), hipMemcpyDefault, stream));
+  CHECK_HIP(hipMemcpyAsync(symbol_address, &ctx_default_host, sizeof(rocshmem_ctx_t), hipMemcpyDefault, stream));
   CHECK_HIP(hipStreamSynchronize(stream));
   CHECK_HIP(hipStreamDestroy(stream));
 }
 
 void GPUIBBackend::setup_team_world() {
   TeamInfo *team_info_wrt_parent, *team_info_wrt_world;
-
-  /*
-   * Allocate device-side memory for team_world and construct a
-   * GPU_IB team in it.
-   */
   CHECK_HIP(hipMalloc(&team_info_wrt_parent, sizeof(TeamInfo)));
   CHECK_HIP(hipMalloc(&team_info_wrt_world, sizeof(TeamInfo)));
-
   new (team_info_wrt_parent) TeamInfo(nullptr, 0, 1, num_pes);
   new (team_info_wrt_world) TeamInfo(nullptr, 0, 1, num_pes);
-
   MPI_Comm team_world_comm;
   NET_CHECK(MPI_Comm_dup(gpu_ib_comm_world, &team_world_comm));
-
   GPUIBTeam *team_world{nullptr};
   CHECK_HIP(hipMalloc(&team_world, sizeof(GPUIBTeam)));
-  new (team_world) GPUIBTeam(this, team_info_wrt_parent, team_info_wrt_world,
-                             num_pes, my_pe, team_world_comm, 0);
+  new (team_world) GPUIBTeam(this, team_info_wrt_parent, team_info_wrt_world, num_pes, my_pe, team_world_comm, 0);
   team_tracker.set_team_world(team_world);
-
-  /*
-   * Copy the address to ROCSHMEM_TEAM_WORLD.
-   */
   ROCSHMEM_TEAM_WORLD = reinterpret_cast<rocshmem_team_t>(team_world);
 }
 
 void GPUIBBackend::init_mpi_once(MPI_Comm comm) {
   static std::mutex init_mutex;
   const std::lock_guard<std::mutex> lock(init_mutex);
-
-  int init_done = 0;
+  int init_done{0};
   NET_CHECK(MPI_Initialized(&init_done));
   if (init_done == 0) {
     int provided;
-    NET_CHECK(
-        MPI_Init_thread(nullptr, nullptr, MPI_THREAD_MULTIPLE, &provided));
+    NET_CHECK(MPI_Init_thread(nullptr, nullptr, MPI_THREAD_MULTIPLE, &provided));
   }
   if (comm == MPI_COMM_NULL) {
     NET_CHECK(MPI_Comm_dup(MPI_COMM_WORLD, &backend_comm));
@@ -293,22 +218,12 @@ void GPUIBBackend::init_mpi_once(MPI_Comm comm) {
 }
 
 void GPUIBBackend::teams_init() {
-  /*
-   * Allocate pools for the teams sync and work arrary from the SHEAP.
-   */
   auto max_num_teams{team_tracker.get_max_num_teams()};
-  barrier_pSync_pool = reinterpret_cast<long *>(rocshmem_malloc(
-      sizeof(long) * ROCSHMEM_BARRIER_SYNC_SIZE * max_num_teams));
-
-  /*
-   * Initialize the sync arrays in the pool with default values.
-   */
+  barrier_pSync_pool = reinterpret_cast<long*>(rocshmem_malloc(sizeof(long) * ROCSHMEM_BARRIER_SYNC_SIZE * max_num_teams));
   long *barrier_pSync;
-  for (int team_i = 0; team_i < max_num_teams; team_i++) {
-    barrier_pSync = reinterpret_cast<long *>(
-        &barrier_pSync_pool[team_i * ROCSHMEM_BARRIER_SYNC_SIZE]);
-
-    for (int i = 0; i < ROCSHMEM_BARRIER_SYNC_SIZE; i++) {
+  for (int team_i{0}; team_i < max_num_teams; team_i++) {
+    barrier_pSync = reinterpret_cast<long*>(&barrier_pSync_pool[team_i * ROCSHMEM_BARRIER_SYNC_SIZE]);
+    for (int i{0}; i < ROCSHMEM_BARRIER_SYNC_SIZE; i++) {
       barrier_pSync[i] = ROCSHMEM_SYNC_VALUE;
     }
   }
@@ -324,53 +239,32 @@ void GPUIBBackend::teams_init() {
    * Description shows only a 2-byte long mask but idea extends to any
    * arbitrary size.
    */
-  bitmask_size_ = (max_num_teams % CHAR_BIT) ? (max_num_teams / CHAR_BIT + 1)
-                                             : (max_num_teams / CHAR_BIT);
-  pool_bitmask_ = reinterpret_cast<char *>(malloc(bitmask_size_));
-  reduced_bitmask_ = reinterpret_cast<char *>(malloc(bitmask_size_));
+  bitmask_size_ = (max_num_teams % CHAR_BIT) ? (max_num_teams / CHAR_BIT + 1) : (max_num_teams / CHAR_BIT);
+  pool_bitmask_ = reinterpret_cast<char*>(malloc(bitmask_size_));
+  reduced_bitmask_ = reinterpret_cast<char*>(malloc(bitmask_size_));
 
   memset(pool_bitmask_, 0, bitmask_size_);
   memset(reduced_bitmask_, 0, bitmask_size_);
-  /* Set all to available except the 0th one (reserved for TEAM_WORLD) */
-  for (int bit_i = 1; bit_i < max_num_teams; bit_i++) {
+  for (int bit_i{1}; bit_i < max_num_teams; bit_i++) {
     int byte_i = bit_i / CHAR_BIT;
-
     pool_bitmask_[byte_i] |= 1 << (bit_i % CHAR_BIT);
   }
-
-  /*
-   * Make sure that all processing elements have done this before
-   * continuing.
-   */
   NET_CHECK(MPI_Barrier(gpu_ib_comm_world));
 }
 
 void GPUIBBackend::teams_destroy() {
   rocshmem_free(barrier_pSync_pool);
-
   free(pool_bitmask_);
   free(reduced_bitmask_);
 }
 
 void GPUIBBackend::rocshmem_collective_init() {
-  /*
-   * Allocate heap space for barrier_sync
-   */
   size_t one_sync_size_bytes{sizeof(*barrier_sync)};
   size_t sync_size_bytes{one_sync_size_bytes * ROCSHMEM_BARRIER_SYNC_SIZE};
-  heap.malloc(reinterpret_cast<void **>(&barrier_sync), sync_size_bytes);
-
-  /*
-   * Initialize the barrier synchronization array with default values.
-   */
-  for (int i = 0; i < num_pes; i++) {
+  heap.malloc(reinterpret_cast<void**>(&barrier_sync), sync_size_bytes);
+  for (int i{0}; i < num_pes; i++) {
     barrier_sync[i] = ROCSHMEM_SYNC_VALUE;
   }
-
-  /*
-   * Make sure that all processing elements have done this before
-   * continuing.
-   */
   NET_CHECK(MPI_Barrier(gpu_ib_comm_world));
 }
 
@@ -379,12 +273,8 @@ void GPUIBBackend::track_ctx(Context* ctx) {
 }
 
 void GPUIBBackend::untrack_ctx(Context* ctx) {
-  /* Get an iterator to this ctx in the vector */
-  std::vector<Context*>::iterator it =
-      std::find(list_of_ctxs.begin(), list_of_ctxs.end(), ctx);
+  std::vector<Context*>::iterator it = std::find(list_of_ctxs.begin(), list_of_ctxs.end(), ctx);
   assert(it != list_of_ctxs.end());
-
-  /* Remove the ctx from the vector */
   list_of_ctxs.erase(it);
 }
 
@@ -401,20 +291,14 @@ GPUIBBackend::~GPUIBBackend() {
   auto *team_world{team_tracker.get_team_world()};
   team_world->~Team();
   CHECK_HIP(hipFree(team_world));
-
   delete default_host_ctx_;
-
   NET_CHECK(MPI_Comm_free(&gpu_ib_comm_world));
-
   CHECK_HIP(hipFree(default_ctx_->device_qp_proxy));
   CHECK_HIP(hipFree(default_ctx_));
   default_ctx_ = nullptr;
-
   delete host_interface;
   host_interface = nullptr;
-
   networkImpl.networkHostFinalize();
-
   CHECK_HIP(hipFree(ctx_array));
 }
 
