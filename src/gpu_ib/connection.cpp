@@ -54,7 +54,7 @@ unsigned Connection::total_number_connections() {
 }
 
 void Connection::initialize(int num_contexts) {
-  allocate_dynamic_members(num_contexts);
+  dest_info.resize(backend->num_pes * num_contexts);
   int ib_devices{0};
   dev_list = ibv_get_device_list(&ib_devices);
   GPUIB_CHECK_NNULL(dev_list, "ibv_get_device");
@@ -386,10 +386,6 @@ void Connection::post_dv_rc_wqe() {
       ptr = ptr + 4; // 32B
     }
   }
-}
-
-void Connection::allocate_dynamic_members(int num_contexts) {
-  dest_info.resize(backend->num_pes * num_contexts);
 }
 
 }  // namespace rocshmem
