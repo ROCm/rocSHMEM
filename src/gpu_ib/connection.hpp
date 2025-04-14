@@ -177,8 +177,6 @@ class Connection {
 
   std::vector<ibv_qp*> qps;
 
-  static int use_gpu_mem;
-
   void ib_init(ibv_device* ib_dev, uint8_t port);
 
   char* requested_dev{nullptr};
