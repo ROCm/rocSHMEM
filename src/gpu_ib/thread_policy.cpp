@@ -26,15 +26,6 @@
 
 namespace rocshmem {
 
-__device__ void SingleThreadImpl::quiet(QueuePair *handle) {
-  handle->quiet_internal<THREAD>();
-}
-
-__device__ void SingleThreadImpl::quiet_heavy(QueuePair *handle, int pe) {
-  handle->zero_b_rd<THREAD>(pe);
-  handle->quiet_internal<THREAD>();
-}
-
 __device__ void WAVE::quiet(QueuePair *handle) {
   int thread_id = get_flat_block_id();
   if (thread_id % WF_SIZE == 0) {
@@ -56,22 +47,8 @@ __device__ void WAVE::quiet_heavy(QueuePair *handle, int pe) {
   }
 }
 
-__device__ void SingleThreadImpl::decQuietCounter(uint32_t *quiet_counter, int num) {
-  *quiet_counter -= num;
-}
-
 __device__ void WAVE::decQuietCounter(uint32_t *quiet_counter, int num) {
   *quiet_counter -= num;
-}
-
-template <bool cqe>
-__device__ void SingleThreadImpl::finishPost(QueuePair *handle, bool ring_db, int num_wqes, int pe, uint16_t le_sq_counter, uint8_t opcode) {
-  if (ring_db) {
-    uint64_t db_val = handle->db_val;
-    handle->compute_db_val_opcode(&db_val, le_sq_counter, opcode);
-    handle->update_wqe_ce_single<cqe>(num_wqes);
-    handle->ring_doorbell(db_val);
-  }
 }
 
 template <bool cqe>
@@ -84,20 +61,9 @@ __device__ void WAVE::finishPost(QueuePair *handle, bool ring_db, int num_wqes, 
   handle->threadImpl.sq_lock = 0;
 }
 
-__device__ void SingleThreadImpl::postLock(QueuePair *handle, int pe) {
-  handle->waitSQSpace(1);
-}
-
 __device__ void WAVE::postLock(QueuePair *handle, int pe) {
   while (atomicCAS(&(handle->threadImpl.sq_lock), 0, 1) == 1) { }
   handle->waitSQSpace(1);
-}
-
-template <typename T>
-__device__ T SingleThreadImpl::threadAtomicAdd(T *val, T value) {
-  T old_val = *val;
-  *val += value;
-  return old_val;
 }
 
 template <typename T>
@@ -106,7 +72,6 @@ __device__ T WAVE::threadAtomicAdd(T *val, T value) {
 }
 
 #define TYPE_GEN(T)                                                            \
-  template __device__ T SingleThreadImpl::threadAtomicAdd<T>(T *val, T value); \
   template __device__ T WAVE::threadAtomicAdd<T>(T *val, T value);
 
 TYPE_GEN(float)
@@ -116,7 +81,6 @@ TYPE_GEN(unsigned int)
 TYPE_GEN(unsigned long long)
 
 #define TYPE_BOOL(T)                                                                                                                                       \
-  template __device__ void SingleThreadImpl::finishPost<T>(QueuePair *handle, bool ring_db, int num_wqes, int pe, uint16_t le_sq_counter, uint8_t opcode); \
   template __device__ void WAVE::finishPost<T>(QueuePair *handle, bool ring_db, int num_wqes, int pe, uint16_t le_sq_counter, uint8_t opcode);
 
 TYPE_BOOL(true)

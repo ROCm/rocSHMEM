@@ -27,11 +27,8 @@ namespace rocshmem {
 
 class QueuePair;
 
-class SingleThreadImpl {
+class WAVE {
  public:
-  uint32_t cq_lock = 0;
-  uint32_t sq_lock = 0;
-
   __device__ void quiet(QueuePair *handle);
 
   __device__ void quiet_heavy(QueuePair *handle, int pe);
@@ -45,9 +42,12 @@ class SingleThreadImpl {
 
   template <typename T>
   __device__ T threadAtomicAdd(T *val, T value = 1);
+
+  uint32_t cq_lock = 0;
+  uint32_t sq_lock = 0;
 };
 
-typedef SingleThreadImpl ThreadImpl;
+typedef WAVE ThreadImpl;
 
 class THREAD {
  public:
@@ -79,23 +79,6 @@ class THREAD {
     T tmp = threadImpl.threadAtomicAdd(val, value);
     return tmp;
   }
-};
-
-class WAVE {
- public:
-  __device__ void quiet(QueuePair *handle);
-
-  __device__ void quiet_heavy(QueuePair *handle, int pe);
-
-  __device__ void decQuietCounter(uint32_t *quiet_counter, int num);
-
-  template <bool cqe>
-  __device__ void finishPost(QueuePair *handle, bool ring_db, int num_wqes, int pe, uint16_t le_sq_counter, uint8_t opcode);
-
-  __device__ void postLock(QueuePair *handle, int pe);
-
-  template <typename T>
-  __device__ T threadAtomicAdd(T *val, T value = 1);
 };
 
 }  // namespace rocshmem

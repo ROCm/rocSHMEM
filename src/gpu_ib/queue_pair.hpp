@@ -50,8 +50,6 @@ typedef union db_reg {
 class QueuePair {
  public:
   friend Connection;
-  friend SingleThreadImpl;
-  friend THREAD;
   friend WAVE;
 
   /**
