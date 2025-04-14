@@ -62,6 +62,7 @@ option(BUILD_UNIT_TESTS "Build the unit tests" ON)
 option(BUILD_TESTS_ONLY "Build only tests. Used to link agains rocSHMEM in a ROCm Release" OFF)
 
 option(BUILD_LOCAL_GPU_TARGET_ONLY "Build only for GPUs detected on this machine" OFF)
+option(BUILD_CODE_COVERAGE "Build with code coverage flags (gcc only)" OFF)
 
 configure_file(cmake/rocshmem_config.h.in rocshmem_config.h)
 
