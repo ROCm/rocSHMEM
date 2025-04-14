@@ -33,80 +33,52 @@ __device__ SegmentBuilder::SegmentBuilder(uint64_t wqe_idx, void *base) {
   seg_ptr = &base_ptr[segment_offset];
 }
 
-__device__ void SegmentBuilder::update_cntrl_seg(
-    uint8_t opcode, uint16_t wqe_idx, uint32_t ctrl_qp_sq, uint64_t ctrl_sig,
-    bool zero_byte_rd) {
+__device__ void SegmentBuilder::update_cntrl_seg(uint8_t opcode, uint16_t wqe_idx, uint32_t ctrl_qp_sq, uint64_t ctrl_sig, bool zero_byte_rd) {
   mlx5_wqe_ctrl_seg ctrl_seg;
-
   ctrl_seg.opmod_idx_opcode = (opcode << 24) | (wqe_idx << 8);
-
   uint32_t DS = 2;
   if (zero_byte_rd == false) {
-    DS = (opcode == MLX5_OPCODE_RDMA_WRITE || opcode == MLX5_OPCODE_RDMA_READ)
-             ? 3
-             : 4;
+    DS = (opcode == MLX5_OPCODE_RDMA_WRITE || opcode == MLX5_OPCODE_RDMA_READ) ? 3 : 4;
   }
-
   ctrl_seg.qpn_ds = (DS << 24) | ctrl_qp_sq;
   ctrl_seg.signature = ctrl_sig;
   ctrl_seg.fm_ce_se = ctrl_sig >> 24;
   ctrl_seg.imm = ctrl_sig >> 32;
-
   memcpy(&seg_ptr->ctrl_seg, &ctrl_seg, sizeof(mlx5_wqe_ctrl_seg));
-
   seg_ptr++;
 }
 
-__device__ void SegmentBuilder::update_atomic_data_seg(uint64_t atomic_data,
-                                                       uint64_t atomic_cmp) {
+__device__ void SegmentBuilder::update_atomic_data_seg(uint64_t atomic_data, uint64_t atomic_cmp) {
   mlx5_wqe_atomic_seg atomic_seg;
-
-  swap_endian_store(reinterpret_cast<uint64_t *>(&atomic_seg.swap_add),
-                    atomic_data);
-
-  swap_endian_store(reinterpret_cast<uint64_t *>(&atomic_seg.compare),
-                    atomic_cmp);
-
+  swap_endian_store(reinterpret_cast<uint64_t *>(&atomic_seg.swap_add), atomic_data);
+  swap_endian_store(reinterpret_cast<uint64_t *>(&atomic_seg.compare), atomic_cmp);
   memcpy(&seg_ptr->atomic_seg, &atomic_seg, sizeof(mlx5_wqe_atomic_seg));
   seg_ptr++;
 }
 
-__device__ void SegmentBuilder::update_rdma_seg(uintptr_t *raddr,
-                                                uint32_t rkey) {
+__device__ void SegmentBuilder::update_rdma_seg(uintptr_t *raddr, uint32_t rkey) {
   mlx5_wqe_raddr_seg raddr_seg;
-
   raddr_seg.rkey = rkey;
-
-  swap_endian_store(reinterpret_cast<uint64_t *>(&raddr_seg.raddr),
-                    reinterpret_cast<uint64_t>(raddr));
-
+  swap_endian_store(reinterpret_cast<uint64_t *>(&raddr_seg.raddr), reinterpret_cast<uint64_t>(raddr));
   memcpy(&seg_ptr->raddr_seg, &raddr_seg, sizeof(mlx5_wqe_raddr_seg));
   seg_ptr++;
 }
 
-__device__ void SegmentBuilder::update_data_seg(uintptr_t *laddr, int32_t size,
-                                                uint32_t lkey) {
+__device__ void SegmentBuilder::update_data_seg(uintptr_t *laddr, int32_t size, uint32_t lkey) {
   if (laddr == nullptr) {
     return;
   }
-
   mlx5_wqe_data_seg data_seg;
   data_seg.lkey = lkey;
-
   swap_endian_store(&data_seg.byte_count, size & 0x7FFFFFFFU);
-  swap_endian_store(reinterpret_cast<uint64_t *>(&data_seg.addr),
-                    reinterpret_cast<uint64_t>(laddr));
-
+  swap_endian_store(reinterpret_cast<uint64_t *>(&data_seg.addr), reinterpret_cast<uint64_t>(laddr));
   memcpy(&seg_ptr->data_seg, &data_seg, sizeof(mlx5_wqe_data_seg));
   seg_ptr++;
 }
 
-__device__ void SegmentBuilder::update_inl_data_seg(uintptr_t *laddr,
-                                                    int32_t size) {
+__device__ void SegmentBuilder::update_inl_data_seg(uintptr_t *laddr, int32_t size) {
   mlx5_wqe_inl_data_seg inl_data_seg;
-
   swap_endian_store(&inl_data_seg.byte_count, (size & 0x3FF) | 0x80000000);
-
   size_t field_size{sizeof(mlx5_wqe_inl_data_seg)};
   if (!laddr) {
     uint8_t flush_val = 1;
@@ -116,8 +88,8 @@ __device__ void SegmentBuilder::update_inl_data_seg(uintptr_t *laddr,
     memcpy(&inl_data_seg + 1, laddr, size);
     field_size += size;
   }
-
   memcpy(&seg_ptr->inl_data_seg, &inl_data_seg, field_size);
   seg_ptr++;
 }
+
 }  // namespace rocshmem

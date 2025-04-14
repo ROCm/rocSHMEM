@@ -23,9 +23,6 @@
 #ifndef LIBRARY_SRC_GPU_IB_THREAD_POLICY_HPP_
 #define LIBRARY_SRC_GPU_IB_THREAD_POLICY_HPP_
 
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
-#include "util.hpp"
-
 namespace rocshmem {
 
 class QueuePair;
@@ -42,8 +39,7 @@ class SingleThreadImpl {
   __device__ void decQuietCounter(uint32_t *quiet_counter, int num);
 
   template <bool cqe>
-  __device__ void finishPost(QueuePair *handle, bool ring_db, int num_wqes,
-                             int pe, uint16_t le_sq_counter, uint8_t opcode);
+  __device__ void finishPost(QueuePair *handle, bool ring_db, int num_wqes, int pe, uint16_t le_sq_counter, uint8_t opcode);
 
   __device__ void postLock(QueuePair *handle, int pe);
 
@@ -57,7 +53,9 @@ class THREAD {
  public:
   ThreadImpl threadImpl;
 
-  __device__ void quiet(QueuePair *handle) { threadImpl.quiet(handle); }
+  __device__ void quiet(QueuePair *handle) {
+    threadImpl.quiet(handle);
+  }
 
   __device__ void quiet_heavy(QueuePair *handle, int pe) {
     threadImpl.quiet_heavy(handle, pe);
@@ -68,10 +66,8 @@ class THREAD {
   }
 
   template <bool cqe>
-  __device__ void finishPost(QueuePair *handle, bool ring_db, int num_wqes,
-                             int pe, uint16_t le_sq_counter, uint8_t opcode) {
-    threadImpl.finishPost<cqe>(handle, ring_db, num_wqes, pe, le_sq_counter,
-                               opcode);
+  __device__ void finishPost(QueuePair *handle, bool ring_db, int num_wqes, int pe, uint16_t le_sq_counter, uint8_t opcode) {
+    threadImpl.finishPost<cqe>(handle, ring_db, num_wqes, pe, le_sq_counter, opcode);
   }
 
   __device__ void postLock(QueuePair *handle, int pe) {
@@ -94,8 +90,7 @@ class WAVE {
   __device__ void decQuietCounter(uint32_t *quiet_counter, int num);
 
   template <bool cqe>
-  __device__ void finishPost(QueuePair *handle, bool ring_db, int num_wqes,
-                             int pe, uint16_t le_sq_counter, uint8_t opcode);
+  __device__ void finishPost(QueuePair *handle, bool ring_db, int num_wqes, int pe, uint16_t le_sq_counter, uint8_t opcode);
 
   __device__ void postLock(QueuePair *handle, int pe);
 

@@ -22,7 +22,6 @@
 
 #include "thread_policy.hpp"
 
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "queue_pair.hpp"
 
 namespace rocshmem {
@@ -39,8 +38,7 @@ __device__ void SingleThreadImpl::quiet_heavy(QueuePair *handle, int pe) {
 __device__ void WAVE::quiet(QueuePair *handle) {
   int thread_id = get_flat_block_id();
   if (thread_id % WF_SIZE == 0) {
-    while (atomicCAS(&(handle->threadImpl.cq_lock), 0, 1) == 1) {
-    }
+    while (atomicCAS(&(handle->threadImpl.cq_lock), 0, 1) == 1) { }
     handle->quiet_internal<WAVE>();
     __threadfence();
     handle->threadImpl.cq_lock = 0;
@@ -51,8 +49,7 @@ __device__ void WAVE::quiet_heavy(QueuePair *handle, int pe) {
   int thread_id = get_flat_block_id();
   if (thread_id % WF_SIZE == 0) {
     handle->zero_b_rd<THREAD>(pe);
-    while (atomicCAS(&(handle->threadImpl.cq_lock), 0, 1) == 1) {
-    }
+    while (atomicCAS(&(handle->threadImpl.cq_lock), 0, 1) == 1) { }
     handle->quiet_internal<WAVE>();
     __threadfence();
     handle->threadImpl.cq_lock = 0;
@@ -68,10 +65,7 @@ __device__ void WAVE::decQuietCounter(uint32_t *quiet_counter, int num) {
 }
 
 template <bool cqe>
-__device__ void SingleThreadImpl::finishPost(QueuePair *handle, bool ring_db,
-                                             int num_wqes, int pe,
-                                             uint16_t le_sq_counter,
-                                             uint8_t opcode) {
+__device__ void SingleThreadImpl::finishPost(QueuePair *handle, bool ring_db, int num_wqes, int pe, uint16_t le_sq_counter, uint8_t opcode) {
   if (ring_db) {
     uint64_t db_val = handle->db_val;
     handle->compute_db_val_opcode(&db_val, le_sq_counter, opcode);
@@ -81,9 +75,7 @@ __device__ void SingleThreadImpl::finishPost(QueuePair *handle, bool ring_db,
 }
 
 template <bool cqe>
-__device__ void WAVE::finishPost(QueuePair *handle, bool ring_db, int num_wqes,
-                                 int pe, uint16_t le_sq_counter,
-                                 uint8_t opcode) {
+__device__ void WAVE::finishPost(QueuePair *handle, bool ring_db, int num_wqes, int pe, uint16_t le_sq_counter, uint8_t opcode) {
   if (ring_db) {
     uint64_t db_val = handle->sq_buf[8 * ((handle->sq_counter - num_wqes) % handle->sq_wqe_cnt)];
     handle->update_wqe_ce_thread<cqe>(num_wqes);
@@ -97,8 +89,7 @@ __device__ void SingleThreadImpl::postLock(QueuePair *handle, int pe) {
 }
 
 __device__ void WAVE::postLock(QueuePair *handle, int pe) {
-  while (atomicCAS(&(handle->threadImpl.sq_lock), 0, 1) == 1) {
-  }
+  while (atomicCAS(&(handle->threadImpl.sq_lock), 0, 1) == 1) { }
   handle->waitSQSpace(1);
 }
 
@@ -115,23 +106,18 @@ __device__ T WAVE::threadAtomicAdd(T *val, T value) {
 }
 
 #define TYPE_GEN(T)                                                            \
-  template __device__ T SingleThreadImpl::threadAtomicAdd<T>(T * val,          \
-                                                             T value);         \
-  template __device__ T WAVE::threadAtomicAdd<T>(T * val, T value);
+  template __device__ T SingleThreadImpl::threadAtomicAdd<T>(T *val, T value); \
+  template __device__ T WAVE::threadAtomicAdd<T>(T *val, T value);
 
 TYPE_GEN(float)
 TYPE_GEN(double)
 TYPE_GEN(int)
 TYPE_GEN(unsigned int)
-TYPE_GEN(unsigned long long)  // NOLINT(runtime/int)
+TYPE_GEN(unsigned long long)
 
-#define TYPE_BOOL(T)                                                \
-  template __device__ void SingleThreadImpl::finishPost<T>(         \
-      QueuePair * handle, bool ring_db, int num_wqes, int pe,       \
-      uint16_t le_sq_counter, uint8_t opcode);                      \
-  template __device__ void WAVE::finishPost<T>(                     \
-      QueuePair * handle, bool ring_db, int num_wqes, int pe,       \
-      uint16_t le_sq_counter, uint8_t opcode);
+#define TYPE_BOOL(T)                                                                                                                                       \
+  template __device__ void SingleThreadImpl::finishPost<T>(QueuePair *handle, bool ring_db, int num_wqes, int pe, uint16_t le_sq_counter, uint8_t opcode); \
+  template __device__ void WAVE::finishPost<T>(QueuePair *handle, bool ring_db, int num_wqes, int pe, uint16_t le_sq_counter, uint8_t opcode);
 
 TYPE_BOOL(true)
 TYPE_BOOL(false)

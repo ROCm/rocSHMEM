@@ -25,12 +25,10 @@
 
 #include <hip/hip_runtime.h>
 #include <mpi.h>
+#include <rocshmem/rocshmem.hpp>
 
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
-#include "rocshmem/rocshmem.hpp"
 #include "queue_pair.hpp"
 #include "memory/symmetric_heap.hpp"
-#include "util.hpp"
 
 struct ibv_mr;
 

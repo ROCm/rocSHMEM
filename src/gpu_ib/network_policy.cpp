@@ -24,11 +24,10 @@
 
 #include <mpi.h>
 
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "atomic_return.hpp"
-#include "context_incl.hpp"
 #include "backend_ib.hpp"
 #include "connection.hpp"
+#include "context_incl.hpp"
 #include "queue_pair.hpp"
 
 namespace rocshmem {
@@ -140,7 +139,6 @@ void NetworkImpl::networkHostInit(GPUIBContext *ctx, int buffer_id) {
     new (ctx->getQueuePair(i)) QueuePair(gpu_qps[offset]);
     auto *qp = ctx->getQueuePair(i);
     qp->global_qp = &gpu_qps[offset];
-    qp->num_cqs = num_pes;
     qp->atomic_ret.atomic_base_ptr = &atomic_ret->atomic_base_ptr[max_nb_atomic * buffer_id];
     qp->base_heap = ctx->base_heap;
   }
@@ -152,7 +150,6 @@ __device__ void NetworkImpl::networkGpuInit(GPUIBContext *ctx, int buffer_id) {
     auto *qp = ctx->getQueuePair(i);
     new (qp) QueuePair(gpu_qps[offset]);
     qp->global_qp = &gpu_qps[offset];
-    qp->num_cqs = num_pes;
     qp->atomic_ret.atomic_base_ptr = &atomic_ret->atomic_base_ptr[max_nb_atomic * buffer_id];
     qp->base_heap = ctx->base_heap;
   }

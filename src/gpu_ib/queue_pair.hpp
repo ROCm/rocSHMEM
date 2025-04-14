@@ -270,24 +270,10 @@ class QueuePair {
 
   char *const *base_heap{nullptr};
 
-  /*
-   * Current index into the SQ (non-modulo size).
-   */
   uint32_t sq_counter{0};
   uint32_t local_sq_cnt{0};
-
-  /*
-   * Number of outstanding messages on this QP that need to be completed
-   * during a quiet operation.
-   */
-  uint32_t quiet_counter{0};
-
-  int num_cqs{0};
-
-  /*
-   * Current index into the SQ (non-module size).
-   */
   uint32_t cq_consumer_counter{0};
+  uint32_t quiet_counter{0};
 
   /*
    * struct mlx5dv_cq {
@@ -332,13 +318,7 @@ class QueuePair {
    *   uint64_t tir_icm_addr;
    * };
    */
-  /*
-   * Pointer to the doorbell record for this SQ.
-   */
   volatile uint32_t *sq_dbrec{nullptr};
-  /*
-   * Base pointer of this QP's SQ
-   */
   uint64_t *sq_buf{nullptr};
   uint64_t *sq_buf_head{nullptr};
   uint16_t sq_wqe_cnt{0};
@@ -348,7 +328,6 @@ class QueuePair {
   uint64_t ctrl_sig{0};
   uint32_t rkey{0};
   uint32_t lkey{0};
-
 
   bool sq_overflow{0};
 

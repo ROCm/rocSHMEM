@@ -34,19 +34,15 @@ class SegmentBuilder {
  public:
   __device__ SegmentBuilder(uint64_t wqe_idx, void *base);
 
-  __device__ void update_cntrl_seg(uint8_t opcode, uint16_t wqe_idx,
-                                   uint32_t ctrl_qp_sq, uint64_t ctrl_sig,
-                                   bool zero_byte_rd);
+  __device__ void update_cntrl_seg(uint8_t opcode, uint16_t wqe_idx, uint32_t ctrl_qp_sq, uint64_t ctrl_sig, bool zero_byte_rd);
 
-  __device__ void update_atomic_data_seg(uint64_t atomic_data,
-                                         uint64_t atomic_cmp);
+  __device__ void update_atomic_data_seg(uint64_t atomic_data, uint64_t atomic_cmp);
 
   __device__ void update_rdma_seg(uintptr_t *raddr, uint32_t rkey);
 
   __device__ void update_inl_data_seg(uintptr_t *laddr, int32_t size);
 
-  __device__ void update_data_seg(uintptr_t *laddr, int32_t size,
-                                  uint32_t lkey);
+  __device__ void update_data_seg(uintptr_t *laddr, int32_t size, uint32_t lkey);
 
  private:
   const int SEGMENTS_PER_WQE = 4;
