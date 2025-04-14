@@ -54,8 +54,7 @@ __device__ uint8_t QueuePair::get_cq_error_syndrome(mlx5_cqe64 *cqe_entry) {
 }
 
 __device__ void QueuePair::ring_doorbell(uint64_t db_val) {
-  swap_endian_store(const_cast<uint32_t *>(dbrec_send),
-                    reinterpret_cast<uint32_t>(sq_counter));
+  swap_endian_store(const_cast<uint32_t *>(dbrec_send), reinterpret_cast<uint32_t>(sq_counter));
   STORE(db.ptr, db_val);
   db.uint ^= 256;
 }

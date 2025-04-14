@@ -269,27 +269,12 @@ class QueuePair {
    */
   db_reg_t db{};
 
-  /*
-   * Base pointer of this QP's SQ
-   */
-  uint64_t *current_sq{nullptr};
-  uint64_t *current_sq_H{nullptr};
-
-  /*
-   * Base pointer of this QP's CQ
-   */
-  mlx5_cqe64 *current_cq_q_H{nullptr};
-
-  /*
-   * Pointer to the doorbell record for this SQ.
-   */
-  volatile uint32_t *dbrec_send{nullptr};
-
   atomic_ret_t atomic_ret{};
 
   ThreadImpl threadImpl{};
 
   char *const *base_heap{nullptr};
+
   /*
    * Current index into the SQ (non-modulo size).
    */
@@ -320,21 +305,55 @@ class QueuePair {
    *   uint64_t                comp_mask;
    * };
   */
+  mlx5_cqe64 *current_cq_q_H{nullptr};
   mlx5_cqe64 *current_cq_q{nullptr};
   volatile uint32_t *dbrec_cq{nullptr};
   uint32_t cq_cnt{0};
   uint32_t cq_log_cnt{0};
-  uint32_t cq_size{0};
+
+  /*
+   * struct mlx5dv_qp {
+   *   __be32 *dbrec;
+   *   struct {
+   *     void *buf;
+   *     uint32_t wqe_cnt;
+   *     uint32_t stride;
+   *   } sq;
+   *   struct {
+   *     void *buf;
+   *     uint32_t wqe_cnt;
+   *     uint32_t stride;
+   *   } rq;
+   *   struct {
+   *     void *reg;
+   *     uint32_t size;
+   *   } bf;
+   *   uint64_t comp_mask;
+   *   off_t uar_mmap_offset;
+   *   uint32_t tirn;
+   *   uint32_t tisn;
+   *   uint32_t rqn;
+   *   uint32_t sqn;
+   *   uint64_t tir_icm_addr;
+   * };
+   */
+  /*
+   * Pointer to the doorbell record for this SQ.
+   */
+  volatile uint32_t *dbrec_send{nullptr};
+  /*
+   * Base pointer of this QP's SQ
+   */
+  uint64_t *current_sq{nullptr};
+  uint64_t *current_sq_H{nullptr};
+  uint16_t max_nwqe{0};
+
 
   uint32_t ctrl_qp_sq{0};
-
   uint64_t ctrl_sig{0};
-
   uint32_t rkey{0};
-
   uint32_t lkey{0};
 
-  uint16_t max_nwqe{0};
 
   bool sq_overflow{0};
 

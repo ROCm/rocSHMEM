@@ -238,10 +238,9 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
    * };
   */
   gpu_qp->current_cq_q_H = reinterpret_cast<mlx5_cqe64*>(cq_out.buf);
+  gpu_qp->current_cq_q = reinterpret_cast<mlx5_cqe64*>(cq_out.buf);
   gpu_qp->cq_cnt = cq_out.cqe_cnt;
   gpu_qp->cq_log_cnt = log2(cq_out.cqe_cnt);
-  gpu_qp->cq_size = cq_out.cqe_size;
-  gpu_qp->current_cq_q = reinterpret_cast<mlx5_cqe64*>(cq_out.buf);
   gpu_qp->dbrec_cq = reinterpret_cast<volatile uint32_t*>(cq_out.dbrec);
 
   mlx5dv_qp qp_out;
