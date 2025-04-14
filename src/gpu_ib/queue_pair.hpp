@@ -340,13 +340,13 @@ class QueuePair {
   /*
    * Pointer to the doorbell record for this SQ.
    */
-  volatile uint32_t *dbrec_send{nullptr};
+  volatile uint32_t *sq_dbrec{nullptr};
   /*
    * Base pointer of this QP's SQ
    */
-  uint64_t *current_sq{nullptr};
-  uint64_t *current_sq_H{nullptr};
-  uint16_t max_nwqe{0};
+  uint64_t *sq_buf{nullptr};
+  uint64_t *sq_buf_head{nullptr};
+  uint16_t sq_wqe_cnt{0};
 
 
   uint32_t ctrl_qp_sq{0};

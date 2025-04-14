@@ -269,11 +269,11 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
    *   uint64_t tir_icm_addr;
    * };
    */
-  volatile uint32_t* dbrec_send = qp_out.dbrec + 1;
-  gpu_qp->dbrec_send = reinterpret_cast<volatile uint32_t*>(dbrec_send);
-  gpu_qp->current_sq_H = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
-  gpu_qp->current_sq = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
-  gpu_qp->max_nwqe = qp_out.sq.wqe_cnt;
+  volatile uint32_t* sq_dbrec = qp_out.dbrec + 1;
+  gpu_qp->sq_dbrec = reinterpret_cast<volatile uint32_t*>(sq_dbrec);
+  gpu_qp->sq_buf_head = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
+  gpu_qp->sq_buf = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
+  gpu_qp->sq_wqe_cnt = qp_out.sq.wqe_cnt;
   gpu_qp->setDBval(*(reinterpret_cast<uint64_t*>(qp_out.sq.buf)));
 
   int hip_dev_id{-1};

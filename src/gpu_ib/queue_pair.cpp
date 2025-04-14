@@ -41,7 +41,7 @@ __device__ QueuePair::~QueuePair() {
   global_qp->sq_counter = sq_counter;
   global_qp->local_sq_cnt = local_sq_cnt;
   global_qp->cq_consumer_counter = cq_consumer_counter;
-  global_qp->current_sq = current_sq;
+  global_qp->sq_buf = sq_buf;
   global_qp->current_cq_q = current_cq_q;
   global_qp->sq_overflow = sq_overflow;
   global_qp->quiet_counter = quiet_counter;
@@ -54,20 +54,20 @@ __device__ uint8_t QueuePair::get_cq_error_syndrome(mlx5_cqe64 *cqe_entry) {
 }
 
 __device__ void QueuePair::ring_doorbell(uint64_t db_val) {
-  swap_endian_store(const_cast<uint32_t *>(dbrec_send), reinterpret_cast<uint32_t>(sq_counter));
+  swap_endian_store(const_cast<uint32_t *>(sq_dbrec), reinterpret_cast<uint32_t>(sq_counter));
   STORE(db.ptr, db_val);
   db.uint ^= 256;
 }
 
 __device__ void QueuePair::set_completion_flag_on_wqe(int num_wqes) {
-  uint64_t *wqe = &current_sq[8 * ((sq_counter - num_wqes) % max_nwqe)];
+  uint64_t *wqe = &sq_buf[8 * ((sq_counter - num_wqes) % sq_wqe_cnt)];
   uint8_t *wqe_ce = reinterpret_cast<uint8_t *>(wqe) + 11;
   *wqe_ce = 8;
 }
 
 template <>
 __device__ void QueuePair::update_wqe_ce_single<false>(int num_wqes) {
-  if (sq_counter % max_nwqe == (max_nwqe - 2)) {
+  if (sq_counter % sq_wqe_cnt == (sq_wqe_cnt - 2)) {
     set_completion_flag_on_wqe(num_wqes);
     quiet_counter++;
   }
@@ -193,7 +193,7 @@ __device__ void QueuePair::update_posted_wqe_generic(
 
   // Get the index for my thread's put in the SQ.
   uint64_t my_sq_counter = L.threadAtomicAdd(&sq_counter, num_wqes);
-  uint64_t my_sq_index = my_sq_counter % max_nwqe;
+  uint64_t my_sq_index = my_sq_counter % sq_wqe_cnt;
 
   // 16-bit little endian version of the SQ index needed to build the cntrl
   // segment in the WQE.
@@ -216,7 +216,7 @@ __device__ void QueuePair::update_posted_wqe_generic(
    * operation, starting at my_sq_index into the SQ. SegmentBuilder will
    * keep track of placing the segments in the correct location.
    */
-  SegmentBuilder seg_build(my_sq_index, current_sq);
+  SegmentBuilder seg_build(my_sq_index, sq_buf);
   seg_build.update_cntrl_seg(opcode, le_sq_counter, ctrl_qp_sq_in_stack_frame,
                              ctrl_sig_in_stack_frame, zero_byte_rd);
   seg_build.update_rdma_seg(raddr, rkey_in_stack_frame);
@@ -336,16 +336,16 @@ __device__ void QueuePair::waitSQSpace(int num_msgs) {
   // We cannot post more outstanding requests than the Send queue
   // size.  Force a quiet if we are out of space.
   local_sq_cnt += num_msgs;
-  int div = local_sq_cnt / max_nwqe;
+  int div = local_sq_cnt / sq_wqe_cnt;
 
   if (div > 0) {
     GPU_DPRINTF(
         "*** inside waitSQSpace forcing flush to overrun the SQ"
         " sq_counter %d  adding %d quiet_conter %d \n",
-        sq_counter, num_msgs, max_nwqe, quiet_counter);
+        sq_counter, num_msgs, sq_wqe_cnt, quiet_counter);
 
     quiet_single<THREAD>();
-    local_sq_cnt = local_sq_cnt % max_nwqe;
+    local_sq_cnt = local_sq_cnt % sq_wqe_cnt;
   }
 }
 

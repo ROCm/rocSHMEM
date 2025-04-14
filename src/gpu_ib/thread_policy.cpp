@@ -85,8 +85,7 @@ __device__ void WAVE::finishPost(QueuePair *handle, bool ring_db, int num_wqes,
                                  int pe, uint16_t le_sq_counter,
                                  uint8_t opcode) {
   if (ring_db) {
-    uint64_t db_val = handle->current_sq[8 * ((handle->sq_counter - num_wqes) %
-                                              handle->max_nwqe)];
+    uint64_t db_val = handle->sq_buf[8 * ((handle->sq_counter - num_wqes) % handle->sq_wqe_cnt)];
     handle->update_wqe_ce_thread<cqe>(num_wqes);
     handle->ring_doorbell(db_val);
   }
