@@ -113,10 +113,6 @@ class Connection {
 
   void finalize();
 
-  void post_wqes();
-
-  void post_dv_rc_wqe(int remote_conn);
-
   void reg_mr(void* ptr, size_t size, ibv_mr** mr);
 
   unsigned total_number_connections();
