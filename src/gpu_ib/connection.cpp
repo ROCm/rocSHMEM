@@ -86,13 +86,13 @@ void Connection::initialize(int num_block) {
   int ib_fork_err = ibv_fork_init();
   GPUIB_CHECK_ZERO(ib_fork_err, "ibv_fork_init");
   create_qps(port, backend->my_pe, &ib_state->portinfo);
-  MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t) * num_block, MPI_CHAR, all_qp.data(), sizeof(dest_info_t) * num_block, MPI_CHAR, backend->thread_comm);
+  MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t) * num_block, MPI_CHAR, dest_info.data(), sizeof(dest_info_t) * num_block, MPI_CHAR, backend->thread_comm);
   for (int i{0}; i < qps.size(); i++) {
-    change_status_rtr(qps[i], &all_qp[i], port);
+    change_status_rtr(qps[i], &dest_info[i], port);
   }
   MPI_Barrier(backend->thread_comm);
   for (int i{0}; i < qps.size(); i++) {
-    change_status_rts(qps[i], &all_qp[i]);
+    change_status_rts(qps[i], &dest_info[i]);
   }
   MPI_Barrier(backend->thread_comm);
 }
@@ -143,38 +143,34 @@ void Connection::create_qps(uint8_t port, int my_rank, ibv_port_attr* ib_port_at
   cap.max_send_wr = sq_size;
   cap.max_send_sge = 1;
   cap.max_inline_data = 4;
-  QPInitAttr qp_init_attr = qpattr(cap);
+  QPInitAttr qp_init_attr{qpattr(cap)};
   size_t qp_size = total_number_connections();
   cqs.resize(qp_size);
   qps.resize(qp_size);
   int cqe = qp_init_attr.attr.cap.max_send_wr;
   for (auto& entry : cqs) {
     entry = create_cq(ib_state->context, ib_state->pd, cqe);
-    if (!entry) {
-      abort();
-    }
+    GPUIB_CHECK_NNULL(entry, "create_cq");
   }
-  for (int i = 0; i < qps.size(); i++) {
+  for (int i{0}; i < qps.size(); i++) {
     qps[i] = create_qp(ib_state->pd, ib_state->context, &qp_init_attr.attr, cqs[i]);
-    if (!qps[i]) {
-      abort();
-    }
-    create_qps_3(port, qps[i], i, ib_port_att);
+    GPUIB_CHECK_NNULL(qps[i], "create_qp");
+    init_qp_status(qps[i], port);
+    dest_info[i].lid = ib_port_att->lid;
+    dest_info[i].qpn = qps[i]->qp_num;
+    dest_info[i].psn = 0;
+    union ibv_gid gid;
+    int err = ibv_query_gid(ib_state->context, port, 0, &gid);
+    GPUIB_CHECK_ZERO(err, "ibv_query_gid");
+    dest_info[i].gid = gid;
   }
 }
 
-/*
- * Create and write the rdma segment to the SQ
- */
 void Connection::set_rdma_seg(mlx5_wqe_raddr_seg* rdma, uint64_t address, uint32_t rkey) {
   rdma->raddr = htobe64(address);
   rdma->rkey = htobe32(rkey);
 }
 
-/*
- * Retrieve the address of a SQ.
- * We used this address to write the WQE directly to the SQ.
- */
 uint64_t* Connection::get_address_sq(int i) {
   mlx5dv_obj mlx_obj;
   mlx5dv_qp qp_out;
@@ -231,18 +227,15 @@ ibv_cq* Connection::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
   cq_attr.flags = 0;  // see ibv_exp_cq_create_flags
   cq_attr.comp_mask = IBV_CQ_INIT_ATTR_MASK_PD;
   cq_attr.parent_domain = pd;
-
   ibv_cq_ex* cq_ex = ibv_create_cq_ex(context, &cq_attr);
-
   GPUIB_CHECK_NNULL(cq_ex, "ibv_create_cq_ex");
-
   ibv_cq *cq = ibv_cq_ex_to_cq(cq_ex);
   GPUIB_CHECK_NNULL(cq, "ibv_cq_ex_to_cq");
   return cq;
 }
 
 void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
-  int hip_dev_id{0};
+  int hip_dev_id{-1};
   CHECK_HIP(hipGetDevice(&hip_dev_id));
   mlx5dv_cq cq_out;
   mlx5dv_obj mlx_obj;
@@ -251,7 +244,7 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   mlx5dv_init_obj(&mlx_obj, MLX5DV_OBJ_CQ);
   gpu_qp->cq_log_size = log2(cq_out.cqe_cnt);
   gpu_qp->cq_size = cq_out.cqe_cnt;
-  void* gpu_ptr {nullptr};
+  void* gpu_ptr{nullptr};
   if (use_gpu_mem) {
     gpu_qp->current_cq_q = reinterpret_cast<mlx5_cqe64*>(cq_out.buf);
     gpu_qp->dbrec_cq = reinterpret_cast<volatile uint32_t*>(cq_out.dbrec);
@@ -299,10 +292,8 @@ ibv_qp* Connection::create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr
   qp_attr->recv_cq = cq;
   qp_attr->pd = pd;
   qp_attr->comp_mask = IBV_QP_INIT_ATTR_PD;
-  qp = create_qp_0(context, qp_attr);
-  if (!qp) {
-    ibv_destroy_cq(cq);
-  }
+  qp = ibv_create_qp_ex(context, qp_attr);
+  GPUIB_CHECK_NNULL(qp, "ibv_create_qp_ex");
   return qp;
 }
 
@@ -338,13 +329,6 @@ Connection::RtsState Connection::rts(dest_info_t* dest) {
   return rts;
 }
 
-ibv_qp* Connection::create_qp_0(ibv_context* context, ibv_qp_init_attr_ex* qp_attr) {
-  ibv_qp *qp = ibv_create_qp_ex(context, qp_attr);
-  GPUIB_CHECK_NNULL(qp, "ibv_create_qp_ex");
-  return qp;
-}
-
-
 void Connection::get_remote_conn(int* remote_conn) {
   *remote_conn = backend->num_pes;
 }
@@ -374,7 +358,7 @@ void Connection::post_dv_rc_wqe(int remote_conn) {
     for (int j{0}; j < num_blocks; j++) {
       int qp_index = i * num_blocks + j;
       uint64_t* ptr = get_address_sq(qp_index);
-      const uint16_t nb_post = 1;  // 4 * sq_size;
+      const uint16_t nb_post = 1;
       for (uint16_t index{0}; index < nb_post; index++) {
         uint8_t op_mod = 0;
         uint8_t op_code = 8;
@@ -410,19 +394,8 @@ void Connection::post_wqes() {
   post_dv_rc_wqe(remote_conn);
 }
 
-void Connection::create_qps_3(int port, ibv_qp* qp, int offset, ibv_port_attr* ib_port_att) {
-  init_qp_status(qp, port);
-  all_qp[offset].lid = ib_port_att->lid;
-  all_qp[offset].qpn = qp->qp_num;
-  all_qp[offset].psn = 0;
-  union ibv_gid gid;
-  int err = ibv_query_gid(ib_state->context, port, 0, &gid);
-  GPUIB_CHECK_ZERO(err, "ibv_query_gid");
-  all_qp[offset].gid = gid;
-}
-
 void Connection::allocate_dynamic_members(int num_blocks) {
-  all_qp.resize(backend->num_pes * num_blocks);
+  dest_info.resize(backend->num_pes * num_blocks);
 }
 
 }  // namespace rocshmem

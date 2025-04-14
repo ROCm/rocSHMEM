@@ -59,12 +59,6 @@ class Connection {
     uint32_t rkey;
   } heap_info_t;
 
-  struct sq_post_dv_t {
-    uint64_t segments[16];
-    uint32_t current_sq;
-    uint16_t wqe_idx;
-  };
-
   class State {
    public:
     ibv_qp_attr exp_qp_attr{};
@@ -75,10 +69,7 @@ class Connection {
    public:
     InitQPState() {
       exp_qp_attr.qp_state = IBV_QPS_INIT;
-      exp_qp_attr.qp_access_flags =
-          IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
-          IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
-
+      exp_qp_attr.qp_access_flags = IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
       exp_attr_mask = IBV_QP_STATE | IBV_QP_PKEY_INDEX | IBV_QP_PORT;
     }
   };
@@ -91,7 +82,6 @@ class Connection {
       exp_qp_attr.ah_attr.sl = 1;
       exp_qp_attr.max_dest_rd_atomic = 1;
       exp_qp_attr.min_rnr_timer = 12;
-
       exp_attr_mask = IBV_QP_STATE | IBV_QP_AV | IBV_QP_PATH_MTU;
     }
   };
@@ -104,9 +94,7 @@ class Connection {
       exp_qp_attr.retry_cnt = 7;
       exp_qp_attr.rnr_retry = 7;
       exp_qp_attr.max_rd_atomic = 1;
-
-      exp_attr_mask = IBV_QP_STATE | IBV_QP_TIMEOUT | IBV_QP_RETRY_CNT |
-                      IBV_QP_RNR_RETRY | IBV_QP_MAX_QP_RD_ATOMIC;
+      exp_attr_mask = IBV_QP_STATE | IBV_QP_TIMEOUT | IBV_QP_RETRY_CNT | IBV_QP_RNR_RETRY | IBV_QP_MAX_QP_RD_ATOMIC;
     }
   };
 
@@ -142,14 +130,11 @@ class Connection {
 
   void free_rkey_handle(uint32_t* heap_rkey_handle);
 
-  /*
-   * Populate a QueuePair for use on the GPU from the internal IB state.
-   */
   void init_gpu_qp_from_connection(QueuePair* qp, int conn_num);
 
-  std::vector<dest_info_t> all_qp;
+  std::vector<dest_info_t> dest_info;
 
- protected:
+ private:
   Connection() = default;
 
   InitQPState initqp(uint8_t port);
@@ -171,22 +156,14 @@ class Connection {
   template <typename T>
   void try_to_modify_qp(ibv_qp* qp, T state);
 
-  void create_qps_3(int port, ibv_qp* qp, int offset, ibv_port_attr* ib_port_att);
-
-  ibv_qp* create_qp_0(ibv_context* context, ibv_qp_init_attr_ex* qp_attr);
-
   void allocate_dynamic_members(int num_block);
-
-  void initialize_1(int port, int num_block);
 
   /*
    * ibv interface functions must be static.
    */
-  static void* buf_alloc(ibv_pd* pd, void* pd_context, size_t size,
-                         size_t alignment, uint64_t resource_type);
+  static void* buf_alloc(ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type);
 
-  static void buf_release(ibv_pd* pd, void* pd_context, void* ptr,
-                          uint64_t resource_type);
+  static void buf_release(ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type);
 
   void init_parent_domain_attr(ibv_parent_domain_init_attr* attr);
 
@@ -196,8 +173,7 @@ class Connection {
 
   ibv_cq* create_cq(ibv_context* context, ibv_pd* pd, int cqe);
 
-  ibv_qp* create_qp(ibv_pd* pd, ibv_context* context,
-                    ibv_qp_init_attr_ex* qp_attr, ibv_cq* rcq);
+  ibv_qp* create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr_ex* qp_attr, ibv_cq* rcq);
 
   GPUIBBackend* backend{nullptr};
 
@@ -211,7 +187,6 @@ class Connection {
 
   static int use_gpu_mem;
 
- private:
   void ib_init(ibv_device* ib_dev, uint8_t port);
 
   char* requested_dev{nullptr};
