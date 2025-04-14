@@ -103,7 +103,7 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
 [[maybe_unused]] __host__ int rocshmem_init_attr(unsigned int flags,
 						 rocshmem_init_attr_t *attr) {
-  MPI_Comm comm;
+  MPI_Comm comm = MPI_COMM_NULL;
 
   if ((attr == nullptr) || 
       ((flags != ROCSHMEM_INIT_WITH_UNIQUEID) &&
