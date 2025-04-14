@@ -259,9 +259,6 @@ class QueuePair {
 
  public:
 
-  /*
-   * Pointer to the hardware doorbell register for the QP.
-   */
   db_reg_t db{};
 
   atomic_ret_t atomic_ret{};
@@ -286,9 +283,9 @@ class QueuePair {
    *   uint64_t                comp_mask;
    * };
   */
-  mlx5_cqe64 *current_cq_q_H{nullptr};
-  mlx5_cqe64 *current_cq_q{nullptr};
-  volatile uint32_t *dbrec_cq{nullptr};
+  mlx5_cqe64 *cq_buf_head{nullptr};
+  mlx5_cqe64 *cq_buf{nullptr};
+  volatile uint32_t *cq_dbrec{nullptr};
   uint32_t cq_cnt{0};
   uint32_t cq_log_cnt{0};
 
@@ -330,12 +327,6 @@ class QueuePair {
   uint32_t lkey{0};
 
   uint64_t db_val{};
-  /*
-   * Pointer to the QP in global memory that this QP is copied from.  When
-   * this QP is destroyed, the dynamic (indicies, etc) in the
-   * global_qp are updated.
-   */
-  QueuePair *global_qp{nullptr};
 
   friend SingleThreadImpl;
   friend THREAD;

@@ -38,13 +38,6 @@ QueuePair::QueuePair(GPUIBBackend *backend) {
 }
 
 __device__ QueuePair::~QueuePair() {
-  global_qp->sq_counter = sq_counter;
-  global_qp->local_sq_cnt = local_sq_cnt;
-  global_qp->cq_consumer_counter = cq_consumer_counter;
-  global_qp->sq_buf = sq_buf;
-  global_qp->current_cq_q = current_cq_q;
-  global_qp->quiet_counter = quiet_counter;
-  __syncthreads();
 }
 
 __device__ uint8_t QueuePair::get_cq_error_syndrome(mlx5_cqe64 *cqe_entry) {
@@ -112,7 +105,7 @@ __device__ void QueuePair::quiet_internal() {
    */
   cq_consumer_counter = cq_consumer_counter + quiet_val - 1;
   uint32_t index = (cq_consumer_counter % cq_cnt);
-  mlx5_cqe64 *cqe_entry = &current_cq_q[index];
+  mlx5_cqe64 *cqe_entry = &cq_buf[index];
 
   /*
    * Access the op_own value in the completion queue entry.
@@ -159,7 +152,7 @@ __device__ void QueuePair::quiet_internal() {
    * completion queue.
    */
   cq_consumer_counter++;
-  swap_endian_store(const_cast<uint32_t *>(dbrec_cq), cq_consumer_counter);
+  swap_endian_store(const_cast<uint32_t *>(cq_dbrec), cq_consumer_counter);
 }
 
 template <class level>
