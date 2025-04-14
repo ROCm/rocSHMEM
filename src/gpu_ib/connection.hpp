@@ -51,11 +51,6 @@ class Connection {
     union ibv_gid gid;
   } dest_info_t;
 
-  typedef struct heap_info {
-    void* base_heap;
-    uint32_t rkey;
-  } heap_info_t;
-
   class State {
    public:
     ibv_qp_attr exp_qp_attr{};
