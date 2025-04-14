@@ -43,7 +43,7 @@ void NetworkImpl::heap_memory_rkey(char *local_heap_base, size_t heap_size, MPI_
    * Allocate host-side memory to hold remote keys for all processing elements.
    */
   const size_t rkeys_size = sizeof(uint32_t) * num_pes;
-  uint32_t *host_rkey_cpy = reinterpret_cast<uint32_t *>(malloc(rkeys_size));
+  uint32_t *host_rkey_cpy = reinterpret_cast<uint32_t*>(malloc(rkeys_size));
   if (host_rkey_cpy == nullptr) { abort(); }
 
   /*

@@ -28,7 +28,7 @@
 namespace rocshmem {
 
 __device__ SegmentBuilder::SegmentBuilder(uint64_t wqe_idx, void *base) {
-  mlx5_segment *base_ptr = static_cast<mlx5_segment *>(base);
+  mlx5_segment *base_ptr = static_cast<mlx5_segment*>(base);
   size_t segment_offset = SEGMENTS_PER_WQE * wqe_idx;
   seg_ptr = &base_ptr[segment_offset];
 }

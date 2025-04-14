@@ -51,7 +51,7 @@ __device__ void swap_endian_store(uint64_t *dst, const uint64_t val) {
 
 template <>
 __device__ void swap_endian_store(int64_t *dst, const int64_t val) {
-  swap_endian_store(reinterpret_cast<uint64_t *>(dst), (const uint64_t)val);
+  swap_endian_store(reinterpret_cast<uint64_t*>(dst), (const uint64_t)val);
 }
 
 template <>
@@ -63,7 +63,7 @@ __device__ void swap_endian_store(uint32_t *dst, const uint32_t val) {
 
 template <>
 __device__ void swap_endian_store(int32_t *dst, const int32_t val) {
-  swap_endian_store(reinterpret_cast<uint32_t *>(dst), (const uint32_t)val);
+  swap_endian_store(reinterpret_cast<uint32_t*>(dst), (const uint32_t)val);
 }
 
 template <>
@@ -73,7 +73,7 @@ __device__ void swap_endian_store(uint16_t *dst, const uint16_t val) {
 
 template <>
 __device__ void swap_endian_store(int16_t *dst, const int16_t val) {
-  swap_endian_store(reinterpret_cast<uint16_t *>(dst), (const uint16_t)val);
+  swap_endian_store(reinterpret_cast<uint16_t*>(dst), (const uint16_t)val);
 }
 
 }  // namespace rocshmem

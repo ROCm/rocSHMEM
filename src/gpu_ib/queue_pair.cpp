@@ -41,19 +41,19 @@ __device__ QueuePair::~QueuePair() {
 }
 
 __device__ uint8_t QueuePair::get_cq_error_syndrome(mlx5_cqe64 *cqe_entry) {
-  mlx5_err_cqe *cqe_err = reinterpret_cast<mlx5_err_cqe *>(cqe_entry);
+  mlx5_err_cqe *cqe_err = reinterpret_cast<mlx5_err_cqe*>(cqe_entry);
   return cqe_err->syndrome;
 }
 
 __device__ void QueuePair::ring_doorbell(uint64_t db_val) {
-  swap_endian_store(const_cast<uint32_t *>(sq_dbrec), reinterpret_cast<uint32_t>(sq_counter));
+  swap_endian_store(const_cast<uint32_t*>(sq_dbrec), reinterpret_cast<uint32_t>(sq_counter));
   STORE(db.ptr, db_val);
   db.uint ^= 256;
 }
 
 __device__ void QueuePair::set_completion_flag_on_wqe(int num_wqes) {
   uint64_t *wqe = &sq_buf[8 * ((sq_counter - num_wqes) % sq_wqe_cnt)];
-  uint8_t *wqe_ce = reinterpret_cast<uint8_t *>(wqe) + 11;
+  uint8_t *wqe_ce = reinterpret_cast<uint8_t*>(wqe) + 11;
   *wqe_ce = 8;
 }
 
@@ -127,7 +127,7 @@ __device__ void QueuePair::quiet_internal() {
   uint8_t opcode = val_op_own >> 4;
   if (opcode != 0) {
     uint8_t syndrome = get_cq_error_syndrome(cqe_entry);
-    mlx5_err_cqe *cqe_err = reinterpret_cast<mlx5_err_cqe *>(cqe_entry);
+    mlx5_err_cqe *cqe_err = reinterpret_cast<mlx5_err_cqe*>(cqe_entry);
     GPU_DPRINTF("QUIET ERROR: signature %d opcode_qpn %llx wqe_cnt %llx \n", syndrome, cqe_err->s_wqe_opcode_qpn, cqe_err->wqe_counter);
   }
 
@@ -152,7 +152,7 @@ __device__ void QueuePair::quiet_internal() {
    * completion queue.
    */
   cq_consumer_counter++;
-  swap_endian_store(const_cast<uint32_t *>(cq_dbrec), cq_consumer_counter);
+  swap_endian_store(const_cast<uint32_t*>(cq_dbrec), cq_consumer_counter);
 }
 
 template <class level>
@@ -224,32 +224,32 @@ __device__ void QueuePair::update_posted_wqe_generic(int pe, int32_t size, uintp
  *****************************************************************************/
 template <class level>
 __device__ void QueuePair::put_nbi(void *dest, const void *source, size_t nelems, int pe, bool db_ring) {
-  uintptr_t *src = reinterpret_cast<uintptr_t *>(const_cast<void *>(source));
-  uintptr_t *dst = reinterpret_cast<uintptr_t *>(dest);
+  uintptr_t *src = reinterpret_cast<uintptr_t*>(const_cast<void*>(source));
+  uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
   update_posted_wqe_generic<level, false>(pe, nelems, src, dst, MLX5_OPCODE_RDMA_WRITE, 0, 0, db_ring, 0);
 }
 
 template <class level>
 __device__ void QueuePair::put_nbi_cqe(void *dest, const void *source, size_t nelems, int pe, bool db_ring) {
-  uintptr_t *src = reinterpret_cast<uintptr_t *>(const_cast<void *>(source));
-  uintptr_t *dst = reinterpret_cast<uintptr_t *>(dest);
+  uintptr_t *src = reinterpret_cast<uintptr_t*>(const_cast<void*>(source));
+  uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
   update_posted_wqe_generic<level, true>(pe, nelems, src, dst, MLX5_OPCODE_RDMA_WRITE, 0, 0, db_ring, 0);
 }
 
 template <class level>
 __device__ void QueuePair::zero_b_rd(int pe) {
-  uintptr_t *dst = reinterpret_cast<uintptr_t *>(base_heap[pe]);
+  uintptr_t *dst = reinterpret_cast<uintptr_t*>(base_heap[pe]);
   update_posted_wqe_generic<level, true>(pe, 0, nullptr, dst, MLX5_OPCODE_RDMA_READ, 0, 0, true, 0, true);
 }
 
 __device__ int64_t QueuePair::atomic_fetch(void *dest, int64_t value, int64_t cond, int pe, bool db_ring, uint8_t atomic_op) {
   THREAD TH;
-  uint64_t pos = TH.threadAtomicAdd(reinterpret_cast<unsigned long long *>(&atomic_ret.atomic_counter));
+  uint64_t pos = TH.threadAtomicAdd(reinterpret_cast<unsigned long long*>(&atomic_ret.atomic_counter));
   pos = pos % max_nb_atomic;
-  int64_t *atomic_base_ptr = reinterpret_cast<int64_t *>(atomic_ret.atomic_base_ptr);
+  int64_t *atomic_base_ptr = reinterpret_cast<int64_t*>(atomic_ret.atomic_base_ptr);
   int64_t *load_address = &atomic_base_ptr[pos];
   *load_address = -100;
-  uintptr_t *dst = reinterpret_cast<uintptr_t *>(dest);
+  uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
   update_posted_wqe_generic<THREAD, true>(pe, sizeof(int64_t), nullptr, dst, atomic_op, value, cond, db_ring, pos);
   quiet_single<THREAD>();
   while (uncached_load(load_address) == -100) { }
@@ -260,9 +260,9 @@ __device__ int64_t QueuePair::atomic_fetch(void *dest, int64_t value, int64_t co
 
 __device__ void QueuePair::atomic_nofetch(void *dest, int64_t value, int64_t cond, int pe, bool db_ring, uint8_t atomic_op) {
   THREAD TH;
-  uint64_t pos = TH.threadAtomicAdd(reinterpret_cast<unsigned long long *>(&atomic_ret.atomic_counter));
+  uint64_t pos = TH.threadAtomicAdd(reinterpret_cast<unsigned long long*>(&atomic_ret.atomic_counter));
   pos = pos % max_nb_atomic;
-  uintptr_t *dst = reinterpret_cast<uintptr_t *>(dest);
+  uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
   update_posted_wqe_generic<THREAD, true>(pe, sizeof(int64_t), nullptr, dst, atomic_op, value, cond, db_ring, pos);
   quiet_single<THREAD>();
 }
