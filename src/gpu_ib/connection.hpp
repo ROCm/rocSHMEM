@@ -120,9 +120,9 @@ class Connection {
   };
 
  public:
-  Connection(GPUIBBackend* backend, int key_offset);
+  Connection(GPUIBBackend* backend);
 
-  virtual ~Connection();
+  ~Connection();
 
   void initialize(int num_block);
 
@@ -205,19 +205,13 @@ class Connection {
 
   ib_state_t* ib_state{nullptr};
 
-  const int key_offset{0};
-
   std::vector<ibv_cq*> cqs;
 
   std::vector<ibv_qp*> qps;
 
-  uint64_t counter_wqe{0};
-
   static int use_gpu_mem;
 
  private:
-  void init_shmem_handle();
-
   void ib_init(ibv_device* ib_dev, uint8_t port);
 
   char* requested_dev{nullptr};

@@ -127,7 +127,7 @@ void NetworkImpl::networkHostSetup(GPUIBBackend *B) {
   num_pes = B->num_pes;
   my_pe = B->my_pe;
   num_blocks = B->num_blocks_;
-  connection = new Connection(B, 0);
+  connection = new Connection(B);
   connection->initialize(B->num_blocks_);
   const auto &heap_bases{B->heap.get_heap_bases()};
   heap_memory_rkey(heap_bases[my_pe], B->heap.get_size(), B->thread_comm, B->heap.is_managed());
