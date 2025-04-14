@@ -160,17 +160,17 @@ class Connection {
 
   ibv_qp* create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr_ex* qp_attr, ibv_cq* rcq);
 
-  GPUIBBackend* backend{nullptr};
-
-  uint32_t sq_size{1024};
-
-  ib_state_t* ib_state{nullptr};
+  void ib_init(ibv_device* ib_dev, uint8_t port);
 
   std::vector<ibv_cq*> cqs;
 
   std::vector<ibv_qp*> qps;
 
-  void ib_init(ibv_device* ib_dev, uint8_t port);
+  GPUIBBackend* backend{nullptr};
+
+  uint32_t sq_size{1024};
+
+  ib_state_t* ib_state{nullptr};
 
   char* requested_dev{nullptr};
 

@@ -34,13 +34,13 @@
 
 #include <infiniband/mlx5dv.h>
 
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "atomic_return.hpp"
 #include "thread_policy.hpp"
 
 namespace rocshmem {
 
 class GPUIBBackend;
+class Connection;
 
 typedef union db_reg {
   uint64_t *ptr;
@@ -49,6 +49,11 @@ typedef union db_reg {
 
 class QueuePair {
  public:
+  friend Connection;
+  friend SingleThreadImpl;
+  friend THREAD;
+  friend WAVE;
+
   /**
    * @brief Constructor.
    *
@@ -169,7 +174,11 @@ class QueuePair {
    */
   void setDBval(uint64_t val);
 
- protected:
+  atomic_ret_t atomic_ret{};
+
+  char *const *base_heap{nullptr};
+
+ private:
   /**
    * @brief Helper method to build work requests for the send queue.
    *
@@ -188,10 +197,8 @@ class QueuePair {
    * @param[in] zero_byte_rd Boolean if zero byte read should be used.
    */
   template <class level, bool cqe>
-  __device__ __attribute__((noinline)) void update_posted_wqe_generic(
-      int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode,
-      int64_t atomic_data, int64_t atomic_cmp, bool ring_db,
-      uint64_t atomic_ret_pos, bool zero_byte_rd = false);
+  __device__ __attribute__((noinline)) void update_posted_wqe_generic(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode,
+      int64_t atomic_data, int64_t atomic_cmp, bool ring_db, uint64_t atomic_ret_pos, bool zero_byte_rd = false);
 
   /**
    * @brief Helper method to drain completion queue entries.
@@ -254,18 +261,9 @@ class QueuePair {
    */
   __device__ uint8_t get_cq_error_syndrome(mlx5_cqe64 *cq_entry);
 
- private:
-  const int inline_threshold{8};
-
- public:
-
   db_reg_t db{};
 
-  atomic_ret_t atomic_ret{};
-
   ThreadImpl threadImpl{};
-
-  char *const *base_heap{nullptr};
 
   uint32_t sq_counter{0};
   uint32_t local_sq_cnt{0};
@@ -328,9 +326,7 @@ class QueuePair {
 
   uint64_t db_val{};
 
-  friend SingleThreadImpl;
-  friend THREAD;
-  friend WAVE;
+  const int inline_threshold{8};
 };
 
 }  // namespace rocshmem
