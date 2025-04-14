@@ -118,6 +118,7 @@ void NetworkImpl::networkHostSetup(GPUIBBackend *backend) {
   const auto &heap_bases{backend->heap.get_heap_bases()};
   heap_memory_rkey(heap_bases[my_pe], backend->heap.get_size(), backend->thread_comm);
   setup_atomic_region();
+  connection->post_wqes();
   setup_gpu_qps(backend);
 }
 

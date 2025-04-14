@@ -319,6 +319,47 @@ Connection::QPInitAttr Connection::qpattr(ibv_qp_cap cap) {
   return qpattr;
 }
 
+void Connection::post_dv_rc_wqe(int remote_conn) {
+  mlx5_wqe_ctrl_seg* ctrl;
+  mlx5_wqe_raddr_seg* rdma;
+  mlx5_wqe_data_seg* data;
+
+  for (int i{0}; i < remote_conn; i++) {
+    int num_contexts = backend->maximum_num_contexts_;
+    for (int j{0}; j < num_contexts; j++) {
+      int qp_index = i * num_contexts + j;
+      uint64_t* ptr = get_address_sq(qp_index);
+      uint8_t op_code = 8; // rdma_write
+      uint8_t op_mod = 0; // operation modifier
+      uint32_t qp_num = qps[qp_index]->qp_num;
+      uint8_t fm_ce_se = 0; // fence,completion,solicited_event
+      uint8_t ds = 3; // number segments (16B each)
+      ctrl = reinterpret_cast<mlx5_wqe_ctrl_seg*>(ptr);
+      mlx5dv_set_ctrl_seg(ctrl, 0, op_code, op_mod, qp_num, fm_ce_se, ds, 0, 0);
+      ptr = ptr + 2; // 16B
+
+      rdma = reinterpret_cast<mlx5_wqe_raddr_seg*>(ptr);
+      const auto& heap_bases = backend->heap.get_heap_bases();
+      auto temp = heap_bases[(backend->my_pe + 1) % 2];
+      uint64_t r_address = reinterpret_cast<uint64_t>(temp);
+      uint32_t rkey = backend->networkImpl.heap_rkey[i];
+      set_rdma_seg(rdma, r_address, rkey);
+      ptr = ptr + 2; // 16B
+
+      data = reinterpret_cast<mlx5_wqe_data_seg*>(ptr);
+      uint32_t lkey = backend->networkImpl.heap_mr->lkey;
+      temp = heap_bases[backend->my_pe];
+      uint64_t address = reinterpret_cast<uint64_t>(temp);
+      mlx5dv_set_data_seg(data, 1, lkey, address);
+      ptr = ptr + 4; // 32B
+    }
+  }
+}
+
+void Connection::post_wqes() {
+  post_dv_rc_wqe(backend->num_pes);
+}
+
 void Connection::allocate_dynamic_members(int num_contexts) {
   dest_info.resize(backend->num_pes * num_contexts);
 }
