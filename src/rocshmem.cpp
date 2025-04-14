@@ -185,14 +185,25 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   library_init(comm);
 }
 
-[[maybe_unused]] int rocshmem_my_pe() {
-  MPIInitSingleton *s = s->GetInstance();
-  return s->get_rank();
+[[maybe_unused]] __host__ int rocshmem_my_pe() {
+  if(backend == nullptr) {
+    MPIInitSingleton *s = s->GetInstance();
+    return s->get_rank();
+  }
+  else
+  {
+    return backend->getMyPE();
+  }
 }
 
-[[maybe_unused]] int rocshmem_n_pes() {
-  MPIInitSingleton *s = s->GetInstance();
-  return s->get_nprocs();
+[[maybe_unused]] __host__ int rocshmem_n_pes() {
+  if(backend == nullptr) {
+    MPIInitSingleton *s = s->GetInstance();
+    return s->get_nprocs();
+  }
+  else {
+    return backend->getNumPEs();
+  }
 }
 
 [[maybe_unused]] void *rocshmem_malloc(size_t size) {
