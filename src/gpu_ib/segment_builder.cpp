@@ -50,8 +50,8 @@ __device__ void SegmentBuilder::update_cntrl_seg(uint8_t opcode, uint16_t wqe_id
 
 __device__ void SegmentBuilder::update_atomic_data_seg(uint64_t atomic_data, uint64_t atomic_cmp) {
   mlx5_wqe_atomic_seg atomic_seg;
-  swap_endian_store(reinterpret_cast<uint64_t *>(&atomic_seg.swap_add), atomic_data);
-  swap_endian_store(reinterpret_cast<uint64_t *>(&atomic_seg.compare), atomic_cmp);
+  swap_endian_store(reinterpret_cast<uint64_t*>(&atomic_seg.swap_add), atomic_data);
+  swap_endian_store(reinterpret_cast<uint64_t*>(&atomic_seg.compare), atomic_cmp);
   memcpy(&seg_ptr->atomic_seg, &atomic_seg, sizeof(mlx5_wqe_atomic_seg));
   seg_ptr++;
 }
@@ -59,7 +59,7 @@ __device__ void SegmentBuilder::update_atomic_data_seg(uint64_t atomic_data, uin
 __device__ void SegmentBuilder::update_rdma_seg(uintptr_t *raddr, uint32_t rkey) {
   mlx5_wqe_raddr_seg raddr_seg;
   raddr_seg.rkey = rkey;
-  swap_endian_store(reinterpret_cast<uint64_t *>(&raddr_seg.raddr), reinterpret_cast<uint64_t>(raddr));
+  swap_endian_store(reinterpret_cast<uint64_t*>(&raddr_seg.raddr), reinterpret_cast<uint64_t>(raddr));
   memcpy(&seg_ptr->raddr_seg, &raddr_seg, sizeof(mlx5_wqe_raddr_seg));
   seg_ptr++;
 }
@@ -71,7 +71,7 @@ __device__ void SegmentBuilder::update_data_seg(uintptr_t *laddr, int32_t size, 
   mlx5_wqe_data_seg data_seg;
   data_seg.lkey = lkey;
   swap_endian_store(&data_seg.byte_count, size & 0x7FFFFFFFU);
-  swap_endian_store(reinterpret_cast<uint64_t *>(&data_seg.addr), reinterpret_cast<uint64_t>(laddr));
+  swap_endian_store(reinterpret_cast<uint64_t*>(&data_seg.addr), reinterpret_cast<uint64_t>(laddr));
   memcpy(&seg_ptr->data_seg, &data_seg, sizeof(mlx5_wqe_data_seg));
   seg_ptr++;
 }

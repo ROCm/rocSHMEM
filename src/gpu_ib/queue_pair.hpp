@@ -329,8 +329,6 @@ class QueuePair {
   uint32_t rkey{0};
   uint32_t lkey{0};
 
-  bool sq_overflow{0};
-
   uint64_t db_val{};
   /*
    * Pointer to the QP in global memory that this QP is copied from.  When

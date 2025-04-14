@@ -43,7 +43,6 @@ __device__ QueuePair::~QueuePair() {
   global_qp->cq_consumer_counter = cq_consumer_counter;
   global_qp->sq_buf = sq_buf;
   global_qp->current_cq_q = current_cq_q;
-  global_qp->sq_overflow = sq_overflow;
   global_qp->quiet_counter = quiet_counter;
   __syncthreads();
 }
@@ -193,7 +192,6 @@ __device__ void QueuePair::update_posted_wqe_generic(int pe, int32_t size, uintp
   uint16_t sq_counter_u16 = my_sq_counter;
   swap_endian_store(&le_sq_counter, sq_counter_u16);
 
-  bool flag = sq_overflow;
   uint32_t lkey_in_stack_frame = lkey;
   uint32_t rkey_in_stack_frame = rkey;
   uint32_t ctrl_qp_sq_in_stack_frame = ctrl_qp_sq;
