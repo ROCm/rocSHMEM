@@ -23,11 +23,6 @@
 #include "connection.hpp"
 #include "gpuib_macros.inl"
 
-#include <mpi.h>
-
-#include <mutex>  // NOLINT(build/c++11)
-#include <vector>
-
 #include "backend_ib.hpp"
 #include "queue_pair.hpp"
 #include "util.hpp"
