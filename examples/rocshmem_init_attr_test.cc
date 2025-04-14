@@ -40,7 +40,7 @@ int main (int argc, char **argv)
     MPI_Comm_size (MPI_COMM_WORLD, &world_nranks);
 
     // Create two disjoint groups of processes, each
-    // one creating a unique rocshmem environment independet
+    // one creating a unique rocshmem environment independent
     // of the other group
     MPI_Comm newcomm;
     int color = world_rank %2;
