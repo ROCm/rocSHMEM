@@ -290,10 +290,10 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   gpu_qp->rkey = (reinterpret_cast<uint32_t*>(sq))[6];
   gpu_qp->lkey = (reinterpret_cast<uint32_t*>(sq))[9];
 
-  printf("host-side read of WR rkey %u\n", gpu_qp->rkey);
-  printf("backend->networkImpl.heap_rke[conn_num] %u\n", backend->networkImpl.heap_rkey[conn_num]);
-  printf("host-side read of WR lkey %u\n", gpu_qp->lkey);
-  printf("backend->networkImpl.heap_mr->lkey[i] %u\n", backend->networkImpl.heap_mr->lkey);
+  printf("host-side read of WR rkey %x\n", gpu_qp->rkey);
+  printf("backend->networkImpl.heap_rke[conn_num] %x\n", backend->networkImpl.heap_rkey[conn_num]);
+  printf("host-side read of WR lkey %x\n", gpu_qp->lkey);
+  printf("backend->networkImpl.heap_mr->lkey[i] %x\n", backend->networkImpl.heap_mr->lkey);
 }
 
 ibv_qp* Connection::create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr_ex* qp_attr, ibv_cq* cq) {
