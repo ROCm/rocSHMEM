@@ -140,11 +140,11 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   swap_endian_store(&be_sq_counter, sq_counter_u16);
 
   printf("BANG3\n");
-  if (ring_db) {
-    uint64_t db_val = sq_buf[8 * ((be_sq_counter - num_wqes) % sq_wqe_cnt)];
-    update_wqe_ce(num_wqes);
-    ring_doorbell(db_val);
-  }
+//  if (ring_db) {
+//    uint64_t db_val = sq_buf[8 * ((be_sq_counter - num_wqes) % sq_wqe_cnt)];
+//    update_wqe_ce(num_wqes);
+//    ring_doorbell(db_val);
+//  }
 
   union mlx5_segment {
     mlx5_wqe_ctrl_seg ctrl_seg;
@@ -156,7 +156,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   mlx5_segment *base_ptr = reinterpret_cast<mlx5_segment*>(sq_buf);
   size_t segment_offset = my_sq_index * 4;
   const uint8_t *d = reinterpret_cast<const uint8_t*>(&base_ptr[segment_offset]);
-  printf("DEVICE WQE: "
+  printf("DEV: "
    "%02x %02x %02x %02x %02x %02x %02x %02x "
    "%02x %02x %02x %02x %02x %02x %02x %02x "
    "%02x %02x %02x %02x %02x %02x %02x %02x "
