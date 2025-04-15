@@ -41,6 +41,7 @@ endif()
 ###############################################################################
 option(DEBUG "Enable debug trace" OFF)
 option(PROFILE "Enable statistics and timing support" OFF)
+option(ASAN "Enable address sanitizer" OFF)
 option(USE_RO "Enable RO conduit." ON)
 option(USE_IPC "Enable IPC support (using HIP)" OFF)
 option(USE_THREADS "Enable workgroup threads to share network queues" OFF)
@@ -137,6 +138,11 @@ if (NOT BUILD_TESTS_ONLY)
   set(GPU_TARGETS "${DEFAULT_GPUS}" CACHE STRING
       "Target default GPUs if GPU_TARGETS is not defined.")
 
+  if (ASAN)
+    message(STATUS "Adding xnack+ to GPU_TARGET to enable ASAN address sanitizer")
+    list(TRANSFORM GPU_TARGETS APPEND ":xnack+" REGEX "[^+]$")
+  endif()
+
   if (COMMAND rocm_check_target_ids)
     message(STATUS "Checking for ROCm support for GPU targets: " "${GPU_TARGETS}")
     rocm_check_target_ids(SUPPORTED_GPUS TARGETS ${GPU_TARGETS})
@@ -185,6 +191,18 @@ if (NOT BUILD_TESTS_ONLY)
       hip::device
       hip::host
       hsa-runtime64::hsa-runtime64
+  )
+
+  target_link_options(
+    ${PROJECT_NAME}
+    PUBLIC
+      $<$<BOOL:${ASAN}>:-fsanitize=address -g -shared-libsan>
+  )
+
+  target_compile_options(
+    ${PROJECT_NAME}
+    PUBLIC
+      $<$<BOOL:${ASAN}>:-fsanitize=address -g>
   )
 endif()
 
