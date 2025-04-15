@@ -58,8 +58,6 @@ class GPUIBHostContext : public Context {
   template <typename T>
   T amo_fetch_cas(void *dst, T value, T cond, int pe);
 
-  void fence();
-
   void quiet();
 
   void barrier_all();
@@ -82,10 +80,8 @@ class GPUIBHostContext : public Context {
   int test(T *ivars, int cmp, T val);
 
  public:
-  /* Pointer to the backend's host interface */
   HostInterface *host_interface{nullptr};
 
-  /* An MPI Window implements a context */
   WindowInfo *context_window_info{nullptr};
 };
 

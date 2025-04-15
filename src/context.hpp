@@ -236,11 +236,6 @@ class Context {
   int test(T *ivars, int cmp, T val);
 
  public:
-  /**
-   * @brief Set the fence policy using a runtime option
-   */
-  __device__ void setFence() { fence_ = Fence(); }
-
   /**************************************************************************
    ***************************** PUBLIC MEMBERS *****************************
    *************************************************************************/
@@ -263,11 +258,6 @@ class Context {
    * @brief Coalesce policy for 'multi' configuration builds
    */
   WavefrontCoalescer wf_coal_{};
-
-  /**
-   * @brief Controls fence behavior in device code
-   */
-  Fence fence_{};
 };
 
 }  // namespace rocshmem

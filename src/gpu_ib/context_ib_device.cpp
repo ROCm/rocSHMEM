@@ -43,22 +43,6 @@ __device__ __host__ QueuePair *GPUIBContext::getQueuePair(int pe) {
   return networkImpl.getQueuePair(device_qp_proxy, pe);
 }
 
-__device__ void GPUIBContext::fence() {
-  fence_.flush();
-}
-
-__device__ void GPUIBContext::fence(int pe) {
-  fence_.flush();
-}
-
-__device__ void GPUIBContext::putmem_nbi(void *dest, const void *source, size_t nelems, int pe) {
-  uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
-  bool must_send_message = wf_coal_.coalesce(pe, source, dest, &nelems);
-  if (!must_send_message) return;
-  auto *qp = getQueuePair(pe);
-  qp->put_nbi(base_heap[pe] + L_offset, source, nelems, pe, true);
-}
-
 __device__ void GPUIBContext::quiet() {
   for (int k = 0; k < networkImpl.num_pes; k++) {
     getQueuePair(k)->quiet_single();
@@ -67,11 +51,6 @@ __device__ void GPUIBContext::quiet() {
 
 __device__ void *GPUIBContext::shmem_ptr(const void *dest, int pe) {
   return nullptr;
-}
-
-
-__device__ void GPUIBContext::threadfence_system() {
-  __threadfence_system();
 }
 
 __device__ void GPUIBContext::putmem(void *dest, const void *source, size_t nelems, int pe) {
@@ -83,24 +62,27 @@ __device__ void GPUIBContext::putmem(void *dest, const void *source, size_t nele
   qp->quiet_single();
 }
 
-/******************************************************************************
- ************************ WORKGROUP/WAVE-LEVEL RMA API ************************
- *****************************************************************************/
+__device__ void GPUIBContext::putmem_nbi(void *dest, const void *source, size_t nelems, int pe) {
+  uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
+  bool must_send_message = wf_coal_.coalesce(pe, source, dest, &nelems);
+  if (!must_send_message) return;
+  auto *qp = getQueuePair(pe);
+  qp->put_nbi(base_heap[pe] + L_offset, source, nelems, pe, true);
+}
+
+__device__ void GPUIBContext::putmem_wave(void *dest, const void *source, size_t nelems, int pe) {
+  uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
+  auto *qp = getQueuePair(pe);
+  qp->put_nbi_wave(base_heap[pe] + L_offset, source, nelems, pe, true);
+  qp->quiet_single();
+}
+
 __device__ void GPUIBContext::putmem_nbi_wave(void *dest, const void *source, size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
   if (is_thread_zero_in_wave()) {
     auto *qp = getQueuePair(pe);
     qp->put_nbi_wave(base_heap[pe] + L_offset, source, nelems, pe, true);
   }
-}
-
-__device__ void GPUIBContext::putmem_wave(void *dest, const void *source, size_t nelems, int pe) {
-  uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
-  auto *qp = getQueuePair(pe);
-  if (is_thread_zero_in_wave()) {
-    qp->put_nbi_wave(base_heap[pe] + L_offset, source, nelems, pe, true);
-  }
-  qp->quiet_single();
 }
 
 }  // namespace rocshmem

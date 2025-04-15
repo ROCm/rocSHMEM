@@ -36,17 +36,11 @@ class GPUIBContext : public Context {
 
   __device__ __host__ QueuePair *getQueuePair(int pe);
 
-  __device__ __attribute__((noinline)) void threadfence_system();
-
   __device__ void ctx_destroy();
 
   __device__ void putmem(void *dest, const void *source, size_t nelems, int pe);
 
   __device__ void putmem_nbi(void *dest, const void *source, size_t nelems, int pe);
-
-  __device__ void fence();
-
-  __device__ void fence(int pe);
 
   __device__ void quiet();
 
@@ -105,24 +99,13 @@ class GPUIBContext : public Context {
   __device__ void quiet_single(int cq_num);
 
  public:
-  /*
-   * Collection of queue pairs that are currently checked out by this
-   * context from GPUIBBackend.
-   */
   QueuePair *device_qp_proxy{nullptr};
 
-  /*
-   * Array of char * pointers corresponding to the heap base pointers VA for
-   * each PE that we can communicate with.
-   */
   char *const *base_heap{nullptr};
 
-  NetworkImpl networkImpl{};
-
-  /*
-   * Temporary scratchpad memory used by internal barrier algorithms.
-   */
   int64_t *barrier_sync{nullptr};
+
+  NetworkImpl networkImpl{};
 };
 
 }  // namespace rocshmem

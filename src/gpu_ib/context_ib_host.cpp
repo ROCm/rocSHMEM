@@ -48,10 +48,6 @@ void GPUIBHostContext::putmem(void *dest, const void *source, size_t nelems, int
   host_interface->putmem(dest, source, nelems, pe, context_window_info);
 }
 
-void GPUIBHostContext::fence() {
-  host_interface->fence(context_window_info);
-}
-
 void GPUIBHostContext::quiet() {
   host_interface->quiet(context_window_info);
 }

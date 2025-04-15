@@ -158,7 +158,6 @@ int rocshmem_wg_ctx_create(rocshmem_ctx_t *ctx) {
   if (get_flat_block_id() == 0) {
     ctx->team_opaque = reinterpret_cast<TeamInfo*>(ROCSHMEM_CTX_DEFAULT.team_opaque);
     result = device_backend_proxy->create_ctx(ctx);
-    reinterpret_cast<Context*>(ctx->ctx_opaque)->setFence();
   }
   __syncthreads();
   return result == true ? 0 : -1;
@@ -176,7 +175,6 @@ int rocshmem_wg_team_create_ctx(rocshmem_team_t team, rocshmem_ctx_t *ctx) {
     TeamInfo *info_wrt_world = team_obj->tinfo_wrt_world;
     ctx->team_opaque = info_wrt_world;
     result = device_backend_proxy->create_ctx(ctx);
-    reinterpret_cast<Context*>(ctx->ctx_opaque)->setFence();
   }
   __syncthreads();
 

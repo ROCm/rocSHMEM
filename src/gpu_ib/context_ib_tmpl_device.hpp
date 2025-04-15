@@ -72,9 +72,6 @@ __device__ void GPUIBContext::amo_set(void *dst, T value, int pe) {
 
   auto *qp = getQueuePair(pe);
 
-  // Guess that the remote memory is zero by setting condition to zero.
-  // The compare-and-swap loop will execute at least twice if wrong.
-  // It may run additional times if contention on memory location.
   T ret_val;
   T cond = 0;
   while ((ret_val = qp->atomic_fetch(base_heap[pe] + L_offset, value, cond, pe, true, MLX5_OPCODE_ATOMIC_CS))) {
@@ -97,10 +94,6 @@ __device__ void GPUIBContext::amo_cas(void *dst, T value, T cond, int pe) {
   auto *qp = getQueuePair(pe);
   qp->atomic_nofetch(base_heap[pe] + L_offset, value, cond, pe, true, MLX5_OPCODE_ATOMIC_CS);
 }
-
-/******************************************************************************
- ***************** SHMEM X API EXTENSION FOR BLOCK/WAVE LEVEL *****************
- *****************************************************************************/
 
 template <typename T>
 __device__ void GPUIBContext::put_wave(T *dest, const T *source, size_t nelems, int pe) {

@@ -31,24 +31,20 @@ namespace rocshmem {
 __device__ void GPUIBContext::internal_direct_barrier(int pe, int PE_start, int stride, int n_pes, int64_t *pSync) {
   int64_t flag_val{1};
   if (pe == PE_start) {
-    // Go through all PE offsets (except current offset = 0) and wait until they all reach
     for (size_t i{1}; i < n_pes; i++) {
       wait_until(&pSync[i], ROCSHMEM_CMP_EQ, flag_val);
       pSync[i] = ROCSHMEM_SYNC_VALUE;
     }
-    threadfence_system();
-    // Announce to other PEs that all have reached
+    __threadfence_system();
     for (size_t i{1}, j = PE_start + stride; i < n_pes; ++i, j += stride) {
       put_nbi(&pSync[0], &flag_val, 1, j);
     }
-
   } else {
-    // Mark current PE offset as reached
     size_t pe_offset = (pe - PE_start) / stride;
     put_nbi(&pSync[pe_offset], &flag_val, 1, PE_start);
     wait_until(&pSync[0], ROCSHMEM_CMP_EQ, flag_val);
     pSync[0] = ROCSHMEM_SYNC_VALUE;
-    threadfence_system();
+    __threadfence_system();
   }
 }
 
@@ -57,7 +53,7 @@ __device__ void GPUIBContext::internal_atomic_barrier(int pe, int PE_start, int 
   if (pe == PE_start) {
     wait_until(&pSync[0], ROCSHMEM_CMP_EQ, (int64_t)(n_pes - 1));
     pSync[0] = ROCSHMEM_SYNC_VALUE;
-    threadfence_system();
+    __threadfence_system();
     for (size_t i{1}, j = PE_start + stride; i < n_pes; ++i, j += stride) {
       put_nbi(&pSync[0], &flag_val, 1, j);
     }
@@ -65,11 +61,10 @@ __device__ void GPUIBContext::internal_atomic_barrier(int pe, int PE_start, int 
     amo_add<int64_t>(&pSync[0], flag_val, PE_start);
     wait_until(&pSync[0], ROCSHMEM_CMP_EQ, flag_val);
     pSync[0] = ROCSHMEM_SYNC_VALUE;
-    threadfence_system();
+    __threadfence_system();
   }
 }
 
-// Uses PE values that are relative to world
 __device__ void GPUIBContext::internal_sync(int pe, int PE_start, int stride, int PE_size, int64_t *pSync) {
   __syncthreads();
   if (is_thread_zero_in_block()) {
@@ -79,7 +74,7 @@ __device__ void GPUIBContext::internal_sync(int pe, int PE_start, int stride, in
       internal_atomic_barrier(pe, PE_start, stride, PE_size, pSync);
     }
   }
-  __threadfence();
+  __threadfence_system();
   __syncthreads();
 }
 
