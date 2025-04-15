@@ -27,18 +27,13 @@ namespace rocshmem {
 
 __device__ 
 Context::Context(GPUIBBackend* handle)
-    : num_pes(handle->getNumPEs()), my_pe(handle->getMyPE()), fence_() {
+    : num_pes(handle->getNumPEs()), my_pe(handle->getMyPE()) {
   __syncthreads();
 }
 
 /******************************************************************************
  ************************** CONTEXT IMPLEMENTATIONS ***************************
  *****************************************************************************/
-
-__device__ 
-void Context::threadfence_system() {
-  static_cast<GPUIBContext*>(this)->threadfence_system();
-}
 
 __device__ 
 void Context::ctx_create() {
@@ -64,16 +59,6 @@ void Context::putmem_nbi(void* dest, const void* source, size_t nelems, int pe) 
     return;
   }
   static_cast<GPUIBContext*>(this)->putmem_nbi(dest, source, nelems, pe);
-}
-
-__device__ 
-void Context::fence() {
-  static_cast<GPUIBContext*>(this)->fence();
-}
-
-__device__ 
-void Context::fence(int pe) {
-  static_cast<GPUIBContext*>(this)->fence(pe);
 }
 
 __device__ 

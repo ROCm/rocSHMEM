@@ -328,10 +328,6 @@ T rocshmem_atomic_swap(T *dest, T value, int pe) {
   return rocshmem_atomic_swap(ROCSHMEM_HOST_CTX_DEFAULT, dest, value, pe);
 }
 
-void rocshmem_fence() {
-  rocshmem_ctx_fence(ROCSHMEM_HOST_CTX_DEFAULT);
-}
-
 void rocshmem_quiet() {
   rocshmem_ctx_quiet(ROCSHMEM_HOST_CTX_DEFAULT);
 }
@@ -405,10 +401,6 @@ void rocshmem_atomic_set(rocshmem_ctx_t ctx, T *dest, T val, int pe) {
 template <typename T>
 T rocshmem_atomic_swap(rocshmem_ctx_t ctx, T *dest, T val, int pe) {
   return get_internal_ctx(ctx)->amo_swap(dest, val, pe);
-}
-
-void rocshmem_ctx_fence(rocshmem_ctx_t ctx) {
-  get_internal_ctx(ctx)->fence();
 }
 
 void rocshmem_ctx_quiet(rocshmem_ctx_t ctx) {

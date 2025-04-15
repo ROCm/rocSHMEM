@@ -26,7 +26,7 @@
 namespace rocshmem {
 
 __host__ Context::Context(GPUIBBackend* handle)
-    : num_pes(handle->getNumPEs()), my_pe(handle->getMyPE()), fence_() {
+    : num_pes(handle->getNumPEs()), my_pe(handle->getMyPE()) {
 }
 
 /******************************************************************************
@@ -47,11 +47,6 @@ void Context::putmem_nbi(void* dest, const void* source, size_t nelems, int pe) 
     return;
   }
   static_cast<GPUIBHostContext*>(this)->putmem_nbi(dest, source, nelems, pe);
-}
-
-__host__
-void Context::fence() {
-  static_cast<GPUIBHostContext*>(this)->fence();
 }
 
 __host__

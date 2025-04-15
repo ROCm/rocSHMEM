@@ -104,11 +104,6 @@ void HostInterface::putmem(void* dest, const void* source, size_t nelems, int pe
   MPI_Win_flush_local(pe, window_info->get_win());
 }
 
-void HostInterface::fence(WindowInfo* window_info) {
-  complete_all(window_info->get_win());
-  return;
-}
-
 void HostInterface::quiet(WindowInfo* window_info) {
   complete_all(window_info->get_win());
   return;

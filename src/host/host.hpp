@@ -157,8 +157,6 @@ class HostInterface {
   template <typename T>
   T amo_fetch_cas(void* dst, T value, T cond, int pe, WindowInfo* window_info);
 
-  void fence(WindowInfo* window_info);
-
   void quiet(WindowInfo* window_info);
 
   void barrier_all(WindowInfo* window_info);

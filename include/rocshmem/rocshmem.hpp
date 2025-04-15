@@ -257,18 +257,6 @@ __host__ int rocshmem_team_split_strided(rocshmem_team_t parent_team,
 __host__ void rocshmem_team_destroy(rocshmem_team_t team);
 
 /**
- * @brief Guarantees order between messages in this context in accordance with
- * OpenSHMEM semantics.
- *
- * @param[in] ctx     Context with which to perform this operation.
- *
- * @return void.
- */
-__host__ void rocshmem_ctx_fence(rocshmem_ctx_t ctx);
-
-__host__ void rocshmem_fence();
-
-/**
  * @brief Completes all previous operations posted on the host.
  *
  * @param[in] ctx     Context with which to perform this operation.
@@ -339,39 +327,6 @@ __device__ ATTR_NO_INLINE int rocshmem_wg_team_create_ctx(
  * @return void.
  */
 __device__ ATTR_NO_INLINE void rocshmem_wg_ctx_destroy(rocshmem_ctx_t *ctx);
-
-/**
- * @brief Guarantees order between messages in this context in accordance with
- * OpenSHMEM semantics.
- *
- * This function can be called from divergent control paths at per-thread
- * granularity. However, performance may be improved if the caller can
- * coalesce contiguous messages and elect a leader thread to call into the
- * rocSHMEM function.
- *
- * @param[in] ctx Context with which to perform this operation.
- *
- * @return void.
- */
-__device__ ATTR_NO_INLINE void rocshmem_ctx_fence(rocshmem_ctx_t ctx);
-
-__device__ ATTR_NO_INLINE void rocshmem_fence();
-
-/**
- * @brief Guarantees order between messages in this context in accordance with
- * OpenSHMEM semantics.
- *
- * This function  is an extension as it is per PE. has same semantics as default
- * API but it is per PE
- *
- * @param[in] ctx Context with which to perform this operation.
- * @param[in] pe destination pe.
- *
- * @return void.
- */
-__device__ ATTR_NO_INLINE void rocshmem_ctx_fence(rocshmem_ctx_t ctx, int pe);
-
-__device__ ATTR_NO_INLINE void rocshmem_fence(int pe);
 
 /**
  * @brief Completes all previous operations posted to this context.
@@ -501,23 +456,6 @@ __device__ ATTR_NO_INLINE void rocshmem_wg_team_sync(rocshmem_team_t team);
  * Can be called per thread with no performance penalty.
  */
 __device__ ATTR_NO_INLINE void *rocshmem_ptr(const void *dest, int pe);
-
-/**
- * @brief Make all uncacheable GPU data visible to other agents in the sytem.
- *
- * This only works for data that was explicitly allocated uncacheable on the
- * GPU!
- *
- * Can be called per thread with no performance penalty.
- *
- * @param[in] GPU-side handle.
- *
- * @return void
- */
-__device__ ATTR_NO_INLINE void rocshmem_ctx_threadfence_system(
-    rocshmem_ctx_t ctx);
-
-__device__ ATTR_NO_INLINE void rocshmem_threadfence_system();
 
 }  // namespace rocshmem
 

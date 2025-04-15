@@ -25,7 +25,6 @@
 
 #include <hip/hip_runtime.h>
 
-#include "fence_policy.hpp"
 #include "host/host.hpp"
 #include "wf_coal_policy.hpp"
 
@@ -70,9 +69,6 @@ class Context {
   int test(T *ivars, int cmp, T val);
 
   __device__
-  void threadfence_system();
-
-  __device__
   void ctx_create();
 
   __device__
@@ -83,12 +79,6 @@ class Context {
 
   __device__
   void putmem_nbi(void* dest, const void* source, size_t nelems, int pe);
-
-  __device__
-  void fence();
-
-  __device__
-  void fence(int pe);
 
   __device__
   void quiet();
@@ -202,9 +192,6 @@ class Context {
   template <typename T>
   __host__
   T amo_fetch_cas(void* dst, T value, T cond, int pe);
-
-  __host__
-  void fence();
 
   __host__
   void quiet();

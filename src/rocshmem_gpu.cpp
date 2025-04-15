@@ -79,23 +79,8 @@ void rocshmem_put_nbi(T *dest, const T *source, size_t nelems, int pe) {
 }
 
 __device__ 
-void rocshmem_fence() {
-  rocshmem_ctx_fence(ROCSHMEM_CTX_DEFAULT);
-}
-
-__device__ 
-void rocshmem_fence(int pe) {
-  rocshmem_ctx_fence(ROCSHMEM_CTX_DEFAULT, pe);
-}
-
-__device__ 
 void rocshmem_quiet() {
   rocshmem_ctx_quiet(ROCSHMEM_CTX_DEFAULT);
-}
-
-__device__ 
-void rocshmem_threadfence_system() {
-  rocshmem_ctx_threadfence_system(ROCSHMEM_CTX_DEFAULT);
 }
 
 template <typename T>
@@ -182,16 +167,10 @@ int rocshmem_wg_team_create_ctx(rocshmem_team_t team, rocshmem_ctx_t *ctx) {
 }
 
 __device__ 
-void rocshmem_wg_ctx_destroy(
-    [[maybe_unused]] rocshmem_ctx_t *ctx) {
+void rocshmem_wg_ctx_destroy([[maybe_unused]] rocshmem_ctx_t *ctx) {
   if (get_flat_block_id() == 0) {
     device_backend_proxy->destroy_ctx(ctx);
   }
-}
-
-__device__ 
-void rocshmem_ctx_threadfence_system(rocshmem_ctx_t ctx) {
-  get_internal_ctx(ctx)->threadfence_system();
 }
 
 __device__ 
@@ -225,17 +204,6 @@ __device__
 void rocshmem_put_nbi(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {
   int pe_in_world = translate_pe(ctx, pe);
   get_internal_ctx(ctx)->put_nbi(dest, source, nelems, pe_in_world);
-}
-
-__device__ 
-void rocshmem_ctx_fence(rocshmem_ctx_t ctx) {
-  get_internal_ctx(ctx)->fence();
-}
-
-__device__ 
-void rocshmem_ctx_fence(rocshmem_ctx_t ctx, int pe) {
-  int pe_in_world = translate_pe(ctx, pe);
-  get_internal_ctx(ctx)->fence(pe_in_world);
 }
 
 __device__ 
