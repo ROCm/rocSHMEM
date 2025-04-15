@@ -262,9 +262,7 @@ class QueuePair {
   uint64_t *sq_buf_head{nullptr};
   uint16_t sq_wqe_cnt{0};
 
-
-  uint32_t ctrl_qp_sq{0};
-  uint64_t ctrl_sig{0};
+  uint32_t qp_num{0};
   uint32_t rkey{0};
   uint32_t lkey{0};
 

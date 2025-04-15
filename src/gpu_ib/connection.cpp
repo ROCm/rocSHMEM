@@ -279,6 +279,7 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
 
   gpu_qp->rkey = htobe32(backend->networkImpl.heap_rkey[conn_num]);
   gpu_qp->lkey = htobe32(backend->networkImpl.heap_mr->lkey);
+  gpu_qp->qp_num = qps[conn_num]->qp_num;
 
   int hip_dev_id{-1};
   CHECK_HIP(hipGetDevice(&hip_dev_id));

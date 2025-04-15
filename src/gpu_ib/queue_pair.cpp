@@ -108,7 +108,6 @@ __device__ void QueuePair::quiet_single() {
 }
 
 __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, bool ring_db) {
-
   // determine active threads
   // reserve space for all active threads in sq
   // generate per-thread index modulo sq.wqe_cnt
@@ -124,25 +123,24 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   // need cq_counter
   // will signal every completion
 
-  uint32_t num_wqes = 1;
-
+  uint32_t num_wqes{1};
   uint64_t my_sq_counter = atomicAdd(&sq_counter, num_wqes);
   uint64_t my_sq_index = my_sq_counter % sq_wqe_cnt;
 
   SegmentBuilder seg_build(my_sq_index, sq_buf);
-//  seg_build.update_ctrl_seg(opcode, my_sq_counter, ctrl_qp_sq_in_stack_frame, ctrl_sig_in_stack_frame);
-//  seg_build.update_raddr_seg(raddr, rkey);
-//  seg_build.update_data_seg(laddr, size, lkey);
+  seg_build.update_ctrl_seg(my_sq_counter, opcode, 0, qp_num, MLX5_WQE_CTRL_CQ_UPDATE, 2, 0, 0);
+  seg_build.update_raddr_seg(raddr, rkey);
+  seg_build.update_data_seg(laddr, size, lkey);
 
-//  uint16_t be_sq_counter;
-//  uint16_t sq_counter_u16 = my_sq_counter;
-//  swap_endian_store(&be_sq_counter, sq_counter_u16);
+  uint16_t be_sq_counter;
+  uint16_t sq_counter_u16 = my_sq_counter;
+  swap_endian_store(&be_sq_counter, sq_counter_u16);
 
-//  if (ring_db) {
-//    uint64_t db_val = sq_buf[8 * ((be_sq_counter - num_wqes) % sq_wqe_cnt)];
-//    update_wqe_ce(num_wqes);
-//    ring_doorbell(db_val);
-//  }
+  if (ring_db) {
+    uint64_t db_val = sq_buf[8 * ((be_sq_counter - num_wqes) % sq_wqe_cnt)];
+    update_wqe_ce(num_wqes);
+    ring_doorbell(db_val);
+  }
 }
 
 __device__ void QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode,
@@ -154,8 +152,6 @@ __device__ void QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *laddr, 
 
   uint32_t lkey_in_stack_frame = lkey;
   uint32_t rkey_in_stack_frame = rkey;
-  uint32_t ctrl_qp_sq_in_stack_frame = ctrl_qp_sq;
-  uint64_t ctrl_sig_in_stack_frame = ctrl_sig;
 
   SegmentBuilder seg_build(my_sq_index, sq_buf);
 //  seg_build.update_ctrl_seg(opcode, my_sq_counter, ctrl_qp_sq_in_stack_frame, ctrl_sig_in_stack_frame);
