@@ -36,9 +36,6 @@ QueuePair::QueuePair(GPUIBBackend *backend) {
   atomic_ret.atomic_counter = 0;
 }
 
-__device__ QueuePair::~QueuePair() {
-}
-
 __device__ uint8_t QueuePair::get_cq_error_syndrome(mlx5_cqe64 *cqe_entry) {
   mlx5_err_cqe *cqe_err = reinterpret_cast<mlx5_err_cqe*>(cqe_entry);
   return cqe_err->syndrome;
@@ -56,25 +53,7 @@ __device__ void QueuePair::set_completion_flag_on_wqe(int num_wqes) {
   *wqe_ce = 8;
 }
 
-template <>
-__device__ void QueuePair::update_wqe_ce_single<false>(int num_wqes) {
-  if (sq_counter % sq_wqe_cnt == (sq_wqe_cnt - 2)) {
-    set_completion_flag_on_wqe(num_wqes);
-    quiet_counter++;
-  }
-}
-
-template <>
-__device__ void QueuePair::update_wqe_ce_single<true>(int num_wqes) {
-  set_completion_flag_on_wqe(num_wqes);
-  quiet_counter++;
-}
-
-template <>
-__device__ void QueuePair::update_wqe_ce_thread<false>(int num_wqes) {}
-
-template <>
-__device__ void QueuePair::update_wqe_ce_thread<true>(int num_wqes) {
+__device__ void QueuePair::update_wqe_ce(int num_wqes) {
   set_completion_flag_on_wqe(num_wqes);
   atomicAdd(&quiet_counter, 1);
 }
@@ -89,7 +68,6 @@ __device__ void QueuePair::compute_db_val_opcode(uint64_t *db_val, uint16_t dbre
   *db_val = val | dbrec | opcode64;
 }
 
-template <class level>
 __device__ void QueuePair::quiet_internal() {
   /*
    * If there are nothing to quiet, just return early.
@@ -130,21 +108,7 @@ __device__ void QueuePair::quiet_internal() {
     GPU_DPRINTF("QUIET ERROR: signature %d opcode_qpn %llx wqe_cnt %llx \n", syndrome, cqe_err->s_wqe_opcode_qpn, cqe_err->wqe_counter);
   }
 
-  /*
-   * Decrement the quiet count by the amount determined at the beginning
-   * of this method.
-   *
-   * bpotter - There are two areas of concern in this method for me.
-   * 1) In multithreaded builds, we may need to make this method a critical
-   * section to prevent data races on these variables.
-   *
-   * 2) Is there a data race in the API if a one remote process calls quiet
-   * while another process continues adding events? Is it ever possible for
-   * a quiet to complete, but the quiet_counter decrement here is not set
-   * to zero?
-   */
-  level L;
-  L.decQuietCounter(&quiet_counter, quiet_val);
+  quiet_counter -= quiet_val;
 
   /*
    * Increment the trailing index counter which tracks our spot in the
@@ -154,28 +118,23 @@ __device__ void QueuePair::quiet_internal() {
   swap_endian_store(const_cast<uint32_t*>(cq_dbrec), cq_consumer_counter);
 }
 
-template <class level>
 __device__ void QueuePair::quiet_single() {
-  level L;
-  L.quiet(this);
+  int thread_id = get_flat_block_id();
+  if (thread_id % WF_SIZE == 0) {
+    while (atomicCAS(&(cq_lock), 0, 1) == 1) { }
+    quiet_internal();
+    __threadfence();
+    cq_lock = 0;
+  }
 }
 
-template <class level>
-__device__ void QueuePair::quiet_single_heavy(int pe) {
-  level L;
-  L.quiet_heavy(this, pe);
-}
-
-template <class level, bool cqe>
 __device__ void QueuePair::update_posted_wqe_generic(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode,
-    int64_t atomic_data, int64_t atomic_cmp, bool ring_db, uint64_t atomic_ret_pos, bool zero_byte_rd) {
-
-  level L;
-  L.postLock(this, pe);
+                                                     int64_t atomic_data, int64_t atomic_cmp, bool ring_db, uint64_t atomic_ret_pos) {
+  while (atomicCAS(&(sq_lock), 0, 1) == 1) { }
+  waitSQSpace(1);
   uint32_t num_wqes = 1;
 
-  // Get the index for my thread's put in the SQ.
-  uint64_t my_sq_counter = L.threadAtomicAdd(&sq_counter, num_wqes);
+  uint64_t my_sq_counter = atomicAdd(&sq_counter, num_wqes);
   uint64_t my_sq_index = my_sq_counter % sq_wqe_cnt;
 
   uint16_t be_sq_counter;
@@ -191,13 +150,8 @@ __device__ void QueuePair::update_posted_wqe_generic(int pe, int32_t size, uintp
     size = 4;
   }
 
-  /*
-   * Build out all the segments required for my WQE(s) based on the
-   * operation, starting at my_sq_index into the SQ. SegmentBuilder will
-   * keep track of placing the segments in the correct location.
-   */
   SegmentBuilder seg_build(my_sq_index, sq_buf);
-  seg_build.update_cntrl_seg(opcode, be_sq_counter, ctrl_qp_sq_in_stack_frame, ctrl_sig_in_stack_frame, zero_byte_rd);
+  seg_build.update_cntrl_seg(opcode, be_sq_counter, ctrl_qp_sq_in_stack_frame, ctrl_sig_in_stack_frame);
   seg_build.update_rdma_seg(raddr, rkey_in_stack_frame);
 
   if (opcode == MLX5_OPCODE_ATOMIC_FA || opcode == MLX5_OPCODE_ATOMIC_CS) {
@@ -209,42 +163,38 @@ __device__ void QueuePair::update_posted_wqe_generic(int pe, int32_t size, uintp
 
   seg_build.update_data_seg(laddr, size, lkey_in_stack_frame);
 
-  L.template finishPost<cqe>(this, ring_db, num_wqes, pe, be_sq_counter, opcode);
+  if (ring_db) {
+    uint64_t db_val = sq_buf[8 * ((be_sq_counter - num_wqes) % sq_wqe_cnt)];
+    update_wqe_ce(num_wqes);
+    ring_doorbell(db_val);
+  }
+  sq_lock = 0;
 }
 
 /******************************************************************************
  ****************************** SHMEM INTERFACE *******************************
  *****************************************************************************/
-template <class level>
 __device__ void QueuePair::put_nbi(void *dest, const void *source, size_t nelems, int pe, bool db_ring) {
   uintptr_t *src = reinterpret_cast<uintptr_t*>(const_cast<void*>(source));
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
-  update_posted_wqe_generic<level, false>(pe, nelems, src, dst, MLX5_OPCODE_RDMA_WRITE, 0, 0, db_ring, 0);
+  update_posted_wqe_generic(pe, nelems, src, dst, MLX5_OPCODE_RDMA_WRITE, 0, 0, db_ring, 0);
 }
 
-template <class level>
-__device__ void QueuePair::put_nbi_cqe(void *dest, const void *source, size_t nelems, int pe, bool db_ring) {
+__device__ void QueuePair::put_nbi_wave(void *dest, const void *source, size_t nelems, int pe, bool db_ring) {
   uintptr_t *src = reinterpret_cast<uintptr_t*>(const_cast<void*>(source));
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
-  update_posted_wqe_generic<level, true>(pe, nelems, src, dst, MLX5_OPCODE_RDMA_WRITE, 0, 0, db_ring, 0);
-}
-
-template <class level>
-__device__ void QueuePair::zero_b_rd(int pe) {
-  uintptr_t *dst = reinterpret_cast<uintptr_t*>(base_heap[pe]);
-  update_posted_wqe_generic<level, true>(pe, 0, nullptr, dst, MLX5_OPCODE_RDMA_READ, 0, 0, true, 0, true);
+  update_posted_wqe_generic(pe, nelems, src, dst, MLX5_OPCODE_RDMA_WRITE, 0, 0, db_ring, 0);
 }
 
 __device__ int64_t QueuePair::atomic_fetch(void *dest, int64_t value, int64_t cond, int pe, bool db_ring, uint8_t atomic_op) {
-  THREAD TH;
-  uint64_t pos = TH.threadAtomicAdd(reinterpret_cast<unsigned long long*>(&atomic_ret.atomic_counter));
+  uint64_t pos = atomicAdd(&atomic_ret.atomic_counter, 1);
   pos = pos % max_nb_atomic;
   int64_t *atomic_base_ptr = reinterpret_cast<int64_t*>(atomic_ret.atomic_base_ptr);
   int64_t *load_address = &atomic_base_ptr[pos];
   *load_address = -100;
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
-  update_posted_wqe_generic<THREAD, true>(pe, sizeof(int64_t), nullptr, dst, atomic_op, value, cond, db_ring, pos);
-  quiet_single<THREAD>();
+  update_posted_wqe_generic(pe, sizeof(int64_t), nullptr, dst, atomic_op, value, cond, db_ring, pos);
+  quiet_single();
   while (uncached_load(load_address) == -100) { }
   int64_t ret = *load_address;
   __threadfence();
@@ -252,42 +202,28 @@ __device__ int64_t QueuePair::atomic_fetch(void *dest, int64_t value, int64_t co
 }
 
 __device__ void QueuePair::atomic_nofetch(void *dest, int64_t value, int64_t cond, int pe, bool db_ring, uint8_t atomic_op) {
-  THREAD TH;
-  uint64_t pos = TH.threadAtomicAdd(reinterpret_cast<unsigned long long*>(&atomic_ret.atomic_counter));
+  uint64_t pos = atomicAdd(&atomic_ret.atomic_counter, 1);
   pos = pos % max_nb_atomic;
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
-  update_posted_wqe_generic<THREAD, true>(pe, sizeof(int64_t), nullptr, dst, atomic_op, value, cond, db_ring, pos);
-  quiet_single<THREAD>();
+  update_posted_wqe_generic(pe, sizeof(int64_t), nullptr, dst, atomic_op, value, cond, db_ring, pos);
+  quiet_single();
 }
 
 __device__ void QueuePair::waitCQSpace(int num_msgs) {
-  // We cannot post more outstanding requests than the completion queue size. Force a quiet if we are out of space.
   if ((quiet_counter + num_msgs) >= cq_cnt) {
-    quiet_single<THREAD>();
+    quiet_single();
   }
 }
 
 __device__ void QueuePair::waitSQSpace(int num_msgs) {
-  // We cannot post more outstanding requests than the Send queue size. Force a quiet if we are out of space.
   local_sq_cnt += num_msgs;
   int div = local_sq_cnt / sq_wqe_cnt;
   if (div > 0) {
-    quiet_single<THREAD>();
+    quiet_single();
     local_sq_cnt = local_sq_cnt % sq_wqe_cnt;
   }
 }
 
 void QueuePair::setDBval(uint64_t val) { db_val = val; }
-
-#define THREAD_LEVEL_GEN(T)                                                                                                \
-  template __device__ void QueuePair::put_nbi<T>(void *dest, const void *source, size_t nelems, int pe, bool db_ring);     \
-  template __device__ void QueuePair::put_nbi_cqe<T>(void *dest, const void *source, size_t nelems, int pe, bool db_ring); \
-  template __device__ void QueuePair::zero_b_rd<T>(int pe);                                                                \
-  template __device__ void QueuePair::quiet_single<T>();                                                                   \
-  template __device__ void QueuePair::quiet_single_heavy<T>(int pe);                                                       \
-  template __device__ void QueuePair::quiet_internal<T>();
-
-THREAD_LEVEL_GEN(THREAD)
-THREAD_LEVEL_GEN(WAVE)
 
 }  // namespace rocshmem

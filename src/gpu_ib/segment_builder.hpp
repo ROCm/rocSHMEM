@@ -44,7 +44,7 @@ class SegmentBuilder {
    *   __be32 imm;
    * } __attribute__((__packed__)) __attribute__((__aligned__(4)));
    */
-  __device__ void update_cntrl_seg(uint8_t opcode, uint16_t wqe_idx, uint32_t ctrl_qp_sq, uint64_t ctrl_sig, bool zero_byte_rd);
+  __device__ void update_cntrl_seg(uint8_t opcode, uint16_t wqe_idx, uint32_t ctrl_qp_sq, uint64_t ctrl_sig);
 
   /*
    * struct mlx5_wqe_atomic_seg {

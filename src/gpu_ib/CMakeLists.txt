@@ -36,5 +36,4 @@ target_sources(
     network_policy.cpp
     queue_pair.cpp
     segment_builder.cpp
-    thread_policy.cpp
 )

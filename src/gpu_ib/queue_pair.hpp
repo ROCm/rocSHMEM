@@ -35,7 +35,6 @@
 #include <infiniband/mlx5dv.h>
 
 #include "atomic_return.hpp"
-#include "thread_policy.hpp"
 
 namespace rocshmem {
 
@@ -50,7 +49,6 @@ typedef union db_reg {
 class QueuePair {
  public:
   friend Connection;
-  friend WAVE;
 
   /**
    * @brief Constructor.
@@ -58,11 +56,6 @@ class QueuePair {
    * @param[in] backend GPUIBBackend needed for member access.
    */
   explicit QueuePair(GPUIBBackend *backend);
-
-  /**
-   * @brief Destructor.
-   */
-  __device__ ~QueuePair();
 
   /**
    * @brief Inspect completion queue and possibly wait for free space.
@@ -81,63 +74,30 @@ class QueuePair {
   /**
    * @brief Create and enqueue a non-blocking put work queue entry (wqe).
    *
-   * @tparam level Implements specific behaviors for thread, warp, block access.
-   *
    * @param[in] dest Destination address for data transmission.
    * @param[in] source Source address for data transmission.
    * @param[in] nelems Size in bytes of data transmission.
    * @param[in] pe Destination processing element of data transmission.
    * @param[in] db_ring Denotes whether send queue door bell should be rung.
    */
-  template <class level>
   __device__ void put_nbi(void *dest, const void *source, size_t nelems, int pe, bool db_ring);
 
   /**
    * @brief Create and enqueue a non-blocking put work queue entry (wqe).
    *
-   * @note This variant differs from put_nbi by requesting that a completion
-   * queue entry is generated in the completion queue.
-   *
-   * @tparam level Implements specific behaviors for thread, warp, block access.
-   *
    * @param[in] dest Destination address for data transmission.
    * @param[in] source Source address for data transmission.
    * @param[in] nelems Size in bytes of data transmission.
    * @param[in] pe Destination processing element of data transmission.
    * @param[in] db_ring Denotes whether send queue door bell should be rung.
    */
-  template <class level>
-  __device__ void put_nbi_cqe(void *dest, const void *source, size_t nelems, int pe, bool db_ring);
+  __device__ void put_nbi_wave(void *dest, const void *source, size_t nelems, int pe, bool db_ring);
 
   /**
    * @brief Consume a completion queue entry from this queue pair's
    * completion queue.
-   *
-   * @tparam level Implements specific behaviors for thread, warp, block access.
    */
-  template <class level>
   __device__ void quiet_single();
-
-  /**
-   * @brief Send a zero-byte read to enforce ordering and then consume
-   * a completion queue entry from this queue pair's completion queue.
-   *
-   * @tparam level Implements specific behaviors for thread, warp, block access.
-   *
-   * @param[in] pe Processing element id to send the zero_b_rd.
-   */
-  template <class level>
-  __device__ void quiet_single_heavy(int pe);
-
-  /**
-   * @brief Create and enqueue a zero-byte read to enforce write ordering.
-   *
-   * @tparam level Implements specific behaviors for thread, warp, block access.
-   *
-   * @param[in] pe Processing element id to send the zero_b_rd.
-   */
-  template <class level>
-  __device__ void zero_b_rd(int pe);
 
   /**
    * @brief Create and enqueue an atomic fetch work queue entry (wqe).
@@ -180,9 +140,6 @@ class QueuePair {
   /**
    * @brief Helper method to build work requests for the send queue.
    *
-   * @tparam level Implements specific behaviors for thread, warp, block access.
-   * @tparam cqe Flag to optionally generate cqes.
-   *
    * @param[in] pe Destination processing element of data transmission.
    * @param[in] size Size in bytes of data transmission.
    * @param[in] laddr Local address.
@@ -192,19 +149,13 @@ class QueuePair {
    * @param[in] atomic_cmp An atomic comparison operation to be performed.
    * @param[in] ring_db Boolean denoting if doorbell should be rung.
    * @param[in] atomic_ret_pos Index into atomic return structure.
-   * @param[in] zero_byte_rd Boolean if zero byte read should be used.
    */
-  template <class level, bool cqe>
   __device__ __attribute__((noinline)) void update_posted_wqe_generic(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode,
-      int64_t atomic_data, int64_t atomic_cmp, bool ring_db, uint64_t atomic_ret_pos, bool zero_byte_rd = false);
+      int64_t atomic_data, int64_t atomic_cmp, bool ring_db, uint64_t atomic_ret_pos);
 
   /**
    * @brief Helper method to drain completion queue entries.
-   *
-   * @tparam level Implements specific behaviors for thread, warp, block access.
-   *
    */
-  template <class level>
   __device__ __attribute__((noinline)) void quiet_internal();
 
   /**
@@ -227,23 +178,8 @@ class QueuePair {
 
   /**
    * @brief Helper method to update fields for the work queue entry.
-   *
-   * @tparam cqe Flag to optionally generate cqes.
-   *
-   * @note Single variant is meant to be callable by a block leader.
    */
-  template <bool cqe>
-  __device__ void update_wqe_ce_single(int num_wqes);
-
-  /**
-   * @brief Helper method to update fields for the work queue entry.
-   *
-   * @tparam cqe Flag to optionally generate cqes.
-   *
-   * @note Thread variant is meant to be callable by multiple threads.
-   */
-  template <bool cqe>
-  __device__ void update_wqe_ce_thread(int num_wqes);
+  __device__ void update_wqe_ce(int num_wqes);
 
   /**
    * @brief Helper method to ring the doorbell
@@ -261,7 +197,8 @@ class QueuePair {
 
   db_reg_t db{};
 
-  ThreadImpl threadImpl{};
+  uint32_t cq_lock = 0;
+  uint32_t sq_lock = 0;
 
   uint32_t sq_counter{0};
   uint32_t local_sq_cnt{0};

@@ -68,13 +68,10 @@ __device__ SegmentBuilder::SegmentBuilder(uint64_t wqe_idx, void *base) {
  *   seg->imm                = imm;
  * }
  */
-__device__ void SegmentBuilder::update_cntrl_seg(uint8_t opcode, uint16_t wqe_idx, uint32_t ctrl_qp_sq, uint64_t ctrl_sig, bool zero_byte_rd) {
+__device__ void SegmentBuilder::update_cntrl_seg(uint8_t opcode, uint16_t wqe_idx, uint32_t ctrl_qp_sq, uint64_t ctrl_sig) {
   mlx5_wqe_ctrl_seg ctrl_seg;
   ctrl_seg.opmod_idx_opcode = (opcode << 24) | (wqe_idx << 8);
   uint32_t DS = 2;
-  if (zero_byte_rd == false) {
-    DS = (opcode == MLX5_OPCODE_RDMA_WRITE || opcode == MLX5_OPCODE_RDMA_READ) ? 3 : 4;
-  }
   ctrl_seg.qpn_ds = (DS << 24) | ctrl_qp_sq;
   ctrl_seg.signature = ctrl_sig;
   ctrl_seg.fm_ce_se = ctrl_sig >> 24;
