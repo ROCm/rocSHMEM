@@ -136,11 +136,11 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   uint16_t sq_counter_u16 = my_sq_counter;
   swap_endian_store(&be_sq_counter, sq_counter_u16);
 
-//  if (ring_db) {
-//    uint64_t db_val = sq_buf[8 * ((be_sq_counter - num_wqes) % sq_wqe_cnt)];
-//    update_wqe_ce(num_wqes);
+  if (ring_db) {
+    uint64_t db_val = sq_buf[8 * ((be_sq_counter - num_wqes) % sq_wqe_cnt)];
+    update_wqe_ce(num_wqes);
 //    ring_doorbell(db_val);
-//  }
+  }
 
   union mlx5_segment {
     mlx5_wqe_ctrl_seg ctrl_seg;
