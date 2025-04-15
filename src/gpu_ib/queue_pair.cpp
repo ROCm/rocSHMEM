@@ -123,23 +123,19 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   // need cq_counter
   // will signal every completion
 
-  printf("BANG\n");
   uint32_t num_wqes{1};
   uint64_t my_sq_counter = atomicAdd(&sq_counter, num_wqes);
   uint64_t my_sq_index = my_sq_counter % sq_wqe_cnt;
 
-  printf("BANG1\n");
   SegmentBuilder seg_build(my_sq_index, sq_buf);
   seg_build.update_ctrl_seg(my_sq_counter, opcode, 0, qp_num, MLX5_WQE_CTRL_CQ_UPDATE, 2, 0, 0);
   seg_build.update_raddr_seg(raddr, rkey);
   seg_build.update_data_seg(laddr, size, lkey);
 
-  printf("BANG2\n");
   uint16_t be_sq_counter;
   uint16_t sq_counter_u16 = my_sq_counter;
   swap_endian_store(&be_sq_counter, sq_counter_u16);
 
-  printf("BANG3\n");
 //  if (ring_db) {
 //    uint64_t db_val = sq_buf[8 * ((be_sq_counter - num_wqes) % sq_wqe_cnt)];
 //    update_wqe_ce(num_wqes);
@@ -156,7 +152,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   mlx5_segment *base_ptr = reinterpret_cast<mlx5_segment*>(sq_buf);
   size_t segment_offset = my_sq_index * 4;
   const uint8_t *d = reinterpret_cast<const uint8_t*>(&base_ptr[segment_offset]);
-  printf("DEV: "
+  printf("DEV:  "
    "%02x %02x %02x %02x %02x %02x %02x %02x "
    "%02x %02x %02x %02x %02x %02x %02x %02x "
    "%02x %02x %02x %02x %02x %02x %02x %02x "
