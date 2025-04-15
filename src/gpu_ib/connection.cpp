@@ -287,6 +287,8 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   uint32_t ctrl_qp_sq = (reinterpret_cast<uint32_t*>(sq))[1];
   gpu_qp->ctrl_qp_sq = ctrl_qp_sq & 0xFFFFFF;
   gpu_qp->ctrl_sig = (reinterpret_cast<uint64_t*>(sq))[1];
+  gpu_qp->rkey = (reinterpret_cast<uint32_t*>(sq))[6];
+  gpu_qp->lkey = (reinterpret_cast<uint32_t*>(sq))[9];
 
   printf("host-side read of WR rkey %u\n", gpu_qp->rkey);
   printf("backend->networkImpl.heap_rke[conn_num] %u\n", backend->networkImpl.heap_rkey[conn_num]);
