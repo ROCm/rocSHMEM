@@ -51,6 +51,7 @@ cmake \
     -DUSE_HOST_SIDE_HDP_FLUSH=OFF \
     -DBUILD_LOCAL_GPU_TARGET_ONLY=OFF \
     -DBUILD_CODE_COVERAGE=ON \
+    -DCMAKE_C_COMPILER="/opt/rocm/bin/amdclang" \
     $src_path
 cmake --build . --parallel 8
 cmake --install .
