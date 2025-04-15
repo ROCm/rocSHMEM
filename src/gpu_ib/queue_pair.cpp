@@ -205,6 +205,8 @@ __device__ void QueuePair::waitSQSpace(int num_msgs) {
   }
 }
 
-void QueuePair::setDBval(uint64_t val) { db_val = val; }
+void QueuePair::setDBval(uint64_t val) {
+  db_val = val;
+}
 
 }  // namespace rocshmem
