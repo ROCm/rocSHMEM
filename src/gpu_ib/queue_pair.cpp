@@ -69,38 +69,23 @@ __device__ void QueuePair::compute_db_val_opcode(uint64_t *db_val, uint16_t dbre
 }
 
 __device__ void QueuePair::quiet_internal() {
-  /*
-   * If there are nothing to quiet, just return early.
-   */
   uint32_t quiet_val = quiet_counter;
   if (!quiet_val) {
     return;
   }
 
-  /*
-   * Generate a pointer to the completion queue entry.
-   */
   cq_consumer_counter = cq_consumer_counter + quiet_val - 1;
   uint32_t index = (cq_consumer_counter % cq_cnt);
   mlx5_cqe64 *cqe_entry = &cq_buf[index];
 
-  /*
-   * Access the op_own value in the completion queue entry.
-   */
   int val_ld = uncached_load_ubyte(&(cqe_entry->op_own));
   uint8_t val_op_own = val_ld;
 
-  /*
-   * If the completion queue entry is not valid, wait for it to become so.
-   */
   while (!((val_op_own & 0x1) == ((cq_consumer_counter >> cq_log_cnt) & 1)) || ((val_op_own) >> 4) == 0xF) {
     val_ld = uncached_load_ubyte(&(cqe_entry->op_own));
     val_op_own = val_ld;
   }
 
-  /*
-   * Grab the opcode from the op_own field and report if it is an error.
-   */
   uint8_t opcode = val_op_own >> 4;
   if (opcode != 0) {
     uint8_t syndrome = get_cq_error_syndrome(cqe_entry);
@@ -110,10 +95,6 @@ __device__ void QueuePair::quiet_internal() {
 
   quiet_counter -= quiet_val;
 
-  /*
-   * Increment the trailing index counter which tracks our spot in the
-   * completion queue.
-   */
   cq_consumer_counter++;
   swap_endian_store(const_cast<uint32_t*>(cq_dbrec), cq_consumer_counter);
 }
