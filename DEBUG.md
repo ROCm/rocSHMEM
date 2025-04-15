@@ -37,7 +37,7 @@ ASAN may [crash when using Open MPI][2]. If that happensi, set environment varia
 
 When running the program, the behavior of ASAN can be controlled with the `ASAN_OPTIONS` environment variable.
 
-
+you can redude the amount of spurious leak reports by setting environment variable `LSAN_OPTIONS=suppressions=$ROCSHEM_SRC/scripts/lsan-suppressions.txt`.
 
 ### References
 
