@@ -50,11 +50,15 @@ __device__ void QueuePair::ring_doorbell(uint64_t db_val) {
 __device__ void QueuePair::compute_db_val_opcode(uint64_t *db_val, uint16_t dbrec_val, uint8_t opcode) {
   uint64_t opcode64 = opcode;
   opcode64 = opcode64 << 24 & 0x000000FFFF000000;
+  printf("opcode64 %lx\n", opcode64);
   uint64_t dbrec = dbrec_val << 8;
   dbrec = dbrec & 0x0000000000FFFF00;
+  printf("dbrec %lx\n", dbrec);
   uint64_t val = *db_val;
   val = val & 0xFFFFFFFFFF0000FF;
+  printf("val %lx\n", val);
   *db_val = val | dbrec | opcode64;
+  printf("db_val %lx\n", *db_val);
 }
 
 __device__ void QueuePair::quiet_internal() {
@@ -104,6 +108,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   // write segments at per-thread index
   // threadfence_system
   // protect sq.dbrec by updating with cmpswp when sq.dbrec with condition of value equals starting location and swap in that location + offset
+  // threadfence_system
   // in one thread:
   //   ring blue-flame doorbell
 
@@ -151,7 +156,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
 }
 
 __device__ void QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode,
-                                                 int64_t atomic_data, int64_t atomic_cmp, bool ring_db, uint64_t atomic_ret_pos) {
+                                                 int64_t atomic_data, int64_t atomic_cmp, uint64_t atomic_ret_pos) {
   uint32_t num_wqes = 1;
 
   uint64_t my_sq_counter = atomicAdd(&sq_counter, num_wqes);
@@ -187,26 +192,26 @@ __device__ void QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *laddr, 
 /******************************************************************************
  ****************************** SHMEM INTERFACE *******************************
  *****************************************************************************/
-__device__ void QueuePair::put_nbi(void *dest, const void *source, size_t nelems, int pe, bool db_ring) {
+__device__ void QueuePair::put_nbi(void *dest, const void *source, size_t nelems, int pe) {
   uintptr_t *src = reinterpret_cast<uintptr_t*>(const_cast<void*>(source));
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
   post_wqe_rma(pe, nelems, src, dst, MLX5_OPCODE_RDMA_WRITE);
 }
 
-__device__ void QueuePair::put_nbi_wave(void *dest, const void *source, size_t nelems, int pe, bool db_ring) {
+__device__ void QueuePair::put_nbi_wave(void *dest, const void *source, size_t nelems, int pe) {
   uintptr_t *src = reinterpret_cast<uintptr_t*>(const_cast<void*>(source));
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
   post_wqe_rma(pe, nelems, src, dst, MLX5_OPCODE_RDMA_WRITE);
 }
 
-__device__ int64_t QueuePair::atomic_fetch(void *dest, int64_t value, int64_t cond, int pe, bool db_ring, uint8_t atomic_op) {
+__device__ int64_t QueuePair::atomic_fetch(void *dest, int64_t value, int64_t cond, int pe, uint8_t atomic_op) {
   uint64_t pos = atomicAdd(&atomic_ret.atomic_counter, 1);
   pos = pos % max_nb_atomic;
   int64_t *atomic_base_ptr = reinterpret_cast<int64_t*>(atomic_ret.atomic_base_ptr);
   int64_t *load_address = &atomic_base_ptr[pos];
   *load_address = -100;
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
-  post_wqe_amo(pe, sizeof(int64_t), nullptr, dst, atomic_op, value, cond, db_ring, pos);
+  post_wqe_amo(pe, sizeof(int64_t), nullptr, dst, atomic_op, value, cond, pos);
   quiet_single();
   while (uncached_load(load_address) == -100) { }
   int64_t ret = *load_address;
@@ -214,11 +219,11 @@ __device__ int64_t QueuePair::atomic_fetch(void *dest, int64_t value, int64_t co
   return ret;
 }
 
-__device__ void QueuePair::atomic_nofetch(void *dest, int64_t value, int64_t cond, int pe, bool db_ring, uint8_t atomic_op) {
+__device__ void QueuePair::atomic_nofetch(void *dest, int64_t value, int64_t cond, int pe, uint8_t atomic_op) {
   uint64_t pos = atomicAdd(&atomic_ret.atomic_counter, 1);
   pos = pos % max_nb_atomic;
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
-  post_wqe_amo(pe, sizeof(int64_t), nullptr, dst, atomic_op, value, cond, db_ring, pos);
+  post_wqe_amo(pe, sizeof(int64_t), nullptr, dst, atomic_op, value, cond, pos);
   quiet_single();
 }
 

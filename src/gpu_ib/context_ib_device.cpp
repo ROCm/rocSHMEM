@@ -58,7 +58,7 @@ __device__ void GPUIBContext::putmem(void *dest, const void *source, size_t nele
   bool must_send_message = wf_coal_.coalesce(pe, source, dest, &nelems);
   if (!must_send_message) return;
   auto *qp = getQueuePair(pe);
-  qp->put_nbi(base_heap[pe] + L_offset, source, nelems, pe, true);
+  qp->put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
   qp->quiet_single();
 }
 
@@ -67,13 +67,13 @@ __device__ void GPUIBContext::putmem_nbi(void *dest, const void *source, size_t 
   bool must_send_message = wf_coal_.coalesce(pe, source, dest, &nelems);
   if (!must_send_message) return;
   auto *qp = getQueuePair(pe);
-  qp->put_nbi(base_heap[pe] + L_offset, source, nelems, pe, true);
+  qp->put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
 }
 
 __device__ void GPUIBContext::putmem_wave(void *dest, const void *source, size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
   auto *qp = getQueuePair(pe);
-  qp->put_nbi_wave(base_heap[pe] + L_offset, source, nelems, pe, true);
+  qp->put_nbi_wave(base_heap[pe] + L_offset, source, nelems, pe);
   qp->quiet_single();
 }
 
@@ -81,7 +81,7 @@ __device__ void GPUIBContext::putmem_nbi_wave(void *dest, const void *source, si
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
   if (is_thread_zero_in_wave()) {
     auto *qp = getQueuePair(pe);
-    qp->put_nbi_wave(base_heap[pe] + L_offset, source, nelems, pe, true);
+    qp->put_nbi_wave(base_heap[pe] + L_offset, source, nelems, pe);
   }
 }
 

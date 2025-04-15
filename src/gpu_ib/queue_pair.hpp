@@ -78,9 +78,8 @@ class QueuePair {
    * @param[in] source Source address for data transmission.
    * @param[in] nelems Size in bytes of data transmission.
    * @param[in] pe Destination processing element of data transmission.
-   * @param[in] db_ring Denotes whether send queue door bell should be rung.
    */
-  __device__ void put_nbi(void *dest, const void *source, size_t nelems, int pe, bool db_ring);
+  __device__ void put_nbi(void *dest, const void *source, size_t nelems, int pe);
 
   /**
    * @brief Create and enqueue a non-blocking put work queue entry (wqe).
@@ -89,9 +88,8 @@ class QueuePair {
    * @param[in] source Source address for data transmission.
    * @param[in] nelems Size in bytes of data transmission.
    * @param[in] pe Destination processing element of data transmission.
-   * @param[in] db_ring Denotes whether send queue door bell should be rung.
    */
-  __device__ void put_nbi_wave(void *dest, const void *source, size_t nelems, int pe, bool db_ring);
+  __device__ void put_nbi_wave(void *dest, const void *source, size_t nelems, int pe);
 
   /**
    * @brief Consume a completion queue entry from this queue pair's
@@ -106,12 +104,11 @@ class QueuePair {
    * @param[in] value Data value for the atomic operation.
    * @param[in] cond Used in atomic comparisons.
    * @param[in] pe Destination processing element of data transmission.
-   * @param[in] db_ring Denotes whether send queue door bell should be rung.
    * @param[in] atomic_op The atomic operation to perform.
    *
    * @return An atomic value
    */
-  __device__ int64_t atomic_fetch(void *dest, int64_t value, int64_t cond, int pe, bool db_ring, uint8_t atomic_op);
+  __device__ int64_t atomic_fetch(void *dest, int64_t value, int64_t cond, int pe, uint8_t atomic_op);
 
   /**
    * @brief Create and enqueue an atomic fetch work queue entry (wqe).
@@ -120,10 +117,9 @@ class QueuePair {
    * @param[in] value Data value for the atomic operation.
    * @param[in] cond Used in atomic comparisons.
    * @param[in] pe Destination processing element of data transmission.
-   * @param[in] db_ring Denotes whether send queue door bell should be rung.
    * @param[in] atomic_op The atomic operation to perform.
    */
-  __device__ void atomic_nofetch(void *dest, int64_t value, int64_t cond, int pe, bool db_ring, uint8_t atomic_op);
+  __device__ void atomic_nofetch(void *dest, int64_t value, int64_t cond, int pe, uint8_t atomic_op);
 
   /**
    * @brief Helper method to set the doorbell's value.
@@ -147,11 +143,10 @@ class QueuePair {
    * @param[in] opcode Operation to be performed.
    * @param[in] atomic_data An atomic data value to be used.
    * @param[in] atomic_cmp An atomic comparison operation to be performed.
-   * @param[in] ring_db Boolean denoting if doorbell should be rung.
    * @param[in] atomic_ret_pos Index into atomic return structure.
    */
   __device__ __attribute__((noinline)) void post_wqe_amo(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode,
-                                                         int64_t atomic_data, int64_t atomic_cmp, bool ring_db, uint64_t atomic_ret_pos);
+                                                         int64_t atomic_data, int64_t atomic_cmp, uint64_t atomic_ret_pos);
 
   /**
    * @brief Helper method to build work requests for the send queue.

@@ -49,21 +49,21 @@ template <typename T>
 __device__ T GPUIBContext::amo_fetch_add(void *dst, T value, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
   auto *qp = getQueuePair(pe);
-  return qp->atomic_fetch(base_heap[pe] + L_offset, value, 0, pe, true, MLX5_OPCODE_ATOMIC_FA);
+  return qp->atomic_fetch(base_heap[pe] + L_offset, value, 0, pe, MLX5_OPCODE_ATOMIC_FA);
 }
 
 template <typename T>
 __device__ T GPUIBContext::amo_fetch_cas(void *dst, T value, T cond, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
   auto *qp = getQueuePair(pe);
-  return qp->atomic_fetch(base_heap[pe] + L_offset, value, cond, pe, true, MLX5_OPCODE_ATOMIC_CS);
+  return qp->atomic_fetch(base_heap[pe] + L_offset, value, cond, pe, MLX5_OPCODE_ATOMIC_CS);
 }
 
 template <typename T>
 __device__ void GPUIBContext::amo_add(void *dst, T value, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
   auto *qp = getQueuePair(pe);
-  qp->atomic_nofetch(base_heap[pe] + L_offset, value, 0, pe, true, MLX5_OPCODE_ATOMIC_FA);
+  qp->atomic_nofetch(base_heap[pe] + L_offset, value, 0, pe, MLX5_OPCODE_ATOMIC_FA);
 }
 
 template <typename T>
@@ -74,7 +74,7 @@ __device__ void GPUIBContext::amo_set(void *dst, T value, int pe) {
 
   T ret_val;
   T cond = 0;
-  while ((ret_val = qp->atomic_fetch(base_heap[pe] + L_offset, value, cond, pe, true, MLX5_OPCODE_ATOMIC_CS))) {
+  while ((ret_val = qp->atomic_fetch(base_heap[pe] + L_offset, value, cond, pe, MLX5_OPCODE_ATOMIC_CS))) {
     if (ret_val == cond) {
       break;
     }
@@ -92,7 +92,7 @@ template <typename T>
 __device__ void GPUIBContext::amo_cas(void *dst, T value, T cond, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
   auto *qp = getQueuePair(pe);
-  qp->atomic_nofetch(base_heap[pe] + L_offset, value, cond, pe, true, MLX5_OPCODE_ATOMIC_CS);
+  qp->atomic_nofetch(base_heap[pe] + L_offset, value, cond, pe, MLX5_OPCODE_ATOMIC_CS);
 }
 
 template <typename T>
