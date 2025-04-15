@@ -160,6 +160,7 @@ ExecTest() {
   if [ $? -ne 0 ]
   then
     echo -e "$PRETTY_FAILED: $TEST_LOG_NAME" >&2
+    cat "$LOG_DIR/$TEST_LOG_NAME.log"
     DRIVER_RETURN_STATUS=1
     FAILED_LIST="$FAILED_LIST $TEST_LOG_NAME"
   fi
@@ -493,9 +494,10 @@ case $TEST in
     ;;
 esac
 
-if [ -z "$FAILED_LIST" ]; then
+EXIT_STATUS=$(($DRIVER_RETURN_STATUS || $?))
+if [ $EXIT_STATUS -eq 0 ]; then
   echo -e "TESTS PASSED"
 else
   echo -e "TESTS FAILED: $FAILED_LIST"
 fi
-exit $(($DRIVER_RETURN_STATUS || $?))
+exit $EXIT_STATUS
