@@ -73,7 +73,7 @@ class NetworkImpl {
    */
   __device__ __host__ int getNumDest() { return num_pes; }
 
- protected:
+ private:
   /**
    * @brief flag to indicated that the helper thread reach this milestone
    */
