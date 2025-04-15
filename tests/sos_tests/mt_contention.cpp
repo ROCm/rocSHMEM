@@ -1,5 +1,7 @@
 /*
  *  Copyright (c) 2018 Intel Corporation. All rights reserved.
+ *  Modifications Copyright (c) Advanced Micro Devices, Inc. All rights reserved.
+ *
  *  This software is available to you under the BSD license below:
  *
  *      Redistribution and use in source and binary forms, with or
