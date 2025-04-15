@@ -81,7 +81,7 @@ __device__ void SegmentBuilder::update_ctrl_seg(uint16_t pi, uint8_t opcode, uin
 __device__ void SegmentBuilder::update_raddr_seg(uintptr_t *raddr, uint32_t rkey) {
   segp->raddr_seg = {0};
   swap_endian_store(reinterpret_cast<uint64_t*>(&segp->raddr_seg.raddr), reinterpret_cast<uint64_t>(raddr));
-  swap_endian_store(&segp->raddr_seg.rkey, rkey);
+  segp->raddr_seg.rkey = rkey;
   segp++;
 }
 
@@ -101,7 +101,7 @@ __device__ void SegmentBuilder::update_raddr_seg(uintptr_t *raddr, uint32_t rkey
 __device__ void SegmentBuilder::update_data_seg(uintptr_t *address, uint32_t length, uint32_t lkey) {
   segp->data_seg = {0};
   swap_endian_store(&segp->data_seg.byte_count, length);
-  swap_endian_store(&segp->data_seg.lkey, lkey);
+  segp->data_seg.lkey = lkey;
   swap_endian_store(reinterpret_cast<uint64_t*>(&segp->data_seg.addr), reinterpret_cast<uint64_t>(address));
   segp++;
 }
