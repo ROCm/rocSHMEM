@@ -284,7 +284,7 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   int hip_dev_id{-1};
   CHECK_HIP(hipGetDevice(&hip_dev_id));
   void* gpu_ptr{nullptr};
-  rocm_memory_lock_to_fine_grain(qp_out.bf.reg, qp_out.bf.size * 2, &gpu_ptr, hip_dev_id);
+  rocm_memory_lock_to_fine_grain(qp_out.bf.reg, qp_out.bf.size, &gpu_ptr, hip_dev_id);
   gpu_qp->db.ptr = reinterpret_cast<uint64_t*>(gpu_ptr);
 
 //  uint32_t* sq = reinterpret_cast<uint32_t*>(qp_out.sq.buf);
