@@ -161,9 +161,8 @@ class QueuePair {
    * @param[in] laddr Local address.
    * @param[in] raddr Remote address.
    * @param[in] opcode Operation to be performed.
-   * @param[in] ring_db Boolean denoting if doorbell should be rung.
    */
-  __device__ __attribute__((noinline)) void post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, bool ring_db);
+  __device__ __attribute__((noinline)) void post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
 
   /**
    * @brief Helper method to drain completion queue entries.
@@ -179,19 +178,6 @@ class QueuePair {
    * @param[in] opcode
    */
   __device__ void compute_db_val_opcode(uint64_t *db_val, uint16_t dbrec_val, uint8_t opcode);
-
-  /**
-   * @brief Helper method that sets the field in a work queue entry to
-   * generate a completion entry in the completion queue.
-   *
-   * @param num_wqes Number of work entries this completion entry represents.
-   */
-  __device__ void set_completion_flag_on_wqe(int num_wqes);
-
-  /**
-   * @brief Helper method to update fields for the work queue entry.
-   */
-  __device__ void update_wqe_ce(int num_wqes);
 
   /**
    * @brief Helper method to ring the doorbell

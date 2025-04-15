@@ -102,7 +102,7 @@ __device__ void SegmentBuilder::update_data_seg(uintptr_t *address, uint32_t len
   segp->data_seg = {0};
   swap_endian_store(&segp->data_seg.byte_count, length);
   segp->data_seg.lkey = lkey;
-//  swap_endian_store(reinterpret_cast<uint64_t*>(&segp->data_seg.addr), reinterpret_cast<uint64_t>(address));
+  swap_endian_store(reinterpret_cast<uint64_t*>(&segp->data_seg.addr), reinterpret_cast<uint64_t>(address));
   segp++;
 }
 

@@ -47,17 +47,6 @@ __device__ void QueuePair::ring_doorbell(uint64_t db_val) {
   db.uint ^= 256;
 }
 
-__device__ void QueuePair::set_completion_flag_on_wqe(int num_wqes) {
-  uint64_t *wqe = &sq_buf[8 * ((sq_counter - num_wqes) % sq_wqe_cnt)];
-  uint8_t *wqe_ce = reinterpret_cast<uint8_t*>(wqe) + 11;
-  *wqe_ce = 8;
-}
-
-__device__ void QueuePair::update_wqe_ce(int num_wqes) {
-  set_completion_flag_on_wqe(num_wqes);
-  atomicAdd(&quiet_counter, 1);
-}
-
 __device__ void QueuePair::compute_db_val_opcode(uint64_t *db_val, uint16_t dbrec_val, uint8_t opcode) {
   uint64_t opcode64 = opcode;
   opcode64 = opcode64 << 24 & 0x000000FFFF000000;
@@ -107,7 +96,7 @@ __device__ void QueuePair::quiet_single() {
   }
 }
 
-__device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, bool ring_db) {
+__device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
   // determine active threads
   // reserve space for all active threads in sq
   // generate per-thread index modulo sq.wqe_cnt
@@ -126,9 +115,10 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   uint32_t num_wqes{1};
   uint64_t my_sq_counter = atomicAdd(&sq_counter, num_wqes);
   uint64_t my_sq_index = my_sq_counter % sq_wqe_cnt;
+  atomicAdd(&quiet_counter, 1);
 
   SegmentBuilder seg_build(my_sq_index, sq_buf);
-  seg_build.update_ctrl_seg(my_sq_counter, opcode, 0, qp_num, MLX5_WQE_CTRL_CQ_UPDATE, 2, 0, 0);
+  seg_build.update_ctrl_seg(my_sq_counter, opcode, 0, qp_num, MLX5_WQE_CTRL_CQ_UPDATE, 3, 0, 0);
   seg_build.update_raddr_seg(raddr, rkey);
   seg_build.update_data_seg(laddr, size, lkey);
 
@@ -136,23 +126,12 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   uint16_t sq_counter_u16 = my_sq_counter;
   swap_endian_store(&be_sq_counter, sq_counter_u16);
 
-  if (ring_db) {
-    uint64_t db_val = sq_buf[8 * ((be_sq_counter - num_wqes) % sq_wqe_cnt)];
-    update_wqe_ce(num_wqes);
-//    ring_doorbell(db_val);
-  }
+  compute_db_val_opcode(&db_val, be_sq_counter, opcode);
+  ring_doorbell(db_val);
 
-  union mlx5_segment {
-    mlx5_wqe_ctrl_seg ctrl_seg;
-    mlx5_wqe_raddr_seg raddr_seg;
-    mlx5_wqe_data_seg data_seg;
-    mlx5_wqe_atomic_seg atomic_seg;
-  };
-
-  mlx5_segment *base_ptr = reinterpret_cast<mlx5_segment*>(sq_buf);
-  size_t segment_offset = my_sq_index * 4;
-  const uint8_t *d = reinterpret_cast<const uint8_t*>(&base_ptr[segment_offset]);
-  printf("DEV:  "
+  uint8_t *base_ptr = reinterpret_cast<uint8_t*>(sq_buf);
+  const uint8_t *d = reinterpret_cast<const uint8_t*>(&base_ptr[16 * 4 * my_sq_index]);
+  printf(
    "%02x %02x %02x %02x %02x %02x %02x %02x "
    "%02x %02x %02x %02x %02x %02x %02x %02x "
    "%02x %02x %02x %02x %02x %02x %02x %02x "
@@ -211,13 +190,13 @@ __device__ void QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *laddr, 
 __device__ void QueuePair::put_nbi(void *dest, const void *source, size_t nelems, int pe, bool db_ring) {
   uintptr_t *src = reinterpret_cast<uintptr_t*>(const_cast<void*>(source));
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
-  post_wqe_rma(pe, nelems, src, dst, MLX5_OPCODE_RDMA_WRITE, db_ring);
+  post_wqe_rma(pe, nelems, src, dst, MLX5_OPCODE_RDMA_WRITE);
 }
 
 __device__ void QueuePair::put_nbi_wave(void *dest, const void *source, size_t nelems, int pe, bool db_ring) {
   uintptr_t *src = reinterpret_cast<uintptr_t*>(const_cast<void*>(source));
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
-  post_wqe_rma(pe, nelems, src, dst, MLX5_OPCODE_RDMA_WRITE, db_ring);
+  post_wqe_rma(pe, nelems, src, dst, MLX5_OPCODE_RDMA_WRITE);
 }
 
 __device__ int64_t QueuePair::atomic_fetch(void *dest, int64_t value, int64_t cond, int pe, bool db_ring, uint8_t atomic_op) {

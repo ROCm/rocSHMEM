@@ -397,7 +397,7 @@ void Connection::post_dv_rc_wqe() {
       ptr = ptr + 4; // 32B
 
       const uint8_t* d = reinterpret_cast<const uint8_t*>(ptr_x);
-      printf("HOST: "
+      printf(
        "%02x %02x %02x %02x %02x %02x %02x %02x "
        "%02x %02x %02x %02x %02x %02x %02x %02x "
        "%02x %02x %02x %02x %02x %02x %02x %02x "
