@@ -150,8 +150,20 @@ class QueuePair {
    * @param[in] ring_db Boolean denoting if doorbell should be rung.
    * @param[in] atomic_ret_pos Index into atomic return structure.
    */
-  __device__ __attribute__((noinline)) void update_posted_wqe_generic(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode,
-      int64_t atomic_data, int64_t atomic_cmp, bool ring_db, uint64_t atomic_ret_pos);
+  __device__ __attribute__((noinline)) void post_wqe_amo(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode,
+                                                         int64_t atomic_data, int64_t atomic_cmp, bool ring_db, uint64_t atomic_ret_pos);
+
+  /**
+   * @brief Helper method to build work requests for the send queue.
+   *
+   * @param[in] pe Destination processing element of data transmission.
+   * @param[in] size Size in bytes of data transmission.
+   * @param[in] laddr Local address.
+   * @param[in] raddr Remote address.
+   * @param[in] opcode Operation to be performed.
+   * @param[in] ring_db Boolean denoting if doorbell should be rung.
+   */
+  __device__ __attribute__((noinline)) void post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, bool ring_db);
 
   /**
    * @brief Helper method to drain completion queue entries.
@@ -196,9 +208,6 @@ class QueuePair {
   __device__ uint8_t get_cq_error_syndrome(mlx5_cqe64 *cq_entry);
 
   db_reg_t db{};
-
-  uint32_t cq_lock = 0;
-  uint32_t sq_lock = 0;
 
   uint32_t sq_counter{0};
   uint32_t local_sq_cnt{0};

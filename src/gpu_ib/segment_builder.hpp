@@ -25,7 +25,6 @@
 
 #include <infiniband/mlx5dv.h>
 
-#include "infiniband_structs.hpp"
 #include "util.hpp"
 
 namespace rocshmem {
@@ -44,7 +43,25 @@ class SegmentBuilder {
    *   __be32 imm;
    * } __attribute__((__packed__)) __attribute__((__aligned__(4)));
    */
-  __device__ void update_cntrl_seg(uint8_t opcode, uint16_t wqe_idx, uint32_t ctrl_qp_sq, uint64_t ctrl_sig);
+  __device__ void update_ctrl_seg(uint16_t pi, uint8_t opcode, uint8_t opmod, uint32_t qp_num, uint8_t fm_ce_se, uint8_t ds, uint8_t signature, uint32_t imm);
+
+  /*
+   * struct mlx5_wqe_raddr_seg {
+   *   __be64 raddr;
+   *   __be32 rkey;
+   *   __be32 reserved;
+   * };
+   */
+  __device__ void update_raddr_seg(uint64_t *raddr, uint32_t rkey);
+
+  /*
+   * struct mlx5_wqe_data_seg {
+   * __be32 byte_count;
+   * __be32 lkey;
+   * __be64 addr;
+   * };
+   */
+  __device__ void update_data_seg(uint64_t *laddr, uint32_t size, uint32_t lkey);
 
   /*
    * struct mlx5_wqe_atomic_seg {
@@ -54,28 +71,17 @@ class SegmentBuilder {
    */
   __device__ void update_atomic_seg(uint64_t atomic_data, uint64_t atomic_cmp);
 
-  /*
-   * struct mlx5_wqe_raddr_seg {
-   *   __be64 raddr;
-   *   __be32 rkey;
-   *   __be32 reserved;
-   * };
-   */
-  __device__ void update_rdma_seg(uintptr_t *raddr, uint32_t rkey);
-
-  /*
-   * struct mlx5_wqe_data_seg {
-   * __be32 byte_count;
-   * __be32 lkey;
-   * __be64 addr;
-   * };
-   */
-  __device__ void update_data_seg(uintptr_t *laddr, int32_t size, uint32_t lkey);
-
  private:
   const int SEGMENTS_PER_WQE = 4;
 
-  mlx5_segment *seg_ptr;
+  union mlx5_segment {
+    mlx5_wqe_ctrl_seg ctrl_seg;
+    mlx5_wqe_raddr_seg raddr_seg;
+    mlx5_wqe_data_seg data_seg;
+    mlx5_wqe_atomic_seg atomic_seg;
+  };
+
+  mlx5_segment *segp;
 };
 
 }  // namespace rocshmem

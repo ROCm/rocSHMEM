@@ -29,8 +29,8 @@ namespace rocshmem {
 
 __device__ SegmentBuilder::SegmentBuilder(uint64_t wqe_idx, void *base) {
   mlx5_segment *base_ptr = static_cast<mlx5_segment*>(base);
-  size_t segment_offset = SEGMENTS_PER_WQE * wqe_idx;
-  seg_ptr = &base_ptr[segment_offset];
+  size_t segment_offset = wqe_idx * SEGMENTS_PER_WQE;
+  segp = &base_ptr[segment_offset];
 }
 
 /*
@@ -68,32 +68,21 @@ __device__ SegmentBuilder::SegmentBuilder(uint64_t wqe_idx, void *base) {
  *   seg->imm                = imm;
  * }
  */
-__device__ void SegmentBuilder::update_cntrl_seg(uint8_t opcode, uint16_t wqe_idx, uint32_t ctrl_qp_sq, uint64_t ctrl_sig) {
-  mlx5_wqe_ctrl_seg ctrl_seg;
-  ctrl_seg.opmod_idx_opcode = (opcode << 24) | (wqe_idx << 8);
-  uint32_t DS = 2;
-  ctrl_seg.qpn_ds = (DS << 24) | ctrl_qp_sq;
-  ctrl_seg.signature = ctrl_sig;
-  ctrl_seg.fm_ce_se = ctrl_sig >> 24;
-  ctrl_seg.imm = ctrl_sig >> 32;
-  memcpy(&seg_ptr->ctrl_seg, &ctrl_seg, sizeof(mlx5_wqe_ctrl_seg));
-  seg_ptr++;
+__device__ void SegmentBuilder::update_ctrl_seg(uint16_t pi, uint8_t opcode, uint8_t opmod, uint32_t qp_num, uint8_t fm_ce_se, uint8_t ds, uint8_t signature, uint32_t imm) {
+  segp->ctrl_seg = {0};
+  swap_endian_store(&segp->ctrl_seg.opmod_idx_opcode, ((uint32_t)opmod << 24) | ((uint32_t)pi << 8) | opcode);
+  swap_endian_store(&segp->ctrl_seg.qpn_ds, qp_num << 8 | ds);
+  segp->ctrl_seg.fm_ce_se = fm_ce_se;
+  segp->ctrl_seg.signature = signature;
+  segp->ctrl_seg.imm = imm;
+  segp++;
 }
 
-__device__ void SegmentBuilder::update_atomic_seg(uint64_t atomic_data, uint64_t atomic_cmp) {
-  mlx5_wqe_atomic_seg atomic_seg;
-  swap_endian_store(reinterpret_cast<uint64_t*>(&atomic_seg.swap_add), atomic_data);
-  swap_endian_store(reinterpret_cast<uint64_t*>(&atomic_seg.compare), atomic_cmp);
-  memcpy(&seg_ptr->atomic_seg, &atomic_seg, sizeof(mlx5_wqe_atomic_seg));
-  seg_ptr++;
-}
-
-__device__ void SegmentBuilder::update_rdma_seg(uintptr_t *raddr, uint32_t rkey) {
-  mlx5_wqe_raddr_seg raddr_seg;
-  raddr_seg.rkey = rkey;
-  swap_endian_store(reinterpret_cast<uint64_t*>(&raddr_seg.raddr), reinterpret_cast<uint64_t>(raddr));
-  memcpy(&seg_ptr->raddr_seg, &raddr_seg, sizeof(mlx5_wqe_raddr_seg));
-  seg_ptr++;
+__device__ void SegmentBuilder::update_raddr_seg(uintptr_t *raddr, uint32_t rkey) {
+  segp->raddr_seg = {0};
+  swap_endian_store(reinterpret_cast<uint64_t*>(&segp->raddr_seg.raddr), reinterpret_cast<uint64_t>(raddr));
+  swap_endian_store(&segp->raddr_seg.rkey, rkey);
+  segp++;
 }
 
 /*
@@ -109,14 +98,19 @@ __device__ void SegmentBuilder::update_rdma_seg(uintptr_t *raddr, uint32_t rkey)
  *   seg->addr       = htobe64(address);
  * }
  */
-__device__ void SegmentBuilder::update_data_seg(uintptr_t *laddr, int32_t size, uint32_t lkey) {
-  if (laddr == nullptr) { return; }
-  mlx5_wqe_data_seg data_seg;
-  swap_endian_store(&data_seg.byte_count, size & 0x7FFFFFFFU);
-  data_seg.lkey = lkey;
-  swap_endian_store(reinterpret_cast<uint64_t*>(&data_seg.addr), reinterpret_cast<uint64_t>(laddr));
-  memcpy(&seg_ptr->data_seg, &data_seg, sizeof(mlx5_wqe_data_seg));
-  seg_ptr++;
+__device__ void SegmentBuilder::update_data_seg(uintptr_t *address, uint32_t length, uint32_t lkey) {
+  segp->data_seg = {0};
+  swap_endian_store(&segp->data_seg.byte_count, length);
+  swap_endian_store(&segp->data_seg.lkey, lkey);
+  swap_endian_store(reinterpret_cast<uint64_t*>(&segp->data_seg.addr), reinterpret_cast<uint64_t>(address));
+  segp++;
+}
+
+__device__ void SegmentBuilder::update_atomic_seg(uint64_t atomic_data, uint64_t atomic_cmp) {
+  segp->atomic_seg = {0};
+  swap_endian_store(reinterpret_cast<uint64_t*>(&segp->atomic_seg.swap_add), atomic_data);
+  swap_endian_store(reinterpret_cast<uint64_t*>(&segp->atomic_seg.compare), atomic_cmp);
+  segp++;
 }
 
 }  // namespace rocshmem
