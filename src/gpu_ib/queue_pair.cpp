@@ -50,15 +50,15 @@ __device__ void QueuePair::ring_doorbell(uint64_t db_val) {
 __device__ void QueuePair::compute_db_val_opcode(uint64_t *db_val, uint16_t dbrec_val, uint8_t opcode) {
   uint64_t opcode64 = opcode;
   opcode64 = opcode64 << 24 & 0x000000FFFF000000;
-  printf("opcode64 %lx\n", opcode64);
+  GPU_DPRINTF("opcode64 %lx\n", opcode64);
   uint64_t dbrec = dbrec_val << 8;
   dbrec = dbrec & 0x0000000000FFFF00;
-  printf("dbrec %lx\n", dbrec);
+  GPU_DPRINTF("dbrec %lx\n", dbrec);
   uint64_t val = *db_val;
   val = val & 0xFFFFFFFFFF0000FF;
-  printf("val %lx\n", val);
+  GPU_DPRINTF("val %lx\n", val);
   *db_val = val | dbrec | opcode64;
-  printf("db_val %lx\n", *db_val);
+  GPU_DPRINTF("db_val %lx\n", *db_val);
 }
 
 __device__ void QueuePair::quiet_internal() {
@@ -83,7 +83,7 @@ __device__ void QueuePair::quiet_internal() {
   if (opcode != 0) {
     uint8_t syndrome = get_cq_error_syndrome(cqe_entry);
     mlx5_err_cqe *cqe_err = reinterpret_cast<mlx5_err_cqe*>(cqe_entry);
-    GPU_DPRINTF("QUIET ERROR: signature %d opcode_qpn %llx wqe_cnt %llx \n", syndrome, cqe_err->s_wqe_opcode_qpn, cqe_err->wqe_counter);
+    GPU_DPRINTF("QUIET ERROR: signature %d opcode_qpn %x wqe_cnt %hx \n", syndrome, cqe_err->s_wqe_opcode_qpn, cqe_err->wqe_counter);
   }
 
   quiet_counter -= quiet_val;
@@ -136,7 +136,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
 
   uint8_t *base_ptr = reinterpret_cast<uint8_t*>(sq_buf);
   const uint8_t *d = reinterpret_cast<const uint8_t*>(&base_ptr[16 * 4 * my_sq_index]);
-  printf(
+  GPU_DPRINTF(
    "%02x %02x %02x %02x %02x %02x %02x %02x "
    "%02x %02x %02x %02x %02x %02x %02x %02x "
    "%02x %02x %02x %02x %02x %02x %02x %02x "

@@ -287,17 +287,8 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   rocm_memory_lock_to_fine_grain(qp_out.bf.reg, qp_out.bf.size, &gpu_ptr, hip_dev_id);
   gpu_qp->db.ptr = reinterpret_cast<uint64_t*>(gpu_ptr);
 
-//  uint32_t* sq = reinterpret_cast<uint32_t*>(qp_out.sq.buf);
-//  uint32_t ctrl_qp_sq = (reinterpret_cast<uint32_t*>(sq))[1];
-//  gpu_qp->ctrl_qp_sq = ctrl_qp_sq & 0xFFFFFF;
-//  gpu_qp->ctrl_sig = (reinterpret_cast<uint64_t*>(sq))[1];
 //  gpu_qp->rkey = (reinterpret_cast<uint32_t*>(sq))[6];
 //  gpu_qp->lkey = (reinterpret_cast<uint32_t*>(sq))[9];
-
-//  printf("host-side read of WR rkey %x\n", htobe32(gpu_qp->rkey));
-//  printf("backend->networkImpl.heap_rke[conn_num] %x\n", backend->networkImpl.heap_rkey[conn_num]);
-//  printf("host-side read of WR lkey %x\n", htobe32(gpu_qp->lkey));
-//  printf("backend->networkImpl.heap_mr->lkey[i] %x\n", backend->networkImpl.heap_mr->lkey);
 }
 
 ibv_qp* Connection::create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr_ex* qp_attr, ibv_cq* cq) {
