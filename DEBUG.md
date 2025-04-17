@@ -27,13 +27,15 @@ In the `ccmake` interface:
 1. find and toggle `ASAN` ON
 2. find and delete `COMPILING_TARGETS` (keybind `d`)
 
-Do not forget to delete `COMPILING_TARGETS` again when disabling ASAN (otherwise xnack will remain active, impacting performance).
+Do not forget to delete `COMPILING_TARGETS` again when disabling ASAN (otherwise xnack will remain required, causing failure in production runs).
 
 ### Running with ASAN
 
+You need to set environment variable `HSA_XNACK=1`. Do not forget to unset this variable when not using ASAN (it will impact performance).
+
 You may need to add path to `libclang_rt.asan-x86_64.so` to `LD_LIBRARY_PATH` by hand. Depending on the ROCm version, it may be in an unusual place, e.g., `$ROCM_ROOT/lib/llvm/lib/clang/19/lib/linux/libclang_rt.asan-x86_64.so`; `find /opt/rocm -name libclang_rt.asan-x86_64.so` may be required to find it.
 
-ASAN may [crash when using Open MPI][2]. If that happensi, set environment variable `OMPI_MCA_memory=^patcher`. Do not forget to unset this variable when not using ASAN (it will impact performance).
+ASAN may [crash when using Open MPI][2]. If that happens, set environment variable `OMPI_MCA_memory=^patcher`. Do not forget to unset this variable when not using ASAN (it will impact performance).
 
 When running the program, the behavior of ASAN can be controlled with the `ASAN_OPTIONS` environment variable.
 
