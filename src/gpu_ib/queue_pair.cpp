@@ -43,7 +43,9 @@ __device__ uint8_t QueuePair::get_cq_error_syndrome(mlx5_cqe64 *cqe_entry) {
 
 __device__ void QueuePair::ring_doorbell(uint64_t db_val) {
   swap_endian_store(const_cast<uint32_t*>(sq_dbrec), reinterpret_cast<uint32_t>(sq_counter));
-  GPU_DPRINTF("storing db_val %lx to db.ptr %p\n", db_val, db.ptr);
+  uint8_t *db_u8p = reinterpret_cast<uint8_t*>(&db_val);
+  GPU_DPRINTF("storing db_val %02x %02x %02x %02x %02x %02x %02x %02x (%x) to db.ptr %p\n",
+	      db_u8p[0], db_u8p[1], db_u8p[2], db_u8p[3], db_u8p[4], db_u8p[5], db_u8p[6], db_u8p[7], db_val, db.ptr);
   STORE(db.ptr, db_val);
   db.uint ^= 0x100;
 }
