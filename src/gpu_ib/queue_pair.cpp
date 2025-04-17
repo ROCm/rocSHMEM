@@ -43,22 +43,19 @@ __device__ uint8_t QueuePair::get_cq_error_syndrome(mlx5_cqe64 *cqe_entry) {
 
 __device__ void QueuePair::ring_doorbell(uint64_t db_val) {
   swap_endian_store(const_cast<uint32_t*>(sq_dbrec), reinterpret_cast<uint32_t>(sq_counter));
+  GPU_DPRINTF("db_val %lx\n", db_val);
   STORE(db.ptr, db_val);
-  db.uint ^= 256;
+  db.uint ^= 0x100;
 }
 
 __device__ void QueuePair::compute_db_val_opcode(uint64_t *db_val, uint16_t dbrec_val, uint8_t opcode) {
   uint64_t opcode64 = opcode;
   opcode64 = opcode64 << 24 & 0x000000FFFF000000;
-  GPU_DPRINTF("opcode64 %lx\n", opcode64);
   uint64_t dbrec = dbrec_val << 8;
   dbrec = dbrec & 0x0000000000FFFF00;
-  GPU_DPRINTF("dbrec %lx\n", dbrec);
   uint64_t val = *db_val;
   val = val & 0xFFFFFFFFFF0000FF;
-  GPU_DPRINTF("val %lx\n", val);
   *db_val = val | dbrec | opcode64;
-  GPU_DPRINTF("db_val %lx\n", *db_val);
 }
 
 __device__ void QueuePair::quiet_internal() {
@@ -71,12 +68,12 @@ __device__ void QueuePair::quiet_internal() {
   uint32_t index = (cq_consumer_counter % cq_cnt);
   mlx5_cqe64 *cqe_entry = &cq_buf[index];
 
-  int val_ld = uncached_load_ubyte(&(cqe_entry->op_own));
-  uint8_t val_op_own = val_ld;
+  volatile uint8_t val_op_own = uncached_load_ubyte(&(cqe_entry->op_own));
 
-  while (!((val_op_own & 0x1) == ((cq_consumer_counter >> cq_log_cnt) & 1)) || ((val_op_own) >> 4) == 0xF) {
-    val_ld = uncached_load_ubyte(&(cqe_entry->op_own));
-    val_op_own = val_ld;
+  while (!((val_op_own & 0x1) == ((cq_consumer_counter >> cq_log_cnt) & 1)) || ((val_op_own) >> 4) == MLX5_CQE_INVALID) {
+    val_op_own = uncached_load_ubyte(&(cqe_entry->op_own));
+    GPU_DPRINTF("val_op_own %x, cq_consumer_counter %lx, cq_log_cnt %lx, cond1 %lx, cond2 %lx\n", val_op_own, cq_consumer_counter, cq_log_cnt,
+                !((val_op_own & 0x1) == ((cq_consumer_counter >> cq_log_cnt) & 1)), ((val_op_own) >> 4) == MLX5_CQE_INVALID);
   }
 
   uint8_t opcode = val_op_own >> 4;
@@ -132,7 +129,9 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   swap_endian_store(&be_sq_counter, sq_counter_u16);
 
   compute_db_val_opcode(&db_val, be_sq_counter, opcode);
+  __threadfence_system();
   ring_doorbell(db_val);
+  __threadfence_system();
 
   uint8_t *base_ptr = reinterpret_cast<uint8_t*>(sq_buf);
   const uint8_t *d = reinterpret_cast<const uint8_t*>(&base_ptr[16 * 4 * my_sq_index]);
