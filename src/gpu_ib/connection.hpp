@@ -108,8 +108,6 @@ class Connection {
 
   void finalize();
 
-  void post_dv_rc_wqe();
-
   void reg_mr(void* ptr, size_t size, ibv_mr** mr);
 
   unsigned total_number_connections();

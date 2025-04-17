@@ -143,7 +143,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
 
   uint64_t* ctrl_wqe_8B_for_db = reinterpret_cast<uint64_t*>(&base_ptr[64 * my_sq_index]);
   uint8_t *db_u8p = reinterpret_cast<uint8_t*>(ctrl_wqe_8B_for_db);
-  GPU_DPRINTF("post_wqe_rma::ctrl_wqe_8B_for_db    %02x %02x %02x %02x %02x %02x %02x %02x (%lx)\n",
+  GPU_DPRINTF("post_wqe_rma::ctrl_wqe_8B_for_db %02x %02x %02x %02x %02x %02x %02x %02x (%lx)\n",
 	      db_u8p[0], db_u8p[1], db_u8p[2], db_u8p[3], db_u8p[4], db_u8p[5], db_u8p[6], db_u8p[7], *ctrl_wqe_8B_for_db);
 
   uint64_t ticket{0};

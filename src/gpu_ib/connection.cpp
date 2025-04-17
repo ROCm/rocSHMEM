@@ -283,6 +283,7 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   int hip_dev_id{-1};
   CHECK_HIP(hipGetDevice(&hip_dev_id));
   void* gpu_ptr{nullptr};
+  // The 2 in qp_out.bf.size * 2 below facilitates the switching between blue flame registers
   rocm_memory_lock_to_fine_grain(qp_out.bf.reg, qp_out.bf.size * 2, &gpu_ptr, hip_dev_id);
   gpu_qp->db.ptr = reinterpret_cast<uint64_t*>(gpu_ptr);
   printf("qp_out.br.reg %p, qp_out.bf.size %u\n", qp_out.bf.reg, qp_out.bf.size);
@@ -348,63 +349,6 @@ Connection::QPInitAttr Connection::qpattr(ibv_qp_cap cap) {
   QPInitAttr qpattr(cap);
   qpattr.attr.qp_type = IBV_QPT_RC;
   return qpattr;
-}
-
-void Connection::post_dv_rc_wqe() {
-  mlx5_wqe_ctrl_seg* ctrl;
-  mlx5_wqe_raddr_seg* rdma;
-  mlx5_wqe_data_seg* data;
-
-  for (int i{0}; i < backend->num_pes; i++) {
-    int num_contexts = backend->maximum_num_contexts_;
-    for (int j{0}; j < num_contexts; j++) {
-      int qp_index = i * num_contexts + j;
-      uint64_t* ptr = get_address_sq(qp_index);
-      uint64_t* ptr_x = ptr;
-      uint8_t op_code = 8; // rdma_write
-      uint8_t op_mod = 0; // operation modifier
-      uint32_t qp_num = qps[qp_index]->qp_num;
-      uint8_t fm_ce_se = 0; // fence,completion,solicited_event
-      uint8_t ds = 3; // number segments (16B each)
-      ctrl = reinterpret_cast<mlx5_wqe_ctrl_seg*>(ptr);
-      mlx5dv_set_ctrl_seg(ctrl, 0, op_code, op_mod, qp_num, fm_ce_se, ds, 0, 0);
-      ptr = ptr + 2; // 16B
-
-      rdma = reinterpret_cast<mlx5_wqe_raddr_seg*>(ptr);
-      const auto& heap_bases = backend->heap.get_heap_bases();
-      auto temp = heap_bases[(backend->my_pe + 1) % 2];
-      uint64_t r_address = reinterpret_cast<uint64_t>(temp);
-      uint32_t rkey = backend->networkImpl.heap_rkey[i];
-      set_rdma_seg(rdma, r_address, rkey);
-      ptr = ptr + 2; // 16B
-
-      data = reinterpret_cast<mlx5_wqe_data_seg*>(ptr);
-      uint32_t lkey = backend->networkImpl.heap_mr->lkey;
-      temp = heap_bases[backend->my_pe];
-      uint64_t address = reinterpret_cast<uint64_t>(temp);
-      mlx5dv_set_data_seg(data, 1, lkey, address);
-      ptr = ptr + 4; // 32B
-
-      const uint8_t* d = reinterpret_cast<const uint8_t*>(ptr_x);
-      printf(
-       "%02x %02x %02x %02x %02x %02x %02x %02x "
-       "%02x %02x %02x %02x %02x %02x %02x %02x "
-       "%02x %02x %02x %02x %02x %02x %02x %02x "
-       "%02x %02x %02x %02x %02x %02x %02x %02x "
-       "%02x %02x %02x %02x %02x %02x %02x %02x "
-       "%02x %02x %02x %02x %02x %02x %02x %02x "
-       "%02x %02x %02x %02x %02x %02x %02x %02x "
-       "%02x %02x %02x %02x %02x %02x %02x %02x\n",
-        d[0],  d[1],  d[2],  d[3],  d[4],  d[5],  d[6],  d[7],
-        d[8],  d[9], d[10], d[11], d[12], d[13], d[14], d[15],
-       d[16], d[17], d[18], d[19], d[20], d[21], d[22], d[23],
-       d[24], d[25], d[26], d[27], d[28], d[29], d[30], d[31],
-       d[32], d[33], d[34], d[35], d[36], d[37], d[38], d[39],
-       d[40], d[41], d[42], d[43], d[44], d[45], d[46], d[47],
-       d[48], d[49], d[50], d[51], d[52], d[53], d[54], d[55],
-       d[56], d[57], d[58], d[59], d[60], d[61], d[62], d[63]);
-    }
-  }
 }
 
 }  // namespace rocshmem
