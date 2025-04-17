@@ -286,6 +286,10 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   void* gpu_ptr{nullptr};
   rocm_memory_lock_to_fine_grain(qp_out.bf.reg, qp_out.bf.size, &gpu_ptr, hip_dev_id);
   gpu_qp->db.ptr = reinterpret_cast<uint64_t*>(gpu_ptr);
+  printf("gpu_qp %p", gpu_qp);
+  printf("qp_out.br.reg %p\n", qp_out.bf.reg);
+  printf("gpu_ptr %p on hip_dev_id %d\n", gpu_ptr, hip_dev_id);
+  printf("gpu_qp->db.ptr %p\n", gpu_qp->db.ptr);
 
 //  gpu_qp->rkey = (reinterpret_cast<uint32_t*>(sq))[6];
 //  gpu_qp->lkey = (reinterpret_cast<uint32_t*>(sq))[9];
