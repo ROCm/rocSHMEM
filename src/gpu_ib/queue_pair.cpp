@@ -44,22 +44,10 @@ __device__ uint8_t QueuePair::get_cq_error_syndrome(mlx5_cqe64 *cqe_entry) {
 __device__ void QueuePair::ring_doorbell(uint64_t db_val) {
   swap_endian_store(const_cast<uint32_t*>(sq_dbrec), reinterpret_cast<uint32_t>(sq_counter));
   uint8_t *db_u8p = reinterpret_cast<uint8_t*>(&db_val);
-  GPU_DPRINTF("storing db_val %02x %02x %02x %02x %02x %02x %02x %02x (%x) to db.ptr %p\n",
+  GPU_DPRINTF("storing db_val %02x %02x %02x %02x %02x %02x %02x %02x (%lx) to db.ptr %p\n",
 	      db_u8p[0], db_u8p[1], db_u8p[2], db_u8p[3], db_u8p[4], db_u8p[5], db_u8p[6], db_u8p[7], db_val, db.ptr);
   STORE(db.ptr, db_val);
   db.uint ^= 0x100;
-}
-
-__device__ void QueuePair::compute_db_val_opcode(uint64_t *db_val, uint16_t dbrec_val, uint8_t opcode) {
-  uint64_t opcode64 = opcode;
-  opcode64 = opcode64 << 24 & 0x000000FFFF000000;
-  uint64_t dbrec = dbrec_val << 8;
-  dbrec = dbrec & 0x0000000000FFFF00;
-  uint64_t val = *db_val;
-  GPU_DPRINTF("compute_db_val_opcode::previous db_val %lx\n", val);
-  val = val & 0xFFFFFFFFFF0000FF;
-  *db_val = val | dbrec | opcode64;
-  GPU_DPRINTF("compute_db_val_opcode::subsequent db_val %lx\n", *db_val);
 }
 
 __device__ void QueuePair::quiet_internal() {
@@ -127,17 +115,18 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   seg_build.update_ctrl_seg(my_sq_counter, opcode, 0, qp_num, MLX5_WQE_CTRL_CQ_UPDATE, 3, 0, 0);
   seg_build.update_raddr_seg(raddr, rkey);
   seg_build.update_data_seg(laddr, size, lkey);
-
-  uint16_t be_sq_counter;
-  uint16_t sq_counter_u16 = my_sq_counter;
-  swap_endian_store(&be_sq_counter, sq_counter_u16);
-
-  compute_db_val_opcode(&db_val, be_sq_counter, opcode);
-  __threadfence_system();
-  ring_doorbell(db_val);
   __threadfence_system();
 
   uint8_t *base_ptr = reinterpret_cast<uint8_t*>(sq_buf);
+  uint64_t* ctrl_wqe_8B_for_db = reinterpret_cast<uint64_t*>(&base_ptr[64 * my_sq_index]);
+
+  uint8_t *db_u8p = reinterpret_cast<uint8_t*>(ctrl_wqe_8B_for_db);
+  GPU_DPRINTF("post_wqe_rma::ctrl_wqe_8B_for_db    %02x %02x %02x %02x %02x %02x %02x %02x (%lx)\n",
+	      db_u8p[0], db_u8p[1], db_u8p[2], db_u8p[3], db_u8p[4], db_u8p[5], db_u8p[6], db_u8p[7], *ctrl_wqe_8B_for_db);
+
+  ring_doorbell(*ctrl_wqe_8B_for_db);
+  __threadfence_system();
+
   const uint8_t *d = reinterpret_cast<const uint8_t*>(&base_ptr[16 * 4 * my_sq_index]);
   GPU_DPRINTF(
    "%02x %02x %02x %02x %02x %02x %02x %02x "
@@ -243,10 +232,6 @@ __device__ void QueuePair::waitSQSpace(int num_msgs) {
     quiet_single();
     local_sq_cnt = local_sq_cnt % sq_wqe_cnt;
   }
-}
-
-void QueuePair::setDBval(uint64_t val) {
-  db_val = val;
 }
 
 }  // namespace rocshmem

@@ -275,7 +275,6 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   gpu_qp->sq_buf_head = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
   gpu_qp->sq_buf = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
   gpu_qp->sq_wqe_cnt = qp_out.sq.wqe_cnt;
-  gpu_qp->setDBval(*(reinterpret_cast<uint64_t*>(qp_out.sq.buf)));
 
   gpu_qp->rkey = htobe32(backend->networkImpl.heap_rkey[conn_num]);
   gpu_qp->lkey = htobe32(backend->networkImpl.heap_mr->lkey);
@@ -288,9 +287,6 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   gpu_qp->db.ptr = reinterpret_cast<uint64_t*>(gpu_ptr);
   printf("qp_out.br.reg %p, qp_out.bf.size %u\n", qp_out.bf.reg, qp_out.bf.size);
   printf("gpu_ptr %p on hip_dev_id %d should match gpu_qp->db.ptr %p\n", gpu_ptr, hip_dev_id, gpu_qp->db.ptr);
-
-//  gpu_qp->rkey = (reinterpret_cast<uint32_t*>(sq))[6];
-//  gpu_qp->lkey = (reinterpret_cast<uint32_t*>(sq))[9];
 }
 
 ibv_qp* Connection::create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr_ex* qp_attr, ibv_cq* cq) {

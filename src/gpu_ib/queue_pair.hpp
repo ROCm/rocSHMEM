@@ -121,13 +121,6 @@ class QueuePair {
    */
   __device__ void atomic_nofetch(void *dest, int64_t value, int64_t cond, int pe, uint8_t atomic_op);
 
-  /**
-   * @brief Helper method to set the doorbell's value.
-   *
-   * @param[in] val Desired value for the doorbell.
-   */
-  void setDBval(uint64_t val);
-
   atomic_ret_t atomic_ret{};
 
   char *const *base_heap{nullptr};
@@ -163,16 +156,6 @@ class QueuePair {
    * @brief Helper method to drain completion queue entries.
    */
   __device__ __attribute__((noinline)) void quiet_internal();
-
-  /**
-   * @brief Helper method to compute doorbell value opcode which is used to
-   * ring the doorbell.
-   *
-   * @param[in,out] db_val
-   * @param[in] dbrec_val
-   * @param[in] opcode
-   */
-  __device__ void compute_db_val_opcode(uint64_t *db_val, uint16_t dbrec_val, uint8_t opcode);
 
   /**
    * @brief Helper method to ring the doorbell
@@ -246,8 +229,6 @@ class QueuePair {
   uint32_t qp_num{0};
   uint32_t rkey{0};
   uint32_t lkey{0};
-
-  uint64_t db_val{};
 };
 
 }  // namespace rocshmem
