@@ -65,6 +65,7 @@ int get_ls_non_zero_bit(char *bitmask, int mask_length) {
 }
 
 GPUIBBackend::GPUIBBackend(MPI_Comm comm) {
+  mutex_dobj_ = std::move(TicketMutexDevObjT(0));
   int num_cus{};
   CHECK_HIP(hipDeviceGetAttribute(&num_cus, hipDeviceAttributeMultiprocessorCount, 0));
   CHECK_HIP(hipMalloc(&print_lock, sizeof(*print_lock)));

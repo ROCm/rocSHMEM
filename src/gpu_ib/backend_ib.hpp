@@ -33,6 +33,7 @@
 #include "memory/symmetric_heap.hpp"
 #include "network_policy.hpp"
 #include "team_tracker.hpp"
+#include "sync/ticket_mutex.hpp"
 
 namespace rocshmem {
 
@@ -304,6 +305,12 @@ class GPUIBBackend {
    * @brief List of ctxs created by the user.
    */
   std::vector<Context*> list_of_ctxs{};
+
+  /**
+   * @brief Ticket mutex to protect NIC from concurrent doorbell rings
+   */
+  using TicketMutexDevObjT = TicketMutexDevObj<HIPAllocatorFinegrained>;
+  TicketMutexDevObjT mutex_dobj_;
 };
 
 /**

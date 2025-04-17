@@ -34,6 +34,7 @@ namespace rocshmem {
 QueuePair::QueuePair(GPUIBBackend *backend) {
   atomic_ret.atomic_lkey = backend->networkImpl.atomic_ret->atomic_lkey;
   atomic_ret.atomic_counter = 0;
+  doorbell_mutex = backend->mutex_dobj_.get();
 }
 
 __device__ uint8_t QueuePair::get_cq_error_syndrome(mlx5_cqe64 *cqe_entry) {
@@ -43,6 +44,7 @@ __device__ uint8_t QueuePair::get_cq_error_syndrome(mlx5_cqe64 *cqe_entry) {
 
 __device__ void QueuePair::ring_doorbell(uint64_t db_val) {
   swap_endian_store(const_cast<uint32_t*>(sq_dbrec), reinterpret_cast<uint32_t>(sq_counter));
+  __threadfence_system();
   uint8_t *db_u8p = reinterpret_cast<uint8_t*>(&db_val);
   GPU_DPRINTF("storing db_val %02x %02x %02x %02x %02x %02x %02x %02x (%lx) to db.ptr %p\n",
 	      db_u8p[0], db_u8p[1], db_u8p[2], db_u8p[3], db_u8p[4], db_u8p[5], db_u8p[6], db_u8p[7], db_val, db.ptr);
@@ -118,17 +120,9 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   __threadfence_system();
 
   uint8_t *base_ptr = reinterpret_cast<uint8_t*>(sq_buf);
-  uint64_t* ctrl_wqe_8B_for_db = reinterpret_cast<uint64_t*>(&base_ptr[64 * my_sq_index]);
-
-  uint8_t *db_u8p = reinterpret_cast<uint8_t*>(ctrl_wqe_8B_for_db);
-  GPU_DPRINTF("post_wqe_rma::ctrl_wqe_8B_for_db    %02x %02x %02x %02x %02x %02x %02x %02x (%lx)\n",
-	      db_u8p[0], db_u8p[1], db_u8p[2], db_u8p[3], db_u8p[4], db_u8p[5], db_u8p[6], db_u8p[7], *ctrl_wqe_8B_for_db);
-
-  ring_doorbell(*ctrl_wqe_8B_for_db);
-  __threadfence_system();
-
   const uint8_t *d = reinterpret_cast<const uint8_t*>(&base_ptr[16 * 4 * my_sq_index]);
   GPU_DPRINTF(
+   "WQE post to address %p at index %lu\n"
    "%02x %02x %02x %02x %02x %02x %02x %02x "
    "%02x %02x %02x %02x %02x %02x %02x %02x "
    "%02x %02x %02x %02x %02x %02x %02x %02x "
@@ -137,6 +131,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
    "%02x %02x %02x %02x %02x %02x %02x %02x "
    "%02x %02x %02x %02x %02x %02x %02x %02x "
    "%02x %02x %02x %02x %02x %02x %02x %02x\n",
+   sq_buf, my_sq_index,
     d[0],  d[1],  d[2],  d[3],  d[4],  d[5],  d[6],  d[7],
     d[8],  d[9], d[10], d[11], d[12], d[13], d[14], d[15],
    d[16], d[17], d[18], d[19], d[20], d[21], d[22], d[23],
@@ -145,6 +140,18 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
    d[40], d[41], d[42], d[43], d[44], d[45], d[46], d[47],
    d[48], d[49], d[50], d[51], d[52], d[53], d[54], d[55],
    d[56], d[57], d[58], d[59], d[60], d[61], d[62], d[63]);
+
+  uint64_t* ctrl_wqe_8B_for_db = reinterpret_cast<uint64_t*>(&base_ptr[64 * my_sq_index]);
+  uint8_t *db_u8p = reinterpret_cast<uint8_t*>(ctrl_wqe_8B_for_db);
+  GPU_DPRINTF("post_wqe_rma::ctrl_wqe_8B_for_db    %02x %02x %02x %02x %02x %02x %02x %02x (%lx)\n",
+	      db_u8p[0], db_u8p[1], db_u8p[2], db_u8p[3], db_u8p[4], db_u8p[5], db_u8p[6], db_u8p[7], *ctrl_wqe_8B_for_db);
+
+  uint64_t ticket{0};
+  ticket = doorbell_mutex->lock();
+  ring_doorbell(*ctrl_wqe_8B_for_db);
+  doorbell_mutex->unlock(ticket);
+  __threadfence_system();
+
 }
 
 __device__ void QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode,

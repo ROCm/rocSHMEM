@@ -35,6 +35,7 @@
 #include <infiniband/mlx5dv.h>
 
 #include "atomic_return.hpp"
+#include "sync/ticket_mutex.hpp"
 
 namespace rocshmem {
 
@@ -229,6 +230,8 @@ class QueuePair {
   uint32_t qp_num{0};
   uint32_t rkey{0};
   uint32_t lkey{0};
+
+  TicketMutex* doorbell_mutex{nullptr};
 };
 
 }  // namespace rocshmem
