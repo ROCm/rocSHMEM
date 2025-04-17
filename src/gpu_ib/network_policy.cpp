@@ -142,16 +142,6 @@ void NetworkImpl::networkHostInit(GPUIBContext *ctx, int buffer_id) {
   }
 }
 
-__device__ void NetworkImpl::networkGpuInit(GPUIBContext *ctx, int buffer_id) {
-  for (int i{0}; i < num_pes; i++) {
-    int offset = num_contexts * i + buffer_id;
-    auto *qp = ctx->getQueuePair(i);
-    new (qp) QueuePair(gpu_qps[offset]);
-    qp->atomic_ret.atomic_base_ptr = &atomic_ret->atomic_base_ptr[max_nb_atomic * buffer_id];
-    qp->base_heap = ctx->base_heap;
-  }
-}
-
 __device__ __host__ QueuePair *NetworkImpl::getQueuePair(QueuePair *qp_handle, int pe) {
   return &qp_handle[pe];
 }

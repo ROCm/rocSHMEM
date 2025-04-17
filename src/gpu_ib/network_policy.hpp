@@ -59,11 +59,6 @@ class NetworkImpl {
   __host__ void networkHostInit(GPUIBContext *ctx, int buffer_id);
 
   /**
-   * @brief initialize the network resources for each context on GPU side
-   */
-  __device__ void networkGpuInit(GPUIBContext *ctx, int buffer_id);
-
-  /**
    * @brief returns the QP for the targeted pe
    */
   __device__ __host__ QueuePair *getQueuePair(QueuePair *qp, int pe);
