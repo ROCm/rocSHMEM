@@ -94,11 +94,65 @@ void Connection::finalize() {
   GPUIB_CHECK_ZERO(ret, "ibv_dereg_mr");
 }
 
+static void dump_ibv_context(struct ibv_context* x) {
+  /* 
+   * struct ibv_context {
+   *   struct ibv_device      *device;
+   *   struct ibv_context_ops  ops;
+   *   int                     cmd_fd;
+   *   int                     async_fd;
+   *   int                     num_comp_vectors;
+   *   pthread_mutex_t         mutex;
+   *   void                   *abi_compat;
+   * };
+   */
+  printf("\n"
+         "===============================================\n"
+         "           DUMPING MLX IBV_CONTEXT\n"
+         "===============================================\n"
+         "  (ibv_device*)        device              = %p\n"
+         "  (int)                cmd_fd              = %d\n"
+         "  (int)                async_fd            = %d\n"
+         "  (int)                num_comp_vectors    = %d\n"
+         "  (void*)              abi_compat          = %p\n",
+	 x->device, x->cmd_fd, x->async_fd, x->num_comp_vectors, x->abi_compat);
+};
+
+static void dump_ibv_device(struct ibv_device* x) {
+  /*
+   * struct ibv_device {
+   *   struct _ibv_device_ops  _ops;
+   *   enum ibv_node_type node_type;
+   *   enum ibv_transport_type transport_type;
+   *   char name[IBV_SYSFS_NAME_MAX];
+   *   char dev_name[IBV_SYSFS_NAME_MAX];
+   *   char dev_path[IBV_SYSFS_PATH_MAX];
+   *   char ibdev_path[IBV_SYSFS_PATH_MAX];
+   * };
+   */
+  printf("\n"
+         "===============================================\n"
+         "           DUMPING MLX IBV_DEVICE\n"
+         "===============================================\n"
+         "  (enum ibv_node_type)      node_type      = %d\n"
+         "  (enum ibv_transport_type) transport_type = %d\n"
+         "  (char[])                  name           = %s\n"
+         "  (char[])                  dev_name       = %s\n"
+         "  (char[])                  dev_path       = %s\n"
+         "  (char[])                  ibdev_path     = %s\n",
+	 x->node_type, x->transport_type, x->name, x->dev_name, x->dev_path, x->ibdev_path);
+}
+
+
 void Connection::ib_init(struct ibv_device* ib_dev, uint8_t port) {
   ib_state = new ib_state_t;
   GPUIB_CHECK_NNULL(ib_state, "ib_state object create");
+
   ib_state->context = ibv_open_device(ib_dev);
   GPUIB_CHECK_NNULL(ib_state->context, "ib open device");
+  dump_ibv_context(ib_state->context);
+  dump_ibv_device(ib_state->context->device);
+
   ib_state->pd = ibv_alloc_pd(ib_state->context);
   GPUIB_CHECK_NNULL(ib_state->pd, "ib allocate pd");
   ibv_parent_domain_init_attr pattr;
@@ -135,7 +189,7 @@ void Connection::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
   QPInitAttr qp_init_attr{qpattr(cap)};
   cqs.resize(total_number_connections());
   qps.resize(total_number_connections());
-  int max_num_cqe = 2048; // qp_init_attr.attr.cap.max_send_wr;
+  int max_num_cqe = qp_init_attr.attr.cap.max_send_wr;
   for (auto& entry : cqs) {
     entry = create_cq(ib_state->context, ib_state->pd, max_num_cqe);
     GPUIB_CHECK_NNULL(entry, "create_cq");
