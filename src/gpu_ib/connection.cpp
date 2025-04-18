@@ -108,7 +108,7 @@ static void dump_ibv_context(struct ibv_context* x) {
    */
   printf("\n"
          "===============================================\n"
-         "           DUMPING MLX IBV_CONTEXT\n"
+         "                MLX IBV_CONTEXT\n"
          "===============================================\n"
          "  (ibv_device*)        device              = %p\n"
          "  (int)                cmd_fd              = %d\n"
@@ -132,7 +132,7 @@ static void dump_ibv_device(struct ibv_device* x) {
    */
   printf("\n"
          "===============================================\n"
-         "           DUMPING MLX IBV_DEVICE\n"
+         "               MLX IBV_DEVICE\n"
          "===============================================\n"
          "  (enum ibv_node_type)      node_type      = %d\n"
          "  (enum ibv_transport_type) transport_type = %d\n"
@@ -142,6 +142,82 @@ static void dump_ibv_device(struct ibv_device* x) {
          "  (char[])                  ibdev_path     = %s\n",
 	 x->node_type, x->transport_type, x->name, x->dev_name, x->dev_path, x->ibdev_path);
 }
+
+static void dump_ibv_pd(struct ibv_pd* x) {
+  /*
+   * struct ibv_pd {
+   *   struct ibv_context     *context;
+   *   uint32_t                handle;
+   * };
+   */
+  printf("\n"
+         "===============================================\n"
+         "               MLX IBV_PD\n"
+         "===============================================\n"
+         "  (ibv_context*) context = %p\n"
+         "  (uint32_t)     handle  = 0x%x\n",
+	 x->context, x->handle);
+}
+
+static void dump_ibv_port_attr(struct ibv_port_attr* x) {
+  /*
+   * struct ibv_port_attr { 
+   *   enum ibv_port_state     state; 
+   *   enum ibv_mtu            max_mtu; 
+   *   enum ibv_mtu            active_mtu; 
+   *   int                     gid_tbl_len; 
+   *   uint32_t                port_cap_flags; 
+   *   uint32_t                max_msg_sz; 
+   *   uint32_t                bad_pkey_cntr; 
+   *   uint32_t                qkey_viol_cntr; 
+   *   uint16_t                pkey_tbl_len; 
+   *   uint16_t                lid; 
+   *   uint16_t                sm_lid; 
+   *   uint8_t                 lmc; 
+   *   uint8_t                 max_vl_num; 
+   *   uint8_t                 sm_sl; 
+   *   uint8_t                 subnet_timeout; 
+   *   uint8_t                 init_type_reply; 
+   *   uint8_t                 active_width; 
+   *   uint8_t                 active_speed; 
+   *   uint8_t                 phys_state; 
+   *   uint8_t                 link_layer; 
+   *   uint8_t                 flags; 
+   *   uint16_t                port_cap_flags2; 
+   * }; 
+   */
+  printf("\n"
+         "===============================================\n"
+         "               MLX IBV_PORT_ATTR\n"
+         "===============================================\n"
+         "  (enum ibv_port_state) state           = %u\n"
+         "  (enum ibv_mtu)        max_mtu         = %u\n"
+         "  (enum ibv_mtu)        active_mtu      = %u\n"
+         "  (int)                 gid_tbl_len     = %u\n"
+         "  (uint32_t)            port_cap_flags  = 0x%x\n"
+         "  (uint32_t)            max_msg_sz      = %u\n"
+         "  (uint32_t)            bad_pkey_cntr   = %u\n"
+         "  (uint32_t)            qkey_viol_cntr  = %u\n"
+         "  (uint16_t)            pkey_tbl_len    = %u\n"
+         "  (uint16_t)            lid             = 0x%x\n"
+         "  (uint16_t)            sm_lid          = 0x%x\n"
+         "  (uint8_t)             lmc             = 0x%x\n"
+         "  (uint8_t)             max_vl_num      = 0x%x\n"
+         "  (uint8_t)             sm_sl           = 0x%x\n"
+         "  (uint8_t)             subnet_timeout  = 0x%x\n"
+         "  (uint8_t)             init_type_reply = 0x%x\n"
+         "  (uint8_t)             active_width    = 0x%x\n"
+         "  (uint8_t)             active_speed    = 0x%x\n"
+         "  (uint8_t)             phys_state      = 0x%x\n"
+         "  (uint8_t)             link_layer      = 0x%x\n"
+         "  (uint8_t)             flags           = 0x%x\n"
+         "  (uint16_t)            port_cap_flags2 = 0x%x\n",
+	 x->state, x->max_mtu, x->active_mtu, x->gid_tbl_len, x->port_cap_flags, x->max_msg_sz,
+	 x->bad_pkey_cntr, x->qkey_viol_cntr, x->pkey_tbl_len, x->lid, x->sm_lid, x->lmc, x->max_vl_num,
+	 x->sm_sl, x->subnet_timeout, x->init_type_reply, x->active_width, x->active_speed, x->phys_state,
+	 x->link_layer, x->flags, x->port_cap_flags2);
+}
+
 
 
 void Connection::ib_init(struct ibv_device* ib_dev, uint8_t port) {
@@ -155,12 +231,17 @@ void Connection::ib_init(struct ibv_device* ib_dev, uint8_t port) {
 
   ib_state->pd = ibv_alloc_pd(ib_state->context);
   GPUIB_CHECK_NNULL(ib_state->pd, "ib allocate pd");
+  dump_ibv_pd(ib_state->pd);
+
   ibv_parent_domain_init_attr pattr;
   init_parent_domain_attr(&pattr);
   ib_state->pd = ibv_alloc_parent_domain(ib_state->context, &pattr);
   GPUIB_CHECK_NNULL(ib_state->pd, "ibv_alloc_parent_domain");
+  dump_ibv_pd(ib_state->pd);
+
   int err = ibv_query_port(ib_state->context, port, &ib_state->portinfo);
   GPUIB_CHECK_ZERO(err, "ibv_query_port");
+  dump_ibv_port_attr(&ib_state->portinfo);
 }
 
 template <typename StateType>
