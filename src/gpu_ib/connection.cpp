@@ -218,8 +218,6 @@ static void dump_ibv_port_attr(struct ibv_port_attr* x) {
 	 x->link_layer, x->flags, x->port_cap_flags2);
 }
 
-
-
 void Connection::ib_init(struct ibv_device* ib_dev, uint8_t port) {
   ib_state = new ib_state_t;
   GPUIB_CHECK_NNULL(ib_state, "ib_state object create");
@@ -251,15 +249,53 @@ void Connection::try_to_modify_qp(ibv_qp* qp, StateType state) {
 }
 
 void Connection::init_qp_status(ibv_qp* qp, uint8_t port) {
+  printf("modifying QP %p into INIT state for port %u\n", qp, port);
   try_to_modify_qp<InitQPState>(qp, initqp(port));
 }
 
 void Connection::change_status_rtr(ibv_qp* qp, dest_info_t* dest, uint8_t port) {
+  printf("modifying QP %p into RTR state for port %u\n", qp, port);
   try_to_modify_qp<RtrState>(qp, rtr(dest, port));
 }
 
 void Connection::change_status_rts(ibv_qp* qp, dest_info_t* dest) {
+  printf("modifying QP %p into RTS state\n", qp);
   try_to_modify_qp<RtsState>(qp, rts(dest));
+}
+
+void dump_ibv_qp(struct ibv_qp *qp, int conn_num) {
+  /*
+   * struct ibv_qp {
+   *   struct ibv_context     *context;
+   *   void                   *qp_context;
+   *   struct ibv_pd          *pd;
+   *   struct ibv_cq          *send_cq;
+   *   struct ibv_cq          *recv_cq;
+   *   struct ibv_srq         *srq;
+   *   uint32_t                handle;
+   *   uint32_t                qp_num;
+   *   enum ibv_qp_state       state;
+   *   enum ibv_qp_type        qp_type;
+   *   pthread_mutex_t         mutex;
+   *   pthread_cond_t          cond;
+   *   uint32_t                events_completed;
+   * };
+   */
+  printf("\n");
+  printf("============== QP_DUMP CONNECTION #%d==========\n", conn_num);
+  printf("  (ibv_context*)      context          = %p\n",   qp->context);
+  printf("  (void*)             qp_context       = %p\n",   qp->qp_context);
+  printf("  (ibv_pd*)           pd               = %p\n",   qp->pd);
+  printf("  (ibv_cq*)           send_cq          = %p\n",   qp->send_cq);
+  printf("  (ibv_cq*)           recv_cq          = %p\n",   qp->recv_cq);
+  printf("  (ibv_srq*)          srq              = %p\n",   qp->srq);
+  printf("  (uint32_t)          handle           = 0x%x\n", qp->handle);
+  printf("  (uint32_t)          qp_num           = 0x%x\n", qp->qp_num);
+  printf("  (enum ibv_qp_state) state            = %u\n",   qp->state);
+  printf("  (enum_ibv_qp_type)  qp_type          = %u\n",   qp->qp_type);
+  printf("  (uint32_t)          events_completed = %u\n",   qp->events_completed);
+  printf("=========== QP_DUMP_END CONNECTION #%d ========\n", conn_num);
+  printf("\n");
 }
 
 void Connection::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
@@ -278,7 +314,9 @@ void Connection::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
   for (int i{0}; i < qps.size(); i++) {
     qps[i] = create_qp(ib_state->pd, ib_state->context, &qp_init_attr.attr, cqs[i]);
     GPUIB_CHECK_NNULL(qps[i], "create_qp");
+    dump_ibv_qp(qps[i], i);
     init_qp_status(qps[i], port);
+    dump_ibv_qp(qps[i], i);
     dest_info[i].lid = ib_port_att->lid;
     dest_info[i].qpn = qps[i]->qp_num;
     dest_info[i].psn = 0;
