@@ -94,10 +94,10 @@ __device__ void QueuePair::dump() {
 	      cq_buf, cq_dbrec, cq_cnt, cq_log_cnt, dbrec, sq_buf, sq_buf_head, sq_wqe_cnt, qp_num, rkey, lkey);
 }
 
-__device__ void QueuePair::ring_doorbell(uint64_t db_val) {
+__device__ void QueuePair::ring_doorbell(uint64_t db_val, uint32_t my_sq_counter) {
   dump();
   uint32_t be_sq_counter;
-  swap_endian_store(const_cast<uint32_t*>(&be_sq_counter), reinterpret_cast<uint32_t>(sq_counter));
+  swap_endian_store(const_cast<uint32_t*>(&be_sq_counter), reinterpret_cast<uint32_t>(my_sq_counter));
   uint8_t *dbrec_u8p = reinterpret_cast<uint8_t*>(&be_sq_counter);
   GPU_DPRINTF("storing (__be32) be_sq_counter %02x %02x %02x %02x (%lx) to dbrec %p\n", dbrec_u8p[0], dbrec_u8p[1], dbrec_u8p[2], dbrec_u8p[3], be_sq_counter, dbrec);
   __hip_atomic_store(dbrec, be_sq_counter, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
@@ -166,8 +166,8 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   // will signal every completion
 
   uint32_t num_wqes{1};
-  uint64_t my_sq_counter = atomicAdd(&sq_counter, num_wqes);
-  uint64_t my_sq_index = my_sq_counter % sq_wqe_cnt;
+  uint32_t my_sq_counter = atomicAdd(&sq_counter, num_wqes);
+  uint32_t my_sq_index = my_sq_counter % sq_wqe_cnt;
   atomicAdd(&quiet_counter, 1);
 
   SegmentBuilder seg_build(my_sq_index, sq_buf);
@@ -205,7 +205,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
 
   uint64_t ticket{0};
   ticket = doorbell_mutex->lock();
-  ring_doorbell(*ctrl_wqe_8B_for_db);
+  ring_doorbell(*ctrl_wqe_8B_for_db, my_sq_counter + num_wqes);
   doorbell_mutex->unlock(ticket);
   __threadfence_system();
 

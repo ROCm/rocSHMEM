@@ -282,7 +282,7 @@ void dump_ibv_qp(struct ibv_qp *qp, int conn_num) {
    * };
    */
   printf("\n");
-  printf("============== QP_DUMP CONNECTION #%d==========\n", conn_num);
+  printf("============== QP_DUMP CONNECTION#%d ==========\n", conn_num);
   printf("  (ibv_context*)      context          = %p\n",   qp->context);
   printf("  (void*)             qp_context       = %p\n",   qp->qp_context);
   printf("  (ibv_pd*)           pd               = %p\n",   qp->pd);
@@ -294,7 +294,7 @@ void dump_ibv_qp(struct ibv_qp *qp, int conn_num) {
   printf("  (enum ibv_qp_state) state            = %u\n",   qp->state);
   printf("  (enum_ibv_qp_type)  qp_type          = %u\n",   qp->qp_type);
   printf("  (uint32_t)          events_completed = %u\n",   qp->events_completed);
-  printf("=========== QP_DUMP_END CONNECTION #%d ========\n", conn_num);
+  printf("=========== QP_DUMP_END CONNECTION#%d  ========\n", conn_num);
   printf("\n");
 }
 
@@ -382,7 +382,7 @@ ibv_cq* Connection::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
 void dump_mlx5dv_qp(struct mlx5dv_qp *qp_dv, int conn_num) {
   printf("\n");
   printf("===============================================\n");
-  printf("     INITIALIZED MLXDV_QP FOR CONNECTION #%d\n", conn_num);
+  printf("     INITIALIZED MLXDV_QP FOR CONNECTION#%d\n", conn_num);
   printf("===============================================\n");
   printf("=================== QP_DUMP ===================\n");
   printf("  (__be32*)  dbrec           = %p\n",     qp_dv->dbrec);
@@ -408,7 +408,7 @@ void dump_mlx5dv_qp(struct mlx5dv_qp *qp_dv, int conn_num) {
 void dump_mlx5dv_cq(struct mlx5dv_cq *cq_dv, int conn_num) {
   printf("\n");
   printf("===============================================\n");
-  printf("     INITIALIZED MLX5DV_CQ FOR CONNECTION #%d\n", conn_num);
+  printf("     INITIALIZED MLX5DV_CQ FOR CONNECTION#%d\n", conn_num);
   printf("===============================================\n");
   printf("=================== CQ_DUMP ===================\n");
   printf("  (void*)    buf             = %p\n",     cq_dv->buf);

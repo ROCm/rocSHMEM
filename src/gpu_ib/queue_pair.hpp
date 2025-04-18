@@ -169,7 +169,7 @@ class QueuePair {
    *
    * @param[in] db_val Doorbell value is written by method.
    */
-  __device__ void ring_doorbell(uint64_t db_val);
+  __device__ void ring_doorbell(uint64_t db_val, uint32_t my_sq_counter);
 
   /**
    * @brief Helper method to extract syndrome field from cqe.
