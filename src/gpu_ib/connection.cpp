@@ -135,7 +135,7 @@ void Connection::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
   QPInitAttr qp_init_attr{qpattr(cap)};
   cqs.resize(total_number_connections());
   qps.resize(total_number_connections());
-  int max_num_cqe = qp_init_attr.attr.cap.max_send_wr;
+  int max_num_cqe = 2048; // qp_init_attr.attr.cap.max_send_wr;
   for (auto& entry : cqs) {
     entry = create_cq(ib_state->context, ib_state->pd, max_num_cqe);
     GPUIB_CHECK_NNULL(entry, "create_cq");
