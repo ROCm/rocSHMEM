@@ -209,7 +209,7 @@ ibv_cq* Connection::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
 void dump_mlx5dv_qp(struct mlx5dv_qp *qp_dv, int conn_num) {
   printf("\n");
   printf("===============================================\n");
-  printf("     INITIALIZED QP FOR CONNECTION #%d\n", conn_num);
+  printf("     INITIALIZED MLXDV_QP FOR CONNECTION #%d\n", conn_num);
   printf("===============================================\n");
   printf("=================== QP_DUMP ===================\n");
   printf("  (__be32*)  dbrec           = %p\n",     qp_dv->dbrec);
@@ -235,7 +235,7 @@ void dump_mlx5dv_qp(struct mlx5dv_qp *qp_dv, int conn_num) {
 void dump_mlx5dv_cq(struct mlx5dv_cq *cq_dv, int conn_num) {
   printf("\n");
   printf("===============================================\n");
-  printf("     INITIALIZED CQ FOR CONNECTION #%d\n", conn_num);
+  printf("     INITIALIZED MLX5DV_CQ FOR CONNECTION #%d\n", conn_num);
   printf("===============================================\n");
   printf("=================== CQ_DUMP ===================\n");
   printf("  (void*)    buf             = %p\n",     cq_dv->buf);

@@ -42,22 +42,67 @@ __device__ uint8_t QueuePair::get_cq_error_syndrome(mlx5_cqe64 *cqe_entry) {
   return cqe_err->syndrome;
 }
 
+void QueuePair::dump() {
+  printf("\n"
+         "===============================================\n"
+         "           DUMPING SHMEM INTRENAL QP\n"
+         "===============================================\n"
+         "  (char*const*)        base_heap           = %p\n"
+         "  (uint32_t)           sq_counter          = %u\n"
+         "  (uint32_t)           local_sq_cnt        = %u\n"
+         "  (uint32_t)           cq_consumer_counter = %u\n"
+         "  (uint32_t)           quiet_counter       = %u\n"
+         "  (mlx5_cqe64*)        cq_buf_head         = %p\n"
+         "  (mlx5_cqe64*)        cq_buf              = %p\n"
+         "  (volatile uint32_t*) cq_dbrec            = %p\n"
+         "  (uint32_t)           cq_cnt              = %u\n"
+         "  (uint32_t)           cq_log_cnt          = 0x%x\n"
+         "  (volatile uint32_t*) dbrec               = %p\n"
+         "  (uint64_t*)          sq_buf              = %p\n"
+         "  (uint64_t*)          sq_buf_head         = %p\n"
+         "  (uint16_t)           sq_wqe_cnt          = %u\n"
+         "  (uint32_t)           qp_num              = 0x%x\n"
+         "  (uint32_t)           rkey                = 0x%x\n"
+         "  (uint32_t)           lkey                = 0x%x\n",
+         base_heap, sq_counter, local_sq_cnt, cq_consumer_counter, quiet_counter, cq_buf_head,
+         cq_buf, cq_dbrec, cq_cnt, cq_log_cnt, dbrec, sq_buf, sq_buf_head, sq_wqe_cnt, qp_num, rkey, lkey);
+}
+
+__device__ void QueuePair::dump() {
+  GPU_DPRINTF("\n"
+	      "===============================================\n"
+              "           DUMPING SHMEM INTRENAL QP\n"
+              "===============================================\n"
+              "  (char*const*)        base_heap           = %p\n"
+	      "  (uint32_t)           sq_counter          = %u\n"
+	      "  (uint32_t)           local_sq_cnt        = %u\n"
+	      "  (uint32_t)           cq_consumer_counter = %u\n"
+	      "  (uint32_t)           quiet_counter       = %u\n"
+	      "  (mlx5_cqe64*)        cq_buf_head         = %p\n"
+	      "  (mlx5_cqe64*)        cq_buf              = %p\n"
+	      "  (volatile uint32_t*) cq_dbrec            = %p\n"
+	      "  (uint32_t)           cq_cnt              = %u\n"
+	      "  (uint32_t)           cq_log_cnt          = 0x%x\n"
+	      "  (volatile uint32_t*) dbrec               = %p\n"
+	      "  (uint64_t*)          sq_buf              = %p\n"
+	      "  (uint64_t*)          sq_buf_head         = %p\n"
+	      "  (uint16_t)           sq_wqe_cnt          = %u\n"
+	      "  (uint32_t)           qp_num              = 0x%x\n"
+	      "  (uint32_t)           rkey                = 0x%x\n"
+	      "  (uint32_t)           lkey                = 0x%x\n",
+	      base_heap, sq_counter, local_sq_cnt, cq_consumer_counter, quiet_counter, cq_buf_head,
+	      cq_buf, cq_dbrec, cq_cnt, cq_log_cnt, dbrec, sq_buf, sq_buf_head, sq_wqe_cnt, qp_num, rkey, lkey);
+}
+
 __device__ void QueuePair::ring_doorbell(uint64_t db_val) {
+  dump();
   uint32_t be_sq_counter;
   swap_endian_store(const_cast<uint32_t*>(&be_sq_counter), reinterpret_cast<uint32_t>(sq_counter));
   uint8_t *dbrec_u8p = reinterpret_cast<uint8_t*>(&be_sq_counter);
-  GPU_DPRINTF("storing (__be32) be_sq_counter %02x %02x %02x %02x %02x %02x %02x %02x (%lx) to dbrec %p\n",
-	      dbrec_u8p[0], dbrec_u8p[1], dbrec_u8p[2], dbrec_u8p[3], dbrec_u8p[4], dbrec_u8p[5], dbrec_u8p[6], dbrec_u8p[7], be_sq_counter, dbrec);
+  GPU_DPRINTF("storing (__be32) be_sq_counter %02x %02x %02x %02x (%lx) to dbrec %p\n", dbrec_u8p[0], dbrec_u8p[1], dbrec_u8p[2], dbrec_u8p[3], be_sq_counter, dbrec);
   __hip_atomic_store(dbrec, be_sq_counter, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
   __threadfence_system();
   uint8_t *db_u8p = reinterpret_cast<uint8_t*>(&db_val);
-  GPU_DPRINTF("\n\tbase_heap %p\n\tsq_counter %u\n\tcq_consumer_counter %u\n\t"
-	      "quiet_counter %u\n\tcq_buf_head %p\n\tcq_buf %p\n\tcq_dbrec %p\n\t"
-	      "cq_cnt %lu\n\tcq_log_cnt %lu\n\tdbrec %p\n\tsq_buf %p\n\t"
-	      "sq_buf_head %p\n\tsq_wqe_cnt %u\n\tqp_num %x\n\trkey %x\n\tlkey %x\n",
-	      base_heap, sq_counter, cq_consumer_counter, quiet_counter, cq_buf_head,
-	      cq_buf, cq_dbrec, cq_cnt, cq_log_cnt, dbrec, sq_buf, sq_buf_head,
-	      sq_wqe_cnt, qp_num, rkey, lkey);
   GPU_DPRINTF("storing db_val %02x %02x %02x %02x %02x %02x %02x %02x (%lx) to db.ptr %p\n",
 	      db_u8p[0], db_u8p[1], db_u8p[2], db_u8p[3], db_u8p[4], db_u8p[5], db_u8p[6], db_u8p[7], db_val, db.ptr);
   STORE(db.ptr, db_val);
