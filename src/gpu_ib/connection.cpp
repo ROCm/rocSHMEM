@@ -159,15 +159,6 @@ void Connection::set_rdma_seg(mlx5_wqe_raddr_seg* rdma, uint64_t address, uint32
   rdma->rkey = htobe32(rkey);
 }
 
-uint64_t* Connection::get_address_sq(int i) {
-  mlx5dv_obj mlx_obj;
-  mlx5dv_qp qp_out;
-  mlx_obj.qp.in = qps[i];
-  mlx_obj.qp.out = &qp_out;
-  mlx5dv_init_obj(&mlx_obj, MLX5DV_OBJ_QP);
-  return reinterpret_cast<uint64_t*>(qp_out.sq.buf);
-}
-
 void* Connection::buf_alloc([[maybe_unused]] struct ibv_pd* pd,
                             [[maybe_unused]] void* pd_context, size_t size,
                             [[maybe_unused]] size_t alignment,
@@ -215,12 +206,56 @@ ibv_cq* Connection::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
   return cq;
 }
 
+void dump_mlx5dv_qp(struct mlx5dv_qp *qp_dv, int conn_num) {
+  printf("\n");
+  printf("===============================================\n");
+  printf("     INITIALIZED QP FOR CONNECTION #%d\n", conn_num);
+  printf("===============================================\n");
+  printf("=================== QP_DUMP ===================\n");
+  printf("  (__be32*)  dbrec           = %p\n",     qp_dv->dbrec);
+  printf("  (void*)    sq.buf          = %p\n",     qp_dv->sq.buf);
+  printf("  (uint32_t) sq.wqe_cnt      = %u\n",     qp_dv->sq.wqe_cnt);
+  printf("  (uint32_t) sq.stride       = %u\n",     qp_dv->sq.stride);
+  printf("  (void*)    rq.buf          = %p\n",     qp_dv->rq.buf);
+  printf("  (uint32_t) rq.wqe_cnt      = %u\n",     qp_dv->rq.wqe_cnt);
+  printf("  (uint32_t) rq.stride       = %u\n",     qp_dv->rq.stride);
+  printf("  (void*)    bf.reg          = %p\n",     qp_dv->bf.reg);
+  printf("  (uint32_t) bf.size         = 0x%x\n",   qp_dv->bf.size);
+  printf("  (uint64_t) comp_mask       = 0x%lx\n",  qp_dv->comp_mask);
+  printf("  (off_t)    uar_mmap_offset = 0x%lx\n",  qp_dv->uar_mmap_offset);
+  printf("  (uint32_t) tirn            = 0x%x\n",   qp_dv->tirn);
+  printf("  (uint32_t) tisn            = 0x%x\n",   qp_dv->tisn);
+  printf("  (uint32_t) rqn             = 0x%x\n",   qp_dv->rqn);
+  printf("  (uint32_t) sqn             = 0x%x\n",   qp_dv->sqn);
+  printf("  (uint64_t) tir_icm_addr    = 0x%lx\n",  qp_dv->tir_icm_addr);
+  printf("================== QP_DUMP_END ================\n");
+  printf("\n");
+}
+
+void dump_mlx5dv_cq(struct mlx5dv_cq *cq_dv, int conn_num) {
+  printf("\n");
+  printf("===============================================\n");
+  printf("     INITIALIZED CQ FOR CONNECTION #%d\n", conn_num);
+  printf("===============================================\n");
+  printf("=================== CQ_DUMP ===================\n");
+  printf("  (void*)    buf             = %p\n",     cq_dv->buf);
+  printf("  (__be32*)  dbrec           = %p\n",     cq_dv->dbrec);
+  printf("  (uint32_t) cqe_cnt         = %u\n",     cq_dv->cqe_cnt);
+  printf("  (uint32_t) cqe_size        = %u\n",     cq_dv->cqe_size);
+  printf("  (void*)    cq_uar          = %p\n",     cq_dv->cq_uar);
+  printf("  (uint32_t) cqn             = 0x%x\n",   cq_dv->cqn);
+  printf("  (uint64_t) comp_mask       = 0x%lx\n",  cq_dv->comp_mask);
+  printf("================== CQ_DUMP_END ================\n");
+  printf("\n");
+}
+
 void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   mlx5dv_cq cq_out;
   mlx5dv_obj mlx_obj;
   mlx_obj.cq.in = cqs[conn_num];
   mlx_obj.cq.out = &cq_out;
   mlx5dv_init_obj(&mlx_obj, MLX5DV_OBJ_CQ);
+  dump_mlx5dv_cq(&cq_out, conn_num);
 
   /*
    * struct mlx5dv_cq {
@@ -233,6 +268,7 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
    *   uint64_t                comp_mask;
    * };
   */
+
   gpu_qp->cq_buf_head = reinterpret_cast<mlx5_cqe64*>(cq_out.buf);
   gpu_qp->cq_buf = reinterpret_cast<mlx5_cqe64*>(cq_out.buf);
   gpu_qp->cq_cnt = cq_out.cqe_cnt;
@@ -243,6 +279,7 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   mlx_obj.qp.in = qps[conn_num];
   mlx_obj.qp.out = &qp_out;
   mlx5dv_init_obj(&mlx_obj, MLX5DV_OBJ_QP);
+  dump_mlx5dv_qp(&qp_out, conn_num);
 
   /*
    * struct mlx5dv_qp {
@@ -270,13 +307,13 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
    *   uint64_t tir_icm_addr;
    * };
    */
-  volatile uint32_t* sq_dbrec = qp_out.dbrec;
-  gpu_qp->sq_dbrec = reinterpret_cast<volatile uint32_t*>(sq_dbrec);
+
+  volatile uint32_t* dbrec = qp_out.dbrec;
+  gpu_qp->dbrec = reinterpret_cast<volatile uint32_t*>(dbrec);
   gpu_qp->sq_buf_head = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
   gpu_qp->sq_buf = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
   gpu_qp->sq_wqe_cnt = qp_out.sq.wqe_cnt;
-
-  gpu_qp->rkey = htobe32(backend->networkImpl.heap_rkey[conn_num]);
+  gpu_qp->rkey = htobe32(backend->networkImpl.heap_rkey[conn_num % backend->num_pes]);
   gpu_qp->lkey = htobe32(backend->networkImpl.heap_mr->lkey);
   gpu_qp->qp_num = qps[conn_num]->qp_num;
 
@@ -286,8 +323,7 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   // The 2 in qp_out.bf.size * 2 below facilitates the switching between blue flame registers
   rocm_memory_lock_to_fine_grain(qp_out.bf.reg, qp_out.bf.size * 2, &gpu_ptr, hip_dev_id);
   gpu_qp->db.ptr = reinterpret_cast<uint64_t*>(gpu_ptr);
-  printf("qp_out.br.reg %p, qp_out.bf.size %u\n", qp_out.bf.reg, qp_out.bf.size);
-  printf("gpu_ptr %p on hip_dev_id %d should match gpu_qp->db.ptr %p\n", gpu_ptr, hip_dev_id, gpu_qp->db.ptr);
+  printf("gpu_ptr %p on hip_dev_id %d should match qp->db.ptr %p\n", gpu_ptr, hip_dev_id, gpu_qp->db.ptr);
 }
 
 ibv_qp* Connection::create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr_ex* qp_attr, ibv_cq* cq) {

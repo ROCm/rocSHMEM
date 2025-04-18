@@ -152,8 +152,6 @@ class Connection {
 
   void set_rdma_seg(mlx5_wqe_raddr_seg* rdma, uint64_t address, uint32_t rkey);
 
-  uint64_t* get_address_sq(int i);
-
   ibv_cq* create_cq(ibv_context* context, ibv_pd* pd, int cqe);
 
   ibv_qp* create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr_ex* qp_attr, ibv_cq* rcq);

@@ -131,13 +131,17 @@ void NetworkImpl::networkHostFinalize() {
   connection = nullptr;
 }
 
-void NetworkImpl::networkHostInit(GPUIBContext *ctx, int buffer_id) {
-  CHECK_HIP(hipMalloc(&ctx->device_qp_proxy, num_pes * sizeof(QueuePair)));
+void NetworkImpl::networkHostInit(GPUIBContext *ctx, int context_id) {
+  CHECK_HIP(hipMalloc(&ctx->device_qp_proxy, sizeof(QueuePair) * num_pes));
   for (int i{0}; i < num_pes; i++) {
-    int offset = num_contexts * i + buffer_id;
+    int offset = num_contexts * context_id + i;
+    printf("num_pes %d num_contexts %d context_id %d i %d offset %d\n", num_pes, num_contexts, context_id, i, offset);
+    printf("XXXXXXXXXX context %p shallow copying gpu_qps %p to local index %d\n", ctx, &gpu_qps[offset], offset);
     new (ctx->getQueuePair(i)) QueuePair(gpu_qps[offset]);
     auto *qp = ctx->getQueuePair(i);
-    qp->atomic_ret.atomic_base_ptr = &atomic_ret->atomic_base_ptr[max_nb_atomic * buffer_id];
+    printf("INDEX %d\n\tqp->db %lu\n\tqp->sq_counter %u\n\tqp->cq_consumer_counter %u\n\tqp->quiet_counter %u\n\tcq_buf_head %p\n\tcq_buf %p\n\tcq_dbrec %p\n\tcq_cnt %lu\n\tcq_log_cnt %lu\n\tsq_dbrec %p\n\tsq_buf %p\n\tsq_buf_head %p\n\tsq_wqe_cnt %u\n\tqp_num %x\n\trkey %x\n\tlkey %x\n", i, qp->db, qp->sq_counter, qp->cq_consumer_counter, qp->quiet_counter, qp->cq_buf_head, qp->cq_buf, qp->cq_dbrec, qp->cq_cnt, qp->cq_log_cnt, qp->dbrec, qp->sq_buf, qp->sq_buf_head, qp->sq_wqe_cnt, qp->qp_num, qp->rkey, qp->lkey);
+
+    qp->atomic_ret.atomic_base_ptr = &atomic_ret->atomic_base_ptr[max_nb_atomic * context_id];
     qp->base_heap = ctx->base_heap;
   }
 }

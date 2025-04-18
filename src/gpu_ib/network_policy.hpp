@@ -56,7 +56,7 @@ class NetworkImpl {
   /**
    * @brief initialize the network resources for each context
    */
-  __host__ void networkHostInit(GPUIBContext *ctx, int buffer_id);
+  __host__ void networkHostInit(GPUIBContext *ctx, int context_id);
 
   /**
    * @brief returns the QP for the targeted pe

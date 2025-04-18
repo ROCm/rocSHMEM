@@ -95,7 +95,7 @@ GPUIBBackend::GPUIBBackend(MPI_Comm comm) {
   NET_CHECK(MPI_Barrier(gpu_ib_comm_world));
   initialize_network();
   setup_ctxs();
-  setup_default_ctx();
+//  setup_default_ctx();
 }
 
 __device__ bool GPUIBBackend::create_ctx(rocshmem_ctx_t *ctx) {
@@ -105,6 +105,8 @@ __device__ bool GPUIBBackend::create_ctx(rocshmem_ctx_t *ctx) {
     return false;
   }
   ctx_ = pop_result.value;
+  GPU_DPRINTF("Retrieving context %p from free list\n", ctx_);
+
   ctx->ctx_opaque = ctx_;
   return true;
 }

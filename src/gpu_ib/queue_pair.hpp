@@ -126,7 +126,7 @@ class QueuePair {
 
   char *const *base_heap{nullptr};
 
- private:
+// private:
   /**
    * @brief Helper method to build work requests for the send queue.
    *
@@ -222,7 +222,7 @@ class QueuePair {
    *   uint64_t tir_icm_addr;
    * };
    */
-  volatile uint32_t *sq_dbrec{nullptr};
+  volatile uint32_t *dbrec{nullptr};
   uint64_t *sq_buf{nullptr};
   uint64_t *sq_buf_head{nullptr};
   uint16_t sq_wqe_cnt{0};
