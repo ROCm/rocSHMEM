@@ -133,7 +133,7 @@ void NetworkImpl::networkHostFinalize() {
 
 void NetworkImpl::networkHostInit(GPUIBContext *ctx, int context_id) {
   CHECK_HIP(hipMalloc(&ctx->device_qp_proxy, sizeof(QueuePair) * num_pes));
-  CHECK_HIP(hipMemset(&ctx->device_qp_proxy, 0, sizeof(QueuePair) * num_pes));
+  CHECK_HIP(hipMemset(ctx->device_qp_proxy, 0, sizeof(QueuePair) * num_pes));
   for (int i{0}; i < num_pes; i++) {
     int offset = num_contexts * context_id + i;
     printf("num_pes %d num_contexts %d context_id %d i %d offset %d\n", num_pes, num_contexts, context_id, i, offset);
