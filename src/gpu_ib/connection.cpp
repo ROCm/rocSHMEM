@@ -486,15 +486,14 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   gpu_qp->sq_buf = reinterpret_cast<uint64_t*>(gpu_ptr);
   gpu_ptr = nullptr;
   gpu_qp->sq_wqe_cnt = qp_out.sq.wqe_cnt;
-  printf("\nASSIGNING RKEY:\n");
-  for (int i {0}; i < backend->num_pes; i++) {
-    printf("\t backend->networkImpl.heap_rkey index %d - %x\n", i, backend->networkImpl.heap_rkey[i]);
-  }
-  printf("\tconnection# %d ASSIGNED RKEY %x\n", conn_num, backend->networkImpl.heap_rkey[conn_num % backend->num_pes]);
-  
   gpu_qp->rkey = htobe32(backend->networkImpl.heap_rkey[conn_num % backend->num_pes]);
   gpu_qp->lkey = htobe32(backend->networkImpl.heap_mr->lkey);
-  printf("\tconnection# %d ASSIGNED LKEY %x\n", conn_num, backend->networkImpl.heap_mr->lkey);
+  printf("\nASSIGNING RKEY:\n");
+  for (int i {0}; i < backend->num_pes; i++) {
+    printf("\t backend->networkImpl.heap_rkey index %d - %x\n", i, htobe32(backend->networkImpl.heap_rkey[i]));
+  }
+  printf("\tconnection# %d ASSIGNED RKEY %x\n", conn_num, htobe32(backend->networkImpl.heap_rkey[conn_num % backend->num_pes]));
+  printf("\tconnection# %d ASSIGNED LKEY %x\n", conn_num, htobe32(backend->networkImpl.heap_mr->lkey));
   gpu_qp->qp_num = qps[conn_num]->qp_num;
   // The 2 in qp_out.bf.size * 2 below facilitates the switching between blue flame registers
   rocm_memory_lock_to_fine_grain(qp_out.bf.reg, qp_out.bf.size * 2, &gpu_ptr, hip_dev_id);
