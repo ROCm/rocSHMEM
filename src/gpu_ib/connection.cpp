@@ -492,8 +492,8 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   }
   printf("\tconnection# %d ASSIGNED RKEY %x\n", conn_num, backend->networkImpl.heap_rkey[conn_num % backend->num_pes]);
   
-  gpu_qp->rkey = backend->networkImpl.heap_rkey[conn_num % backend->num_pes];
-  gpu_qp->lkey = backend->networkImpl.heap_mr->lkey;
+  gpu_qp->rkey = htobe32(backend->networkImpl.heap_rkey[conn_num % backend->num_pes]);
+  gpu_qp->lkey = htobe32(backend->networkImpl.heap_mr->lkey);
   printf("\tconnection# %d ASSIGNED LKEY %x\n", conn_num, backend->networkImpl.heap_mr->lkey);
   gpu_qp->qp_num = qps[conn_num]->qp_num;
   // The 2 in qp_out.bf.size * 2 below facilitates the switching between blue flame registers
