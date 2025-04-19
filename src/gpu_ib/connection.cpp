@@ -30,70 +30,6 @@
 
 namespace rocshmem {
 
-Connection::Connection(GPUIBBackend* b) : backend(b) {
-  char* value{nullptr};
-  if ((value = getenv("ROCSHMEM_USE_IB_HCA"))) {
-    requested_dev = value;
-  }
-  if ((value = getenv("ROCSHMEM_SQ_SIZE"))) {
-    sq_size = atoi(value);
-  }
-}
-
-Connection::~Connection() {
-  delete ib_state;
-}
-
-void Connection::reg_mr(void* ptr, size_t size, ibv_mr** mr) {
-  int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
-  *mr = ibv_reg_mr(ib_state->pd, ptr, size, access);
-  GPUIB_CHECK_NNULL(*mr, "ibv_reg_mr");
-}
-
-unsigned Connection::total_number_connections() {
-  return backend->maximum_num_contexts_ * backend->num_pes;
-}
-
-void Connection::initialize(int num_contexts) {
-  dest_info.resize(backend->num_pes * num_contexts);
-  int ib_devices{0};
-  dev_list = ibv_get_device_list(&ib_devices);
-  GPUIB_CHECK_NNULL(dev_list, "ibv_get_device");
-  struct ibv_device* ib_dev = dev_list[0];
-  if (requested_dev) {
-    for (int i{0}; i < ib_devices; i++) {
-      const char* select_dev{ibv_get_device_name(dev_list[i])};
-      GPUIB_CHECK_NNULL(select_dev, "ibv_get_device_name");
-      if (strstr(select_dev, requested_dev)) {
-        ib_dev = dev_list[i];
-        break;
-      }
-    }
-  }
-  uint8_t port{1};
-  ib_init(ib_dev, port);
-  int ib_fork_err = ibv_fork_init();
-  GPUIB_CHECK_ZERO(ib_fork_err, "ibv_fork_init");
-  create_qps(port, &ib_state->portinfo);
-  MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t) * num_contexts, MPI_CHAR, dest_info.data(), sizeof(dest_info_t) * num_contexts, MPI_CHAR, backend->thread_comm);
-  for (int i{0}; i < qps.size(); i++) {
-    change_status_rtr(qps[i], &dest_info[i], port);
-  }
-  MPI_Barrier(backend->thread_comm);
-  for (int i{0}; i < qps.size(); i++) {
-    change_status_rts(qps[i], &dest_info[i]);
-  }
-  MPI_Barrier(backend->thread_comm);
-}
-
-void Connection::finalize() {
-  ibv_free_device_list(dev_list);
-  int ret = ibv_dereg_mr(backend->networkImpl.heap_mr);
-  GPUIB_CHECK_ZERO(ret, "ibv_dereg_mr");
-  ret = ibv_dereg_mr(backend->networkImpl.mr);
-  GPUIB_CHECK_ZERO(ret, "ibv_dereg_mr");
-}
-
 static void dump_ibv_context(struct ibv_context* x) {
   /* 
    * struct ibv_context {
@@ -218,51 +154,6 @@ static void dump_ibv_port_attr(struct ibv_port_attr* x) {
 	 x->link_layer, x->flags, x->port_cap_flags2);
 }
 
-void Connection::ib_init(struct ibv_device* ib_dev, uint8_t port) {
-  ib_state = new ib_state_t;
-  GPUIB_CHECK_NNULL(ib_state, "ib_state object create");
-
-  ib_state->context = ibv_open_device(ib_dev);
-  GPUIB_CHECK_NNULL(ib_state->context, "ib open device");
-  dump_ibv_context(ib_state->context);
-  dump_ibv_device(ib_state->context->device);
-
-  ib_state->pd = ibv_alloc_pd(ib_state->context);
-  GPUIB_CHECK_NNULL(ib_state->pd, "ib allocate pd");
-  dump_ibv_pd(ib_state->pd);
-
-  ibv_parent_domain_init_attr pattr;
-  init_parent_domain_attr(&pattr);
-  ib_state->pd = ibv_alloc_parent_domain(ib_state->context, &pattr);
-  GPUIB_CHECK_NNULL(ib_state->pd, "ibv_alloc_parent_domain");
-  dump_ibv_pd(ib_state->pd);
-
-  int err = ibv_query_port(ib_state->context, port, &ib_state->portinfo);
-  GPUIB_CHECK_ZERO(err, "ibv_query_port");
-  dump_ibv_port_attr(&ib_state->portinfo);
-}
-
-template <typename StateType>
-void Connection::try_to_modify_qp(ibv_qp* qp, StateType state) {
-  int err = ibv_modify_qp(qp, &state.exp_qp_attr, state.exp_attr_mask);
-  GPUIB_CHECK_ZERO(err, "ibv_modify_qp");
-}
-
-void Connection::init_qp_status(ibv_qp* qp, uint8_t port) {
-  printf("modifying QP %p into INIT state for port %u\n", qp, port);
-  try_to_modify_qp<InitQPState>(qp, initqp(port));
-}
-
-void Connection::change_status_rtr(ibv_qp* qp, dest_info_t* dest, uint8_t port) {
-  printf("modifying QP %p into RTR state for port %u\n", qp, port);
-  try_to_modify_qp<RtrState>(qp, rtr(dest, port));
-}
-
-void Connection::change_status_rts(ibv_qp* qp, dest_info_t* dest) {
-  printf("modifying QP %p into RTS state\n", qp);
-  try_to_modify_qp<RtsState>(qp, rts(dest));
-}
-
 void dump_ibv_qp(struct ibv_qp *qp, int conn_num) {
   /*
    * struct ibv_qp {
@@ -295,7 +186,154 @@ void dump_ibv_qp(struct ibv_qp *qp, int conn_num) {
   printf("  (enum_ibv_qp_type)  qp_type          = %u\n",   qp->qp_type);
   printf("  (uint32_t)          events_completed = %u\n",   qp->events_completed);
   printf("=========== QP_DUMP_END CONNECTION#%d  ========\n", conn_num);
+}
+
+void dump_mlx5dv_qp(struct mlx5dv_qp *qp_dv, int conn_num) {
   printf("\n");
+  printf("===============================================\n");
+  printf("     INITIALIZED MLXDV_QP FOR CONNECTION#%d\n", conn_num);
+  printf("===============================================\n");
+  printf("=================== QP_DUMP ===================\n");
+  printf("  (__be32*)  dbrec           = %p\n",     qp_dv->dbrec);
+  printf("  (void*)    sq.buf          = %p\n",     qp_dv->sq.buf);
+  printf("  (uint32_t) sq.wqe_cnt      = %u\n",     qp_dv->sq.wqe_cnt);
+  printf("  (uint32_t) sq.stride       = %u\n",     qp_dv->sq.stride);
+  printf("  (void*)    rq.buf          = %p\n",     qp_dv->rq.buf);
+  printf("  (uint32_t) rq.wqe_cnt      = %u\n",     qp_dv->rq.wqe_cnt);
+  printf("  (uint32_t) rq.stride       = %u\n",     qp_dv->rq.stride);
+  printf("  (void*)    bf.reg          = %p\n",     qp_dv->bf.reg);
+  printf("  (uint32_t) bf.size         = 0x%x\n",   qp_dv->bf.size);
+  printf("  (uint64_t) comp_mask       = 0x%lx\n",  qp_dv->comp_mask);
+  printf("  (off_t)    uar_mmap_offset = 0x%lx\n",  qp_dv->uar_mmap_offset);
+  printf("  (uint32_t) tirn            = 0x%x\n",   qp_dv->tirn);
+  printf("  (uint32_t) tisn            = 0x%x\n",   qp_dv->tisn);
+  printf("  (uint32_t) rqn             = 0x%x\n",   qp_dv->rqn);
+  printf("  (uint32_t) sqn             = 0x%x\n",   qp_dv->sqn);
+  printf("  (uint64_t) tir_icm_addr    = 0x%lx\n",  qp_dv->tir_icm_addr);
+  printf("================== QP_DUMP_END ================\n");
+}
+
+void dump_mlx5dv_cq(struct mlx5dv_cq *cq_dv, int conn_num) {
+  printf("\n");
+  printf("===============================================\n");
+  printf("     INITIALIZED MLX5DV_CQ FOR CONNECTION#%d\n", conn_num);
+  printf("===============================================\n");
+  printf("=================== CQ_DUMP ===================\n");
+  printf("  (void*)    buf             = %p\n",     cq_dv->buf);
+  printf("  (__be32*)  dbrec           = %p\n",     cq_dv->dbrec);
+  printf("  (uint32_t) cqe_cnt         = %u\n",     cq_dv->cqe_cnt);
+  printf("  (uint32_t) cqe_size        = %u\n",     cq_dv->cqe_size);
+  printf("  (void*)    cq_uar          = %p\n",     cq_dv->cq_uar);
+  printf("  (uint32_t) cqn             = 0x%x\n",   cq_dv->cqn);
+  printf("  (uint64_t) comp_mask       = 0x%lx\n",  cq_dv->comp_mask);
+  printf("================== CQ_DUMP_END ================\n");
+}
+
+Connection::Connection(GPUIBBackend* b) : backend(b) {
+  char* value{nullptr};
+  if ((value = getenv("ROCSHMEM_USE_IB_HCA"))) {
+    requested_dev = value;
+  }
+  if ((value = getenv("ROCSHMEM_SQ_SIZE"))) {
+    sq_size = atoi(value);
+  }
+}
+
+Connection::~Connection() {
+  delete ib_state;
+}
+
+void Connection::reg_mr(void* ptr, size_t size, ibv_mr** mr) {
+  int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
+  *mr = ibv_reg_mr(ib_state->pd, ptr, size, access);
+  GPUIB_CHECK_NNULL(*mr, "ibv_reg_mr");
+}
+
+unsigned Connection::total_number_connections() {
+  return backend->maximum_num_contexts_ * backend->num_pes;
+}
+
+void Connection::initialize(int num_contexts) {
+  dest_info.resize(backend->num_pes * num_contexts);
+  int ib_devices{0};
+  dev_list = ibv_get_device_list(&ib_devices);
+  GPUIB_CHECK_NNULL(dev_list, "ibv_get_device");
+  struct ibv_device* ib_dev = dev_list[0];
+  if (requested_dev) {
+    for (int i{0}; i < ib_devices; i++) {
+      const char* select_dev{ibv_get_device_name(dev_list[i])};
+      GPUIB_CHECK_NNULL(select_dev, "ibv_get_device_name");
+      if (strstr(select_dev, requested_dev)) {
+        ib_dev = dev_list[i];
+        break;
+      }
+    }
+  }
+  uint8_t port{1};
+  ib_init(ib_dev, port);
+  int ib_fork_err = ibv_fork_init();
+  GPUIB_CHECK_ZERO(ib_fork_err, "ibv_fork_init");
+  create_qps(port, &ib_state->portinfo);
+  MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t) * num_contexts, MPI_CHAR, dest_info.data(), sizeof(dest_info_t) * num_contexts, MPI_CHAR, backend->thread_comm);
+  for (int i{0}; i < qps.size(); i++) {
+    change_status_rtr(qps[i], &dest_info[i], port);
+  }
+  MPI_Barrier(backend->thread_comm);
+  for (int i{0}; i < qps.size(); i++) {
+    change_status_rts(qps[i], &dest_info[i]);
+    dump_ibv_qp(qps[i], i);
+  }
+  MPI_Barrier(backend->thread_comm);
+}
+
+void Connection::finalize() {
+  ibv_free_device_list(dev_list);
+  int ret = ibv_dereg_mr(backend->networkImpl.heap_mr);
+  GPUIB_CHECK_ZERO(ret, "ibv_dereg_mr");
+  ret = ibv_dereg_mr(backend->networkImpl.mr);
+  GPUIB_CHECK_ZERO(ret, "ibv_dereg_mr");
+}
+
+void Connection::ib_init(struct ibv_device* ib_dev, uint8_t port) {
+  ib_state = new ib_state_t;
+  GPUIB_CHECK_NNULL(ib_state, "ib_state object create");
+
+  ib_state->context = ibv_open_device(ib_dev);
+  GPUIB_CHECK_NNULL(ib_state->context, "ib open device");
+  dump_ibv_context(ib_state->context);
+  dump_ibv_device(ib_state->context->device);
+
+  ib_state->pd = ibv_alloc_pd(ib_state->context);
+  GPUIB_CHECK_NNULL(ib_state->pd, "ib allocate pd");
+  dump_ibv_pd(ib_state->pd);
+
+  ibv_parent_domain_init_attr pattr;
+  init_parent_domain_attr(&pattr);
+  ib_state->pd = ibv_alloc_parent_domain(ib_state->context, &pattr);
+  GPUIB_CHECK_NNULL(ib_state->pd, "ibv_alloc_parent_domain");
+  dump_ibv_pd(ib_state->pd);
+
+  int err = ibv_query_port(ib_state->context, port, &ib_state->portinfo);
+  GPUIB_CHECK_ZERO(err, "ibv_query_port");
+  dump_ibv_port_attr(&ib_state->portinfo);
+}
+
+template <typename StateType>
+void Connection::try_to_modify_qp(ibv_qp* qp, StateType state) {
+  int err = ibv_modify_qp(qp, &state.exp_qp_attr, state.exp_attr_mask);
+  GPUIB_CHECK_ZERO(err, "ibv_modify_qp");
+}
+
+void Connection::init_qp_status(ibv_qp* qp, uint8_t port) {
+  try_to_modify_qp<InitQPState>(qp, initqp(port));
+}
+
+void Connection::change_status_rtr(ibv_qp* qp, dest_info_t* dest, uint8_t port) {
+  try_to_modify_qp<RtrState>(qp, rtr(dest, port));
+}
+
+void Connection::change_status_rts(ibv_qp* qp, dest_info_t* dest) {
+  try_to_modify_qp<RtsState>(qp, rts(dest));
 }
 
 void Connection::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
@@ -314,9 +352,7 @@ void Connection::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
   for (int i{0}; i < qps.size(); i++) {
     qps[i] = create_qp(ib_state->pd, ib_state->context, &qp_init_attr.attr, cqs[i]);
     GPUIB_CHECK_NNULL(qps[i], "create_qp");
-    dump_ibv_qp(qps[i], i);
     init_qp_status(qps[i], port);
-    dump_ibv_qp(qps[i], i);
     dest_info[i].lid = ib_port_att->lid;
     dest_info[i].qpn = qps[i]->qp_num;
     dest_info[i].psn = 0;
@@ -369,49 +405,6 @@ ibv_cq* Connection::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
   ibv_cq *cq = ibv_cq_ex_to_cq(cq_ex);
   GPUIB_CHECK_NNULL(cq, "ibv_cq_ex_to_cq");
   return cq;
-}
-
-void dump_mlx5dv_qp(struct mlx5dv_qp *qp_dv, int conn_num) {
-  printf("\n");
-  printf("===============================================\n");
-  printf("     INITIALIZED MLXDV_QP FOR CONNECTION#%d\n", conn_num);
-  printf("===============================================\n");
-  printf("=================== QP_DUMP ===================\n");
-  printf("  (__be32*)  dbrec           = %p\n",     qp_dv->dbrec);
-  printf("  (void*)    sq.buf          = %p\n",     qp_dv->sq.buf);
-  printf("  (uint32_t) sq.wqe_cnt      = %u\n",     qp_dv->sq.wqe_cnt);
-  printf("  (uint32_t) sq.stride       = %u\n",     qp_dv->sq.stride);
-  printf("  (void*)    rq.buf          = %p\n",     qp_dv->rq.buf);
-  printf("  (uint32_t) rq.wqe_cnt      = %u\n",     qp_dv->rq.wqe_cnt);
-  printf("  (uint32_t) rq.stride       = %u\n",     qp_dv->rq.stride);
-  printf("  (void*)    bf.reg          = %p\n",     qp_dv->bf.reg);
-  printf("  (uint32_t) bf.size         = 0x%x\n",   qp_dv->bf.size);
-  printf("  (uint64_t) comp_mask       = 0x%lx\n",  qp_dv->comp_mask);
-  printf("  (off_t)    uar_mmap_offset = 0x%lx\n",  qp_dv->uar_mmap_offset);
-  printf("  (uint32_t) tirn            = 0x%x\n",   qp_dv->tirn);
-  printf("  (uint32_t) tisn            = 0x%x\n",   qp_dv->tisn);
-  printf("  (uint32_t) rqn             = 0x%x\n",   qp_dv->rqn);
-  printf("  (uint32_t) sqn             = 0x%x\n",   qp_dv->sqn);
-  printf("  (uint64_t) tir_icm_addr    = 0x%lx\n",  qp_dv->tir_icm_addr);
-  printf("================== QP_DUMP_END ================\n");
-  printf("\n");
-}
-
-void dump_mlx5dv_cq(struct mlx5dv_cq *cq_dv, int conn_num) {
-  printf("\n");
-  printf("===============================================\n");
-  printf("     INITIALIZED MLX5DV_CQ FOR CONNECTION#%d\n", conn_num);
-  printf("===============================================\n");
-  printf("=================== CQ_DUMP ===================\n");
-  printf("  (void*)    buf             = %p\n",     cq_dv->buf);
-  printf("  (__be32*)  dbrec           = %p\n",     cq_dv->dbrec);
-  printf("  (uint32_t) cqe_cnt         = %u\n",     cq_dv->cqe_cnt);
-  printf("  (uint32_t) cqe_size        = %u\n",     cq_dv->cqe_size);
-  printf("  (void*)    cq_uar          = %p\n",     cq_dv->cq_uar);
-  printf("  (uint32_t) cqn             = 0x%x\n",   cq_dv->cqn);
-  printf("  (uint64_t) comp_mask       = 0x%lx\n",  cq_dv->comp_mask);
-  printf("================== CQ_DUMP_END ================\n");
-  printf("\n");
 }
 
 void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {

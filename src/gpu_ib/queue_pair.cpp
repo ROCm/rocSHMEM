@@ -45,7 +45,7 @@ __device__ uint8_t QueuePair::get_cq_error_syndrome(mlx5_cqe64 *cqe_entry) {
 void QueuePair::dump() {
   printf("\n"
          "===============================================\n"
-         "           DUMPING SHMEM INTRENAL QP\n"
+         "           HOST DUMPING SHMEM INTERNAL QP\n"
          "===============================================\n"
          "  (char*const*)        base_heap           = %p\n"
          "  (uint32_t)           sq_counter          = %u\n"
@@ -71,7 +71,7 @@ void QueuePair::dump() {
 __device__ void QueuePair::dump() {
   GPU_DPRINTF("\n"
 	      "===============================================\n"
-              "           DUMPING SHMEM INTRENAL QP\n"
+              "        DEVICE DUMPING SHMEM INTERNAL QP\n"
               "===============================================\n"
               "  (char*const*)        base_heap           = %p\n"
 	      "  (uint32_t)           sq_counter          = %u\n"
@@ -96,11 +96,13 @@ __device__ void QueuePair::dump() {
 
 __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint32_t my_sq_counter) {
   dump();
+  __threadfence_system();
   uint32_t be_sq_counter;
   swap_endian_store(const_cast<uint32_t*>(&be_sq_counter), reinterpret_cast<uint32_t>(my_sq_counter));
   uint8_t *dbrec_u8p = reinterpret_cast<uint8_t*>(&be_sq_counter);
   GPU_DPRINTF("storing (__be32) be_sq_counter %02x %02x %02x %02x (%lx) to dbrec %p\n", dbrec_u8p[0], dbrec_u8p[1], dbrec_u8p[2], dbrec_u8p[3], be_sq_counter, dbrec);
   __hip_atomic_store(dbrec, be_sq_counter, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+  __hip_atomic_load(dbrec, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
   __threadfence_system();
   uint8_t *db_u8p = reinterpret_cast<uint8_t*>(&db_val);
   GPU_DPRINTF("storing db_val %02x %02x %02x %02x %02x %02x %02x %02x (%lx) to db.ptr %p\n",
