@@ -106,6 +106,7 @@ void NetworkImpl::setup_gpu_qps(GPUIBBackend *backend) {
     new (&gpu_qps[i]) QueuePair(backend);
     connection->init_gpu_qp_from_connection(&gpu_qps[i], i);
   }
+  connection->monitor.start();
 }
 
 void NetworkImpl::networkHostSetup(GPUIBBackend *backend) {
@@ -137,7 +138,7 @@ void NetworkImpl::networkHostInit(GPUIBContext *ctx, int context_id) {
   for (int i{0}; i < num_pes; i++) {
     int offset = num_contexts * context_id + i;
     printf("num_pes %d num_contexts %d context_id %d i %d offset %d\n", num_pes, num_contexts, context_id, i, offset);
-    printf("XXXXXXXXXX context %p shallow copying gpu_qps %p to local index %d\n", ctx, &gpu_qps[offset], offset);
+    printf("context %p shallow copying gpu_qps %p to local index %d\n", ctx, &gpu_qps[offset], offset);
     new (ctx->getQueuePair(i)) QueuePair(gpu_qps[offset]);
     auto *qp = ctx->getQueuePair(i);
     qp->atomic_ret.atomic_base_ptr = &atomic_ret->atomic_base_ptr[max_nb_atomic * context_id];

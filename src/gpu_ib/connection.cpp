@@ -447,6 +447,7 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   mlx_obj.qp.out = &qp_out;
   mlx5dv_init_obj(&mlx_obj, MLX5DV_OBJ_QP);
   dump_mlx5dv_qp(&qp_out, conn_num);
+  monitor.register_queue(&qp_out, &cq_out, "connection_" + std::to_string(conn_num) + ".txt");
 
   /*
    * struct mlx5dv_qp {
@@ -540,7 +541,7 @@ Connection::RtsState Connection::rts(dest_info_t* dest) {
 }
 
 void Connection::initialize_rkey_handle(uint32_t** heap_rkey_handle, ibv_mr* mr) {
-  CHECK_HIP(hipHostMalloc(heap_rkey_handle, sizeof(uint32_t) * backend->num_pes));
+  CHECK_HIP(hipMalloc(heap_rkey_handle, sizeof(uint32_t) * backend->num_pes));
   (*heap_rkey_handle)[backend->my_pe] = mr->rkey;
 }
 

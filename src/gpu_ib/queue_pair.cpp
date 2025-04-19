@@ -151,7 +151,6 @@ __device__ void QueuePair::quiet_internal() {
     volatile uint8_t val_op_own = *val_op_own_p;
     GPU_DPRINTF("val_op_own %x, cq_consumer_counter %lx, cq_log_cnt %lx, cond1 %lx, cond2 %lx\n", val_op_own, cq_consumer_counter, cq_log_cnt,
                 !((val_op_own & 0x1) == ((cq_consumer_counter >> cq_log_cnt) & 1)), ((val_op_own) >> 4) == MLX5_CQE_INVALID);
-    const uint8_t *d = reinterpret_cast<const uint8_t*>(cqe_entry);
     GPU_DPRINTF(
      "Observing CQE at address %p at index %lu\n"
      "%02x %02x %02x %02x %02x %02x %02x %02x "
@@ -179,6 +178,28 @@ __device__ void QueuePair::quiet_internal() {
     mlx5_err_cqe *cqe_err = reinterpret_cast<mlx5_err_cqe*>(cqe_entry);
     GPU_DPRINTF("QUIET ERROR: signature %d opcode_qpn %x wqe_cnt %hx \n", syndrome, cqe_err->s_wqe_opcode_qpn, cqe_err->wqe_counter);
   }
+
+  *((volatile uint8_t*)&cqe_entry->op_own) = (uint8_t)0xF0;
+
+  GPU_DPRINTF(
+   "Clearing CQE at address %p at index %lu\n"
+   "%02x %02x %02x %02x %02x %02x %02x %02x "
+   "%02x %02x %02x %02x %02x %02x %02x %02x "
+   "%02x %02x %02x %02x %02x %02x %02x %02x "
+   "%02x %02x %02x %02x %02x %02x %02x %02x "
+   "%02x %02x %02x %02x %02x %02x %02x %02x "
+   "%02x %02x %02x %02x %02x %02x %02x %02x "
+   "%02x %02x %02x %02x %02x %02x %02x %02x "
+   "%02x %02x %02x %02x %02x %02x %02x %02x\n",
+   cqe_entry, index,
+    d[0],  d[1],  d[2],  d[3],  d[4],  d[5],  d[6],  d[7],
+    d[8],  d[9], d[10], d[11], d[12], d[13], d[14], d[15],
+   d[16], d[17], d[18], d[19], d[20], d[21], d[22], d[23],
+   d[24], d[25], d[26], d[27], d[28], d[29], d[30], d[31],
+   d[32], d[33], d[34], d[35], d[36], d[37], d[38], d[39],
+   d[40], d[41], d[42], d[43], d[44], d[45], d[46], d[47],
+   d[48], d[49], d[50], d[51], d[52], d[53], d[54], d[55],
+   d[56], d[57], d[58], d[59], d[60], d[61], d[62], d[63]);
 
   quiet_counter -= quiet_val;
 
