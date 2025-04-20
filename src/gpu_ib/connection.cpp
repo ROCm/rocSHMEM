@@ -245,6 +245,7 @@ Connection::~Connection() {
 
 void Connection::reg_mr(void* ptr, size_t size, ibv_mr** mr) {
   int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
+  printf("CALLING IBV_REG_MR\n");
   *mr = ibv_reg_mr(ib_state->pd, ptr, size, access);
   GPUIB_CHECK_NNULL(*mr, "ibv_reg_mr");
 }
@@ -372,13 +373,16 @@ void* Connection::buf_alloc([[maybe_unused]] struct ibv_pd* pd,
                             [[maybe_unused]] void* pd_context, size_t size,
                             [[maybe_unused]] size_t alignment,
                             [[maybe_unused]] uint64_t resource_type) {
-  return IBV_ALLOCATOR_USE_DEFAULT;
+  void* dev_ptr{nullptr};
+  CHECK_HIP(hipHostMalloc(reinterpret_cast<void**>(&dev_ptr), size, hipHostMallocDefault));
+  memset(dev_ptr, 0, size);
+  return dev_ptr;
 }
 
 void Connection::buf_release([[maybe_unused]] struct ibv_pd* pd,
                              [[maybe_unused]] void* pd_context, void* ptr,
                              [[maybe_unused]] uint64_t resource_type) {
-  free(ptr);
+  CHECK_HIP(hipFree(ptr));
 }
 
 void Connection::init_parent_domain_attr(ibv_parent_domain_init_attr* attr1) {
