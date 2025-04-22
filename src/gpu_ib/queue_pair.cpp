@@ -43,7 +43,7 @@ __device__ uint8_t QueuePair::get_cq_error_syndrome(mlx5_cqe64 *cqe_entry) {
 }
 
 void QueuePair::dump() {
-  printf("\n"
+  DPRINTF("\n"
          "===============================================\n"
          "           HOST DUMPING SHMEM INTERNAL QP\n"
          "===============================================\n"

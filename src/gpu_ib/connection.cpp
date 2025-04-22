@@ -42,7 +42,7 @@ static void dump_ibv_context(struct ibv_context* x) {
    *   void                   *abi_compat;
    * };
    */
-  printf("\n"
+  DPRINTF("\n"
          "===============================================\n"
          "                MLX IBV_CONTEXT\n"
          "===============================================\n"
@@ -66,7 +66,7 @@ static void dump_ibv_device(struct ibv_device* x) {
    *   char ibdev_path[IBV_SYSFS_PATH_MAX];
    * };
    */
-  printf("\n"
+  DPRINTF("\n"
          "===============================================\n"
          "               MLX IBV_DEVICE\n"
          "===============================================\n"
@@ -86,7 +86,7 @@ static void dump_ibv_pd(struct ibv_pd* x) {
    *   uint32_t                handle;
    * };
    */
-  printf("\n"
+  DPRINTF("\n"
          "===============================================\n"
          "               MLX IBV_PD\n"
          "===============================================\n"
@@ -122,7 +122,7 @@ static void dump_ibv_port_attr(struct ibv_port_attr* x) {
    *   uint16_t                port_cap_flags2; 
    * }; 
    */
-  printf("\n"
+  DPRINTF("\n"
          "===============================================\n"
          "               MLX IBV_PORT_ATTR\n"
          "===============================================\n"
@@ -172,61 +172,61 @@ void dump_ibv_qp(struct ibv_qp *qp, int conn_num) {
    *   uint32_t                events_completed;
    * };
    */
-  printf("\n");
-  printf("============== QP_DUMP CONNECTION#%d ==========\n", conn_num);
-  printf("  (ibv_context*)      context          = %p\n",   qp->context);
-  printf("  (void*)             qp_context       = %p\n",   qp->qp_context);
-  printf("  (ibv_pd*)           pd               = %p\n",   qp->pd);
-  printf("  (ibv_cq*)           send_cq          = %p\n",   qp->send_cq);
-  printf("  (ibv_cq*)           recv_cq          = %p\n",   qp->recv_cq);
-  printf("  (ibv_srq*)          srq              = %p\n",   qp->srq);
-  printf("  (uint32_t)          handle           = 0x%x\n", qp->handle);
-  printf("  (uint32_t)          qp_num           = 0x%x\n", qp->qp_num);
-  printf("  (enum ibv_qp_state) state            = %u\n",   qp->state);
-  printf("  (enum_ibv_qp_type)  qp_type          = %u\n",   qp->qp_type);
-  printf("  (uint32_t)          events_completed = %u\n",   qp->events_completed);
-  printf("=========== QP_DUMP_END CONNECTION#%d  ========\n", conn_num);
+  DPRINTF("\n");
+  DPRINTF("============== QP_DUMP CONNECTION#%d ==========\n", conn_num);
+  DPRINTF("  (ibv_context*)      context          = %p\n",   qp->context);
+  DPRINTF("  (void*)             qp_context       = %p\n",   qp->qp_context);
+  DPRINTF("  (ibv_pd*)           pd               = %p\n",   qp->pd);
+  DPRINTF("  (ibv_cq*)           send_cq          = %p\n",   qp->send_cq);
+  DPRINTF("  (ibv_cq*)           recv_cq          = %p\n",   qp->recv_cq);
+  DPRINTF("  (ibv_srq*)          srq              = %p\n",   qp->srq);
+  DPRINTF("  (uint32_t)          handle           = 0x%x\n", qp->handle);
+  DPRINTF("  (uint32_t)          qp_num           = 0x%x\n", qp->qp_num);
+  DPRINTF("  (enum ibv_qp_state) state            = %u\n",   qp->state);
+  DPRINTF("  (enum_ibv_qp_type)  qp_type          = %u\n",   qp->qp_type);
+  DPRINTF("  (uint32_t)          events_completed = %u\n",   qp->events_completed);
+  DPRINTF("=========== QP_DUMP_END CONNECTION#%d  ========\n", conn_num);
 }
 
 void dump_mlx5dv_qp(struct mlx5dv_qp *qp_dv, int conn_num) {
-  printf("\n");
-  printf("===============================================\n");
-  printf("     INITIALIZED MLXDV_QP FOR CONNECTION#%d\n", conn_num);
-  printf("===============================================\n");
-  printf("=================== QP_DUMP ===================\n");
-  printf("  (__be32*)  dbrec           = %p\n",     qp_dv->dbrec);
-  printf("  (void*)    sq.buf          = %p\n",     qp_dv->sq.buf);
-  printf("  (uint32_t) sq.wqe_cnt      = %u\n",     qp_dv->sq.wqe_cnt);
-  printf("  (uint32_t) sq.stride       = %u\n",     qp_dv->sq.stride);
-  printf("  (void*)    rq.buf          = %p\n",     qp_dv->rq.buf);
-  printf("  (uint32_t) rq.wqe_cnt      = %u\n",     qp_dv->rq.wqe_cnt);
-  printf("  (uint32_t) rq.stride       = %u\n",     qp_dv->rq.stride);
-  printf("  (void*)    bf.reg          = %p\n",     qp_dv->bf.reg);
-  printf("  (uint32_t) bf.size         = 0x%x\n",   qp_dv->bf.size);
-  printf("  (uint64_t) comp_mask       = 0x%lx\n",  qp_dv->comp_mask);
-  printf("  (off_t)    uar_mmap_offset = 0x%lx\n",  qp_dv->uar_mmap_offset);
-  printf("  (uint32_t) tirn            = 0x%x\n",   qp_dv->tirn);
-  printf("  (uint32_t) tisn            = 0x%x\n",   qp_dv->tisn);
-  printf("  (uint32_t) rqn             = 0x%x\n",   qp_dv->rqn);
-  printf("  (uint32_t) sqn             = 0x%x\n",   qp_dv->sqn);
-  printf("  (uint64_t) tir_icm_addr    = 0x%lx\n",  qp_dv->tir_icm_addr);
-  printf("================== QP_DUMP_END ================\n");
+  DPRINTF("\n");
+  DPRINTF("===============================================\n");
+  DPRINTF("     INITIALIZED MLXDV_QP FOR CONNECTION#%d\n", conn_num);
+  DPRINTF("===============================================\n");
+  DPRINTF("=================== QP_DUMP ===================\n");
+  DPRINTF("  (__be32*)  dbrec           = %p\n",     qp_dv->dbrec);
+  DPRINTF("  (void*)    sq.buf          = %p\n",     qp_dv->sq.buf);
+  DPRINTF("  (uint32_t) sq.wqe_cnt      = %u\n",     qp_dv->sq.wqe_cnt);
+  DPRINTF("  (uint32_t) sq.stride       = %u\n",     qp_dv->sq.stride);
+  DPRINTF("  (void*)    rq.buf          = %p\n",     qp_dv->rq.buf);
+  DPRINTF("  (uint32_t) rq.wqe_cnt      = %u\n",     qp_dv->rq.wqe_cnt);
+  DPRINTF("  (uint32_t) rq.stride       = %u\n",     qp_dv->rq.stride);
+  DPRINTF("  (void*)    bf.reg          = %p\n",     qp_dv->bf.reg);
+  DPRINTF("  (uint32_t) bf.size         = 0x%x\n",   qp_dv->bf.size);
+  DPRINTF("  (uint64_t) comp_mask       = 0x%lx\n",  qp_dv->comp_mask);
+  DPRINTF("  (off_t)    uar_mmap_offset = 0x%lx\n",  qp_dv->uar_mmap_offset);
+  DPRINTF("  (uint32_t) tirn            = 0x%x\n",   qp_dv->tirn);
+  DPRINTF("  (uint32_t) tisn            = 0x%x\n",   qp_dv->tisn);
+  DPRINTF("  (uint32_t) rqn             = 0x%x\n",   qp_dv->rqn);
+  DPRINTF("  (uint32_t) sqn             = 0x%x\n",   qp_dv->sqn);
+  DPRINTF("  (uint64_t) tir_icm_addr    = 0x%lx\n",  qp_dv->tir_icm_addr);
+  DPRINTF("================== QP_DUMP_END ================\n");
 }
 
 void dump_mlx5dv_cq(struct mlx5dv_cq *cq_dv, int conn_num) {
-  printf("\n");
-  printf("===============================================\n");
-  printf("     INITIALIZED MLX5DV_CQ FOR CONNECTION#%d\n", conn_num);
-  printf("===============================================\n");
-  printf("=================== CQ_DUMP ===================\n");
-  printf("  (void*)    buf             = %p\n",     cq_dv->buf);
-  printf("  (__be32*)  dbrec           = %p\n",     cq_dv->dbrec);
-  printf("  (uint32_t) cqe_cnt         = %u\n",     cq_dv->cqe_cnt);
-  printf("  (uint32_t) cqe_size        = %u\n",     cq_dv->cqe_size);
-  printf("  (void*)    cq_uar          = %p\n",     cq_dv->cq_uar);
-  printf("  (uint32_t) cqn             = 0x%x\n",   cq_dv->cqn);
-  printf("  (uint64_t) comp_mask       = 0x%lx\n",  cq_dv->comp_mask);
-  printf("================== CQ_DUMP_END ================\n");
+  DPRINTF("\n");
+  DPRINTF("===============================================\n");
+  DPRINTF("     INITIALIZED MLX5DV_CQ FOR CONNECTION#%d\n", conn_num);
+  DPRINTF("===============================================\n");
+  DPRINTF("=================== CQ_DUMP ===================\n");
+  DPRINTF("  (void*)    buf             = %p\n",     cq_dv->buf);
+  DPRINTF("  (__be32*)  dbrec           = %p\n",     cq_dv->dbrec);
+  DPRINTF("  (uint32_t) cqe_cnt         = %u\n",     cq_dv->cqe_cnt);
+  DPRINTF("  (uint32_t) cqe_size        = %u\n",     cq_dv->cqe_size);
+  DPRINTF("  (void*)    cq_uar          = %p\n",     cq_dv->cq_uar);
+  DPRINTF("  (uint32_t) cqn             = 0x%x\n",   cq_dv->cqn);
+  DPRINTF("  (uint64_t) comp_mask       = 0x%lx\n",  cq_dv->comp_mask);
+  DPRINTF("================== CQ_DUMP_END ================\n");
 }
 
 Connection::Connection(GPUIBBackend* b) : backend(b) {
@@ -245,7 +245,7 @@ Connection::~Connection() {
 
 void Connection::reg_mr(void* ptr, size_t size, ibv_mr** mr) {
   int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
-  printf("CALLING IBV_REG_MR\n");
+  DPRINTF("CALLING IBV_REG_MR\n");
   *mr = ibv_reg_mr(ib_state->pd, ptr, size, access);
   GPUIB_CHECK_NNULL(*mr, "ibv_reg_mr");
 }
@@ -496,12 +496,12 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   gpu_qp->sq_wqe_cnt = qp_out.sq.wqe_cnt;
   gpu_qp->rkey = htobe32(backend->networkImpl.heap_rkey[conn_num % backend->num_pes]);
   gpu_qp->lkey = htobe32(backend->networkImpl.heap_mr->lkey);
-  printf("\nASSIGNING RKEY:\n");
+  DPRINTF("\nASSIGNING RKEY:\n");
   for (int i {0}; i < backend->num_pes; i++) {
-    printf("\t backend->networkImpl.heap_rkey index %d - %x\n", i, htobe32(backend->networkImpl.heap_rkey[i]));
+    DPRINTF("\t backend->networkImpl.heap_rkey index %d - %x\n", i, htobe32(backend->networkImpl.heap_rkey[i]));
   }
-  printf("\tconnection# %d ASSIGNED RKEY %x\n", conn_num, htobe32(backend->networkImpl.heap_rkey[conn_num % backend->num_pes]));
-  printf("\tconnection# %d ASSIGNED LKEY %x\n", conn_num, htobe32(backend->networkImpl.heap_mr->lkey));
+  DPRINTF("\tconnection# %d ASSIGNED RKEY %x\n", conn_num, htobe32(backend->networkImpl.heap_rkey[conn_num % backend->num_pes]));
+  DPRINTF("\tconnection# %d ASSIGNED LKEY %x\n", conn_num, htobe32(backend->networkImpl.heap_mr->lkey));
   gpu_qp->qp_num = qps[conn_num]->qp_num;
   // The 2 in qp_out.bf.size * 2 below facilitates the switching between blue flame registers
   int hip_dev_id{-1};
