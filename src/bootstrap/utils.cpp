@@ -34,7 +34,7 @@
 #include <iostream>
 
 #include "utils.hpp"
-#include "env.hpp"
+#include "../util.hpp"
 
 constexpr char HOSTID_FILE[32] = "/proc/sys/kernel/random/boot_id";
 
@@ -101,7 +101,7 @@ uint64_t computeHostHash(void) {
   std::string hostName = getHostName(hashLen, '\0');
   strncpy(hostHash, hostName.c_str(), hostName.size());
 
-  std::string hostid = env()->hostid;
+  std::string hostid = rocshmem_env_.get_bootstrap_hostid();
   if (hostid != "") {
     strncpy(hostHash, hostid.c_str(), hashLen);
   } else if (hostName.size() < hashLen) {

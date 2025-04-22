@@ -32,10 +32,11 @@
 #include <unistd.h>
 
 #include <fstream>
+#include <cstring>
 
 #include "socket.hpp"
 #include "utils.hpp"
-#include "env.hpp"
+#include "../util.hpp"
 
 namespace rocshmem {
 
@@ -85,7 +86,7 @@ static uint16_t socketToPort(union SocketAddress* addr) {
 /* Allow the user to force the IPv4/IPv6 interface selection */
 static int envSocketFamily(void) {
   int family = -1;  // Family selection is not forced, will use first one found
-  const std::string& socketFamily = env()->socketFamily;
+  const std::string& socketFamily = rocshmem_env_.get_bootstrap_socket_family();
   if (socketFamily == "") return family;
 
   if (socketFamily == "AF_INET")
@@ -149,7 +150,7 @@ static int findInterfaces(const char* prefixList, char* names, union SocketAddre
       strncpy(names + found * maxIfNameSize, interface->ifa_name, maxIfNameSize);
       // Store the IP address
       int salen = (family == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
-      memcpy(addrs + found, interface->ifa_addr, salen);
+      std::memcpy(addrs + found, interface->ifa_addr, salen);
       found++;
     }
   }
@@ -224,7 +225,7 @@ int FindInterfaceMatchSubnet(char* ifNames, union SocketAddress* localAddrs, uni
 
     // Store the local IP address
     int salen = (family == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
-    memcpy(localAddrs + found, interface->ifa_addr, salen);
+    std::memcpy(localAddrs + found, interface->ifa_addr, salen);
 
     // Store the interface name
     strncpy(ifNames + found * ifNameMaxSize, interface->ifa_name, ifNameMaxSize);
@@ -273,13 +274,13 @@ void SocketGetAddrFromString(union SocketAddress* ua, const char* ip_port_pair) 
     // use the first
     if (p->ai_family == AF_INET) {
       struct sockaddr_in& sin = ua->sin;
-      memcpy(&sin, p->ai_addr, sizeof(struct sockaddr_in));
+      std::memcpy(&sin, p->ai_addr, sizeof(struct sockaddr_in));
       sin.sin_family = AF_INET;  // IPv4
       // inet_pton(AF_INET, ni.prefix, &(sin.sin_addr));  // IP address
       sin.sin_port = htons(ni.port);  // port
     } else if (p->ai_family == AF_INET6) {
       struct sockaddr_in6& sin6 = ua->sin6;
-      memcpy(&sin6, p->ai_addr, sizeof(struct sockaddr_in6));
+      std::memcpy(&sin6, p->ai_addr, sizeof(struct sockaddr_in6));
       sin6.sin6_family = AF_INET6;      // IPv6
       sin6.sin6_port = htons(ni.port);  // port
       sin6.sin6_flowinfo = 0;           // needed by IPv6, but possibly obsolete
@@ -333,7 +334,7 @@ int FindInterfaces(char* ifNames, union SocketAddress* ifAddrs, int ifNameMaxSiz
   int sock_family = envSocketFamily();
 
   // User specified interface
-  const std::string& socketIfname = env()->socketIfname;
+  const std::string& socketIfname = rocshmem_env_.get_bootstrap_socket_ifname();
   if (inputIfName) {
     TRACE("using iterface %s", inputIfName);
     nIfs = findInterfaces(inputIfName, ifNames, ifAddrs, sock_family, ifNameMaxSize, maxIfs);
@@ -371,7 +372,7 @@ Socket::Socket(const SocketAddress* addr, uint64_t magic, enum SocketType type, 
   if (addr) {
     /* IPv4/IPv6 support */
     int family;
-    memcpy(&addr_, addr, sizeof(union SocketAddress));
+    std::memcpy(&addr_, addr, sizeof(union SocketAddress));
     family = addr_.sa.sa_family;
     if (family != AF_INET && family != AF_INET6) {
       char line[SOCKET_NAME_MAXLEN + 1];
