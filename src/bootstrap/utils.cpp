@@ -113,7 +113,7 @@ uint64_t computeHostHash(void) {
 
   // Make sure the string is terminated
   hostHash[sizeof(hostHash) - 1] = '\0';
-  TRACE("unique hostname '%s'", hostHash);
+  DPRINTF("unique hostname '%s'", hostHash);
   return getHash(hostHash, strlen(hostHash));
 }
 
@@ -141,7 +141,7 @@ uint64_t computePidHash(void) {
   if (len < 0) len = 0;
 
   pname[plen + len] = '\0';
-  TRACE("unique PID '%s'", pname);
+  DPRINTF("unique PID '%s'", pname);
 
   return getHash(pname, strlen(pname));
 }
