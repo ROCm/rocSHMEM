@@ -272,8 +272,6 @@ void Connection::initialize(int num_contexts) {
   }
   uint8_t port{1};
   ib_init(ib_dev, port);
-  int ib_fork_err = ibv_fork_init();
-  GPUIB_CHECK_ZERO(ib_fork_err, "ibv_fork_init");
   create_qps(port, &ib_state->portinfo);
   MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t) * num_contexts, MPI_CHAR, dest_info.data(), sizeof(dest_info_t) * num_contexts, MPI_CHAR, backend->thread_comm);
   for (int i{0}; i < qps.size(); i++) {
