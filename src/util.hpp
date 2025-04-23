@@ -47,27 +47,27 @@ namespace rocshmem {
     }                                                                         \
   }
 
-//#ifdef DEBUG
+#ifdef DEBUG
 #define DPRINTF(...)     \
   do {                   \
     printf(__VA_ARGS__); \
   } while (0);
-//#else
-//#define DPRINTF(...) \
-//  do {               \
-//  } while (0);
-//#endif
+#else
+#define DPRINTF(...) \
+  do {               \
+  } while (0);
+#endif
 
-//#ifdef DEBUG
+#ifdef DEBUG
 #define GPU_DPRINTF(...)      \
   do {                        \
     gpu_dprintf(__VA_ARGS__); \
   } while (0);
-//#else
-//#define GPU_DPRINTF(...) \
-//  do {                   \
-//  } while (0);
-//#endif
+#else
+#define GPU_DPRINTF(...) \
+  do {                   \
+  } while (0);
+#endif
 
 extern const int gpu_clock_freq_mhz;
 
