@@ -142,17 +142,9 @@ __device__ void QueuePair::quiet_internal() {
    d[48], d[49], d[50], d[51], d[52], d[53], d[54], d[55],
    d[56], d[57], d[58], d[59], d[60], d[61], d[62], d[63]);
 
-  volatile uint8_t* val_op_own_p = &(cqe_entry->op_own);
-  __hip_atomic_load(val_op_own_p, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
-  volatile uint8_t val_op_own = *val_op_own_p;
-
-  while (!((val_op_own & 0x1) == ((cq_consumer_counter >> cq_log_cnt) & 1)) || ((val_op_own) >> 4) == MLX5_CQE_INVALID) {
-    __hip_atomic_load(val_op_own_p, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
-    volatile uint8_t val_op_own = *val_op_own_p;
-    GPU_DPRINTF("val_op_own %x, cq_consumer_counter %lx, cq_log_cnt %lx, cond1 %lx, cond2 %lx\n", val_op_own, cq_consumer_counter, cq_log_cnt,
-                !((val_op_own & 0x1) == ((cq_consumer_counter >> cq_log_cnt) & 1)), ((val_op_own) >> 4) == MLX5_CQE_INVALID);
+  while ((*((volatile uint8_t*)&cqe_entry->op_own) >> 4) == MLX5_CQE_INVALID) {
     GPU_DPRINTF(
-     "Observing CQE at address %p at index %lu\n"
+     "Observing CQE at address %p at index %u\n"
      "%02x %02x %02x %02x %02x %02x %02x %02x "
      "%02x %02x %02x %02x %02x %02x %02x %02x "
      "%02x %02x %02x %02x %02x %02x %02x %02x "
@@ -172,11 +164,10 @@ __device__ void QueuePair::quiet_internal() {
      d[56], d[57], d[58], d[59], d[60], d[61], d[62], d[63]);
   }
 
-  uint8_t opcode = val_op_own >> 4;
-  if (opcode != 0) {
+  if ((*((volatile uint8_t*)&cqe_entry->op_own) >> 4) != 0) {
     uint8_t syndrome = get_cq_error_syndrome(cqe_entry);
     mlx5_err_cqe *cqe_err = reinterpret_cast<mlx5_err_cqe*>(cqe_entry);
-    GPU_DPRINTF("QUIET ERROR: signature %d opcode_qpn %x wqe_cnt %hx \n", syndrome, cqe_err->s_wqe_opcode_qpn, cqe_err->wqe_counter);
+    printf("QUIET ERROR: signature %d opcode_qpn %x wqe_cnt %hx \n", syndrome, cqe_err->s_wqe_opcode_qpn, cqe_err->wqe_counter);
   }
 
   *((volatile uint8_t*)&cqe_entry->op_own) = (uint8_t)0xF0;
