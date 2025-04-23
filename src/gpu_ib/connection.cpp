@@ -274,10 +274,30 @@ void Connection::initialize(int num_contexts) {
   ib_init(ib_dev, port);
   create_qps(port, &ib_state->portinfo);
  
+  int icky{0};
+  for (auto& x : dest_info) {
+    printf("\ndest_info[%d]:\n"
+	   "\t.lid %u\n"
+	   "\t.qpn %u\n"
+	   "\t.psn %u\n",
+	   icky, x.lid, x.qpn, x.psn);
+    icky++;
+  }
+
   auto npes = backend->num_pes;
   auto dinfo = dest_info.data();
   for (int i{0}; i < num_contexts; i++) {
     MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t), MPI_CHAR, dinfo + i * npes, sizeof(dest_info_t), MPI_CHAR, backend->thread_comm);
+  }
+
+  icky = 0;
+  for (auto& x : dest_info) {
+    printf("\ndest_info[%d]:\n"
+	   "\t.lid %u\n"
+	   "\t.qpn %u\n"
+	   "\t.psn %u\n",
+	   icky, x.lid, x.qpn, x.psn);
+    icky++;
   }
 
   for (int i{0}; i < qps.size(); i++) {
