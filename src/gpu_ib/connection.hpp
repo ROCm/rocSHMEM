@@ -30,8 +30,6 @@ extern "C" {
 #include <rocshmem/rocshmem.hpp>
 #include <vector>
 
-#include "monitor_thread.hpp"
-
 namespace rocshmem {
 
 class GPUIBBackend;
@@ -121,8 +119,6 @@ class Connection {
   void init_gpu_qp_from_connection(QueuePair* qp, int conn_num);
 
   std::vector<dest_info_t> dest_info;
-
-  Monitor monitor{};
 
  private:
   Connection() = default;

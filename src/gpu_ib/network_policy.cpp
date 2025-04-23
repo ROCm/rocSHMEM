@@ -106,7 +106,6 @@ void NetworkImpl::setup_gpu_qps(GPUIBBackend *backend) {
     new (&gpu_qps[i]) QueuePair(backend);
     connection->init_gpu_qp_from_connection(&gpu_qps[i], i);
   }
-  connection->monitor.start();
 }
 
 void NetworkImpl::networkHostSetup(GPUIBBackend *backend) {
