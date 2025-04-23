@@ -284,7 +284,12 @@ void Connection::initialize(int num_contexts) {
     icky++;
   }
 
-  MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t) * num_contexts, MPI_CHAR, dest_info.data(), sizeof(dest_info_t) * num_contexts, MPI_CHAR, backend->thread_comm);
+  auto npes = backend->num_pes;
+  auto dsz = sizeof(dest_info_t) * npes;
+  auto dinfo = dest_info.data();
+  for (int i{0}; i < num_contexts; i++) {
+    MPI_Alltoall(MPI_IN_PLACE, dsz, MPI_CHAR, dinfo + i * npes, dsz, MPI_CHAR, backend->thread_comm);
+  }
 
   icky = 0;
   for (auto& x : dest_info) {
