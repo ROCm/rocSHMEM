@@ -262,9 +262,9 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
 	      db_u8p[0], db_u8p[1], db_u8p[2], db_u8p[3], db_u8p[4], db_u8p[5], db_u8p[6], db_u8p[7], *ctrl_wqe_8B_for_db);
 
   uint64_t ticket{0};
-  ticket = doorbell_mutex->lock();
+//  ticket = doorbell_mutex->lock();
   ring_doorbell(*ctrl_wqe_8B_for_db, my_sq_counter + num_wqes);
-  doorbell_mutex->unlock(ticket);
+//  doorbell_mutex->unlock(ticket);
   __threadfence_system();
 
 }
