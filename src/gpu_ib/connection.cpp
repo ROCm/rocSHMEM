@@ -285,10 +285,9 @@ void Connection::initialize(int num_contexts) {
   }
 
   auto npes = backend->num_pes;
-  auto dsz = sizeof(dest_info_t) * npes;
   auto dinfo = dest_info.data();
   for (int i{0}; i < num_contexts; i++) {
-    MPI_Alltoall(MPI_IN_PLACE, dsz, MPI_CHAR, dinfo + i * npes, dsz, MPI_CHAR, backend->thread_comm);
+    MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t), MPI_CHAR, dinfo + i * npes, sizeof(dest_info_t), MPI_CHAR, backend->thread_comm);
   }
 
   icky = 0;
