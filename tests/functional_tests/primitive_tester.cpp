@@ -109,8 +109,8 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
     start_time[wg_id] = wf_start_time[0];
   }
 
-  rocshmem_wg_ctx_destroy(&ctx1);
   rocshmem_wg_ctx_destroy(&ctx);
+  rocshmem_wg_ctx_destroy(&ctx1);
 }
 
 /******************************************************************************
