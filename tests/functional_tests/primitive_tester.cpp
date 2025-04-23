@@ -34,10 +34,12 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
                               char *dest, int size, TestType type,
                               ShmemContextType ctx_type, int wf_size) {
   __shared__ rocshmem_ctx_t ctx;
+  __shared__ rocshmem_ctx_t ctx1;
   int wg_id = get_flat_grid_id();
   int t_id  = get_flat_block_id();
   int wf_id = t_id / wf_size;
   rocshmem_wg_ctx_create(&ctx);
+  rocshmem_wg_ctx_create(&ctx1);
 
   /**
    * Shared array to capture the start time for each wavefront
@@ -58,7 +60,7 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
       __syncthreads();
       // Ensures all RMA calls from the skip loops are completed
       if(is_thread_zero_in_block()) {
-        rocshmem_ctx_quiet(ctx);
+        rocshmem_ctx_quiet(ctx1);
       }
       __syncthreads();
       // Capture the start time of each wavefront to identify the earliest one
@@ -67,15 +69,15 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
 
     switch (type) {
       case PutTestType:
-        rocshmem_ctx_putmem(ctx, dest, source, size, 1);
+        rocshmem_ctx_putmem(ctx1, dest, source, size, 1);
         break;
       case PutNBITestType:
-        rocshmem_ctx_putmem_nbi(ctx, dest, source, size, 1);
+        rocshmem_ctx_putmem_nbi(ctx1, dest, source, size, 1);
         break;
       case PTestType:
         for (int s = 0; s < size; s++) {
           char val = source[s];
-          rocshmem_ctx_char_p(ctx, &dest[s], val, 1);
+          rocshmem_ctx_char_p(ctx1, &dest[s], val, 1);
         }
         break;
       default:
@@ -85,7 +87,7 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
 
   __syncthreads();
   if(is_thread_zero_in_block()) {
-    rocshmem_ctx_quiet(ctx);
+    rocshmem_ctx_quiet(ctx1);
   }
 
   /**
@@ -107,6 +109,7 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
     start_time[wg_id] = wf_start_time[0];
   }
 
+  rocshmem_wg_ctx_destroy(&ctx1);
   rocshmem_wg_ctx_destroy(&ctx);
 }
 
