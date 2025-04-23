@@ -33,8 +33,8 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
                               long long int *end_time, char *source,
                               char *dest, int size, TestType type,
                               ShmemContextType ctx_type, int wf_size) {
-  __shared__ rocshmem_ctx_t ctx;
-  __shared__ rocshmem_ctx_t ctx1;
+  rocshmem_ctx_t ctx;
+  rocshmem_ctx_t ctx1;
   int wg_id = get_flat_grid_id();
   int t_id  = get_flat_block_id();
   int wf_id = t_id / wf_size;
