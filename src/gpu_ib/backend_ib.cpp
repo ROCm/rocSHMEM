@@ -290,9 +290,11 @@ GPUIBBackend::~GPUIBBackend() {
   CHECK_HIP(hipFree(team_world));
   delete default_host_ctx_;
   NET_CHECK(MPI_Comm_free(&gpu_ib_comm_world));
-  CHECK_HIP(hipFree(default_ctx_->device_qp_proxy));
-  CHECK_HIP(hipFree(default_ctx_));
-  default_ctx_ = nullptr;
+  if (default_ctx_) {
+    CHECK_HIP(hipFree(default_ctx_->device_qp_proxy));
+    CHECK_HIP(hipFree(default_ctx_));
+    default_ctx_ = nullptr;
+  }
   delete host_interface;
   host_interface = nullptr;
   networkImpl.networkHostFinalize();
