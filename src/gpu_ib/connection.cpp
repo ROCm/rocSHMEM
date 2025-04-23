@@ -245,7 +245,6 @@ Connection::~Connection() {
 
 void Connection::reg_mr(void* ptr, size_t size, ibv_mr** mr) {
   int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
-  DPRINTF("CALLING IBV_REG_MR\n");
   *mr = ibv_reg_mr(ib_state->pd, ptr, size, access);
   GPUIB_CHECK_NNULL(*mr, "ibv_reg_mr");
 }
@@ -435,23 +434,11 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
    * };
   */
 
-//  int hip_dev_id{-1};
-//  CHECK_HIP(hipGetDevice(&hip_dev_id));
-//  void* gpu_ptr{nullptr};
-//  rocm_memory_lock_to_fine_grain(reinterpret_cast<void*>(cq_out.buf), cq_out.cqe_cnt * cq_out.cqe_size, &gpu_ptr, hip_dev_id);
-//  assert(gpu_ptr);
-//  gpu_qp->cq_buf_head = reinterpret_cast<mlx5_cqe64*>(gpu_ptr);
-//  gpu_qp->cq_buf = reinterpret_cast<mlx5_cqe64*>(gpu_ptr);
   gpu_qp->cq_buf_head = reinterpret_cast<mlx5_cqe64*>(cq_out.buf);
   gpu_qp->cq_buf = reinterpret_cast<mlx5_cqe64*>(cq_out.buf);
-//  gpu_ptr = nullptr;
   gpu_qp->cq_cnt = cq_out.cqe_cnt;
   gpu_qp->cq_log_cnt = log2(cq_out.cqe_cnt);
-//  rocm_memory_lock_to_fine_grain(reinterpret_cast<void*>(cq_out.dbrec), sizeof(cq_out.dbrec), &gpu_ptr, hip_dev_id);
-//  assert(gpu_ptr);
-//  gpu_qp->cq_dbrec = reinterpret_cast<volatile uint32_t*>(gpu_ptr);
   gpu_qp->cq_dbrec = cq_out.dbrec;
-//  gpu_ptr = nullptr;
 
   mlx5dv_qp qp_out;
   mlx_obj.qp.in = qps[conn_num];
@@ -486,27 +473,12 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
    * };
    */
 
-//  rocm_memory_lock_to_fine_grain(reinterpret_cast<void*>(const_cast<uint32_t*>(qp_out.dbrec)), sizeof(qp_out.dbrec), &gpu_ptr, hip_dev_id);
-//  assert(gpu_ptr);
-//  gpu_qp->dbrec = reinterpret_cast<volatile uint32_t*>(gpu_ptr);
   gpu_qp->dbrec = qp_out.dbrec;
-//  gpu_ptr = nullptr;
-//  rocm_memory_lock_to_fine_grain(reinterpret_cast<void*>(qp_out.sq.buf), qp_out.sq.wqe_cnt * qp_out.sq.stride, &gpu_ptr, hip_dev_id);
-//  assert(gpu_ptr);
-//  gpu_qp->sq_buf_head = reinterpret_cast<uint64_t*>(gpu_ptr);
-//  gpu_qp->sq_buf = reinterpret_cast<uint64_t*>(gpu_ptr);
   gpu_qp->sq_buf_head = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
   gpu_qp->sq_buf = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
-//  gpu_ptr = nullptr;
   gpu_qp->sq_wqe_cnt = qp_out.sq.wqe_cnt;
   gpu_qp->rkey = htobe32(backend->networkImpl.heap_rkey[conn_num % backend->num_pes]);
   gpu_qp->lkey = htobe32(backend->networkImpl.heap_mr->lkey);
-  DPRINTF("\nASSIGNING RKEY:\n");
-  for (int i {0}; i < backend->num_pes; i++) {
-    DPRINTF("\t backend->networkImpl.heap_rkey index %d - %x\n", i, htobe32(backend->networkImpl.heap_rkey[i]));
-  }
-  DPRINTF("\tconnection# %d ASSIGNED RKEY %x\n", conn_num, htobe32(backend->networkImpl.heap_rkey[conn_num % backend->num_pes]));
-  DPRINTF("\tconnection# %d ASSIGNED LKEY %x\n", conn_num, htobe32(backend->networkImpl.heap_mr->lkey));
   gpu_qp->qp_num = qps[conn_num]->qp_num;
   // The 2 in qp_out.bf.size * 2 below facilitates the switching between blue flame registers
   int hip_dev_id{-1};

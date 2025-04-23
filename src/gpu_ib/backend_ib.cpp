@@ -105,7 +105,6 @@ __device__ bool GPUIBBackend::create_ctx(rocshmem_ctx_t *ctx) {
     return false;
   }
   ctx_ = pop_result.value;
-  GPU_DPRINTF("Retrieving context %p from free list\n", ctx_);
 
   ctx->ctx_opaque = ctx_;
   return true;

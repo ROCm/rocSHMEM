@@ -136,8 +136,6 @@ void NetworkImpl::networkHostInit(GPUIBContext *ctx, int context_id) {
   CHECK_HIP(hipMemset(ctx->device_qp_proxy, 0, sizeof(QueuePair) * num_pes));
   for (int i{0}; i < num_pes; i++) {
     int offset = num_pes * context_id + i;
-    DPRINTF("num_pes %d num_contexts %d context_id %d i %d offset %d\n", num_pes, num_contexts, context_id, i, offset);
-    DPRINTF("context %p shallow copying gpu_qps %p to local index %d\n", ctx, &gpu_qps[offset], offset);
     new (ctx->getQueuePair(i)) QueuePair(gpu_qps[offset]);
     auto *qp = ctx->getQueuePair(i);
     qp->atomic_ret.atomic_base_ptr = &atomic_ret->atomic_base_ptr[max_nb_atomic * context_id];
