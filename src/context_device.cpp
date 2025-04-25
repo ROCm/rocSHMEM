@@ -25,7 +25,7 @@
 
 namespace rocshmem {
 
-__device__ 
+__device__
 Context::Context(GPUIBBackend* handle)
     : num_pes(handle->getNumPEs()), my_pe(handle->getMyPE()) {
   __syncthreads();
@@ -35,17 +35,22 @@ Context::Context(GPUIBBackend* handle)
  ************************** CONTEXT IMPLEMENTATIONS ***************************
  *****************************************************************************/
 
-__device__ 
+__device__
 void Context::ctx_create() {
   static_cast<GPUIBContext*>(this)->ctx_create();
 }
 
-__device__ 
+__device__
 void Context::ctx_destroy() {
   static_cast<GPUIBContext*>(this)->ctx_destroy();
 }
 
-__device__ 
+__device__
+void Context::fence() {
+  static_cast<GPUIBContext*>(this)->fence();
+}
+
+__device__
 void Context::putmem(void* dest, const void* source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
@@ -53,7 +58,7 @@ void Context::putmem(void* dest, const void* source, size_t nelems, int pe) {
   static_cast<GPUIBContext*>(this)->putmem(dest, source, nelems, pe);
 }
 
-__device__ 
+__device__
 void Context::putmem_nbi(void* dest, const void* source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
@@ -61,38 +66,38 @@ void Context::putmem_nbi(void* dest, const void* source, size_t nelems, int pe) 
   static_cast<GPUIBContext*>(this)->putmem_nbi(dest, source, nelems, pe);
 }
 
-__device__ 
+__device__
 void Context::quiet() {
   static_cast<GPUIBContext*>(this)->quiet();
 }
 
-__device__ 
+__device__
 void* Context::shmem_ptr(const void* dest, int pe) {
   void *ret_val = static_cast<GPUIBContext*>(this)->shmem_ptr(dest, pe);
   return ret_val;
 }
 
-__device__ 
+__device__
 void Context::barrier_all() {
   static_cast<GPUIBContext*>(this)->barrier_all();
 }
 
-__device__ 
+__device__
 void Context::barrier(rocshmem_team_t team) {
   static_cast<GPUIBContext*>(this)->barrier(team);
 }
 
-__device__ 
+__device__
 void Context::sync_all() {
   static_cast<GPUIBContext*>(this)->sync_all();
 }
 
-__device__ 
+__device__
 void Context::sync(rocshmem_team_t team) {
   static_cast<GPUIBContext*>(this)->sync(team);
 }
 
-__device__ 
+__device__
 void Context::putmem_wave(void* dest, const void* source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;
@@ -100,7 +105,7 @@ void Context::putmem_wave(void* dest, const void* source, size_t nelems, int pe)
   static_cast<GPUIBContext*>(this)->putmem_wave(dest, source, nelems, pe);
 }
 
-__device__ 
+__device__
 void Context::putmem_nbi_wave(void* dest, const void* source, size_t nelems, int pe) {
   if (nelems == 0) {
     return;

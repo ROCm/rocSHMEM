@@ -69,7 +69,7 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 [[maybe_unused]] int rocshmem_init_attr(unsigned int flags, rocshmem_init_attr_t *attr) {
   MPI_Comm comm = MPI_COMM_WORLD;
 
-  if ((attr == nullptr) || 
+  if ((attr == nullptr) ||
       ((flags != ROCSHMEM_INIT_WITH_UNIQUEID) &&
        (flags != ROCSHMEM_INIT_WITH_MPI_COMM)) ) {
     fprintf(stderr, "ROCSHMEM_ERROR: %s in file '%s' in line %d\n",

@@ -20,6 +20,7 @@ cmake \
     -DUSE_WF_COAL=OFF \
     -DUSE_FINEGRAINED_HEAP=ON \
     -DUSE_UNCACHED_HEAP=OFF \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     $src_path
 cmake --build . --parallel 8
 cmake --install .
