@@ -473,7 +473,7 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
    * };
    */
 
-  gpu_qp->dbrec = qp_out.dbrec;
+  gpu_qp->dbrec = &qp_out.dbrec[1]; // points to two pointers: 0 -> MLX5_REC_DBR, 1 -> MLX5_SND_DBR
   gpu_qp->sq_buf_head = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
   gpu_qp->sq_buf = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
   gpu_qp->sq_wqe_cnt = qp_out.sq.wqe_cnt;
