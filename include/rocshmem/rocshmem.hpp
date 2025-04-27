@@ -410,6 +410,11 @@ __device__ ATTR_NO_INLINE void rocshmem_wg_barrier_all();
  */
 __device__ void rocshmem_barrier(rocshmem_team_t);
 
+__device__ void rocshmem_ctx_barrier_all(rocshmem_ctx_t ctx);
+
+__device__ void rocshmem_ctx_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team);
+
+
 /**
  * @brief registers the arrival of a PE at a barrier.
  * The caller is blocked until the synchronization is resolved.
@@ -456,6 +461,8 @@ __device__ ATTR_NO_INLINE void rocshmem_wg_team_sync(rocshmem_team_t team);
  * Can be called per thread with no performance penalty.
  */
 __device__ ATTR_NO_INLINE void *rocshmem_ptr(const void *dest, int pe);
+
+__device__ ATTR_NO_INLINE void rocshmem_fence();
 
 }  // namespace rocshmem
 

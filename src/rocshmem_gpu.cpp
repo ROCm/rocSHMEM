@@ -56,59 +56,59 @@ void rocshmem_putmem(void *dest, const void *source, size_t nelems, int pe) {
 }
 
 template <typename T>
-__device__ 
+__device__
 void rocshmem_put(T *dest, const T *source, size_t nelems, int pe) {
   rocshmem_put(ROCSHMEM_CTX_DEFAULT, dest, source, nelems, pe);
 }
 
 template <typename T>
-__device__ 
+__device__
 void rocshmem_p(T *dest, T value, int pe) {
   rocshmem_p(ROCSHMEM_CTX_DEFAULT, dest, value, pe);
 }
 
-__device__ 
+__device__
 void rocshmem_putmem_nbi(void *dest, const void *source, size_t nelems, int pe) {
   rocshmem_ctx_putmem_nbi(ROCSHMEM_CTX_DEFAULT, dest, source, nelems, pe);
 }
 
 template <typename T>
-__device__ 
+__device__
 void rocshmem_put_nbi(T *dest, const T *source, size_t nelems, int pe) {
   rocshmem_put_nbi(ROCSHMEM_CTX_DEFAULT, dest, source, nelems, pe);
 }
 
-__device__ 
+__device__
 void rocshmem_quiet() {
   rocshmem_ctx_quiet(ROCSHMEM_CTX_DEFAULT);
 }
 
 template <typename T>
-__device__ 
+__device__
 T rocshmem_atomic_fetch_add(T *dest, T val, int pe) {
   return rocshmem_atomic_fetch_add(ROCSHMEM_CTX_DEFAULT, dest, val, pe);
 }
 
 template <typename T>
-__device__ 
+__device__
 T rocshmem_atomic_compare_swap(T *dest, T cond, T val, int pe) {
   return rocshmem_atomic_compare_swap(ROCSHMEM_CTX_DEFAULT, dest, cond, val, pe);
 }
 
 template <typename T>
-__device__ 
+__device__
 void rocshmem_atomic_add(T *dest, T val, int pe) {
   rocshmem_atomic_add(ROCSHMEM_CTX_DEFAULT, dest, val, pe);
 }
 
 template <typename T>
-__device__ 
+__device__
 void rocshmem_atomic_set(T *dest, T value, int pe) {
   rocshmem_atomic_set(ROCSHMEM_CTX_DEFAULT, dest, value, pe);
 }
 
 template <typename T>
-__device__ 
+__device__
 T rocshmem_atomic_swap(T *dest, T value, int pe) {
   return rocshmem_atomic_swap(ROCSHMEM_CTX_DEFAULT, dest, value, pe);
 }
@@ -117,7 +117,7 @@ T rocshmem_atomic_swap(T *dest, T value, int pe) {
  ************************* Private Context Interfaces *************************
  *****************************************************************************/
 
-__device__ 
+__device__
 int translate_pe(rocshmem_ctx_t ctx, int pe) {
   if (ctx.team_opaque) {
     TeamInfo *tinfo = reinterpret_cast<TeamInfo*>(ctx.team_opaque);
@@ -127,17 +127,17 @@ int translate_pe(rocshmem_ctx_t ctx, int pe) {
   }
 }
 
-__host__ 
+__host__
 void set_internal_ctx(rocshmem_ctx_t *ctx) {
   CHECK_HIP(hipMemcpyToSymbol(HIP_SYMBOL(ROCSHMEM_CTX_DEFAULT), ctx, sizeof(rocshmem_ctx_t), 0, hipMemcpyHostToDevice));
 }
 
-__device__ 
+__device__
 Context *get_internal_ctx(rocshmem_ctx_t ctx) {
   return reinterpret_cast<Context*>(ctx.ctx_opaque);
 }
 
-__device__ 
+__device__
 int rocshmem_wg_ctx_create(rocshmem_ctx_t *ctx) {
   bool result{true};
   if (get_flat_block_id() == 0) {
@@ -148,7 +148,7 @@ int rocshmem_wg_ctx_create(rocshmem_ctx_t *ctx) {
   return result == true ? 0 : -1;
 }
 
-__device__ 
+__device__
 int rocshmem_wg_team_create_ctx(rocshmem_team_t team, rocshmem_ctx_t *ctx) {
   if (team == ROCSHMEM_TEAM_INVALID) {
     return -1;
@@ -166,28 +166,28 @@ int rocshmem_wg_team_create_ctx(rocshmem_team_t team, rocshmem_ctx_t *ctx) {
   return result == true ? 0 : -1;
 }
 
-__device__ 
+__device__
 void rocshmem_wg_ctx_destroy([[maybe_unused]] rocshmem_ctx_t *ctx) {
   if (get_flat_block_id() == 0) {
     device_backend_proxy->destroy_ctx(ctx);
   }
 }
 
-__device__ 
+__device__
 void rocshmem_ctx_putmem(rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe) {
   int pe_in_world = translate_pe(ctx, pe);
   get_internal_ctx(ctx)->putmem(dest, source, nelems, pe_in_world);
 }
 
 template <typename T>
-__device__ 
+__device__
 void rocshmem_put(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {
   int pe_in_world = translate_pe(ctx, pe);
   get_internal_ctx(ctx)->put(dest, source, nelems, pe_in_world);
 }
 
 template <typename T>
-__device__ 
+__device__
 void rocshmem_p(rocshmem_ctx_t ctx, T *dest, T value, int pe) {
   int pe_in_world = translate_pe(ctx, pe);
   get_internal_ctx(ctx)->p(dest, value, pe_in_world);
@@ -206,63 +206,84 @@ void rocshmem_put_nbi(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelem
   get_internal_ctx(ctx)->put_nbi(dest, source, nelems, pe_in_world);
 }
 
-__device__ 
+__device__
 void rocshmem_ctx_quiet(rocshmem_ctx_t ctx) {
   get_internal_ctx(ctx)->quiet();
 }
 
-__device__ 
+__device__
 void *rocshmem_ptr(const void *dest, int pe) {
   return get_internal_ctx(ROCSHMEM_CTX_DEFAULT)->shmem_ptr(dest, pe);
 }
 
-__device__ 
-void rocshmem_ctx_wg_barrier_all(rocshmem_ctx_t ctx) {
+__device__
+void rocshmem_ctx_barrier_all(rocshmem_ctx_t ctx) {
   get_internal_ctx(ctx)->barrier_all();
 }
 
-__device__ 
+__device__
+void rocshmem_ctx_wg_barrier_all(rocshmem_ctx_t ctx) {
+  printf("Incorret implementation");
+  get_internal_ctx(ctx)->barrier_all();
+}
+
+__device__
+void rocshmem_ctx_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team) {
+  get_internal_ctx(ctx)->barrier(team);
+}
+
+__device__
 void rocshmem_wg_barrier_all() {
   rocshmem_ctx_wg_barrier_all(ROCSHMEM_CTX_DEFAULT);
 }
 
-__device__ 
+__device__
 void rocshmem_barrier(rocshmem_team_t team) {
   get_internal_ctx(ROCSHMEM_CTX_DEFAULT)->barrier(team);
 }
 
-__device__ 
+__device__
 void rocshmem_ctx_wg_sync_all(rocshmem_ctx_t ctx) {
   get_internal_ctx(ctx)->sync_all();
 }
 
-__device__ 
+__device__
 void rocshmem_wg_sync_all() {
   rocshmem_ctx_wg_sync_all(ROCSHMEM_CTX_DEFAULT);
 }
 
-__device__ 
+__device__
 void rocshmem_ctx_wg_team_sync(rocshmem_ctx_t ctx, rocshmem_team_t team) {
   get_internal_ctx(ctx)->sync(team);
 }
 
-__device__ 
+__device__
 void rocshmem_wg_team_sync(rocshmem_team_t team) {
   rocshmem_ctx_wg_team_sync(ROCSHMEM_CTX_DEFAULT, team);
 }
 
-__device__ 
+__device__
+void rocshmem_ctx_fence(rocshmem_ctx_t ctx) {
+  get_internal_ctx(ctx)->fence();
+}
+
+__device__
+void rocshmem_fence() {
+  rocshmem_ctx_fence(ROCSHMEM_CTX_DEFAULT);
+}
+
+__device__
 int rocshmem_ctx_n_pes(rocshmem_ctx_t ctx) {
   TeamInfo *tinfo = reinterpret_cast<TeamInfo*>(ctx.team_opaque);
   return tinfo->size;
 }
 
-__device__ 
+__device__
 int rocshmem_n_pes() {
   return get_internal_ctx(ROCSHMEM_CTX_DEFAULT)->num_pes;
 }
 
-__device__ 
+__device__
 int rocshmem_ctx_my_pe(rocshmem_ctx_t ctx) {
   TeamInfo *tinfo = reinterpret_cast<TeamInfo*>(ctx.team_opaque);
   int my_pe{get_internal_ctx(ctx)->my_pe};
@@ -277,37 +298,37 @@ int rocshmem_ctx_my_pe(rocshmem_ctx_t ctx) {
   return translated_pe;
 }
 
-__device__ 
+__device__
 int rocshmem_my_pe() {
   return get_internal_ctx(ROCSHMEM_CTX_DEFAULT)->my_pe;
 }
 
 template <typename T>
-__device__ 
+__device__
 T rocshmem_atomic_fetch_add(rocshmem_ctx_t ctx, T *dest, T val, int pe) {
   return get_internal_ctx(ctx)->amo_fetch_add<T>(dest, val, pe);
 }
 
 template <typename T>
-__device__ 
+__device__
 T rocshmem_atomic_compare_swap(rocshmem_ctx_t ctx, T *dest, T cond, T val, int pe) {
   return get_internal_ctx(ctx)->amo_fetch_cas(dest, val, cond, pe);
 }
 
 template <typename T>
-__device__ 
+__device__
 void rocshmem_atomic_add(rocshmem_ctx_t ctx, T *dest, T val, int pe) {
   get_internal_ctx(ctx)->amo_add<T>(dest, val, pe);
 }
 
 template <typename T>
-__device__ 
+__device__
 void rocshmem_atomic_set(rocshmem_ctx_t ctx, T *dest, T val, int pe) {
   get_internal_ctx(ctx)->amo_set(dest, val, pe);
 }
 
 template <typename T>
-__device__ 
+__device__
 T rocshmem_atomic_swap(rocshmem_ctx_t ctx, T *dest, T val, int pe) {
   return get_internal_ctx(ctx)->amo_swap(dest, val, pe);
 }
@@ -316,24 +337,24 @@ T rocshmem_atomic_swap(rocshmem_ctx_t ctx, T *dest, T val, int pe) {
  ******************** SHMEM X RMA API for WG and Wave level *******************
  *****************************************************************************/
 
-__device__ 
+__device__
 void rocshmem_ctx_putmem_wave(rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe) {
   get_internal_ctx(ctx)->putmem_wave(dest, source, nelems, pe);
 }
 
-__device__ 
+__device__
 void rocshmem_ctx_putmem_nbi_wave(rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe) {
   get_internal_ctx(ctx)->putmem_nbi_wave(dest, source, nelems, pe);
 }
 
 template <typename T>
-__device__ 
+__device__
 void rocshmem_put_wave(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {
   get_internal_ctx(ctx)->put_wave(dest, source, nelems, pe);
 }
 
 template <typename T>
-__device__ 
+__device__
 void rocshmem_put_nbi_wave(rocshmem_ctx_t ctx, T *dest, const T *source, size_t nelems, int pe) {
   get_internal_ctx(ctx)->put_nbi_wave(dest, source, nelems, pe);
 }
@@ -342,7 +363,7 @@ void rocshmem_put_nbi_wave(rocshmem_ctx_t ctx, T *dest, const T *source, size_t 
  ****************************** Teams Interface *******************************
  *****************************************************************************/
 
-__device__ 
+__device__
 int rocshmem_team_translate_pe(rocshmem_team_t src_team, int src_pe, rocshmem_team_t dst_team) {
   return team_translate_pe(src_team, src_pe, dst_team);
 }

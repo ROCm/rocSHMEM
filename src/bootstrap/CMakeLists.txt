@@ -26,29 +26,8 @@
 target_sources(
   ${PROJECT_NAME}
   PRIVATE
-    atomic_return.cpp
-    context_host.cpp
-    context_device.cpp
-    mpi_init_singleton.cpp
-    rocshmem_gpu.cpp
-    rocshmem.cpp
-    team.cpp
-    team_tracker.cpp
-    util.cpp
-    wf_coal_policy.cpp
+    socket.cpp
+    bootstrap.cpp
+    env.cpp
+    utils.cpp
 )
-
-target_compile_options(
-  ${PROJECT_NAME}
-  PUBLIC
-    -fgpu-rdc
-)
-
-###############################################################################
-# ROCSHMEM TARGET FOR BACKENDS
-###############################################################################
-add_subdirectory(gpu_ib)
-add_subdirectory(host)
-add_subdirectory(memory)
-add_subdirectory(sync)
-add_subdirectory(bootstrap)

@@ -84,6 +84,9 @@ class Context {
   void quiet();
 
   __device__
+  void fence();
+
+  __device__
   void* shmem_ptr(const void* dest, int pe);
 
   __device__

@@ -211,11 +211,7 @@ void GPUIBBackend::init_mpi_once(MPI_Comm comm) {
     int provided;
     NET_CHECK(MPI_Init_thread(nullptr, nullptr, MPI_THREAD_MULTIPLE, &provided));
   }
-  if (comm == MPI_COMM_NULL) {
-    NET_CHECK(MPI_Comm_dup(MPI_COMM_WORLD, &backend_comm));
-  } else {
-    NET_CHECK(MPI_Comm_dup(comm, &backend_comm));
-  }
+  NET_CHECK(MPI_Comm_dup(comm, &backend_comm));
 }
 
 void GPUIBBackend::teams_init() {
@@ -294,9 +290,11 @@ GPUIBBackend::~GPUIBBackend() {
   CHECK_HIP(hipFree(team_world));
   delete default_host_ctx_;
   NET_CHECK(MPI_Comm_free(&gpu_ib_comm_world));
-  CHECK_HIP(hipFree(default_ctx_->device_qp_proxy));
-  CHECK_HIP(hipFree(default_ctx_));
-  default_ctx_ = nullptr;
+  if (default_ctx_) {
+    CHECK_HIP(hipFree(default_ctx_->device_qp_proxy));
+    CHECK_HIP(hipFree(default_ctx_));
+    default_ctx_ = nullptr;
+  }
   delete host_interface;
   host_interface = nullptr;
   networkImpl.networkHostFinalize();
