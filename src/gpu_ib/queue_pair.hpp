@@ -93,10 +93,9 @@ class QueuePair {
   __device__ void put_nbi_wave(void *dest, const void *source, size_t nelems, int pe);
 
   /**
-   * @brief Consume a completion queue entry from this queue pair's
-   * completion queue.
+   * @brief Empty all completions from the completion queue.
    */
-  __device__ void quiet_single();
+  __device__ void quiet();
 
   /**
    * @brief Create and enqueue an atomic fetch work queue entry (wqe).
@@ -180,10 +179,9 @@ class QueuePair {
 
   db_reg_t db{};
 
-  uint32_t sq_counter{0};
-  uint32_t local_sq_cnt{0};
   uint32_t cq_consumer_counter{0};
-  uint32_t quiet_counter{0};
+  uint32_t quiet_counter_soft{0};
+  uint32_t quiet_counter_hard{0};
 
   /*
    * struct mlx5dv_cq {
@@ -232,12 +230,13 @@ class QueuePair {
   uint64_t *sq_buf{nullptr};
   uint64_t *sq_buf_head{nullptr};
   uint16_t sq_wqe_cnt{0};
+  uint32_t sq_counter{0};
+  uint32_t sq_counter_db_posted{0};
+  uint32_t sq_counter_sunk{0};
 
   uint32_t qp_num{0};
   uint32_t rkey{0};
   uint32_t lkey{0};
-
-  TicketMutex* doorbell_mutex{nullptr};
 };
 
 }  // namespace rocshmem
