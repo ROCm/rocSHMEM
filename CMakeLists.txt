@@ -42,6 +42,8 @@ option(PROFILE "Enable statistics and timing support" OFF)
 option(USE_WF_COAL "Enable wavefront message coalescing" OFF)
 option(USE_FINEGRAINED_HEAP "Enable support for coherent systems" OFF)
 option(USE_UNCACHED_HEAP "Enable support for coherent systems" OFF)
+option(USE_ALLOC_DLMALLOC "Enable dlmalloc device memory allocator" ON)
+option(USE_ALLOC_POW2BINS "Enable legacy Pow2Bins device memory allocator" OFF)
 
 option(BUILD_FUNCTIONAL_TESTS "Build the functional tests" ON)
 option(BUILD_EXAMPLES "Build the examples" ON)

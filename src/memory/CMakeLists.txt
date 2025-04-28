@@ -28,4 +28,5 @@ target_sources(
   PRIVATE
     single_heap.cpp
     memory_allocator.cpp
+    dlmalloc.cpp
 )
