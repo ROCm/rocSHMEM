@@ -124,6 +124,8 @@ __device__ void QueuePair::quiet() {
   uint64_t lower_active_lanes{ballot & inverted_mask};
   uint8_t my_logical_lane_id = __popcll(lower_active_lanes);
   bool is_lowest_active_lane{my_logical_lane_id == 0};
+  uint8_t wavefront_id = get_flat_block_id() / 64;
+  done_broadcast = false;
 
   while (true) {
     if (is_lowest_active_lane) {
@@ -134,7 +136,6 @@ __device__ void QueuePair::quiet() {
     bool done{false};
     uint64_t quiet_amount{0};
     uint32_t wave_cq_consumer_counter{0};
-    uint8_t wavefront_id = get_flat_block_id() / 64;
     do {
       if (!__hip_atomic_load(&quiet_counter_hard, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT)) {
         return;
@@ -188,7 +189,7 @@ __device__ void QueuePair::quiet() {
         vote_failed = __popcll(votes) < quiet_amount;
       } while (vote_failed);
 
-      *((volatile uint8_t*)&cqe_entry->op_own) = (uint8_t)0xF0;
+      *((volatile uint8_t*)&cqe_entry->op_own) = (uint8_t)0xF0; // is this right?
       __threadfence_system();
 
       GPU_DPRINTF(
