@@ -23,18 +23,36 @@
  *****************************************************************************/
 
 /*
-hipcc -c -fgpu-rdc -x hip rocshmem_broadcast_test.cc \
-  -I/opt/rocm/include \
-  -I$ROCSHMEM_INSTALL_DIR/include \
-  -I$OPENMPI_UCX_INSTALL_DIR/include/
+ * First find your offload target, and if xnack is enabled/disabled using
 
-hipcc -fgpu-rdc --hip-link rocshmem_broadcast_test.o -o rocshmem_broadcast_test \
-  $ROCSHMEM_INSTALL_DIR/lib/librocshmem.a \
-  $OPENMPI_UCX_INSTALL_DIR/lib/libmpi.so \
-  -L/opt/rocm/lib -lamdhip64 -lhsa-runtime64
+   rocminfo | grep amdgcn
 
-ROCSHMEM_MAX_NUM_CONTEXTS=2 mpirun -np 8 ./rocshmem_broadcast_test
-*/
+ * It should output a string like so:
+
+   "Name:                    amdgcn-amd-amdhsa--gfx942:sramecc+:xnack-"
+
+ * This lists the offload taret (gfx942) and that xnack is disabled (xnack-).
+ * Therefore, we need to specify --offload-arch=gfx942:xnack- to our link and compile commands.
+ * Please modify the compile and link commands to suit your system
+
+ * To compile:
+   hipcc -c -fgpu-rdc -x hip rocshmem_broadcast_test.cc \
+         --offload-arch=<target>:<xnack>                \
+         -I/opt/rocm/include                            \
+         -I$ROCSHMEM_INSTALL_DIR/include                \
+         -I$OPENMPI_UCX_INSTALL_DIR/include/
+
+ * To link:
+   hipcc -fgpu-rdc --hip-link rocshmem_broadcast_test.o -o rocshmem_broadcast_test \
+         --offload-arch=<target>:<xnack>                                           \
+         $ROCSHMEM_INSTALL_DIR/lib/librocshmem.a                                   \
+         $OPENMPI_UCX_INSTALL_DIR/lib/libmpi.so                                    \
+         -L/opt/rocm/lib -lamdhip64 -lhsa-runtime64
+
+ * To run:
+   mpirun -np 8 -x ROCSHMEM_MAX_NUM_CONTEXTS=2 ./rocshmem_broadcast_test
+
+ */
 
 #include <iostream>
 
@@ -144,7 +162,7 @@ int main(int argc, char **argv)
         bool pass = check_recvbuf(dest, nelem, my_pe, npes);
         printf("Test %s \t nelem %d %s\n", argv[0], nelem, pass ? "[PASS]" : "[FAIL]");
     }
-    
+
     rocshmem_free(source);
     rocshmem_free(dest);
 
