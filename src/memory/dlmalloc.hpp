@@ -40,6 +40,7 @@
 
 namespace rocshmem {
 
+inline const unsigned ALIGNMENT{128};
 
 /*
  * @brief an encapsulation class for the C-static functions inherited from dlmalloc
