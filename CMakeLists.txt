@@ -97,8 +97,10 @@ set(ROCMCHECKS_WARN_TOOLCHAIN_VAR OFF)
 include(cmake/rocm_local_targets.cmake)
 
 set(DEFAULT_GPUS
-      gfx90a
-      gfx942)
+      gfx90a:xnack-;
+      gfx90a:xnack+;
+      gfx942:xnack-;
+      gfx942:xnack+)
 
 ###############################################################################
 # PROJECT
@@ -146,10 +148,9 @@ if (NOT BUILD_TESTS_ONLY)
   message(STATUS "Compiling for ${COMPILING_TARGETS}")
 
   foreach (target ${COMPILING_TARGETS})
-    list(APPEND static_link_flags --offload-arch=${target})
+    list(APPEND offload_flags --offload-arch=${target})
   endforeach()
-  list(JOIN static_link_flags " " flags_str)
-  add_compile_options(${flags_str})
+  add_compile_options(${offload_flags})
 
   #############################################################################
   # PACKAGE DEPENDENCIES
