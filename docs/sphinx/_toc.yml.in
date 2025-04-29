@@ -17,11 +17,6 @@ subtrees:
   - file: environment_variables.rst
     title: Environment Variables
 
-- caption: Examples
-  entries:
-  - file: examples/example.rst
-    title: Example rocSHMEM Program
-
 - chapter: API Reference
   entries:
   - file: api/init.rst

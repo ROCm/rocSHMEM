@@ -10,6 +10,7 @@ Collective Routines
 
 ROCSHMEM_BARRIER_ALL
 --------------------
+
 .. cpp:function:: __device__ void rocshmem_ctx_wg_barrier_all(rocshmem_ctx_t ctx)
 .. cpp:function:: __device__ void rocshmem_wg_barrier_all()
 

@@ -60,10 +60,9 @@ Alternatively, we have script to install dependencies.
 However, it is not gauranteed to work and perform optimally on all platforms.
 Configuration options are platform dependent.
 
-```
-export BUILD_DIR=/path/to/not_rocshmem_src_or_build/dependencies
-/path/to/rocshmem_src/sripts/install_dependencies.sh
-```
+.. code-block:: bash
+  export BUILD_DIR=/path/to/not_rocshmem_src_or_build/dependencies
+  /path/to/rocshmem_src/sripts/install_dependencies.sh
 
 For more information on OpenMPI-UCX support, please visit:
 `GPU-enabled Message Passing Interface <https://rocm.docs.amd.com/en/latest/how-to/gpu-enabled-mpi.html>`_
