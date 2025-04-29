@@ -93,7 +93,7 @@ void Backend::init_mpi_once(MPI_Comm comm) {
   if (!init_done) {
     NET_CHECK(MPI_Init_thread(0, 0, MPI_THREAD_MULTIPLE, &provided));
     if (provided != MPI_THREAD_MULTIPLE) {
-      std::cerr << "MPI_THREAD_MULTIPLE support disabled.\n";
+      fprintf(stderr, "MPI_THREAD_MULTIPLE support disabled.\n");
     }
   }
   if (comm == MPI_COMM_NULL) comm = MPI_COMM_WORLD;

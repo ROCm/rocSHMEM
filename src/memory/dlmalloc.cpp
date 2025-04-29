@@ -26,7 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /* BEGIN AMD ROCSHMEM CHANGES */
 #include "dlmalloc.hpp"
-#include <iostream>
+#include <cstdio>
 
 namespace rocshmem {
 
@@ -43,14 +43,13 @@ namespace rocshmem {
 #define HAVE_MMAP 0
 #define HAVE_MREMAP 0
 #define USAGE_ERROR_ACTION(m, p) do {                                   \
-  std::cerr << "Symmetric heap usage error detected, "                  \
-            << "possibly at " << p << std::endl << std::flush;          \
+  fprintf(stderr, "Symmetric heap usage error detected, "               \
+                  "possibly at %p\n", p);                               \
   ABORT;                                                                \
 } while (0)
 
 #define CORRUPTION_ERROR_ACTION(m) do {                                 \
-  std::cerr << "Symmetric heap data structure corruption found"         \
-            << std::endl<< std::flush;                                  \
+  fprintf(stderr, "Symmetric heap data structure corruption found");    \
   ABORT;                                                                \
 } while (0)
 
