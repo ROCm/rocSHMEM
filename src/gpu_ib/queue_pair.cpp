@@ -112,12 +112,12 @@ __device__ void QueuePair::quiet() {
   __shared__ uint32_t wqe_broadcast[BROADCAST_SIZE];
   __shared__ bool done_broadcast;
 
-  uint64_t ballot = __ballot(1);
-  uint8_t num_active_lanes = __popcll(ballot);
+  uint64_t active_thread_mask = __ballot(1);
+  uint8_t num_active_lanes = __popcll(active_thread_mask);
   uint8_t my_physical_lane_id = __lane_id();
   uint64_t lane_mask{ALL_ONES_MASK << my_physical_lane_id};
   uint64_t inverted_mask{~lane_mask};
-  uint64_t lower_active_lanes{ballot & inverted_mask};
+  uint64_t lower_active_lanes{active_thread_mask & inverted_mask};
   uint8_t my_logical_lane_id = __popcll(lower_active_lanes);
   bool is_lowest_active_lane{my_logical_lane_id == 0};
   uint8_t wavefront_id = get_flat_block_id() / 64;
@@ -248,12 +248,12 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   constexpr size_t SQ_BROADCAST_SIZE = 1024 / 64;
   constexpr uint64_t ALL_ONES_MASK = -1;
   __shared__ uint64_t sq_wave_broadcast[SQ_BROADCAST_SIZE];
-  uint64_t ballot = __ballot(1);
-  uint8_t num_active_lanes = __popcll(ballot);
+  uint64_t active_thread_mask = __ballot(1);
+  uint8_t num_active_lanes = __popcll(active_thread_mask);
   uint8_t my_physical_lane_id = __lane_id();
   uint64_t lane_mask{ALL_ONES_MASK << my_physical_lane_id};
   uint64_t inverted_mask{~lane_mask};
-  uint64_t lower_active_lanes{ballot & inverted_mask};
+  uint64_t lower_active_lanes{active_thread_mask & inverted_mask};
   uint8_t my_logical_lane_id = __popcll(lower_active_lanes);
   bool is_lowest_active_lane{my_logical_lane_id == 0};
   uint8_t num_wqes{num_active_lanes};
