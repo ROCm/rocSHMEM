@@ -189,14 +189,12 @@ __device__ void QueuePair::quiet() {
          d[48], d[49], d[50], d[51], d[52], d[53], d[54], d[55],
          d[56], d[57], d[58], d[59], d[60], d[61], d[62], d[63]);
 
-//        op_own = __hip_atomic_load(&cqe_entry->op_own, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
         op_own = *((volatile uint8_t*)&cqe_entry->op_own);
 	bool my_ownership_vote = (op_own & 1) == owner_bit;
         bool my_opcode_vote = (op_own >> 4) != MLX5_CQE_INVALID;
         uint64_t votes = __ballot(my_ownership_vote && my_opcode_vote);
         vote_failed = __popcll(votes) < quiet_amount;
         if (!vote_failed) {
-//        be_wqe_counter = __hip_atomic_load(&cqe_entry->wqe_counter, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
           be_wqe_counter = *((volatile uint16_t*)&cqe_entry->wqe_counter);
 	}
       } while (vote_failed);
@@ -207,7 +205,6 @@ __device__ void QueuePair::quiet() {
       __hip_atomic_fetch_max(&wqe_broadcast[wavefront_id], wqe_id, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_WORKGROUP);
       uint8_t mlx5_invld_bits = MLX5_CQE_INVALID << 4 | owner_bit;
       *((volatile uint8_t*)&cqe_entry->op_own) = mlx5_invld_bits;
-//      __hip_atomic_store(&cqe_entry->op_own, mlx5_invld_bits, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
       __threadfence_system();
       GPU_DPRINTF(
        "Clearing CQE at address %p at index %lu\n"
@@ -230,12 +227,19 @@ __device__ void QueuePair::quiet() {
        d[56], d[57], d[58], d[59], d[60], d[61], d[62], d[63]);
     }
     if (is_lowest_active_lane) {
-      swap_endian_store(const_cast<uint32_t*>(cq_dbrec), cq_consumer_counter);
+      uint64_t posted {0};
+      do {
+        posted = __hip_atomic_load(&cq_consumer_counter_posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+      } while (posted != wave_cq_consumer_counter);
+
+      swap_endian_store(const_cast<uint32_t*>(cq_dbrec), (uint32_t)(wave_cq_consumer_counter + quiet_amount));
       __threadfence_system();
 
       uint32_t sunk_wqe_id = wqe_broadcast[wavefront_id];
       __hip_atomic_store(&sq_counter_sunk, sunk_wqe_id, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
       __hip_atomic_fetch_add(&quiet_counter_hard, -quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+
+      __hip_atomic_store(&cq_consumer_counter_posted, wave_cq_consumer_counter + quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
     }
   }
 }
