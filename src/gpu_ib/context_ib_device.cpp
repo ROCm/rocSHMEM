@@ -45,7 +45,7 @@ __device__ __host__ QueuePair *GPUIBContext::getQueuePair(int pe) {
 
 __device__ void GPUIBContext::quiet() {
   for (int k = 0; k < networkImpl.num_pes; k++) {
-    getQueuePair(k)->quiet_single();
+    getQueuePair(k)->quiet();
   }
 }
 
@@ -59,7 +59,7 @@ __device__ void GPUIBContext::putmem(void *dest, const void *source, size_t nele
   if (!must_send_message) return;
   auto *qp = getQueuePair(pe);
   qp->put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
-  qp->quiet_single();
+  qp->quiet();
 }
 
 __device__ void GPUIBContext::putmem_nbi(void *dest, const void *source, size_t nelems, int pe) {
@@ -74,7 +74,7 @@ __device__ void GPUIBContext::putmem_wave(void *dest, const void *source, size_t
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
   auto *qp = getQueuePair(pe);
   qp->put_nbi_wave(base_heap[pe] + L_offset, source, nelems, pe);
-  qp->quiet_single();
+  qp->quiet();
 }
 
 __device__ void GPUIBContext::putmem_nbi_wave(void *dest, const void *source, size_t nelems, int pe) {

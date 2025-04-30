@@ -91,12 +91,8 @@ __device__ void QueuePair::dump() {
 
 __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint32_t my_sq_counter) {
   dump();
-  uint32_t be_sq_counter;
-  swap_endian_store(const_cast<uint32_t*>(&be_sq_counter), reinterpret_cast<uint32_t>(my_sq_counter));
-  uint8_t *dbrec_u8p = reinterpret_cast<uint8_t*>(&be_sq_counter);
-  GPU_DPRINTF("storing (__be32) be_sq_counter %02x %02x %02x %02x (%lx) to dbrec %p\n", dbrec_u8p[0], dbrec_u8p[1], dbrec_u8p[2], dbrec_u8p[3], be_sq_counter, dbrec);
-  __hip_atomic_store(dbrec, be_sq_counter, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
-  volatile uint32_t dbrec_dummy = __hip_atomic_load(dbrec, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM); // dummy read to enforce ordering over PCIe
+
+  swap_endian_store(const_cast<uint32_t*>(dbrec), my_sq_counter);
   __threadfence_system();
 
   uint8_t *db_u8p = reinterpret_cast<uint8_t*>(&db_val);
@@ -107,13 +103,13 @@ __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint32_t my_sq_counter
   uint64_t db_uint = __hip_atomic_load(&db.uint, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
   db_uint ^= 0x100;
   __hip_atomic_store(&db.uint, db_uint, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
-  __threadfence_system();
 }
 
 __device__ void QueuePair::quiet() {
-  constexpr size_t CQ_BROADCAST_SIZE = 1024 / 64;
+  constexpr size_t BROADCAST_SIZE = 1024 / 64;
   constexpr uint64_t ALL_ONES_MASK = -1;
-  __shared__ uint64_t cq_wave_broadcast[CQ_BROADCAST_SIZE];
+  __shared__ uint64_t cq_wave_broadcast[BROADCAST_SIZE];
+  __shared__ uint32_t wqe_broadcast[BROADCAST_SIZE];
   __shared__ bool done_broadcast;
 
   uint64_t ballot = __ballot(1);
@@ -125,6 +121,9 @@ __device__ void QueuePair::quiet() {
   uint8_t my_logical_lane_id = __popcll(lower_active_lanes);
   bool is_lowest_active_lane{my_logical_lane_id == 0};
   uint8_t wavefront_id = get_flat_block_id() / 64;
+
+  cq_wave_broadcast[wavefront_id] = 0;
+  wqe_broadcast[wavefront_id] = 0;
   done_broadcast = false;
 
   while (true) {
@@ -137,17 +136,21 @@ __device__ void QueuePair::quiet() {
     uint64_t quiet_amount{0};
     uint32_t wave_cq_consumer_counter{0};
     do {
+      if (is_lowest_active_lane) {
+        gpu_dprintf("quiet_counter_hard %u quiet_counter_soft %u\n", quiet_counter_hard, quiet_counter_soft);
+      }
       if (!__hip_atomic_load(&quiet_counter_hard, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT)) {
         return;
       }
-      uint64_t quiet_val = __hip_atomic_load(&quiet_counter_soft, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+      uint32_t quiet_val = __hip_atomic_load(&quiet_counter_soft, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
       if (!quiet_val) {
         continue;
       }
+      quiet_amount = min(num_active_lanes, quiet_val);
       if (is_lowest_active_lane) {
-        quiet_amount = min(num_active_lanes, quiet_val);
-        done_broadcast = __hip_atomic_compare_exchange_strong(quiet_counter_soft, &quiet_val, quiet_val - quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+        done_broadcast = __hip_atomic_compare_exchange_strong(&quiet_counter_soft, &quiet_val, quiet_val - quiet_amount, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
         if (done_broadcast) {
+          gpu_dprintf("succeeded on quiet_counter_soft CAS quiet_val %d quiet_amount %d\n", quiet_val, quiet_amount);
           wave_cq_consumer_counter = __hip_atomic_fetch_add(&cq_consumer_counter, quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
           cq_wave_broadcast[wavefront_id] = wave_cq_consumer_counter;
         }
@@ -160,11 +163,14 @@ __device__ void QueuePair::quiet() {
     uint64_t my_cq_index = my_cq_consumer_counter % cq_cnt;
 
     if (my_logical_lane_id < quiet_amount) {
-      mlx5_cqe64 *cqe_entry = &cq_buf[my_cq_index];
-      const uint8_t *d = reinterpret_cast<const uint8_t*>(cqe_entry);
+      volatile mlx5_cqe64 *cqe_entry = &cq_buf[my_cq_index];
+      const volatile uint8_t *d = reinterpret_cast<const volatile uint8_t*>(cqe_entry);
       bool vote_failed{true};
+      uint16_t be_wqe_counter{0};
+      uint8_t op_own{0};
+      uint8_t owner_bit = (my_cq_consumer_counter >> cq_log_cnt) & 1;
       do {
-        GPU_DPRINTF(
+        gpu_dprintf(
          "Observing CQE at address %p at index %u\n"
          "%02x %02x %02x %02x %02x %02x %02x %02x "
          "%02x %02x %02x %02x %02x %02x %02x %02x "
@@ -184,14 +190,22 @@ __device__ void QueuePair::quiet() {
          d[48], d[49], d[50], d[51], d[52], d[53], d[54], d[55],
          d[56], d[57], d[58], d[59], d[60], d[61], d[62], d[63]);
 
-        bool my_vote = (*((volatile uint8_t*)&cqe_entry->op_own) >> 4) != MLX5_CQE_INVALID;
-        uint64_t votes = __ballot(my_vote);
+        op_own = __hip_atomic_load(&cqe_entry->op_own, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+	bool my_ownership_vote = (op_own & 1) == owner_bit;
+        bool my_opcode_vote = (op_own >> 4) != MLX5_CQE_INVALID;
+        uint64_t votes = __ballot(my_ownership_vote && my_opcode_vote);
         vote_failed = __popcll(votes) < quiet_amount;
+        if (!vote_failed) {
+	  be_wqe_counter = __hip_atomic_load(&cqe_entry->wqe_counter, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+	}
       } while (vote_failed);
 
-      *((volatile uint8_t*)&cqe_entry->op_own) = (uint8_t)0xF0; // is this right?
-      __threadfence_system();
-
+      uint16_t wqe_counter;
+      swap_endian_store(const_cast<uint16_t*>(&wqe_counter), reinterpret_cast<uint16_t>(be_wqe_counter));
+      uint32_t wqe_id =  outstanding_wqes[wqe_counter];
+      __hip_atomic_fetch_max(&wqe_broadcast[wavefront_id], wqe_id, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_WORKGROUP);
+      uint8_t mlx5_invld_bits = MLX5_CQE_INVALID << 4 | owner_bit;
+      __hip_atomic_store(&cqe_entry->op_own, mlx5_invld_bits, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
       GPU_DPRINTF(
        "Clearing CQE at address %p at index %lu\n"
        "%02x %02x %02x %02x %02x %02x %02x %02x "
@@ -213,15 +227,12 @@ __device__ void QueuePair::quiet() {
        d[56], d[57], d[58], d[59], d[60], d[61], d[62], d[63]);
     }
     if (is_lowest_active_lane) {
-      cq_consumer_counter++;
       swap_endian_store(const_cast<uint32_t*>(cq_dbrec), cq_consumer_counter);
-//  uint32_t be_sq_counter;
-//  swap_endian_store(const_cast<uint32_t*>(&be_sq_counter), reinterpret_cast<uint32_t>(my_sq_counter));
-//  uint8_t *dbrec_u8p = reinterpret_cast<uint8_t*>(&be_sq_counter);
-//  GPU_DPRINTF("storing (__be32) be_sq_counter %02x %02x %02x %02x (%lx) to dbrec %p\n", dbrec_u8p[0], dbrec_u8p[1], dbrec_u8p[2], dbrec_u8p[3], be_sq_counter, dbrec);
-//  __hip_atomic_store(dbrec, be_sq_counter, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
-//  volatile uint32_t dbrec_dummy = __hip_atomic_load(dbrec, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM); // dummy read to enforce ordering over PCIe
-//  __threadfence_system();
+      __threadfence_system();
+
+      uint32_t sunk_wqe_id = wqe_broadcast[wavefront_id];
+      __hip_atomic_store(&sq_counter_sunk, sunk_wqe_id, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+      __hip_atomic_fetch_add(&quiet_counter_hard, -quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
     }
   }
 }
@@ -242,20 +253,20 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   uint64_t wave_sq_counter{0};
 
   if (is_lowest_active_lane) {
-    wave_sq_counter = __hip_atomic_fetch_add(&sq_counter, num_wqes, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+    wave_sq_counter = __hip_atomic_fetch_add(&sq_counter, num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
   }
   uint8_t wavefront_id = get_flat_block_id() / 64;
   if (is_lowest_active_lane) {
-    wave_broadcast[wavefront_id] = wave_sq_counter;
+    sq_wave_broadcast[wavefront_id] = wave_sq_counter;
     __threadfence_block();
   }
-  wave_sq_counter = wave_broadcast[wavefront_id];
+  wave_sq_counter = sq_wave_broadcast[wavefront_id];
   uint64_t my_sq_counter = wave_sq_counter + my_logical_lane_id;
   uint64_t my_sq_index = my_sq_counter % sq_wqe_cnt;
 
   do {
-    uint64_t posted = __hip_atomic_load(&sq_counter_db_posted, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
-    uint64_t sunk = __hip_atomic_load(&sq_counter_sunk, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+    uint64_t posted = __hip_atomic_load(&sq_counter_db_posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+    uint64_t sunk = __hip_atomic_load(&sq_counter_sunk, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
     uint64_t num_active_sq_entries = posted - sunk;
     uint64_t num_free_entries = sq_wqe_cnt - num_active_sq_entries;
     uint64_t num_entries_until_wave_last_entry = wave_sq_counter + num_active_lanes - sunk;
@@ -264,6 +275,8 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
     }
     quiet();
   } while (true);
+
+  outstanding_wqes[my_sq_counter % 65536] = my_sq_counter;
 
   SegmentBuilder seg_build(my_sq_index, sq_buf);
   seg_build.update_ctrl_seg(my_sq_counter, opcode, 0, qp_num, MLX5_WQE_CTRL_CQ_UPDATE, 3, 0, 0);
@@ -296,10 +309,10 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   if (is_lowest_active_lane) {
     uint64_t posted {0};
     do {
-      posted = __hip_atomic_load(&sq_counter_db_posted, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+      posted = __hip_atomic_load(&sq_counter_db_posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
     } while (posted != wave_sq_counter);
 
-    uint64_t* ctrl_wqe_8B_for_db = reinterpret_cast<uint64_t*>(&base_ptr[64 * (wave_sq_counter + num_wqes - 1)]);
+    uint64_t* ctrl_wqe_8B_for_db = reinterpret_cast<uint64_t*>(&base_ptr[64 * ((wave_sq_counter + num_wqes - 1) % sq_wqe_cnt)]);
 
     uint8_t *db_u8p = reinterpret_cast<uint8_t*>(ctrl_wqe_8B_for_db);
     GPU_DPRINTF("post_wqe_rma::ctrl_wqe_8B_for_db %02x %02x %02x %02x %02x %02x %02x %02x (%lx)\n",
@@ -308,8 +321,8 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
     GPU_DPRINTF("ringing doorbell for sq_counter_db_posted %d\n", posted);
     ring_doorbell(*ctrl_wqe_8B_for_db, wave_sq_counter + num_wqes);
 
-    __hip_atomic_fetch_add(&quiet_counter_hard, num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
     __hip_atomic_fetch_add(&quiet_counter_soft, num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+    __hip_atomic_fetch_add(&quiet_counter_hard, num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
     __hip_atomic_store(&sq_counter_db_posted, wave_sq_counter + num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
   }
 }
