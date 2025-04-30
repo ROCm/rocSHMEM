@@ -92,6 +92,7 @@ __device__ void QueuePair::dump() {
 __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint32_t my_sq_counter) {
   dump();
 
+  gpu_dprintf("writing to SQ_DBREC %p with counter value %d\n", dbrec, my_sq_counter);
   swap_endian_store(const_cast<uint32_t*>(dbrec), my_sq_counter);
   __threadfence_system();
 
@@ -137,7 +138,7 @@ __device__ void QueuePair::quiet() {
     uint32_t wave_cq_consumer_counter{0};
     do {
       if (is_lowest_active_lane) {
-        GPU_DPRINTF("quiet_counter_hard %u quiet_counter_soft %u\n", quiet_counter_hard, quiet_counter_soft);
+        gpu_dprintf("quiet_counter_hard %u quiet_counter_soft %u\n", quiet_counter_hard, quiet_counter_soft);
       }
       if (!__hip_atomic_load(&quiet_counter_hard, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT)) {
         return;
@@ -232,6 +233,7 @@ __device__ void QueuePair::quiet() {
         posted = __hip_atomic_load(&cq_consumer_counter_posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
       } while (posted != wave_cq_consumer_counter);
 
+      gpu_dprintf("writing to CQ_DBREC %p with counter value %d\n", cq_dbrec, wave_cq_consumer_counter + quiet_amount);
       swap_endian_store(const_cast<uint32_t*>(cq_dbrec), (uint32_t)(wave_cq_consumer_counter + quiet_amount));
       __threadfence_system();
 
@@ -276,7 +278,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
     uint64_t sunk = __hip_atomic_load(&sq_counter_sunk, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
     uint64_t num_active_sq_entries = posted - sunk;
     uint64_t num_free_entries = sq_wqe_cnt - num_active_sq_entries;
-    uint64_t num_entries_until_wave_last_entry = wave_sq_counter + num_active_lanes - sunk;
+    uint64_t num_entries_until_wave_last_entry = wave_sq_counter + num_active_lanes - posted;
     if (num_free_entries > num_entries_until_wave_last_entry) {
       break;
     }
