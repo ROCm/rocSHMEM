@@ -83,7 +83,7 @@ void MPITransport::insertRequest(const queue_element_t *element, int queue_id) {
 }
 
 void MPITransport::submitRequestsToMPI() {
-  if (q.empty()) return;
+  if (q.empty() || requests.size() >= 1024) { return; }
 
   std::unique_lock<std::mutex> mlock(queue_mutex);
   queue_element_t next_element{q.front()};
