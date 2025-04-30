@@ -235,3 +235,36 @@ if (NOT BUILD_TESTS_ONLY)
     MAINTAINER "rocSHMEM Maintainer <rocshmem-maintainer@amd.com>"
   )
 endif()
+
+include(ExternalProject)
+
+set(THIRD_PARTY_INSTALL_DIR ${CMAKE_BINARY_DIR}/third_party/install)
+
+ExternalProject_Add(
+    ucx
+    GIT_REPOSITORY      https://github.com/ROCm/ucx.git
+    GIT_TAG             v1.17x
+    PREFIX              ${CMAKE_BINARY_DIR}/ucx
+    CONFIGURE_COMMAND   ./autogen.sh && ./configure --prefix=${THIRD_PARTY_INSTALL_DIR} --with-rocm=/opt/rocm --enable-mt
+    BUILD_COMMAND       make -j$(nproc)
+    INSTALL_COMMAND     make install
+    UPDATE_DISCONNECTED TRUE
+)
+
+ExternalProject_Add(
+    ompi
+    GIT_REPOSITORY      https://github.com/open-mpi/ompi.git
+    GIT_TAG             v5.0.x
+    PREFIX              ${CMAKE_BINARY_DIR}/ompi
+    CONFIGURE_COMMAND   ./autogen.pl && ./configure --prefix=${THIRD_PARTY_INSTALL_DIR} --with-rocm=/opt/rocm --with-ucx=${THIRD_PARTY_INSTALL_DIR}/ucx --disable-sphinx --disable-oshmem --disable-mpi-fortran --with-hwloc=internal --with-libevent=internal --with-prrte=internal
+    BUILD_COMMAND       make -j$(nproc)
+    INSTALL_COMMAND     make install
+    DEPENDS             ucx
+    UPDATE_DISCONNECTED TRUE
+)
+
+add_custom_target(
+    install_third_party
+    DEPENDS ucx ompi
+    COMMENT "Installing UCX and OpenMPI"
+)
