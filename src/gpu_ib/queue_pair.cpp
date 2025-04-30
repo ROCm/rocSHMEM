@@ -137,7 +137,7 @@ __device__ void QueuePair::quiet() {
     uint32_t wave_cq_consumer_counter{0};
     do {
       if (is_lowest_active_lane) {
-        gpu_dprintf("quiet_counter_hard %u quiet_counter_soft %u\n", quiet_counter_hard, quiet_counter_soft);
+        GPU_DPRINTF("quiet_counter_hard %u quiet_counter_soft %u\n", quiet_counter_hard, quiet_counter_soft);
       }
       if (!__hip_atomic_load(&quiet_counter_hard, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT)) {
         return;
@@ -150,7 +150,6 @@ __device__ void QueuePair::quiet() {
       if (is_lowest_active_lane) {
         done_broadcast = __hip_atomic_compare_exchange_strong(&quiet_counter_soft, &quiet_val, quiet_val - quiet_amount, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
         if (done_broadcast) {
-          gpu_dprintf("succeeded on quiet_counter_soft CAS quiet_val %d quiet_amount %d\n", quiet_val, quiet_amount);
           wave_cq_consumer_counter = __hip_atomic_fetch_add(&cq_consumer_counter, quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
           cq_wave_broadcast[wavefront_id] = wave_cq_consumer_counter;
         }
@@ -170,7 +169,7 @@ __device__ void QueuePair::quiet() {
       uint8_t op_own{0};
       uint8_t owner_bit = (my_cq_consumer_counter >> cq_log_cnt) & 1;
       do {
-        gpu_dprintf(
+        GPU_DPRINTF(
          "Observing CQE at address %p at index %u\n"
          "%02x %02x %02x %02x %02x %02x %02x %02x "
          "%02x %02x %02x %02x %02x %02x %02x %02x "
@@ -190,13 +189,15 @@ __device__ void QueuePair::quiet() {
          d[48], d[49], d[50], d[51], d[52], d[53], d[54], d[55],
          d[56], d[57], d[58], d[59], d[60], d[61], d[62], d[63]);
 
-        op_own = __hip_atomic_load(&cqe_entry->op_own, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+//        op_own = __hip_atomic_load(&cqe_entry->op_own, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+        op_own = *((volatile uint8_t*)&cqe_entry->op_own);
 	bool my_ownership_vote = (op_own & 1) == owner_bit;
         bool my_opcode_vote = (op_own >> 4) != MLX5_CQE_INVALID;
         uint64_t votes = __ballot(my_ownership_vote && my_opcode_vote);
         vote_failed = __popcll(votes) < quiet_amount;
         if (!vote_failed) {
-	  be_wqe_counter = __hip_atomic_load(&cqe_entry->wqe_counter, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+//        be_wqe_counter = __hip_atomic_load(&cqe_entry->wqe_counter, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+          be_wqe_counter = *((volatile uint16_t*)&cqe_entry->wqe_counter);
 	}
       } while (vote_failed);
 
@@ -205,7 +206,9 @@ __device__ void QueuePair::quiet() {
       uint32_t wqe_id =  outstanding_wqes[wqe_counter];
       __hip_atomic_fetch_max(&wqe_broadcast[wavefront_id], wqe_id, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_WORKGROUP);
       uint8_t mlx5_invld_bits = MLX5_CQE_INVALID << 4 | owner_bit;
-      __hip_atomic_store(&cqe_entry->op_own, mlx5_invld_bits, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+      *((volatile uint8_t*)&cqe_entry->op_own) = mlx5_invld_bits;
+//      __hip_atomic_store(&cqe_entry->op_own, mlx5_invld_bits, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+      __threadfence_system();
       GPU_DPRINTF(
        "Clearing CQE at address %p at index %lu\n"
        "%02x %02x %02x %02x %02x %02x %02x %02x "
