@@ -50,15 +50,14 @@ foreach(SOURCE_FILE IN LISTS EXAMPLE_SOURCES)
     )
 
     foreach (target ${DEFAULT_GPUS})
-      list(APPEND static_link_flags --offload-arch=${target})
+      list(APPEND offload_flags --offload-arch=${target})
     endforeach()
-    list(JOIN static_link_flags " " flags_str)
 
     target_compile_options(
       ${EXECUTABLE_NAME}
       PRIVATE
-        ${flags_str}
-         -fgpu-rdc
+        ${offload_flags}
+        -fgpu-rdc
     )
 
     target_link_libraries(
@@ -66,7 +65,7 @@ foreach(SOURCE_FILE IN LISTS EXAMPLE_SOURCES)
       PRIVATE
         ${MPI_mpi_LIBRARY}
         ${MPI_mpicxx_LIBRARY}
-        ${flags_str}
+        ${offload_flags}
         -L${ROCSHMEM_HOME}/lib
         -lamdhip64
         -lhsa-runtime64

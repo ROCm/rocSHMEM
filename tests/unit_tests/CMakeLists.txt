@@ -121,15 +121,14 @@ if (BUILD_TESTS_ONLY)
   )
 
   foreach (target ${DEFAULT_GPUS})
-    list(APPEND static_link_flags --offload-arch=${target})
+    list(APPEND offload_flags --offload-arch=${target})
   endforeach()
-  list(JOIN static_link_flags " " flags_str)
 
   target_compile_options(
     ${PROJECT_NAME}
     PRIVATE
-      ${flags_str}
-       -fgpu-rdc
+      ${offload_flags}
+      -fgpu-rdc
   )
 
   target_link_libraries(
@@ -137,6 +136,7 @@ if (BUILD_TESTS_ONLY)
     PRIVATE
       ${MPI_mpi_LIBRARY}
       ${MPI_mpicxx_LIBRARY}
+      ${offload_flags}
       -L${ROCSHMEM_HOME}/lib
       -lamdhip64
       -lhsa-runtime64
