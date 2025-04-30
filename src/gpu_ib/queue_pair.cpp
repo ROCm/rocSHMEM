@@ -92,7 +92,7 @@ __device__ void QueuePair::dump() {
 __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint32_t my_sq_counter) {
   dump();
 
-  gpu_dprintf("writing to SQ_DBREC %p with counter value %d\n", dbrec, my_sq_counter);
+  GPU_DPRINTF("writing to SQ_DBREC %p with counter value %d\n", dbrec, my_sq_counter);
   swap_endian_store(const_cast<uint32_t*>(dbrec), my_sq_counter);
   __threadfence_system();
 
@@ -111,7 +111,7 @@ __device__ void QueuePair::quiet() {
   constexpr uint64_t ALL_ONES_MASK = -1;
   __shared__ uint64_t cq_wave_broadcast[BROADCAST_SIZE];
   __shared__ uint32_t wqe_broadcast[BROADCAST_SIZE];
-  __shared__ bool done_broadcast;
+  __shared__ bool done_broadcast[BROADCAST_SIZE];
 
   uint64_t active_thread_mask = __ballot(1);
   uint8_t num_active_lanes = __popcll(active_thread_mask);
@@ -125,11 +125,11 @@ __device__ void QueuePair::quiet() {
 
   cq_wave_broadcast[wavefront_id] = 0;
   wqe_broadcast[wavefront_id] = 0;
-  done_broadcast = false;
+  done_broadcast[wavefront_id] = false;
 
   while (true) {
     if (is_lowest_active_lane) {
-      done_broadcast = false;
+      done_broadcast[wavefront_id] = false;
       __threadfence_block();
     }
 
@@ -137,26 +137,29 @@ __device__ void QueuePair::quiet() {
     uint64_t quiet_amount{0};
     uint32_t wave_cq_consumer_counter{0};
     do {
+      uint32_t posted = __hip_atomic_load(&quiet_counter_posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+      uint32_t active = __hip_atomic_load(&quiet_counter_active, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+      uint32_t completed = __hip_atomic_load(&quiet_counter_completed, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
       if (is_lowest_active_lane) {
-        gpu_dprintf("quiet_counter_hard %u quiet_counter_soft %u\n", quiet_counter_hard, quiet_counter_soft);
+        GPU_DPRINTF("quiet_counter_posted %u quiet_counter_active %u quiet_counter_completed %u\n", quiet_counter_posted, quiet_counter_active, quiet_counter_completed);
       }
-      if (!__hip_atomic_load(&quiet_counter_hard, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT)) {
+      if (!(posted - completed)) {
         return;
       }
-      uint32_t quiet_val = __hip_atomic_load(&quiet_counter_soft, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+      uint64_t quiet_val = posted - active;
       if (!quiet_val) {
         continue;
       }
       quiet_amount = min(num_active_lanes, quiet_val);
       if (is_lowest_active_lane) {
-        done_broadcast = __hip_atomic_compare_exchange_strong(&quiet_counter_soft, &quiet_val, quiet_val - quiet_amount, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
-        if (done_broadcast) {
+        done_broadcast[wavefront_id] = __hip_atomic_compare_exchange_strong(&quiet_counter_active, &active, active + quiet_amount, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+        if (done_broadcast[wavefront_id]) {
           wave_cq_consumer_counter = __hip_atomic_fetch_add(&cq_consumer_counter, quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
           cq_wave_broadcast[wavefront_id] = wave_cq_consumer_counter;
         }
         __threadfence_block();
       }
-      done = done_broadcast;
+      done = done_broadcast[wavefront_id];
     } while (!done);
     wave_cq_consumer_counter = cq_wave_broadcast[wavefront_id];
     uint64_t my_cq_consumer_counter = wave_cq_consumer_counter + my_logical_lane_id;
@@ -230,18 +233,16 @@ __device__ void QueuePair::quiet() {
     if (is_lowest_active_lane) {
       uint64_t posted {0};
       do {
-        posted = __hip_atomic_load(&cq_consumer_counter_posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+        posted = __hip_atomic_load(&quiet_counter_completed, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
       } while (posted != wave_cq_consumer_counter);
 
-      gpu_dprintf("writing to CQ_DBREC %p with counter value %d\n", cq_dbrec, wave_cq_consumer_counter + quiet_amount);
+      GPU_DPRINTF("writing to CQ_DBREC %p with counter value %d\n", cq_dbrec, wave_cq_consumer_counter + quiet_amount);
       swap_endian_store(const_cast<uint32_t*>(cq_dbrec), (uint32_t)(wave_cq_consumer_counter + quiet_amount));
       __threadfence_system();
 
       uint32_t sunk_wqe_id = wqe_broadcast[wavefront_id];
       __hip_atomic_store(&sq_counter_sunk, sunk_wqe_id, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
-      __hip_atomic_fetch_add(&quiet_counter_hard, -quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
-
-      __hip_atomic_store(&cq_consumer_counter_posted, wave_cq_consumer_counter + quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+      __hip_atomic_fetch_add(&quiet_counter_completed, quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
     }
   }
 }
@@ -277,7 +278,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
     uint64_t posted = __hip_atomic_load(&sq_counter_db_posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
     uint64_t sunk = __hip_atomic_load(&sq_counter_sunk, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
     uint64_t num_active_sq_entries = posted - sunk;
-    uint64_t num_free_entries = sq_wqe_cnt - num_active_sq_entries;
+    uint64_t num_free_entries = min(sq_wqe_cnt, cq_cnt) - num_active_sq_entries;
     uint64_t num_entries_until_wave_last_entry = wave_sq_counter + num_active_lanes - posted;
     if (num_free_entries > num_entries_until_wave_last_entry) {
       break;
@@ -330,8 +331,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
     GPU_DPRINTF("ringing doorbell for sq_counter_db_posted %d\n", posted);
     ring_doorbell(*ctrl_wqe_8B_for_db, wave_sq_counter + num_wqes);
 
-    __hip_atomic_fetch_add(&quiet_counter_soft, num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
-    __hip_atomic_fetch_add(&quiet_counter_hard, num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+    __hip_atomic_fetch_add(&quiet_counter_posted, num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
     __hip_atomic_store(&sq_counter_db_posted, wave_sq_counter + num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
   }
 }

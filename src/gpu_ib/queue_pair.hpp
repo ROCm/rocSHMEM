@@ -180,9 +180,9 @@ class QueuePair {
   db_reg_t db{};
 
   uint32_t cq_consumer_counter{0};
-  uint32_t cq_consumer_counter_posted{0};
-  uint32_t quiet_counter_soft{0};
-  uint32_t quiet_counter_hard{0};
+  uint32_t quiet_counter_posted{0};
+  uint32_t quiet_counter_active{0};
+  uint32_t quiet_counter_completed{0};
 
   /*
    * struct mlx5dv_cq {
