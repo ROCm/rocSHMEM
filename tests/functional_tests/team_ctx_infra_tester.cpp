@@ -51,17 +51,26 @@ __global__ void TeamCtxInfraTest(ShmemContextType ctx_type,
    */
 
   rocshmem_wg_team_create_ctx(team[0], ctx_type, &ctx1);
-  assert (nullptr != ctx1.ctx_opaque);
+  if (nullptr == ctx1.ctx_opaque) {
+    printf("Create ctx1 on team[0] returned an invalid context!\n");
+    abort();
+  }
   rocshmem_wg_team_create_ctx(team[0], ctx_type, &ctx2);
-  assert (nullptr != ctx2.ctx_opaque);
+  if (nullptr == ctx2.ctx_opaque) {
+    printf("Create ctx2 on team[0] returned an invalid context!\n");
+    abort();
+  }
   rocshmem_wg_ctx_destroy(&ctx1);
   rocshmem_wg_team_create_ctx(team[0], ctx_type, &ctx3);
-  assert (nullptr != ctx3.ctx_opaque);
+  if (nullptr == ctx3.ctx_opaque) {
+    printf("Create ctx3 on team[0] returned an invalid context!\n");
+    abort();
+  }
 
   __syncthreads();
 
   if (ctx3.team_opaque != ctx2.team_opaque) {
-    printf("Incorrect for teams of ctx2 and ctx3 to not equal each other\n");
+    printf("Incorrect for teams of ctx2 and ctx3 to be different!\n");
     abort();
   }
 
@@ -76,12 +85,14 @@ __global__ void TeamCtxInfraTest(ShmemContextType ctx_type,
    */
   for (int team_i = 0; team_i < NUM_TEAMS; team_i++) {
     rocshmem_wg_team_create_ctx(team[team_i], ctx_type, &ctx[team_i]);
-    assert (nullptr != ctx.ctx_opaque);
+    if (nullptr == ctx[team_i].ctx_opaque) {
+      printf("Create ctx on team[%d] returned an invalid context!\n", team_i);
+      abort();
+    }
   }
 
   if (ctx[0].team_opaque == ctx[NUM_TEAMS - 1].team_opaque) {
-    printf(
-        "Incorrect for ctx[0] team and ctx[NUM_TEAMS-1] to equal each other\n");
+    printf("Incorrect for teams of ctx[0] and ctx[NUM_TEAMS-1] to be equal to each other\n");
     abort();
   }
 
@@ -106,12 +117,22 @@ void TeamCtxInfraTester::resetBuffers(uint64_t size) {}
 void TeamCtxInfraTester::preLaunchKernel() {
   int n_pes = rocshmem_team_n_pes(ROCSHMEM_TEAM_WORLD);
 
+  // validate we can run the test
+  if (auto maximum_num_contexts_str = getenv("ROCSHMEM_MAX_NUM_CONTEXTS")) {
+    int max_ctx = atoi(maximum_num_contexts_str);
+    if (max_ctx <= NUM_TEAMS) {
+      printf("ROCSHMEM_MAX_NUM_CONTEXTS=%d is smaller than NUM_TEAMS %d, invalid test setup!\n", max_ctx, NUM_TEAMS);
+      assert(max_ctx > NUM_TEAMS);
+      abort();
+    }
+  }
+
   for (int team_i = 0; team_i < NUM_TEAMS; team_i++) {
     team_world_dup[team_i] = ROCSHMEM_TEAM_INVALID;
     rocshmem_team_split_strided(ROCSHMEM_TEAM_WORLD, 0, 1, n_pes, nullptr, 0,
                                  &team_world_dup[team_i]);
     if (team_world_dup[team_i] == ROCSHMEM_TEAM_INVALID) {
-      printf("Team %d is invalid!\n", team_i);
+      printf("Created team %d is invalid!\n", team_i);
       abort();
     }
   }
@@ -121,7 +142,7 @@ void TeamCtxInfraTester::preLaunchKernel() {
   rocshmem_team_split_strided(ROCSHMEM_TEAM_WORLD, 0, 1, n_pes, nullptr, 0,
                                &new_team);
   if (new_team != ROCSHMEM_TEAM_INVALID) {
-    printf("new team is not invalid\n");
+    printf("Created new team should have been invalid!\n");
     abort();
   }
 }
