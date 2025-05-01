@@ -68,9 +68,9 @@ __device__ void QueuePair::quiet() {
     uint64_t quiet_amount{0};
     uint32_t wave_cq_consumer{0};
     do {
-      uint32_t posted = __hip_atomic_load(&quiet_posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
-      uint32_t active = __hip_atomic_load(&quiet_active, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
-      uint32_t completed = __hip_atomic_load(&quiet_completed, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+      uint32_t posted = __hip_atomic_load(&quiet_posted, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+      uint32_t active = __hip_atomic_load(&quiet_active, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+      uint32_t completed = __hip_atomic_load(&quiet_completed, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
       if (!(posted - completed)) {
         return;
       }
@@ -80,9 +80,9 @@ __device__ void QueuePair::quiet() {
       }
       quiet_amount = min(num_active_lanes, quiet_val);
       if (is_leader) {
-        done = __hip_atomic_compare_exchange_strong(&quiet_active, &active, active + quiet_amount, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+        done = __hip_atomic_compare_exchange_strong(&quiet_active, &active, active + quiet_amount, __ATOMIC_RELAXED, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
         if (done) {
-          wave_cq_consumer = __hip_atomic_fetch_add(&cq_consumer, quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+          wave_cq_consumer = __hip_atomic_fetch_add(&cq_consumer, quiet_amount, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
         }
       }
       done = __shfl(done, leader_phys_lane_id);
@@ -111,7 +111,7 @@ __device__ void QueuePair::quiet() {
       uint16_t wqe_counter;
       swap_endian_store(const_cast<uint16_t*>(&wqe_counter), reinterpret_cast<uint16_t>(be_wqe_counter));
       uint32_t wqe_id =  outstanding_wqes[wqe_counter];
-      __hip_atomic_fetch_max(&wqe_broadcast[wavefront_id], wqe_id, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_WORKGROUP);
+      __hip_atomic_fetch_max(&wqe_broadcast[wavefront_id], wqe_id, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_WORKGROUP);
       uint8_t mlx5_invld_bits = MLX5_CQE_INVALID << 4 | owner_bit;
       *((volatile uint8_t*)&cqe_entry->op_own) = mlx5_invld_bits;
       __atomic_signal_fence(__ATOMIC_SEQ_CST);
@@ -119,7 +119,7 @@ __device__ void QueuePair::quiet() {
     if (is_leader) {
       uint64_t posted {0};
       do {
-        posted = __hip_atomic_load(&quiet_completed, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+        posted = __hip_atomic_load(&quiet_completed, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
       } while (posted != wave_cq_consumer);
 
       swap_endian_store(const_cast<uint32_t*>(cq_dbrec), (uint32_t)(wave_cq_consumer + quiet_amount));
@@ -183,7 +183,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   if (is_lowest_active_lane) {
     uint64_t posted {0};
     do {
-      posted = __hip_atomic_load(&sq_db_touched, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+      posted = __hip_atomic_load(&sq_db_touched, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
     } while (posted != wave_sq_counter);
 
     uint64_t* ctrl_wqe_8B_for_db = reinterpret_cast<uint64_t*>(&base_ptr[64 * ((wave_sq_counter + num_wqes - 1) % sq_wqe_cnt)]);
