@@ -43,7 +43,7 @@ __device__ uint8_t QueuePair::get_cq_error_syndrome(mlx5_cqe64 *cqe_entry) {
 
 __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint32_t my_sq_counter) {
   swap_endian_store(const_cast<uint32_t*>(dbrec), my_sq_counter);
-  __threadfence_system();
+  __atomic_signal_fence(__ATOMIC_SEQ_CST);
 
   __hip_atomic_store(db.ptr, db_val, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
   uint64_t db_uint = __hip_atomic_load(&db.uint, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
@@ -68,9 +68,9 @@ __device__ void QueuePair::quiet() {
     uint64_t quiet_amount{0};
     uint32_t wave_cq_consumer{0};
     do {
-      uint32_t posted = __hip_atomic_load(&quiet_posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
-      uint32_t active = __hip_atomic_load(&quiet_active, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
-      uint32_t completed = __hip_atomic_load(&quiet_completed, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+      uint32_t posted = __hip_atomic_load(&quiet_posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+      uint32_t active = __hip_atomic_load(&quiet_active, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+      uint32_t completed = __hip_atomic_load(&quiet_completed, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
       if (!(posted - completed)) {
         return;
       }
@@ -80,7 +80,7 @@ __device__ void QueuePair::quiet() {
       }
       quiet_amount = min(num_active_lanes, quiet_val);
       if (is_leader) {
-        done = __hip_atomic_compare_exchange_strong(&quiet_active, &active, active + quiet_amount, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+        done = __hip_atomic_compare_exchange_strong(&quiet_active, &active, active + quiet_amount, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
         if (done) {
           wave_cq_consumer = __hip_atomic_fetch_add(&cq_consumer, quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
         }
@@ -114,20 +114,20 @@ __device__ void QueuePair::quiet() {
       __hip_atomic_fetch_max(&wqe_broadcast[wavefront_id], wqe_id, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_WORKGROUP);
       uint8_t mlx5_invld_bits = MLX5_CQE_INVALID << 4 | owner_bit;
       *((volatile uint8_t*)&cqe_entry->op_own) = mlx5_invld_bits;
-      __threadfence_system();
+      __atomic_signal_fence(__ATOMIC_SEQ_CST);
     }
     if (is_leader) {
       uint64_t posted {0};
       do {
-        posted = __hip_atomic_load(&quiet_completed, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+        posted = __hip_atomic_load(&quiet_completed, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
       } while (posted != wave_cq_consumer);
 
       swap_endian_store(const_cast<uint32_t*>(cq_dbrec), (uint32_t)(wave_cq_consumer + quiet_amount));
-      __threadfence_system();
+      __atomic_signal_fence(__ATOMIC_SEQ_CST);
 
       uint32_t sunk_wqe_id = wqe_broadcast[wavefront_id];
       __hip_atomic_store(&sq_sunk, sunk_wqe_id, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
-      __hip_atomic_fetch_add(&quiet_completed, quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+      __hip_atomic_fetch_add(&quiet_completed, quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
     }
   }
 }
@@ -171,13 +171,13 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
     quiet();
   } while (true);
 
-  outstanding_wqes[my_sq_counter % 65536] = my_sq_counter;
+  outstanding_wqes[my_sq_counter % OUTSTANDING_TABLE_SIZE] = my_sq_counter;
 
   SegmentBuilder seg_build(my_sq_index, sq_buf);
   seg_build.update_ctrl_seg(my_sq_counter, opcode, 0, qp_num, MLX5_WQE_CTRL_CQ_UPDATE, 3, 0, 0);
   seg_build.update_raddr_seg(raddr, rkey);
   seg_build.update_data_seg(laddr, size, lkey);
-  __threadfence_system();
+  __atomic_signal_fence(__ATOMIC_SEQ_CST);
 
   uint8_t *base_ptr = reinterpret_cast<uint8_t*>(sq_buf);
   if (is_lowest_active_lane) {
@@ -189,7 +189,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
     uint64_t* ctrl_wqe_8B_for_db = reinterpret_cast<uint64_t*>(&base_ptr[64 * ((wave_sq_counter + num_wqes - 1) % sq_wqe_cnt)]);
     ring_doorbell(*ctrl_wqe_8B_for_db, wave_sq_counter + num_wqes);
 
-    __hip_atomic_fetch_add(&quiet_posted, num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+    __hip_atomic_fetch_add(&quiet_posted, num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
     __hip_atomic_store(&sq_db_touched, wave_sq_counter + num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
   }
 }
