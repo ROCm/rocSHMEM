@@ -35,7 +35,6 @@
 #include <infiniband/mlx5dv.h>
 
 #include "atomic_return.hpp"
-#include "sync/ticket_mutex.hpp"
 
 namespace rocshmem {
 
@@ -57,20 +56,6 @@ class QueuePair {
    * @param[in] backend GPUIBBackend needed for member access.
    */
   explicit QueuePair(GPUIBBackend *backend);
-
-  /**
-   * @brief Inspect completion queue and possibly wait for free space.
-   *
-   * @param[in] num_msgs Number of entries needing space in completion queue.
-   */
-  __device__ void waitCQSpace(int num_msgs);
-
-  /**
-   * @brief Inspect send queue and possibly wait for free space.
-   *
-   * @param[in] num_msgs Number of entries needing space in send queue.
-   */
-  __device__ void waitSQSpace(int num_msgs);
 
   /**
    * @brief Create and enqueue a non-blocking put work queue entry (wqe).
@@ -151,11 +136,6 @@ class QueuePair {
    * @param[in] opcode Operation to be performed.
    */
   __device__ __attribute__((noinline)) void post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
-
-  /**
-   * @brief Helper method to drain completion queue entries.
-   */
-  __device__ __attribute__((noinline)) void quiet_internal();
 
   /**
    * @brief Helper method to ring the doorbell
