@@ -126,7 +126,7 @@ __device__ void QueuePair::quiet() {
       __threadfence_system();
 
       uint32_t sunk_wqe_id = wqe_broadcast[wavefront_id];
-      __hip_atomic_store(&sq_counter_sunk, sunk_wqe_id, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+      __hip_atomic_store(&sq_sunk, sunk_wqe_id, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
       __hip_atomic_fetch_add(&quiet_completed, quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
     }
   }
@@ -148,7 +148,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   uint64_t wave_sq_counter{0};
 
   if (is_lowest_active_lane) {
-    wave_sq_counter = __hip_atomic_fetch_add(&sq_counter, num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+    wave_sq_counter = __hip_atomic_fetch_add(&sq_posted, num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
   }
   uint8_t wavefront_id = get_flat_block_id() / __AMDGCN_WAVEFRONT_SIZE;
   if (is_lowest_active_lane) {
@@ -160,8 +160,8 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   uint64_t my_sq_index = my_sq_counter % sq_wqe_cnt;
 
   do {
-    uint64_t posted = __hip_atomic_load(&sq_counter_db_posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
-    uint64_t sunk = __hip_atomic_load(&sq_counter_sunk, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+    uint64_t posted = __hip_atomic_load(&sq_db_touched, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+    uint64_t sunk = __hip_atomic_load(&sq_sunk, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
     uint64_t num_active_sq_entries = posted - sunk;
     uint64_t num_free_entries = min(sq_wqe_cnt, cq_cnt) - num_active_sq_entries;
     uint64_t num_entries_until_wave_last_entry = wave_sq_counter + num_active_lanes - posted;
@@ -183,14 +183,14 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   if (is_lowest_active_lane) {
     uint64_t posted {0};
     do {
-      posted = __hip_atomic_load(&sq_counter_db_posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+      posted = __hip_atomic_load(&sq_db_touched, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
     } while (posted != wave_sq_counter);
 
     uint64_t* ctrl_wqe_8B_for_db = reinterpret_cast<uint64_t*>(&base_ptr[64 * ((wave_sq_counter + num_wqes - 1) % sq_wqe_cnt)]);
     ring_doorbell(*ctrl_wqe_8B_for_db, wave_sq_counter + num_wqes);
 
     __hip_atomic_fetch_add(&quiet_posted, num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
-    __hip_atomic_store(&sq_counter_db_posted, wave_sq_counter + num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+    __hip_atomic_store(&sq_db_touched, wave_sq_counter + num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
   }
 }
 
@@ -198,7 +198,7 @@ __device__ void QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *laddr, 
                                                  int64_t atomic_data, int64_t atomic_cmp, uint64_t atomic_ret_pos) {
   uint32_t num_wqes = 1;
 
-  uint64_t my_sq_counter = atomicAdd(&sq_counter, num_wqes);
+  uint64_t my_sq_counter = atomicAdd(&sq_posted, num_wqes);
   uint64_t my_sq_index = my_sq_counter % sq_wqe_cnt;
 
   uint32_t lkey_in_stack_frame = lkey;

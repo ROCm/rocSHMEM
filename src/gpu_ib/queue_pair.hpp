@@ -225,9 +225,9 @@ class QueuePair {
   uint64_t *sq_buf{nullptr};
   uint64_t *sq_buf_head{nullptr};
   uint16_t sq_wqe_cnt{0};
-  uint32_t sq_counter{0};
-  uint32_t sq_counter_db_posted{0};
-  uint32_t sq_counter_sunk{0};
+  uint32_t sq_posted{0};
+  uint32_t sq_db_touched{0};
+  uint32_t sq_sunk{0};
 
   uint32_t outstanding_wqes[65536]{0};
 
