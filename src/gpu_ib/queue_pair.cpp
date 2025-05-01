@@ -41,64 +41,9 @@ __device__ uint8_t QueuePair::get_cq_error_syndrome(mlx5_cqe64 *cqe_entry) {
   return cqe_err->syndrome;
 }
 
-void QueuePair::dump() {
-  DPRINTF("\n"
-         "===============================================\n"
-         "           HOST DUMPING SHMEM INTERNAL QP\n"
-         "===============================================\n"
-         "  (char*const*)        base_heap           = %p\n"
-         "  (uint32_t)           sq_counter          = %u\n"
-         "  (uint32_t)           cq_consumer_counter = %u\n"
-         "  (mlx5_cqe64*)        cq_buf_head         = %p\n"
-         "  (mlx5_cqe64*)        cq_buf              = %p\n"
-         "  (volatile uint32_t*) cq_dbrec            = %p\n"
-         "  (uint32_t)           cq_cnt              = %u\n"
-         "  (uint32_t)           cq_log_cnt          = 0x%x\n"
-         "  (volatile uint32_t*) dbrec               = %p\n"
-         "  (uint64_t*)          sq_buf              = %p\n"
-         "  (uint64_t*)          sq_buf_head         = %p\n"
-         "  (uint16_t)           sq_wqe_cnt          = %u\n"
-         "  (uint32_t)           qp_num              = 0x%x\n"
-         "  (uint32_t)           rkey                = 0x%x\n"
-         "  (uint32_t)           lkey                = 0x%x\n",
-         base_heap, sq_counter, cq_consumer_counter, cq_buf_head,
-         cq_buf, cq_dbrec, cq_cnt, cq_log_cnt, dbrec, sq_buf, sq_buf_head, sq_wqe_cnt, qp_num, rkey, lkey);
-}
-
-__device__ void QueuePair::dump() {
-  GPU_DPRINTF("\n"
-	      "===============================================\n"
-              "        DEVICE DUMPING SHMEM INTERNAL QP\n"
-              "===============================================\n"
-              "  (char*const*)        base_heap           = %p\n"
-	      "  (uint32_t)           sq_counter          = %u\n"
-	      "  (uint32_t)           cq_consumer_counter = %u\n"
-	      "  (mlx5_cqe64*)        cq_buf_head         = %p\n"
-	      "  (mlx5_cqe64*)        cq_buf              = %p\n"
-	      "  (volatile uint32_t*) cq_dbrec            = %p\n"
-	      "  (uint32_t)           cq_cnt              = %u\n"
-	      "  (uint32_t)           cq_log_cnt          = 0x%x\n"
-	      "  (volatile uint32_t*) dbrec               = %p\n"
-	      "  (uint64_t*)          sq_buf              = %p\n"
-	      "  (uint64_t*)          sq_buf_head         = %p\n"
-	      "  (uint16_t)           sq_wqe_cnt          = %u\n"
-	      "  (uint32_t)           qp_num              = 0x%x\n"
-	      "  (uint32_t)           rkey                = 0x%x\n"
-	      "  (uint32_t)           lkey                = 0x%x\n",
-	      base_heap, sq_counter, cq_consumer_counter, cq_buf_head,
-	      cq_buf, cq_dbrec, cq_cnt, cq_log_cnt, dbrec, sq_buf, sq_buf_head, sq_wqe_cnt, qp_num, rkey, lkey);
-}
-
 __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint32_t my_sq_counter) {
-  dump();
-
-  GPU_DPRINTF("writing to SQ_DBREC %p with counter value %d\n", dbrec, my_sq_counter);
   swap_endian_store(const_cast<uint32_t*>(dbrec), my_sq_counter);
   __threadfence_system();
-
-  uint8_t *db_u8p = reinterpret_cast<uint8_t*>(&db_val);
-  GPU_DPRINTF("storing db_val %02x %02x %02x %02x %02x %02x %02x %02x (%lx) to db.ptr %p\n",
-	      db_u8p[0], db_u8p[1], db_u8p[2], db_u8p[3], db_u8p[4], db_u8p[5], db_u8p[6], db_u8p[7], db_val, db.ptr);
 
   __hip_atomic_store(db.ptr, db_val, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
   uint64_t db_uint = __hip_atomic_load(&db.uint, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
@@ -140,9 +85,6 @@ __device__ void QueuePair::quiet() {
       uint32_t posted = __hip_atomic_load(&quiet_counter_posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
       uint32_t active = __hip_atomic_load(&quiet_counter_active, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
       uint32_t completed = __hip_atomic_load(&quiet_counter_completed, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
-      if (is_lowest_active_lane) {
-        GPU_DPRINTF("quiet_counter_posted %u quiet_counter_active %u quiet_counter_completed %u\n", quiet_counter_posted, quiet_counter_active, quiet_counter_completed);
-      }
       if (!(posted - completed)) {
         return;
       }
@@ -173,26 +115,6 @@ __device__ void QueuePair::quiet() {
       uint8_t op_own{0};
       uint8_t owner_bit = (my_cq_consumer_counter >> cq_log_cnt) & 1;
       do {
-        GPU_DPRINTF(
-         "Observing CQE at address %p at index %u\n"
-         "%02x %02x %02x %02x %02x %02x %02x %02x "
-         "%02x %02x %02x %02x %02x %02x %02x %02x "
-         "%02x %02x %02x %02x %02x %02x %02x %02x "
-         "%02x %02x %02x %02x %02x %02x %02x %02x "
-         "%02x %02x %02x %02x %02x %02x %02x %02x "
-         "%02x %02x %02x %02x %02x %02x %02x %02x "
-         "%02x %02x %02x %02x %02x %02x %02x %02x "
-         "%02x %02x %02x %02x %02x %02x %02x %02x\n",
-         cqe_entry, my_cq_index,
-          d[0],  d[1],  d[2],  d[3],  d[4],  d[5],  d[6],  d[7],
-          d[8],  d[9], d[10], d[11], d[12], d[13], d[14], d[15],
-         d[16], d[17], d[18], d[19], d[20], d[21], d[22], d[23],
-         d[24], d[25], d[26], d[27], d[28], d[29], d[30], d[31],
-         d[32], d[33], d[34], d[35], d[36], d[37], d[38], d[39],
-         d[40], d[41], d[42], d[43], d[44], d[45], d[46], d[47],
-         d[48], d[49], d[50], d[51], d[52], d[53], d[54], d[55],
-         d[56], d[57], d[58], d[59], d[60], d[61], d[62], d[63]);
-
         op_own = *((volatile uint8_t*)&cqe_entry->op_own);
 	bool my_ownership_vote = (op_own & 1) == owner_bit;
         bool my_opcode_vote = (op_own >> 4) != MLX5_CQE_INVALID;
@@ -210,25 +132,6 @@ __device__ void QueuePair::quiet() {
       uint8_t mlx5_invld_bits = MLX5_CQE_INVALID << 4 | owner_bit;
       *((volatile uint8_t*)&cqe_entry->op_own) = mlx5_invld_bits;
       __threadfence_system();
-      GPU_DPRINTF(
-       "Clearing CQE at address %p at index %lu\n"
-       "%02x %02x %02x %02x %02x %02x %02x %02x "
-       "%02x %02x %02x %02x %02x %02x %02x %02x "
-       "%02x %02x %02x %02x %02x %02x %02x %02x "
-       "%02x %02x %02x %02x %02x %02x %02x %02x "
-       "%02x %02x %02x %02x %02x %02x %02x %02x "
-       "%02x %02x %02x %02x %02x %02x %02x %02x "
-       "%02x %02x %02x %02x %02x %02x %02x %02x "
-       "%02x %02x %02x %02x %02x %02x %02x %02x\n",
-       cqe_entry, my_cq_index,
-        d[0],  d[1],  d[2],  d[3],  d[4],  d[5],  d[6],  d[7],
-        d[8],  d[9], d[10], d[11], d[12], d[13], d[14], d[15],
-       d[16], d[17], d[18], d[19], d[20], d[21], d[22], d[23],
-       d[24], d[25], d[26], d[27], d[28], d[29], d[30], d[31],
-       d[32], d[33], d[34], d[35], d[36], d[37], d[38], d[39],
-       d[40], d[41], d[42], d[43], d[44], d[45], d[46], d[47],
-       d[48], d[49], d[50], d[51], d[52], d[53], d[54], d[55],
-       d[56], d[57], d[58], d[59], d[60], d[61], d[62], d[63]);
     }
     if (is_lowest_active_lane) {
       uint64_t posted {0};
@@ -236,7 +139,6 @@ __device__ void QueuePair::quiet() {
         posted = __hip_atomic_load(&quiet_counter_completed, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
       } while (posted != wave_cq_consumer_counter);
 
-      GPU_DPRINTF("writing to CQ_DBREC %p with counter value %d\n", cq_dbrec, wave_cq_consumer_counter + quiet_amount);
       swap_endian_store(const_cast<uint32_t*>(cq_dbrec), (uint32_t)(wave_cq_consumer_counter + quiet_amount));
       __threadfence_system();
 
@@ -295,27 +197,6 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   __threadfence_system();
 
   uint8_t *base_ptr = reinterpret_cast<uint8_t*>(sq_buf);
-  const uint8_t *d = reinterpret_cast<const uint8_t*>(&base_ptr[16 * 4 * my_sq_index]);
-  GPU_DPRINTF(
-   "WQE post to address %p at index %lu\n"
-   "%02x %02x %02x %02x %02x %02x %02x %02x "
-   "%02x %02x %02x %02x %02x %02x %02x %02x "
-   "%02x %02x %02x %02x %02x %02x %02x %02x "
-   "%02x %02x %02x %02x %02x %02x %02x %02x "
-   "%02x %02x %02x %02x %02x %02x %02x %02x "
-   "%02x %02x %02x %02x %02x %02x %02x %02x "
-   "%02x %02x %02x %02x %02x %02x %02x %02x "
-   "%02x %02x %02x %02x %02x %02x %02x %02x\n",
-   sq_buf, my_sq_index,
-    d[0],  d[1],  d[2],  d[3],  d[4],  d[5],  d[6],  d[7],
-    d[8],  d[9], d[10], d[11], d[12], d[13], d[14], d[15],
-   d[16], d[17], d[18], d[19], d[20], d[21], d[22], d[23],
-   d[24], d[25], d[26], d[27], d[28], d[29], d[30], d[31],
-   d[32], d[33], d[34], d[35], d[36], d[37], d[38], d[39],
-   d[40], d[41], d[42], d[43], d[44], d[45], d[46], d[47],
-   d[48], d[49], d[50], d[51], d[52], d[53], d[54], d[55],
-   d[56], d[57], d[58], d[59], d[60], d[61], d[62], d[63]);
-
   if (is_lowest_active_lane) {
     uint64_t posted {0};
     do {
@@ -323,12 +204,6 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
     } while (posted != wave_sq_counter);
 
     uint64_t* ctrl_wqe_8B_for_db = reinterpret_cast<uint64_t*>(&base_ptr[64 * ((wave_sq_counter + num_wqes - 1) % sq_wqe_cnt)]);
-
-    uint8_t *db_u8p = reinterpret_cast<uint8_t*>(ctrl_wqe_8B_for_db);
-    GPU_DPRINTF("post_wqe_rma::ctrl_wqe_8B_for_db %02x %02x %02x %02x %02x %02x %02x %02x (%lx)\n",
-                 db_u8p[0], db_u8p[1], db_u8p[2], db_u8p[3], db_u8p[4], db_u8p[5], db_u8p[6], db_u8p[7], *ctrl_wqe_8B_for_db);
-
-    GPU_DPRINTF("ringing doorbell for sq_counter_db_posted %d\n", posted);
     ring_doorbell(*ctrl_wqe_8B_for_db, wave_sq_counter + num_wqes);
 
     __hip_atomic_fetch_add(&quiet_counter_posted, num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);

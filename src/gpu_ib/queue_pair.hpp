@@ -121,12 +121,6 @@ class QueuePair {
    */
   __device__ void atomic_nofetch(void *dest, int64_t value, int64_t cond, int pe, uint8_t atomic_op);
 
-  /**
-   * @brief Dump all members
-   */
-  void dump();
-  __device__ void dump();
-
   atomic_ret_t atomic_ret{};
 
   char *const *base_heap{nullptr};

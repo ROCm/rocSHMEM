@@ -140,7 +140,6 @@ void NetworkImpl::networkHostInit(GPUIBContext *ctx, int context_id) {
     auto *qp = ctx->getQueuePair(i);
     qp->atomic_ret.atomic_base_ptr = &atomic_ret->atomic_base_ptr[max_nb_atomic * context_id];
     qp->base_heap = ctx->base_heap;
-    qp->dump();
   }
 }
 
