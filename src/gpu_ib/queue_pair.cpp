@@ -66,7 +66,7 @@ __device__ void QueuePair::quiet() {
   while (true) {
     bool done{false};
     uint64_t quiet_amount{0};
-    uint32_t wave_cq_consumer_counter{0};
+    uint32_t wave_cq_consumer{0};
     do {
       uint32_t posted = __hip_atomic_load(&quiet_posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
       uint32_t active = __hip_atomic_load(&quiet_active, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
@@ -82,21 +82,21 @@ __device__ void QueuePair::quiet() {
       if (is_leader) {
         done = __hip_atomic_compare_exchange_strong(&quiet_active, &active, active + quiet_amount, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
         if (done) {
-          wave_cq_consumer_counter = __hip_atomic_fetch_add(&cq_consumer_counter, quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+          wave_cq_consumer = __hip_atomic_fetch_add(&cq_consumer, quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
         }
       }
       done = __shfl(done, leader_phys_lane_id);
     } while (!done);
-    wave_cq_consumer_counter = __shfl(wave_cq_consumer_counter, leader_phys_lane_id);
-    uint64_t my_cq_consumer_counter = wave_cq_consumer_counter + my_logical_lane_id;
-    uint64_t my_cq_index = my_cq_consumer_counter % cq_cnt;
+    wave_cq_consumer = __shfl(wave_cq_consumer, leader_phys_lane_id);
+    uint64_t my_cq_consumer = wave_cq_consumer + my_logical_lane_id;
+    uint64_t my_cq_index = my_cq_consumer % cq_cnt;
 
     if (my_logical_lane_id < quiet_amount) {
       volatile mlx5_cqe64 *cqe_entry = &cq_buf[my_cq_index];
       bool vote_failed{true};
       uint16_t be_wqe_counter{0};
       uint8_t op_own{0};
-      uint8_t owner_bit = (my_cq_consumer_counter >> cq_log_cnt) & 1;
+      uint8_t owner_bit = (my_cq_consumer >> cq_log_cnt) & 1;
       do {
         op_own = *((volatile uint8_t*)&cqe_entry->op_own);
 	bool my_ownership_vote = (op_own & 1) == owner_bit;
@@ -120,9 +120,9 @@ __device__ void QueuePair::quiet() {
       uint64_t posted {0};
       do {
         posted = __hip_atomic_load(&quiet_completed, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
-      } while (posted != wave_cq_consumer_counter);
+      } while (posted != wave_cq_consumer);
 
-      swap_endian_store(const_cast<uint32_t*>(cq_dbrec), (uint32_t)(wave_cq_consumer_counter + quiet_amount));
+      swap_endian_store(const_cast<uint32_t*>(cq_dbrec), (uint32_t)(wave_cq_consumer + quiet_amount));
       __threadfence_system();
 
       uint32_t sunk_wqe_id = wqe_broadcast[wavefront_id];

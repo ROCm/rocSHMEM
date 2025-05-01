@@ -173,7 +173,7 @@ class QueuePair {
 
   db_reg_t db{};
 
-  uint32_t cq_consumer_counter{0};
+  uint32_t cq_consumer{0};
   uint32_t quiet_posted{0};
   uint32_t quiet_active{0};
   uint32_t quiet_completed{0};
