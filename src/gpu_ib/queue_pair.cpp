@@ -133,29 +133,18 @@ __device__ void QueuePair::quiet() {
 }
 
 __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
-  constexpr size_t SQ_BROADCAST_SIZE = 1024 / __AMDGCN_WAVEFRONT_SIZE;
-  constexpr uint64_t ALL_ONES_MASK = -1;
-  __shared__ uint64_t sq_wave_broadcast[SQ_BROADCAST_SIZE];
-  uint64_t active_thread_mask = __ballot(1);
-  uint8_t num_active_lanes = __popcll(active_thread_mask);
-  uint8_t my_physical_lane_id = __lane_id();
-  uint64_t lane_mask{ALL_ONES_MASK << my_physical_lane_id};
-  uint64_t inverted_mask{~lane_mask};
-  uint64_t lower_active_lanes{active_thread_mask & inverted_mask};
-  uint8_t my_logical_lane_id = __popcll(lower_active_lanes);
-  bool is_lowest_active_lane{my_logical_lane_id == 0};
+  uint64_t activemask = __ballot(1);
+  uint8_t num_active_lanes = __popcll(activemask);
+  uint8_t my_logical_lane_id = __popcll(activemask & __lanemask_lt());
+  bool is_leader{my_logical_lane_id == 0};
+  const uint64_t leader_phys_lane_id = __ffsll((unsigned long long)activemask) - 1;
   uint8_t num_wqes{num_active_lanes};
   uint64_t wave_sq_counter{0};
 
-  if (is_lowest_active_lane) {
+  if (is_leader) {
     wave_sq_counter = __hip_atomic_fetch_add(&sq_posted, num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
   }
-  uint8_t wavefront_id = get_flat_block_id() / __AMDGCN_WAVEFRONT_SIZE;
-  if (is_lowest_active_lane) {
-    sq_wave_broadcast[wavefront_id] = wave_sq_counter;
-    __threadfence_block();
-  }
-  wave_sq_counter = sq_wave_broadcast[wavefront_id];
+  wave_sq_counter = __shfl(wave_sq_counter, leader_phys_lane_id);
   uint64_t my_sq_counter = wave_sq_counter + my_logical_lane_id;
   uint64_t my_sq_index = my_sq_counter % sq_wqe_cnt;
 
@@ -180,7 +169,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   __atomic_signal_fence(__ATOMIC_SEQ_CST);
 
   uint8_t *base_ptr = reinterpret_cast<uint8_t*>(sq_buf);
-  if (is_lowest_active_lane) {
+  if (is_leader) {
     uint64_t posted {0};
     do {
       posted = __hip_atomic_load(&sq_db_touched, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
