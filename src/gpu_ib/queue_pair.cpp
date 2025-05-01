@@ -41,7 +41,7 @@ __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint32_t my_sq_counter
   __atomic_signal_fence(__ATOMIC_SEQ_CST);
 
   __hip_atomic_store(db.ptr, db_val, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
-  uint64_t db_uint = __hip_atomic_load(&db.uint, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+  uint64_t db_uint = __hip_atomic_load(&db.uint, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
   db_uint ^= 0x100;
   __hip_atomic_store(&db.uint, db_uint, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
 }
@@ -137,15 +137,15 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   uint64_t wave_sq_counter{0};
 
   if (is_leader) {
-    wave_sq_counter = __hip_atomic_fetch_add(&sq_posted, num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+    wave_sq_counter = __hip_atomic_fetch_add(&sq_posted, num_wqes, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
   }
   wave_sq_counter = __shfl(wave_sq_counter, leader_phys_lane_id);
   uint64_t my_sq_counter = wave_sq_counter + my_logical_lane_id;
   uint64_t my_sq_index = my_sq_counter % sq_wqe_cnt;
 
   do {
-    uint64_t posted = __hip_atomic_load(&sq_db_touched, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
-    uint64_t sunk = __hip_atomic_load(&sq_sunk, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+    uint64_t posted = __hip_atomic_load(&sq_db_touched, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+    uint64_t sunk = __hip_atomic_load(&sq_sunk, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
     uint64_t num_active_sq_entries = posted - sunk;
     uint64_t num_free_entries = min(sq_wqe_cnt, cq_cnt) - num_active_sq_entries;
     uint64_t num_entries_until_wave_last_entry = wave_sq_counter + num_active_lanes - posted;
@@ -163,13 +163,13 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   seg_build.update_data_seg(laddr, size, lkey);
   __atomic_signal_fence(__ATOMIC_SEQ_CST);
 
-  uint8_t *base_ptr = reinterpret_cast<uint8_t*>(sq_buf);
   if (is_leader) {
     uint64_t posted {0};
     do {
       posted = __hip_atomic_load(&sq_db_touched, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
     } while (posted != wave_sq_counter);
 
+    uint8_t *base_ptr = reinterpret_cast<uint8_t*>(sq_buf);
     uint64_t* ctrl_wqe_8B_for_db = reinterpret_cast<uint64_t*>(&base_ptr[64 * ((wave_sq_counter + num_wqes - 1) % sq_wqe_cnt)]);
     ring_doorbell(*ctrl_wqe_8B_for_db, wave_sq_counter + num_wqes);
 
