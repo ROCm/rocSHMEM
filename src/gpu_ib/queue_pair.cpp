@@ -62,7 +62,7 @@ __device__ void QueuePair::quiet() {
     bool done{false};
     uint32_t quiet_amount{0};
     uint32_t wave_cq_consumer{0};
-    do {
+    while (!done) {
       uint32_t posted = __hip_atomic_load(&quiet_posted, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
       uint32_t active = __hip_atomic_load(&quiet_active, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
       uint32_t completed = __hip_atomic_load(&quiet_completed, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
@@ -81,18 +81,19 @@ __device__ void QueuePair::quiet() {
         }
       }
       done = __shfl(done, leader_phys_lane_id);
-    } while (!done);
+    }
     wave_cq_consumer = __shfl(wave_cq_consumer, leader_phys_lane_id);
     uint32_t my_cq_consumer = wave_cq_consumer + my_logical_lane_id;
     uint32_t my_cq_index = my_cq_consumer % cq_cnt;
 
     if (my_logical_lane_id < quiet_amount) {
       volatile mlx5_cqe64 *cqe_entry = &cq_buf[my_cq_index];
-      bool vote_failed{true};
       uint16_t be_wqe_counter{0};
       uint8_t op_own{0};
       uint8_t owner_bit = (my_cq_consumer >> cq_log_cnt) & 1;
-      do {
+      bool vote_failed{true};
+
+      while (vote_failed) {
         op_own = *((volatile uint8_t*)&cqe_entry->op_own);
 	bool my_ownership_vote = (op_own & 1) == owner_bit;
         bool my_opcode_vote = (op_own >> 4) != MLX5_CQE_INVALID;
@@ -101,7 +102,7 @@ __device__ void QueuePair::quiet() {
         if (!vote_failed) {
           be_wqe_counter = *((volatile uint16_t*)&cqe_entry->wqe_counter);
 	}
-      } while (vote_failed);
+      }
 
       uint16_t wqe_counter;
       swap_endian_store(const_cast<uint16_t*>(&wqe_counter), reinterpret_cast<uint16_t>(be_wqe_counter));
@@ -143,7 +144,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   uint32_t my_sq_counter = wave_sq_counter + my_logical_lane_id;
   uint32_t my_sq_index = my_sq_counter % sq_wqe_cnt;
 
-  do {
+  while (true) {
     uint32_t posted = __hip_atomic_load(&sq_db_touched, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
     uint32_t sunk = __hip_atomic_load(&sq_sunk, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
     uint32_t num_active_sq_entries = posted - sunk;
@@ -153,7 +154,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
       break;
     }
     quiet();
-  } while (true);
+  }
 
   outstanding_wqes[my_sq_counter % OUTSTANDING_TABLE_SIZE] = my_sq_counter;
 
