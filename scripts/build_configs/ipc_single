@@ -35,7 +35,16 @@ fi
 
 src_path=$(dirname "$(realpath $0)")/../../
 
+export MPI_HOME="$PWD/../../ompi_install"
+export LD_LIBRARY_PATH="$PWD/../../ompi_install/lib:$PWD/../../ucx_install/lib:$LD_LIBRARY_PATH"
+export PATH="$PWD/../../ompi_install/bin:$PWD/../../ucx/bin:$PATH"
+
+cmake -DBUILD_OMPI=ON $src_path -C initial_cache.cmake
+cmake --build . --target install_ompi
+
 cmake \
+    -DBUILD_OMPI=OFF \
+    -DMPI_HOME=$MPI_HOME \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$install_path \
     -DCMAKE_VERBOSE_MAKEFILE=OFF \

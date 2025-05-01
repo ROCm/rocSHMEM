@@ -157,7 +157,7 @@ if (NOT BUILD_TESTS_ONLY)
   #############################################################################
   # PACKAGE DEPENDENCIES
   #############################################################################
-  find_package(MPI REQUIRED)
+  #find_package(MPI REQUIRED)
   find_package(hip REQUIRED)
   find_package(hsa-runtime64 REQUIRED)
 
@@ -174,12 +174,15 @@ if (NOT BUILD_TESTS_ONLY)
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
       $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>               # rocshmem_config.h
       $<INSTALL_INTERFACE:include>
-      ${MPI_CXX_HEADER_DIR}
+  )
+
+  target_include_directories(${PROJECT_NAME}
+	  SYSTEM PRIVATE ${MPI_CXX_HEADER_DIR}
   )
 
   target_link_libraries(
     ${PROJECT_NAME}
-    PUBLIC
+    PRIVATE
       Threads::Threads
       ${MPI_mpi_LIBRARY}
       ${MPI_mpicxx_LIBRARY}
@@ -187,6 +190,7 @@ if (NOT BUILD_TESTS_ONLY)
       hip::host
       hsa-runtime64::hsa-runtime64
   )
+ 
 endif()
 
 ###############################################################################
@@ -198,7 +202,7 @@ if (BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
 
-if (NOT BUILD_TESTS_ONLY)
+if (NOT BUILD_TESTS_ONLY AND NOT BUILD_OMPI)
   #############################################################################
   # INSTALL
   #############################################################################
@@ -238,33 +242,49 @@ endif()
 
 include(ExternalProject)
 
-set(THIRD_PARTY_INSTALL_DIR ${CMAKE_BINARY_DIR}/third_party/install)
+if (BUILD_OMPI)
 
-ExternalProject_Add(
-    ucx
-    GIT_REPOSITORY      https://github.com/ROCm/ucx.git
-    GIT_TAG             v1.17x
-    PREFIX              ${CMAKE_BINARY_DIR}/ucx
-    CONFIGURE_COMMAND   ./autogen.sh && ./configure --prefix=${THIRD_PARTY_INSTALL_DIR} --with-rocm=/opt/rocm --enable-mt
-    BUILD_COMMAND       make -j$(nproc)
-    INSTALL_COMMAND     make install
-    UPDATE_DISCONNECTED TRUE
-)
+	set(UCX_SRC ${CMAKE_SOURCE_DIR}/ucx)
+	set(UCX_INSTALL ${CMAKE_SOURCE_DIR}/ucx_install)
 
-ExternalProject_Add(
-    ompi
-    GIT_REPOSITORY      https://github.com/open-mpi/ompi.git
-    GIT_TAG             v5.0.x
-    PREFIX              ${CMAKE_BINARY_DIR}/ompi
-    CONFIGURE_COMMAND   ./autogen.pl && ./configure --prefix=${THIRD_PARTY_INSTALL_DIR} --with-rocm=/opt/rocm --with-ucx=${THIRD_PARTY_INSTALL_DIR}/ucx --disable-sphinx --disable-oshmem --disable-mpi-fortran --with-hwloc=internal --with-libevent=internal --with-prrte=internal
-    BUILD_COMMAND       make -j$(nproc)
-    INSTALL_COMMAND     make install
-    DEPENDS             ucx
-    UPDATE_DISCONNECTED TRUE
-)
+	set(OMPI_SRC ${CMAKE_SOURCE_DIR}/ompi)
+	set(OMPI_INSTALL ${CMAKE_SOURCE_DIR}/ompi_install)
 
-add_custom_target(
-    install_third_party
-    DEPENDS ucx ompi
-    COMMENT "Installing UCX and OpenMPI"
-)
+
+	add_custom_command(
+		OUTPUT ${UCX_SRC}
+		COMMAND git clone https://github.com/ROCm/ucx.git -b v1.17.x ${UCX_SRC}
+		COMMENT "Cloning UCX Repo..."
+	)
+	add_custom_command(
+		OUTPUT ${UCX_INSTALL}
+		COMMAND ./autogen.sh
+		COMMAND ./configure --prefix=${UCX_INSTALL} --with-rocm=/opt/rocm --enable-mt
+		COMMAND make -j$(nproc)
+		COMMAND make install
+		WORKING_DIRECTORY ${UCX_SRC}
+	)
+	add_custom_target(install_ucx DEPENDS ${UCX_SRC} ${UCX_INSTALL})
+
+	add_custom_command(
+		OUTPUT ${OMPI_SRC}
+		COMMAND git clone --recursive https://github.com/open-mpi/ompi.git -b v5.0.x ${OMPI_SRC}
+		COMMENT "Cloning OpenMPI Repo..."
+	)
+	add_custom_command(
+		OUTPUT ${OMPI_INSTALL}
+		COMMAND ./autogen.pl
+		COMMAND ./configure --prefix=${OMPI_INSTALL} --with-rocm=/opt/rocm --with-ucx=${UCX_INSTALL} --disable-sphinx --disable-oshmem --disable-mpi-fortran --with-hwloc=internal --with-libevent=internal --with-prrte=internal
+		COMMAND make -j$(nproc)
+		COMMAND make install
+		WORKING_DIRECTORY ${OMPI_SRC}
+	)
+	add_custom_target(install_ompi DEPENDS ${UCX_INSTALL} ${OMPI_SRC} ${OMPI_INSTALL})
+else()
+	#find_package(MPI REQUIRED)
+	add_library(MPI::MPI_CXX INTERFACE IMPORTED)
+	set_target_properties(MPI::MPI_CXX PROPERTIES
+		INTERFACE_INCLUDE_DIRECTORIES "${MPI_HOME}/include"
+		INTERFACE_LINK_LIBRARIES "${MPI_HOME}/lib/libmpi.so;${MPI_HOME}/lib/libmpicxx.so"
+	)
+endif()
