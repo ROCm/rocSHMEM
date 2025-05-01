@@ -58,7 +58,6 @@ option(USE_HOST_SIDE_HDP_FLUSH "Use a polling thread to flush the HDP cache on t
 
 option(BUILD_FUNCTIONAL_TESTS "Build the functional tests" ON)
 option(BUILD_EXAMPLES "Build the examples" ON)
-option(BUILD_SOS_TESTS "Build the host-facing tests" OFF)
 option(BUILD_UNIT_TESTS "Build the unit tests" ON)
 option(BUILD_TESTS_ONLY "Build only tests. Used to link agains rocSHMEM in a ROCm Release" OFF)
 
