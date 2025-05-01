@@ -113,10 +113,10 @@ __device__ void QueuePair::quiet() {
       __atomic_signal_fence(__ATOMIC_SEQ_CST);
     }
     if (is_leader) {
-      uint32_t posted {0};
+      uint32_t completed {0};
       do {
-        posted = __hip_atomic_load(&quiet_completed, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
-      } while (posted != wave_cq_consumer);
+        completed = __hip_atomic_load(&quiet_completed, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+      } while (completed != wave_cq_consumer);
 
       swap_endian_store(const_cast<uint32_t*>(cq_dbrec), (uint32_t)(wave_cq_consumer + quiet_amount));
       __atomic_signal_fence(__ATOMIC_SEQ_CST);
@@ -145,11 +145,11 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   uint32_t my_sq_index = my_sq_counter % sq_wqe_cnt;
 
   while (true) {
-    uint32_t posted = __hip_atomic_load(&sq_db_touched, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+    uint32_t db_touched = __hip_atomic_load(&sq_db_touched, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
     uint32_t sunk = __hip_atomic_load(&sq_sunk, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
-    uint32_t num_active_sq_entries = posted - sunk;
+    uint32_t num_active_sq_entries = db_touched - sunk;
     uint32_t num_free_entries = min(sq_wqe_cnt, cq_cnt) - num_active_sq_entries;
-    uint32_t num_entries_until_wave_last_entry = wave_sq_counter + num_active_lanes - posted;
+    uint32_t num_entries_until_wave_last_entry = wave_sq_counter + num_active_lanes - db_touched;
     if (num_free_entries > num_entries_until_wave_last_entry) {
       break;
     }
@@ -165,10 +165,10 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   __atomic_signal_fence(__ATOMIC_SEQ_CST);
 
   if (is_leader) {
-    uint32_t posted {0};
+    uint32_t db_touched {0};
     do {
-      posted = __hip_atomic_load(&sq_db_touched, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
-    } while (posted != wave_sq_counter);
+      db_touched = __hip_atomic_load(&sq_db_touched, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+    } while (db_touched != wave_sq_counter);
 
     uint8_t *base_ptr = reinterpret_cast<uint8_t*>(sq_buf);
     uint64_t* ctrl_wqe_8B_for_db = reinterpret_cast<uint64_t*>(&base_ptr[64 * ((wave_sq_counter + num_wqes - 1) % sq_wqe_cnt)]);
