@@ -68,9 +68,9 @@ __device__ void QueuePair::quiet() {
     uint64_t quiet_amount{0};
     uint32_t wave_cq_consumer_counter{0};
     do {
-      uint32_t posted = __hip_atomic_load(&quiet_counter_posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
-      uint32_t active = __hip_atomic_load(&quiet_counter_active, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
-      uint32_t completed = __hip_atomic_load(&quiet_counter_completed, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+      uint32_t posted = __hip_atomic_load(&quiet_posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+      uint32_t active = __hip_atomic_load(&quiet_active, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+      uint32_t completed = __hip_atomic_load(&quiet_completed, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
       if (!(posted - completed)) {
         return;
       }
@@ -80,7 +80,7 @@ __device__ void QueuePair::quiet() {
       }
       quiet_amount = min(num_active_lanes, quiet_val);
       if (is_leader) {
-        done = __hip_atomic_compare_exchange_strong(&quiet_counter_active, &active, active + quiet_amount, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+        done = __hip_atomic_compare_exchange_strong(&quiet_active, &active, active + quiet_amount, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
         if (done) {
           wave_cq_consumer_counter = __hip_atomic_fetch_add(&cq_consumer_counter, quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
         }
@@ -119,7 +119,7 @@ __device__ void QueuePair::quiet() {
     if (is_leader) {
       uint64_t posted {0};
       do {
-        posted = __hip_atomic_load(&quiet_counter_completed, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+        posted = __hip_atomic_load(&quiet_completed, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
       } while (posted != wave_cq_consumer_counter);
 
       swap_endian_store(const_cast<uint32_t*>(cq_dbrec), (uint32_t)(wave_cq_consumer_counter + quiet_amount));
@@ -127,7 +127,7 @@ __device__ void QueuePair::quiet() {
 
       uint32_t sunk_wqe_id = wqe_broadcast[wavefront_id];
       __hip_atomic_store(&sq_counter_sunk, sunk_wqe_id, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
-      __hip_atomic_fetch_add(&quiet_counter_completed, quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+      __hip_atomic_fetch_add(&quiet_completed, quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
     }
   }
 }
@@ -189,7 +189,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
     uint64_t* ctrl_wqe_8B_for_db = reinterpret_cast<uint64_t*>(&base_ptr[64 * ((wave_sq_counter + num_wqes - 1) % sq_wqe_cnt)]);
     ring_doorbell(*ctrl_wqe_8B_for_db, wave_sq_counter + num_wqes);
 
-    __hip_atomic_fetch_add(&quiet_counter_posted, num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+    __hip_atomic_fetch_add(&quiet_posted, num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
     __hip_atomic_store(&sq_counter_db_posted, wave_sq_counter + num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
   }
 }
