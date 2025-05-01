@@ -36,11 +36,6 @@ QueuePair::QueuePair(GPUIBBackend *backend) {
   atomic_ret.atomic_counter = 0;
 }
 
-__device__ uint8_t QueuePair::get_cq_error_syndrome(mlx5_cqe64 *cqe_entry) {
-  mlx5_err_cqe *cqe_err = reinterpret_cast<mlx5_err_cqe*>(cqe_entry);
-  return cqe_err->syndrome;
-}
-
 __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint32_t my_sq_counter) {
   swap_endian_store(const_cast<uint32_t*>(dbrec), my_sq_counter);
   __atomic_signal_fence(__ATOMIC_SEQ_CST);

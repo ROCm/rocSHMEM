@@ -164,13 +164,6 @@ class QueuePair {
    */
   __device__ void ring_doorbell(uint64_t db_val, uint32_t my_sq_counter);
 
-  /**
-   * @brief Helper method to extract syndrome field from cqe.
-   *
-   * @param[in] cq_entry Completion queue entry.
-   */
-  __device__ uint8_t get_cq_error_syndrome(mlx5_cqe64 *cq_entry);
-
   db_reg_t db{};
 
   uint32_t cq_consumer{0};
