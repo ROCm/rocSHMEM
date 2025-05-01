@@ -53,21 +53,15 @@ __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint32_t my_sq_counter
 
 __device__ void QueuePair::quiet() {
   constexpr size_t BROADCAST_SIZE = 1024 / __AMDGCN_WAVEFRONT_SIZE;
-  constexpr uint64_t ALL_ONES_MASK = -1;
   __shared__ uint32_t wqe_broadcast[BROADCAST_SIZE];
-
-  uint64_t active_thread_mask = __ballot(1);
-  uint8_t num_active_lanes = __popcll(active_thread_mask);
-  uint8_t my_physical_lane_id = __lane_id();
-  uint64_t lane_mask{ALL_ONES_MASK << my_physical_lane_id};
-  uint64_t inverted_mask{~lane_mask};
-  uint64_t lower_active_lanes{active_thread_mask & inverted_mask};
-  uint8_t my_logical_lane_id = __popcll(lower_active_lanes);
-  bool is_lowest_active_lane{my_logical_lane_id == 0};
   uint8_t wavefront_id = get_flat_block_id() / __AMDGCN_WAVEFRONT_SIZE;
-  const uint64_t leader = __ffsll((unsigned long long)active_thread_mask) - 1;
-
   wqe_broadcast[wavefront_id] = 0;
+
+  uint64_t activemask = __ballot(1);
+  uint8_t num_active_lanes = __popcll(activemask);
+  uint8_t my_logical_lane_id = __popcll(activemask & __lanemask_lt());
+  bool is_leader{my_logical_lane_id == 0};
+  const uint64_t leader_phys_lane_id = __ffsll((unsigned long long)activemask) - 1;
 
   while (true) {
     bool done{false};
@@ -85,21 +79,20 @@ __device__ void QueuePair::quiet() {
         continue;
       }
       quiet_amount = min(num_active_lanes, quiet_val);
-      if (is_lowest_active_lane) {
+      if (is_leader) {
         done = __hip_atomic_compare_exchange_strong(&quiet_counter_active, &active, active + quiet_amount, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
         if (done) {
           wave_cq_consumer_counter = __hip_atomic_fetch_add(&cq_consumer_counter, quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
         }
       }
-      done = __shfl(done, leader);
+      done = __shfl(done, leader_phys_lane_id);
     } while (!done);
-    wave_cq_consumer_counter = __shfl(wave_cq_consumer_counter, leader);
+    wave_cq_consumer_counter = __shfl(wave_cq_consumer_counter, leader_phys_lane_id);
     uint64_t my_cq_consumer_counter = wave_cq_consumer_counter + my_logical_lane_id;
     uint64_t my_cq_index = my_cq_consumer_counter % cq_cnt;
 
     if (my_logical_lane_id < quiet_amount) {
       volatile mlx5_cqe64 *cqe_entry = &cq_buf[my_cq_index];
-      const volatile uint8_t *d = reinterpret_cast<const volatile uint8_t*>(cqe_entry);
       bool vote_failed{true};
       uint16_t be_wqe_counter{0};
       uint8_t op_own{0};
@@ -123,7 +116,7 @@ __device__ void QueuePair::quiet() {
       *((volatile uint8_t*)&cqe_entry->op_own) = mlx5_invld_bits;
       __threadfence_system();
     }
-    if (is_lowest_active_lane) {
+    if (is_leader) {
       uint64_t posted {0};
       do {
         posted = __hip_atomic_load(&quiet_counter_completed, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
