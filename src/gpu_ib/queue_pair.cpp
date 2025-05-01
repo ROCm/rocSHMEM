@@ -52,7 +52,7 @@ __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint32_t my_sq_counter
 }
 
 __device__ void QueuePair::quiet() {
-  constexpr size_t BROADCAST_SIZE = 1024 / 64;
+  constexpr size_t BROADCAST_SIZE = 1024 / __AMDGCN_WAVEFRONT_SIZE;
   constexpr uint64_t ALL_ONES_MASK = -1;
   __shared__ uint64_t cq_wave_broadcast[BROADCAST_SIZE];
   __shared__ uint32_t wqe_broadcast[BROADCAST_SIZE];
@@ -66,7 +66,7 @@ __device__ void QueuePair::quiet() {
   uint64_t lower_active_lanes{active_thread_mask & inverted_mask};
   uint8_t my_logical_lane_id = __popcll(lower_active_lanes);
   bool is_lowest_active_lane{my_logical_lane_id == 0};
-  uint8_t wavefront_id = get_flat_block_id() / 64;
+  uint8_t wavefront_id = get_flat_block_id() / __AMDGCN_WAVEFRONT_SIZE;
 
   cq_wave_broadcast[wavefront_id] = 0;
   wqe_broadcast[wavefront_id] = 0;
@@ -150,7 +150,7 @@ __device__ void QueuePair::quiet() {
 }
 
 __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
-  constexpr size_t SQ_BROADCAST_SIZE = 1024 / 64;
+  constexpr size_t SQ_BROADCAST_SIZE = 1024 / __AMDGCN_WAVEFRONT_SIZE;
   constexpr uint64_t ALL_ONES_MASK = -1;
   __shared__ uint64_t sq_wave_broadcast[SQ_BROADCAST_SIZE];
   uint64_t active_thread_mask = __ballot(1);
@@ -167,7 +167,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   if (is_lowest_active_lane) {
     wave_sq_counter = __hip_atomic_fetch_add(&sq_counter, num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
   }
-  uint8_t wavefront_id = get_flat_block_id() / 64;
+  uint8_t wavefront_id = get_flat_block_id() / __AMDGCN_WAVEFRONT_SIZE;
   if (is_lowest_active_lane) {
     sq_wave_broadcast[wavefront_id] = wave_sq_counter;
     __threadfence_block();
