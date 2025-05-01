@@ -30,115 +30,157 @@ TEST_F(SingleHeapTestFixture, unallocated_size_check) {
   ASSERT_EQ(single_heap_.get_size(), 1 << 30);
 }
 
-TEST_F(SingleHeapTestFixture, unallocated_avail_check) {
-  ASSERT_EQ(single_heap_.get_avail(), 1 << 30);
-}
-
-TEST_F(SingleHeapTestFixture, unallocated_used_check) {
-  ASSERT_EQ(single_heap_.get_used(), 0);
-}
-
 TEST_F(SingleHeapTestFixture, free_null) {
   void* ptr{nullptr};
   single_heap_.free(ptr);
 }
 
 TEST_F(SingleHeapTestFixture, alloc_0) {
+  // some allocators (e.g. dlmalloc) use memory for internal bookkeeping
+  size_t initial_used{single_heap_.get_used()};
   size_t request_size{0};
   void* ptr{nullptr};
 
   single_heap_.malloc(&ptr, request_size);
   ASSERT_EQ(ptr, nullptr);
-
-  size_t expected_used{request_size};
-  ASSERT_EQ(single_heap_.get_used(), expected_used);
-  size_t expected_avail{single_heap_.get_size() - expected_used};
-  ASSERT_EQ(single_heap_.get_avail(), expected_avail);
+  ASSERT_EQ(single_heap_.get_used(), initial_used);
 
   single_heap_.free(ptr);
-
-  expected_used = 0;
-  ASSERT_EQ(single_heap_.get_used(), expected_used);
-  expected_avail = single_heap_.get_size();
-  ASSERT_EQ(single_heap_.get_avail(), expected_avail);
+  ASSERT_EQ(single_heap_.get_used(), initial_used);
 }
 
 TEST_F(SingleHeapTestFixture, alloc_1) {
+  size_t initial_used{single_heap_.get_used()};
   size_t request_size{1};
   void* ptr{nullptr};
 
   single_heap_.malloc(&ptr, request_size);
   ASSERT_NE(ptr, nullptr);
-
-  size_t expected_used{128};
-  ASSERT_EQ(single_heap_.get_used(), expected_used);
-  size_t expected_avail{single_heap_.get_size() - expected_used};
-  ASSERT_EQ(single_heap_.get_avail(), expected_avail);
+  ASSERT_EQ(reinterpret_cast<uintptr_t>(ptr) & (ALIGNMENT-1), 0);
 
   single_heap_.free(ptr);
-
-  expected_used = 0;
-  ASSERT_EQ(single_heap_.get_used(), expected_used);
-  expected_avail = single_heap_.get_size();
-  ASSERT_EQ(single_heap_.get_avail(), expected_avail);
+  ASSERT_EQ(single_heap_.get_used(), initial_used);
 }
 
 TEST_F(SingleHeapTestFixture, alloc_256) {
+  size_t initial_used{single_heap_.get_used()};
   size_t request_size{256};
   void* ptr{nullptr};
 
   single_heap_.malloc(&ptr, request_size);
   ASSERT_NE(ptr, nullptr);
-
-  size_t expected_used{request_size};
-  ASSERT_EQ(single_heap_.get_used(), expected_used);
-  size_t expected_avail{single_heap_.get_size() - expected_used};
-  ASSERT_EQ(single_heap_.get_avail(), expected_avail);
+  ASSERT_EQ(reinterpret_cast<uintptr_t>(ptr) & (ALIGNMENT-1), 0);
 
   single_heap_.free(ptr);
-
-  expected_used = 0;
-  ASSERT_EQ(single_heap_.get_used(), expected_used);
-  expected_avail = single_heap_.get_size();
-  ASSERT_EQ(single_heap_.get_avail(), expected_avail);
+  ASSERT_EQ(single_heap_.get_used(), initial_used);
 }
 
 TEST_F(SingleHeapTestFixture, alloc_1024) {
+  size_t initial_used{single_heap_.get_used()};
   size_t request_size{1024};
   void* ptr{nullptr};
 
   single_heap_.malloc(&ptr, request_size);
   ASSERT_NE(ptr, nullptr);
-
-  size_t expected_used{request_size};
-  ASSERT_EQ(single_heap_.get_used(), expected_used);
-  size_t expected_avail{single_heap_.get_size() - expected_used};
-  ASSERT_EQ(single_heap_.get_avail(), expected_avail);
+  ASSERT_EQ(reinterpret_cast<uintptr_t>(ptr) & (ALIGNMENT-1), 0);
 
   single_heap_.free(ptr);
+  ASSERT_EQ(single_heap_.get_used(), initial_used);
+}
 
-  expected_used = 0;
-  ASSERT_EQ(single_heap_.get_used(), expected_used);
-  expected_avail = single_heap_.get_size();
-  ASSERT_EQ(single_heap_.get_avail(), expected_avail);
+TEST_F(SingleHeapTestFixture, alloc_1MB) {
+  size_t initial_used{single_heap_.get_used()};
+  size_t request_size{1 << 20};
+  void* ptr{nullptr};
+
+  single_heap_.malloc(&ptr, request_size);
+  ASSERT_NE(ptr, nullptr);
+  ASSERT_EQ(reinterpret_cast<uintptr_t>(ptr) & (ALIGNMENT-1), 0);
+
+  single_heap_.free(ptr);
+  ASSERT_EQ(single_heap_.get_used(), initial_used);
 }
 
 TEST_F(SingleHeapTestFixture, alloc_4097) {
+  size_t initial_used{single_heap_.get_used()};
   size_t request_size{4097};
   void* ptr{nullptr};
 
   single_heap_.malloc(&ptr, request_size);
   ASSERT_NE(ptr, nullptr);
-
-  size_t expected_used{8192};
-  ASSERT_EQ(single_heap_.get_used(), expected_used);
-  size_t expected_avail{single_heap_.get_size() - expected_used};
-  ASSERT_EQ(single_heap_.get_avail(), expected_avail);
+  ASSERT_EQ(reinterpret_cast<uintptr_t>(ptr) & (ALIGNMENT-1), 0);
 
   single_heap_.free(ptr);
+  ASSERT_EQ(single_heap_.get_used(), initial_used);
+}
 
-  expected_used = 0;
-  ASSERT_EQ(single_heap_.get_used(), expected_used);
-  expected_avail = single_heap_.get_size();
-  ASSERT_EQ(single_heap_.get_avail(), expected_avail);
+TEST_F(SingleHeapTestFixture, alloc_X2_8191) {
+  size_t initial_used{single_heap_.get_used()};
+  size_t request_size{8191};
+  void* ptr_1{nullptr};
+  void* ptr_2{nullptr};
+
+  single_heap_.malloc(&ptr_1, request_size);
+  ASSERT_NE(ptr_1, nullptr);
+  ASSERT_EQ(reinterpret_cast<uintptr_t>(ptr_1) & (ALIGNMENT-1), 0);
+
+  single_heap_.malloc(&ptr_2, request_size);
+  ASSERT_NE(ptr_2, nullptr);
+  ASSERT_EQ(reinterpret_cast<uintptr_t>(ptr_2) & (ALIGNMENT-1), 0);
+
+  single_heap_.free(ptr_1);
+  single_heap_.free(ptr_2);
+  ASSERT_EQ(single_heap_.get_used(), initial_used);
+}
+
+TEST_F(SingleHeapTestFixture, alloc_X2_free_alloc_free_X2_1MB) {
+  size_t initial_used{single_heap_.get_used()};
+  void* ptr_1{nullptr};
+  void* ptr_2{nullptr};
+  void* ptr_3{nullptr};
+  size_t request_size{1 << 20};
+
+  single_heap_.malloc(&ptr_1, request_size);
+  ASSERT_NE(ptr_1, nullptr);
+  ASSERT_EQ(reinterpret_cast<uintptr_t>(ptr_1) & (ALIGNMENT-1), 0);
+
+  single_heap_.malloc(&ptr_2, request_size);
+  ASSERT_NE(ptr_1, nullptr);
+  ASSERT_EQ(reinterpret_cast<uintptr_t>(ptr_2) & (ALIGNMENT-1), 0);
+
+  single_heap_.free(ptr_1);
+
+  single_heap_.malloc(&ptr_3, request_size);
+  ASSERT_NE(ptr_3, nullptr);
+  ASSERT_EQ(reinterpret_cast<uintptr_t>(ptr_3) & (ALIGNMENT-1), 0);
+
+  single_heap_.free(ptr_3);
+  single_heap_.free(ptr_2);
+  ASSERT_EQ(single_heap_.get_used(), initial_used);
+}
+
+TEST_F(SingleHeapTestFixture, alloc_X2_free_alloc_free_X2_63) {
+  size_t initial_used{single_heap_.get_used()};
+  void* ptr_1{nullptr};
+  void* ptr_2{nullptr};
+  void* ptr_3{nullptr};
+  size_t request_size{63};
+
+  single_heap_.malloc(&ptr_1, request_size);
+  ASSERT_NE(ptr_1, nullptr);
+  ASSERT_EQ(reinterpret_cast<uintptr_t>(ptr_1) & (ALIGNMENT-1), 0);
+
+  single_heap_.malloc(&ptr_2, request_size);
+  ASSERT_NE(ptr_1, nullptr);
+  ASSERT_EQ(reinterpret_cast<uintptr_t>(ptr_2) & (ALIGNMENT-1), 0);
+
+  single_heap_.free(ptr_1);
+
+  single_heap_.malloc(&ptr_3, request_size);
+  ASSERT_NE(ptr_3, nullptr);
+  ASSERT_EQ(reinterpret_cast<uintptr_t>(ptr_3) & (ALIGNMENT-1), 0);
+
+  single_heap_.free(ptr_3);
+  single_heap_.free(ptr_2);
+  ASSERT_EQ(single_heap_.get_used(), initial_used);
 }

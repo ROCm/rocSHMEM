@@ -22,47 +22,41 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "single_heap.hpp"
+#ifndef ROCSHMEM_DLMALLOC_GTEST_HPP
+#define ROCSHMEM_DLMALLOC_GTEST_HPP
 
-#include <sstream>
+#include "gtest/gtest.h"
+
+#include "../src/memory/heap_memory.hpp"
+#include "../src/memory/hip_allocator.hpp"
+#include "../src/memory/dlmalloc.hpp"
 
 namespace rocshmem {
 
-SingleHeap::SingleHeap() {
-  if (auto heap_size_cstr = getenv("ROCSHMEM_HEAP_SIZE")) {
-    std::stringstream sstream(heap_size_cstr);
-    size_t heap_size;
-    sstream >> heap_size;
-    heap_mem_ = HEAP_T{heap_size};
-    strat_ = STRAT_T{&heap_mem_};
-  }
-}
+class DLMallocTestFixture : public ::testing::Test
+{
+    /**
+     * @brief Helper type for heap memory
+     */
+    using HEAP_T = HeapMemory<HIPAllocator>;
 
-void SingleHeap::malloc(void** ptr, size_t size) {
-  strat_.alloc(reinterpret_cast<char**>(ptr), size);
-}
+    /**
+     * @brief Helper type for allocation strategy
+     */
+    using STRAT_T = DLAllocatorStrategy<HEAP_T>;
 
-__device__ void SingleHeap::malloc(void** ptr, size_t size) {}
+  protected:
+    /**
+     * @brief Heap memory object
+     */
+    HEAP_T heap_mem_ {};
 
-void SingleHeap::free(void* ptr) {
-  if (!ptr) {
-    return;
-  }
-  strat_.free(reinterpret_cast<char*>(ptr));
-}
+    /**
+     * @brief Allocation strategy object
+     */
+    STRAT_T strat_ {&heap_mem_};
+};
 
-__device__ void SingleHeap::free(void* ptr) {}
+} // namespace rocshmem
 
-void* SingleHeap::realloc(void* ptr, size_t size) { return nullptr; }
-
-void* SingleHeap::malign(size_t alignment, size_t size) { return nullptr; }
-
-char* SingleHeap::get_base_ptr() { return heap_mem_.get_ptr(); }
-
-size_t SingleHeap::get_size() { return heap_mem_.get_size(); }
-
-size_t SingleHeap::get_used() { return strat_.get_used(); }
-
-size_t SingleHeap::get_avail() { return get_size() - get_used(); }
-
-}  // namespace rocshmem
+#endif // ROCSHMEM_DLMALLOC_GTEST_HPP

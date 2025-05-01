@@ -47,8 +47,8 @@ __global__ void PingAllTest(int loop, int skip, long long int *start_time,
     status[j] = 0;
   }
 
-  if (hipThreadIdx_x == 0) {
-    auto blk_pe_off {hipBlockIdx_x * num_pe};
+  if (is_thread_zero_in_block()) {
+    auto blk_pe_off {wg_id * num_pe};
 
     for (int i = 0; i < loop + skip; i++) {
       if (i == skip) {
@@ -61,6 +61,7 @@ __global__ void PingAllTest(int loop, int skip, long long int *start_time,
       rocshmem_int_wait_until_all(&r_buf[blk_pe_off], num_pe, status, ROCSHMEM_CMP_EQ, 1);
     }
     end_time[wg_id] = wall_clock64();
+    rocshmem_ctx_quiet(ctx);
   }
   rocshmem_wg_ctx_destroy(&ctx);
   rocshmem_wg_finalize();
@@ -71,14 +72,14 @@ __global__ void PingAllTest(int loop, int skip, long long int *start_time,
  *****************************************************************************/
 PingAllTester::PingAllTester(TesterArguments args) : Tester(args) {
   int num_pes {rocshmem_n_pes()};
-  r_buf = (int *)rocshmem_malloc(sizeof(int) * args.wg_size * num_pes);
+  r_buf = (int *)rocshmem_malloc(sizeof(int) * args.num_wgs * num_pes);
 }
 
 PingAllTester::~PingAllTester() { rocshmem_free(r_buf); }
 
 void PingAllTester::resetBuffers(uint64_t size) {
   int num_pes {rocshmem_n_pes()};
-  memset(r_buf, 0, sizeof(int) * args.wg_size * num_pes);
+  memset(r_buf, 0, sizeof(int) * args.num_wgs * num_pes);
 }
 
 void PingAllTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,

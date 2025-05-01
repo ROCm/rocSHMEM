@@ -429,6 +429,10 @@ TestOther() {
   ExecTest  "pingpong"         2       8            1
   ExecTest  "pingpong"         2       32           1
 
+  ExecTest  "pingall"          2       1            1
+  ExecTest  "pingall"          2       8            1
+  ExecTest  "pingall"          2       32           1
+
   # This test requires more contexts than workgroups
   export ROCSHMEM_MAX_NUM_CONTEXTS=1024
   ExecTest  "teamctxinfra"     2       1            1

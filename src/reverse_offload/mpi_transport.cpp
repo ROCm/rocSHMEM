@@ -53,7 +53,7 @@ MPITransport::MPITransport(MPI_Comm comm, Queue* q)
   if (!init_done) {
     NET_CHECK(MPI_Init_thread(0, 0, MPI_THREAD_MULTIPLE, &provided));
     if (provided != MPI_THREAD_MULTIPLE) {
-      std::cerr << "MPI_THREAD_MULTIPLE support disabled.\n";
+      fprintf(stderr, "MPI_THREAD_MULTIPLE support disabled.\n");
     }
   }
   assert(comm != MPI_COMM_NULL);

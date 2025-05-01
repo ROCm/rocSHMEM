@@ -165,6 +165,17 @@ class Pow2Bins : public ShmemAllocatorStrategy {
   __device__ void free([[maybe_unused]] char* ptr) override {}
 
   /**
+   * @brief Used memory from the heap
+   *
+   * Sum of all proffered_ memory sizes
+   *
+   * @return memory size
+   */
+  size_t get_used() override {
+    return amount_proffered();
+  }
+
+  /**
    * @brief Sum of all proffered_ memory sizes
    *
    * @return memory size

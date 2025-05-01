@@ -84,6 +84,7 @@ target_sources(
     single_heap_gtest.cpp
     symmetric_heap_gtest.cpp
     pow2_bins_gtest.cpp
+    dlmalloc_gtest.cpp
     remote_heap_info_gtest.cpp
     mpi_init_singleton_gtest.cpp
     abql_block_mutex_gtest.cpp

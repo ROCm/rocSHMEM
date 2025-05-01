@@ -42,7 +42,7 @@ __global__ void PingPongTest(int loop, int skip, long long int *start_time,
 
   int pe = rocshmem_ctx_my_pe(ctx);
 
-  if (hipThreadIdx_x == 0) {
+  if (is_thread_zero_in_block()) {
 
     for (int i = 0; i < loop + skip; i++) {
       if (i == skip) {
@@ -60,7 +60,10 @@ __global__ void PingPongTest(int loop, int skip, long long int *start_time,
       }
     }
     end_time[wg_id] = wall_clock64();
+
+    rocshmem_ctx_quiet(ctx);
   }
+
   rocshmem_wg_ctx_destroy(&ctx);
   rocshmem_wg_finalize();
 }
@@ -69,13 +72,13 @@ __global__ void PingPongTest(int loop, int skip, long long int *start_time,
  * HOST TESTER CLASS METHODS
  *****************************************************************************/
 PingPongTester::PingPongTester(TesterArguments args) : Tester(args) {
-  r_buf = (int *)rocshmem_malloc(sizeof(int) * args.wg_size);
+  r_buf = (int *)rocshmem_malloc(sizeof(int) * args.num_wgs);
 }
 
 PingPongTester::~PingPongTester() { rocshmem_free(r_buf); }
 
 void PingPongTester::resetBuffers(uint64_t size) {
-  memset(r_buf, 0, sizeof(int) * args.wg_size);
+  memset(r_buf, 0, sizeof(int) * args.num_wgs);
 }
 
 void PingPongTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
