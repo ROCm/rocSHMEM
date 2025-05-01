@@ -214,7 +214,6 @@ class GPUIBBackend {
    * @brief rocSHMEM's copy of MPI_COMM_WORLD (for interoperability
    * with orthogonal MPI usage in an MPI+rocSHMEM program).
    */
-  MPI_Comm gpu_ib_comm_world{};
   MPI_Comm backend_comm{};
 
   /**
@@ -280,8 +279,6 @@ class GPUIBBackend {
    * num_pes (exclusive) [0 ... num_pes).
    */
   int my_pe{-1};
-
-  MPI_Comm thread_comm{};
 
   /**
    * @brief Object contains the interface and internal data structures

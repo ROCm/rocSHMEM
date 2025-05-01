@@ -32,7 +32,7 @@
 namespace rocshmem {
 
 static void dump_ibv_context(struct ibv_context* x) {
-  /* 
+  /*
    * struct ibv_context {
    *   struct ibv_device      *device;
    *   struct ibv_context_ops  ops;
@@ -98,30 +98,30 @@ static void dump_ibv_pd(struct ibv_pd* x) {
 
 static void dump_ibv_port_attr(struct ibv_port_attr* x) {
   /*
-   * struct ibv_port_attr { 
-   *   enum ibv_port_state     state; 
-   *   enum ibv_mtu            max_mtu; 
-   *   enum ibv_mtu            active_mtu; 
-   *   int                     gid_tbl_len; 
-   *   uint32_t                port_cap_flags; 
-   *   uint32_t                max_msg_sz; 
-   *   uint32_t                bad_pkey_cntr; 
-   *   uint32_t                qkey_viol_cntr; 
-   *   uint16_t                pkey_tbl_len; 
-   *   uint16_t                lid; 
-   *   uint16_t                sm_lid; 
-   *   uint8_t                 lmc; 
-   *   uint8_t                 max_vl_num; 
-   *   uint8_t                 sm_sl; 
-   *   uint8_t                 subnet_timeout; 
-   *   uint8_t                 init_type_reply; 
-   *   uint8_t                 active_width; 
-   *   uint8_t                 active_speed; 
-   *   uint8_t                 phys_state; 
-   *   uint8_t                 link_layer; 
-   *   uint8_t                 flags; 
-   *   uint16_t                port_cap_flags2; 
-   * }; 
+   * struct ibv_port_attr {
+   *   enum ibv_port_state     state;
+   *   enum ibv_mtu            max_mtu;
+   *   enum ibv_mtu            active_mtu;
+   *   int                     gid_tbl_len;
+   *   uint32_t                port_cap_flags;
+   *   uint32_t                max_msg_sz;
+   *   uint32_t                bad_pkey_cntr;
+   *   uint32_t                qkey_viol_cntr;
+   *   uint16_t                pkey_tbl_len;
+   *   uint16_t                lid;
+   *   uint16_t                sm_lid;
+   *   uint8_t                 lmc;
+   *   uint8_t                 max_vl_num;
+   *   uint8_t                 sm_sl;
+   *   uint8_t                 subnet_timeout;
+   *   uint8_t                 init_type_reply;
+   *   uint8_t                 active_width;
+   *   uint8_t                 active_speed;
+   *   uint8_t                 phys_state;
+   *   uint8_t                 link_layer;
+   *   uint8_t                 flags;
+   *   uint16_t                port_cap_flags2;
+   * };
    */
   DPRINTF("\n"
          "===============================================\n"
@@ -254,6 +254,7 @@ Connection::~Connection() {
 
 void Connection::reg_mr(void* ptr, size_t size, ibv_mr** mr) {
   int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
+
   *mr = ibv_reg_mr(ib_state->pd, ptr, size, access);
   GPUIB_CHECK_NNULL(*mr, "ibv_reg_mr");
 }
@@ -281,22 +282,22 @@ void Connection::initialize(int num_contexts) {
   uint8_t port{1};
   ib_init(ib_dev, port);
   create_qps(port, &ib_state->portinfo);
- 
+
   auto npes = backend->num_pes;
   auto dinfo = dest_info.data();
   for (int i{0}; i < num_contexts; i++) {
-    MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t), MPI_CHAR, dinfo + i * npes, sizeof(dest_info_t), MPI_CHAR, backend->thread_comm);
+    MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t), MPI_CHAR, dinfo + i * npes, sizeof(dest_info_t), MPI_CHAR, backend->backend_comm);
   }
 
   for (int i{0}; i < qps.size(); i++) {
     change_status_rtr(qps[i], &dest_info[i], port);
   }
-  MPI_Barrier(backend->thread_comm);
+  MPI_Barrier(backend->backend_comm);
   for (int i{0}; i < qps.size(); i++) {
     change_status_rts(qps[i], &dest_info[i]);
     dump_ibv_qp(qps[i], i);
   }
-  MPI_Barrier(backend->thread_comm);
+  MPI_Barrier(backend->backend_comm);
 }
 
 void Connection::finalize() {
