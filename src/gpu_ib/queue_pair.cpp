@@ -54,9 +54,7 @@ __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint32_t my_sq_counter
 __device__ void QueuePair::quiet() {
   constexpr size_t BROADCAST_SIZE = 1024 / __AMDGCN_WAVEFRONT_SIZE;
   constexpr uint64_t ALL_ONES_MASK = -1;
-  __shared__ uint64_t cq_wave_broadcast[BROADCAST_SIZE];
   __shared__ uint32_t wqe_broadcast[BROADCAST_SIZE];
-  __shared__ bool done_broadcast[BROADCAST_SIZE];
 
   uint64_t active_thread_mask = __ballot(1);
   uint8_t num_active_lanes = __popcll(active_thread_mask);
@@ -67,17 +65,11 @@ __device__ void QueuePair::quiet() {
   uint8_t my_logical_lane_id = __popcll(lower_active_lanes);
   bool is_lowest_active_lane{my_logical_lane_id == 0};
   uint8_t wavefront_id = get_flat_block_id() / __AMDGCN_WAVEFRONT_SIZE;
+  const uint64_t leader = __ffsll((unsigned long long)active_thread_mask) - 1;
 
-  cq_wave_broadcast[wavefront_id] = 0;
   wqe_broadcast[wavefront_id] = 0;
-  done_broadcast[wavefront_id] = false;
 
   while (true) {
-    if (is_lowest_active_lane) {
-      done_broadcast[wavefront_id] = false;
-      __threadfence_block();
-    }
-
     bool done{false};
     uint64_t quiet_amount{0};
     uint32_t wave_cq_consumer_counter{0};
@@ -94,16 +86,14 @@ __device__ void QueuePair::quiet() {
       }
       quiet_amount = min(num_active_lanes, quiet_val);
       if (is_lowest_active_lane) {
-        done_broadcast[wavefront_id] = __hip_atomic_compare_exchange_strong(&quiet_counter_active, &active, active + quiet_amount, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
-        if (done_broadcast[wavefront_id]) {
+        done = __hip_atomic_compare_exchange_strong(&quiet_counter_active, &active, active + quiet_amount, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+        if (done) {
           wave_cq_consumer_counter = __hip_atomic_fetch_add(&cq_consumer_counter, quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
-          cq_wave_broadcast[wavefront_id] = wave_cq_consumer_counter;
         }
-        __threadfence_block();
       }
-      done = done_broadcast[wavefront_id];
+      done = __shfl(done, leader);
     } while (!done);
-    wave_cq_consumer_counter = cq_wave_broadcast[wavefront_id];
+    wave_cq_consumer_counter = __shfl(wave_cq_consumer_counter, leader);
     uint64_t my_cq_consumer_counter = wave_cq_consumer_counter + my_logical_lane_id;
     uint64_t my_cq_index = my_cq_consumer_counter % cq_cnt;
 
