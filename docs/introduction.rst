@@ -20,27 +20,29 @@ The code is open and hosted at `<https://github.com/ROCm/rocSHMEM>`_.
 The rocSHMEM Programming Model
 -------------------------------
 
-How OpenSHMEM applications should intereact with GPUs is currently undefined and
-is an active discussion topic within the OpenSHMEM community.
-rocSHMEM is based upon the OpenSHMEM specification
-and it tries to adheres to the specifiction the best it can with regards to GPU semantics.
+Defining how OpenSHMEM applications interact with GPUs remains an
+ongoing active discussion within the OpenSHMEM community, and the OpenSHMEM
+specification has yet to coalesce on this topic.
+rocSHMEM extends beyond the OpenSHMEM specification to add semantic that
+support GPU kernel communication, while maintaining close resemblance to
+the original OpenSHMEM specification semantics. 
 
 Applications that use HIP can be easily interface with rocSHMEM.
-As per the HIP programing model,
+As per the HIP programming model,
 rocSHMEM has `__host__` APIs which are to be called from host code,
 and `__device__` APIs which can be called within GPU Kernels.
 Any device APIs which do not have any special suffixes/infixes (e.g. `_wg` or `_wave`)
-can be called by single GPU thread.
-Each thread can call into these APIs with a different parameters and
-will block until the calling wavefront completes.
-These APIs can be called in divergent code paths but it is not recommened.
+must be called by a single thread.
+GPU specific `_wg` and `_wave` APIs are expected to be called from multiple GPU threads
+and block until the calling scope completes.
+These APIs can be called in divergent code paths but this is not recommended.
 
 Wavefront APIs
 ==============
 The wavefront APIs are any API calls that have the suffix `_wave`.
 The parameters in which these routines are called must be
 the same for every thread in the wavefront.
-If each thread calls these routines with different parameters, the behaviour will be undefined.
+If any thread calls these routines with differing parameters, the behavior is undefined.
 These APIs will block until the calling wavefront completes.
 
 Workgroup APIs
@@ -48,5 +50,5 @@ Workgroup APIs
 The workgroup APIs are any API calls that have the suffix `_wg` or infix `_wg_`.
 The parameters in which these routines are called must be
 the same for every thread in the workgroup.
-If each thread calls these routines with different parameters, the behaviour will be undefined.
+If any thread calls these routines with differing parameters, the behavior is undefined.
 These APIs will block until the calling workgroup completes.

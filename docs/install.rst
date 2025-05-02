@@ -10,6 +10,9 @@ Installing rocSHMEM
 
 This topic describes how to install rocSHMEM.
 
+The README from the rocSHMEM distribution may contain additional information
+`<https://github.com/ROCm/rocSHMEM/README.md>`_.
+
 Requirements
 ---------------------------
 
@@ -38,7 +41,7 @@ To build and configure ROCm-Aware UCX (1.17.0 or later), you need to:
 
 .. code-block:: bash
 
-  git clone https://github.com/openucx/ucx.git -b v1.17.x
+  git clone https://github.com/ROCm/ucx.git -b v1.17.x
   cd ucx
   ./autogen.sh
   ./configure --prefix=<prefix_dir> --with-rocm=<rocm_path> --enable-mt
@@ -57,8 +60,8 @@ Then, you need to build Open MPI (5.0.7 or later) with UCX support.
   make -j 8 install
 
 Alternatively, we have script to install dependencies.
-However, it is not gauranteed to work and perform optimally on all platforms.
-Configuration options are platform dependent.
+Configuration options are platform dependent, so please review the script to
+check for fitness with your system.
 
 .. code-block:: bash
   export BUILD_DIR=/path/to/not_rocshmem_src_or_build/dependencies
@@ -70,7 +73,7 @@ For more information on OpenMPI-UCX support, please visit:
 Installing from a Package Manger
 ---------------------------------
 
-On a Ubuntu, rocSHMEM can be installed with the following command:
+On Ubuntu, rocSHMEM can be installed with the following command:
 
 .. code-block:: bash
 
@@ -78,12 +81,13 @@ On a Ubuntu, rocSHMEM can be installed with the following command:
 
 .. note::
 
-  This this installation method requires ROCm 6.4 or newer.
+  This installation method requires ROCm 6.4 or newer.
 
 Installing rocSHMEM from Source
 --------------------------------
 
-The following method can be used to build and install rocSHMEM with the IPC backend:
+The following method can be used to build and install rocSHMEM with the IPC
+on-node, GPU-to-GPU backend:
 
 .. code-block:: bash
 
@@ -93,9 +97,11 @@ The following method can be used to build and install rocSHMEM with the IPC back
   cd build
   ../scripts/build_configs/ipc_single
 
-The build script passes configuration options to CMake to setup canonical builds.
-There are other scripts in `./scripts/build_configs`
-directory but currently, only `ipc_single` is supported.
+The build script passes configuration options to CMake to setup a canonical
+build.
+There are other scripts for experimental configurations in the
+`./scripts/build_configs` directory, but currently, only `ipc_single`
+is supported.
 
 By default, the library is installed in `~/rocshmem`. You may provide a
 custom install path by supplying it as an argument. For example:
