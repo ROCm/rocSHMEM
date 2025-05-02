@@ -136,7 +136,12 @@ RandomAccessTester::RandomAccessTester(TesterArguments args) : Tester(args) {
   int wg_size = args.wg_size;
   _num_waves = (args.wg_size / 64) * args.num_wgs;
   _num_bins = args.thread_access / args.coal_coef;
-  assert((args.wg_size / 64) <= 1);
+  if ((args.wg_size / 64) > 1 || (64 % _num_bins) != 0) {
+    printf("Argument are incorrect\n");
+    assert((args.wg_size / 64) <= 1);
+    assert((64 % _num_bins) == 0);
+    abort();
+  }
 
   s_buf = (int *)rocshmem_malloc(max_size * wg_size * space);
   r_buf = (int *)rocshmem_malloc(max_size * wg_size * space);
@@ -218,7 +223,7 @@ void RandomAccessTester::verifyResults(uint64_t size) {
   }
 
   CHECK_HIP(hipMemcpy(h_dev_buf, r_buf, space * args.wg_size * size,
-		      hipMemcpyDeviceToHost));
+                      hipMemcpyDeviceToHost));
   CHECK_HIP(hipDeviceSynchronize());
   for (uint64_t i = 0; i < (space * args.wg_size * size / sizeof(int)); i++) {
     if (h_dev_buf[i] != h_buf[i]) {
