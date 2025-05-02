@@ -65,7 +65,7 @@ check for fitness with your system.
 
 .. code-block:: bash
   export BUILD_DIR=/path/to/not_rocshmem_src_or_build/dependencies
-  /path/to/rocshmem_src/sripts/install_dependencies.sh
+  /path/to/rocshmem_src/scripts/install_dependencies.sh
 
 For more information on OpenMPI-UCX support, please visit:
 `GPU-enabled Message Passing Interface <https://rocm.docs.amd.com/en/latest/how-to/gpu-enabled-mpi.html>`_

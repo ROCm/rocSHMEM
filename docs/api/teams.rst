@@ -54,7 +54,7 @@ ROCSHMEM_TEAM_SPLIT_STRIDED
   :param start:       The lowest PE number of the subset of the PEs
                       from the parent team that will form the new
                       team.
-  :param stide:       The stride between team PE members in the
+  :param stride:      The stride between team PE members in the
                       parent team that comprise the subset of PEs
                       that will form the new team.
   :param size:        The number of PEs in the new team.

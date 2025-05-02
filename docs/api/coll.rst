@@ -49,7 +49,7 @@ ROCSHMEM_SYNC_ALL
   :returns:    None
 
 **Description:**
-This rountine is the same as ``rocshmem_wg_team_sync`` if were to be called on the world team.
+This routine is the same as ``rocshmem_wg_team_sync`` if were to be called on the world team.
 
 
 ROSHMEM_ALLTOALL
@@ -88,7 +88,7 @@ ROCSHMEM_BROADCAST
 
 **Description:**
 Perform a broadcast between PEs in the team.
-The caller is blocked until the broadcase completes.
+The caller is blocked until the broadcast completes.
 
 Valid ``TYPENAME`` and ``TYPE`` values can be seen at :ref:`RMA_TYPES`.
 
@@ -182,7 +182,7 @@ SUPPORTED REDUCTION TYPES AND OPERATIONS
       - uint
       - and, or, xor, max, min, sum, prod
       - No
-    * - unsinged long
+    * - unsigned long
       - ulong
       - and, or, xor, max, min, sum, prod
       - No

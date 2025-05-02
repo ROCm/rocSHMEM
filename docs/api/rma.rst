@@ -9,7 +9,7 @@ Remote Memory Access Routines
 -----------------------------------------
 
 - Routines with the ``_wave`` and ``_wg`` suffixes,
-  require all threads in a wavefront and workgroup, respecivly,
+  require all threads in a wavefront and workgroup, respectively,
   to call into the routine with the same parameters.
 - Routines with the ``_nbi`` substring will return as soon as the request is posted.
 - Routines without the ``_nbi`` substring block until the operation completes locally.
@@ -200,7 +200,7 @@ SUPPORTED RMA DATA TYPES
     * - unsigned int
       - uint
       - Yes
-    * - unsinged long
+    * - unsigned long
       - ulong
       - Yes
     * - unsigned long long

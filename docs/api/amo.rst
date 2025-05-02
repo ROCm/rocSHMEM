@@ -309,7 +309,7 @@ SUPPORTED AMO DATA TYPES
     * - unsigned int
       - uint
       - Yes
-    * - unsinged long
+    * - unsigned long
       - ulong
       - Yes
     * - unsigned long long
@@ -361,7 +361,7 @@ SUPPORTED AMO DATA TYPES
     * - unsigned int
       - uint
       - Yes
-    * - unsinged long
+    * - unsigned long
       - ulong
       - Yes
     * - unsigned long long
@@ -398,7 +398,7 @@ SUPPORTED AMO DATA TYPES
     * - unsigned int
       - uint
       - Yes
-    * - unsinged long
+    * - unsigned long
       - ulong
       - Yes
     * - unsigned long long

@@ -13,7 +13,7 @@ ROCSHMEM_INIT
 
 .. cpp:function:: __host__ void rocshmem_init(void)
 
-  :param: None
+  :Parameters: None
   :returns: None
 
 **Description:**
@@ -25,7 +25,7 @@ a user must select the device that this PE is associated to by calling
 
 .. cpp:function:: __device__ void rocshmem_wg_init(void)
 
-  :param: None
+  :Parameters: None
   :returns: None
 
 **Description:**
@@ -37,7 +37,7 @@ ROCSHMEM_FINALIZE
 -----------------
 .. cpp:function:: __host__ void rocshmem_finalize(void)
 
-  :paramameters: None
+  :Parameters: None
   :returns: None
 
 **Description:**
@@ -45,7 +45,7 @@ Finalize the rocSHMEM runtime.
 
 .. cpp:function:: __device__ void rocshmem_wg_finalize(void)
 
-  :paramameters: None
+  :Parameters: None
   :returns: None
 
 **Description:**
@@ -58,7 +58,7 @@ ROCSHMEM_N_PES
 
 .. cpp:function:: __host__ int rocshmem_n_pes(void)
 
-  :paramameters: None
+  :Parameters: None
   :returns: Total number of PEs.
 
 **Description:**
@@ -68,11 +68,11 @@ This routine can be called before ``rocshmem_init``.
 .. cpp:function:: __device__ int rocshmem_n_pes(void)
 .. cpp:function:: __device__ int rocshmem_ctx_n_pes(rocshmem_ctx_t ctx)
 
-  :paramameters ctx: GPU side context handle.
+  :param ctx: GPU side context handle.
   :returns: Total number of PEs.
 
 **Description:**
-Query the total number of PEs for a givent context.
+Query the total number of PEs for a given context.
 Can be called per thread with no performance penalty.
 
 ROCSHMEM_MY_PE
@@ -80,7 +80,7 @@ ROCSHMEM_MY_PE
 
 .. cpp:function:: __host__ int rocshmem_my_pe(void)
 
-  :paramameters: None
+  :Parameters: None
   :returns: PE ID of the caller
 
 **Description:**
@@ -90,7 +90,7 @@ This routine can be called before ``rocshmem_init``.
 .. cpp:function:: __device__ int rocshmem_my_pe(void)
 .. cpp:function:: __device__ int rocshmem_ctx_my_pe(rocshmem_ctx_t ctx)
 
-  :paramameters ctx: GPU side context handle.
+  :param ctx: GPU side context handle.
   :returns: PE ID of the caller
 
 **Description:**
