@@ -83,14 +83,16 @@ __device__ void GPUIBContext::putmem_nbi(void *dest, const void *source, size_t 
 
 __device__ void GPUIBContext::putmem_wave(void *dest, const void *source, size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
-  qps[pe].put_nbi_wave(base_heap[pe] + L_offset, source, nelems, pe);
-  qps[pe].quiet();
+  if (is_thread_zero_in_wave()) {
+    qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
+    qps[pe].quiet();
+  }
 }
 
 __device__ void GPUIBContext::putmem_nbi_wave(void *dest, const void *source, size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
   if (is_thread_zero_in_wave()) {
-    qps[pe].put_nbi_wave(base_heap[pe] + L_offset, source, nelems, pe);
+    qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
   }
 }
 

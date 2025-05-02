@@ -66,16 +66,6 @@ class QueuePair {
   __device__ void put_nbi(void *dest, const void *source, size_t nelems, int pe);
 
   /**
-   * @brief Create and enqueue a non-blocking put work queue entry (wqe).
-   *
-   * @param[in] dest Destination address for data transmission.
-   * @param[in] source Source address for data transmission.
-   * @param[in] nelems Size in bytes of data transmission.
-   * @param[in] pe Destination processing element of data transmission.
-   */
-  __device__ void put_nbi_wave(void *dest, const void *source, size_t nelems, int pe);
-
-  /**
    * @brief Empty all completions from the completion queue.
    */
   __device__ void quiet();
