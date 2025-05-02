@@ -35,7 +35,7 @@ TEST_F(WavefrontSizeTestFixture, constant_matches_runtime) {
 
   for (int i = 0; i < device_count; i++) {
     CHECK_HIP(hipGetDeviceProperties(&prop, i));
-    ASSERT_EQ(WF_SIZE, prop.warpSize);
+    ASSERT_EQ(__AMDGCN_WAVEFRONT_SIZE, prop.warpSize);
   }
 }
 

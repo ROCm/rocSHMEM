@@ -28,7 +28,6 @@
 #include <iostream>
 #include <vector>
 
-#include "constants.hpp"
 #include "bin.hpp"
 
 /**

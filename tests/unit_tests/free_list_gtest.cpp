@@ -38,12 +38,12 @@ template <typename List, typename Value>
 __global__ void pop_all(List* list, Value* values, const std::size_t count) {
   const auto stride = blockDim.x * gridDim.x;
   const auto thread_index = blockIdx.x * blockDim.x + threadIdx.x;
-  // One push per block. block size is always WF_SIZE
-  for (std::size_t i = thread_index; i < count * WF_SIZE; i += stride) {
+  // One push per block. block size is always __AMDGCN_WAVEFRONT_SIZE
+  for (std::size_t i = thread_index; i < count * __AMDGCN_WAVEFRONT_SIZE; i += stride) {
     if (is_thread_zero_in_wave()) {
       auto last = list->pop_front();
       if (values != nullptr) {
-        values[i / WF_SIZE] = last.value;
+        values[i / __AMDGCN_WAVEFRONT_SIZE] = last.value;
       }
     }
   }
@@ -54,10 +54,10 @@ __global__ void push_all(List* list, const Value* values,
                          const std::size_t count) {
   const auto stride = blockDim.x * gridDim.x;
   const auto thread_index = blockIdx.x * blockDim.x + threadIdx.x;
-  // One push per block. block size is always WF_SIZE
-  for (std::size_t i = thread_index; i < count * WF_SIZE; i += stride) {
+  // One push per block. block size is always __AMDGCN_WAVEFRONT_SIZE
+  for (std::size_t i = thread_index; i < count * __AMDGCN_WAVEFRONT_SIZE; i += stride) {
     if (is_thread_zero_in_wave()) {
-      list->push_back(values[i / WF_SIZE]);
+      list->push_back(values[i / __AMDGCN_WAVEFRONT_SIZE]);
     }
   }
 }
@@ -95,7 +95,7 @@ TYPED_TEST(FreeListTestFixture, push_host_pop_device) {
   auto& free_list = this->free_list;
 
   thrust::device_vector<T> results(h_input.size());
-  const auto block_size = WF_SIZE;
+  const auto block_size = __AMDGCN_WAVEFRONT_SIZE;
   rocshmem::pop_all<<<1, block_size>>>(free_list, results.data().get(),
                                        results.size());
   CHECK_HIP(hipDeviceSynchronize());
@@ -121,7 +121,7 @@ TYPED_TEST(FreeListTestFixture, push_host_concurrent_pop_device) {
 
   thrust::device_vector<T> results(h_input.size());
   const auto num_blocks = h_input.size();
-  const auto block_size = WF_SIZE;
+  const auto block_size = __AMDGCN_WAVEFRONT_SIZE;
   rocshmem::pop_all<<<num_blocks, block_size>>>(free_list, results.data().get(),
                                                 results.size());
   CHECK_HIP(hipDeviceSynchronize());
@@ -150,7 +150,7 @@ TYPED_TEST(FreeListTestFixture, push_host_pop_push_device) {
   auto& d_input = this->d_input;
   auto& free_list = this->free_list;
 
-  const auto block_size = WF_SIZE;
+  const auto block_size = __AMDGCN_WAVEFRONT_SIZE;
 
   rocshmem::pop_all<FreeListType, T><<<1, block_size>>>(free_list, nullptr, 0);
   CHECK_HIP(hipDeviceSynchronize());
@@ -176,7 +176,7 @@ TYPED_TEST(FreeListTestFixture, push_host_pop_concurrent_push_device) {
   auto& d_input = this->d_input;
   auto& free_list = this->free_list;
 
-  const auto block_size = WF_SIZE;
+  const auto block_size = __AMDGCN_WAVEFRONT_SIZE;
   rocshmem::pop_all<FreeListType, T><<<1, block_size>>>(free_list, nullptr, 0);
   CHECK_HIP(hipDeviceSynchronize());
 
@@ -208,7 +208,7 @@ TYPED_TEST(FreeListTestFixture, push_host_concurrent_pop_push_device) {
   auto& d_input = this->d_input;
   auto& free_list = this->free_list;
 
-  const auto block_size = WF_SIZE;
+  const auto block_size = __AMDGCN_WAVEFRONT_SIZE;
   rocshmem::pop_all<FreeListType, T><<<1, block_size>>>(free_list, nullptr, 0);
   CHECK_HIP(hipDeviceSynchronize());
 

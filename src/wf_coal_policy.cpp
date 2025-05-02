@@ -99,7 +99,7 @@ __device__ bool WfCoalOn::coalesce(int pe, const void *source, const void *dest,
    * modulo based of the wavefront size (which is a characteristic of
    * the hardware).
    */
-  int wv_id = get_flat_block_id() % WF_SIZE;
+  int wv_id = get_flat_block_id() % __AMDGCN_WAVEFRONT_SIZE;
 
   /*
    * If coalescable evaluates to true, this thread is __NOT__ responsible

@@ -155,7 +155,6 @@ class QueuePair {
    *   uint64_t                comp_mask;
    * };
   */
-  mlx5_cqe64 *cq_buf_head{nullptr};
   mlx5_cqe64 *cq_buf{nullptr};
   volatile uint32_t *cq_dbrec{nullptr};
   uint32_t cq_cnt{0};
@@ -189,7 +188,6 @@ class QueuePair {
    */
   volatile uint32_t *dbrec{nullptr};
   uint64_t *sq_buf{nullptr};
-  uint64_t *sq_buf_head{nullptr};
   uint16_t sq_wqe_cnt{0};
   uint32_t sq_posted{0};
   uint32_t sq_db_touched{0};

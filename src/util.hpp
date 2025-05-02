@@ -29,13 +29,7 @@
 
 #include <cstdio>
 
-#include "assembly.hpp"
-#include "constants.hpp"
-
 namespace rocshmem {
-
-#define LOAD(VAR) __atomic_load_n((VAR), __ATOMIC_SEQ_CST)
-#define STORE(DST, SRC) __atomic_store_n((DST), (SRC), __ATOMIC_SEQ_CST)
 
 #define CHECK_HIP(cmd)                                                        \
   {                                                                           \
@@ -136,15 +130,15 @@ __device__ __forceinline__ int get_flat_id() {
  * Returns true if the caller's thread flad_id is 0 in its wave.
  */
 __device__ __forceinline__ bool is_thread_zero_in_wave() {
-  return (get_flat_block_id() % WF_SIZE) == 0;
+  return (get_flat_block_id() % __AMDGCN_WAVEFRONT_SIZE) == 0;
 }
 
 extern __constant__ int* print_lock;
 
 template <typename... Args>
 __device__ void gpu_dprintf(const char* fmt, const Args&... args) {
-  for (int i{0}; i < WF_SIZE; i++) {
-    if ((get_flat_block_id() % WF_SIZE) == i) {
+  for (int i{0}; i < __AMDGCN_WAVEFRONT_SIZE; i++) {
+    if ((get_flat_block_id() % __AMDGCN_WAVEFRONT_SIZE) == i) {
       /*
        * GPU-wide global lock that ensures that both prints are executed
        * by a single thread atomically.  We deliberately break control
@@ -163,84 +157,6 @@ __device__ void gpu_dprintf(const char* fmt, const Args&... args) {
 
       *print_lock = 0;
     }
-  }
-}
-
-__device__ __forceinline__ void memcpy(void* dst, void* src, size_t size) {
-  uint8_t* dst_bytes{static_cast<uint8_t*>(dst)};
-  uint8_t* src_bytes{static_cast<uint8_t*>(src)};
-
-  for (int i{16}; i > 0; i >>= 1) {
-    while (size >= i) {
-      store_asm(src_bytes, dst_bytes, i);
-      src_bytes += i;
-      dst_bytes += i;
-      size -= i;
-    }
-  }
-}
-
-__device__ __forceinline__ void memcpy_wg(void* dst, void* src, size_t size) {
-  int thread_id{get_flat_block_id()};
-  int block_size{get_flat_block_size()};
-
-  int cpy_size{};
-  uint8_t* dst_bytes{nullptr};
-  uint8_t* dst_def{nullptr};
-  uint8_t* src_bytes{nullptr};
-  uint8_t* src_def{nullptr};
-
-  dst_def = reinterpret_cast<uint8_t*>(dst);
-  src_def = reinterpret_cast<uint8_t*>(src);
-  dst_bytes = dst_def;
-  src_bytes = src_def;
-
-  for (int j{16}; j > 0; j >>= 1) {
-    cpy_size = size / j;
-    for (int i{thread_id}; i < cpy_size; i += block_size) {
-      dst_bytes = dst_def;
-      src_bytes = src_def;
-
-      src_bytes += i * j;
-      dst_bytes += i * j;
-
-      store_asm(src_bytes, dst_bytes, j);
-    }
-    size -= cpy_size * j;
-    dst_def += cpy_size * j;
-    src_def += cpy_size * j;
-  }
-}
-
-__device__ __forceinline__ void memcpy_wave(void* dst, void* src, size_t size) {
-  int wave_tid = get_flat_block_id() % WF_SIZE;
-  int wave_size{wave_SZ()};
-
-  int cpy_size{};
-  uint8_t* dst_bytes{nullptr};
-  uint8_t* dst_def{nullptr};
-  uint8_t* src_bytes{nullptr};
-  uint8_t* src_def{nullptr};
-
-  dst_def = reinterpret_cast<uint8_t*>(dst);
-  src_def = reinterpret_cast<uint8_t*>(src);
-  dst_bytes = dst_def;
-  src_bytes = src_def;
-
-  for (int j{16}; j > 0; j >>= 1) {
-    cpy_size = size / j;
-    for (int i{wave_tid}; i < cpy_size; i += wave_size) {
-      dst_bytes = dst_def;
-      src_bytes = src_def;
-
-      src_bytes += i * j;
-      dst_bytes += i * j;
-
-      store_asm(src_bytes, dst_bytes, j);
-    }
-    size -= cpy_size * j;
-    dst_def += cpy_size * j;
-    src_def += cpy_size * j;
   }
 }
 

@@ -281,12 +281,6 @@ class GPUIBBackend {
    */
   int my_pe{-1};
 
-  /**
-   * @brief indicate when init is done on the CPU. Non-blocking init is only
-   * available with GPU-IB
-   */
-  uint8_t* done_init{nullptr};
-
   MPI_Comm thread_comm{};
 
   /**

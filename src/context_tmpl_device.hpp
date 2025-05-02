@@ -163,32 +163,32 @@ int Context::test(T *ivars, int cmp, T val) {
   volatile T *vol_ivars = reinterpret_cast<T *>(ivars);
   switch (cmp) {
     case ROCSHMEM_CMP_EQ:
-      if (uncached_load(vol_ivars) == val) {
+      if (*vol_ivars == val) {
         ret = 1;
       }
       break;
     case ROCSHMEM_CMP_NE:
-      if (uncached_load(vol_ivars) != val) {
+      if (*vol_ivars != val) {
         ret = 1;
       }
       break;
     case ROCSHMEM_CMP_GT:
-      if (uncached_load(vol_ivars) > val) {
+      if (*vol_ivars > val) {
         ret = 1;
       }
       break;
     case ROCSHMEM_CMP_GE:
-      if (uncached_load(vol_ivars) >= val) {
+      if (*vol_ivars >= val) {
         ret = 1;
       }
       break;
     case ROCSHMEM_CMP_LT:
-      if (uncached_load(vol_ivars) < val) {
+      if (*vol_ivars < val) {
         ret = 1;
       }
       break;
     case ROCSHMEM_CMP_LE:
-      if (uncached_load(vol_ivars) <= val) {
+      if (*vol_ivars <= val) {
         ret = 1;
       }
       break;
