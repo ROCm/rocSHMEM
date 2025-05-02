@@ -36,7 +36,7 @@ class GPUIBBackend;
 class QueuePair;
 
 class Connection {
- protected:
+ public:
   typedef struct ib_state {
     struct ibv_context* context;
     struct ibv_pd* pd;
@@ -44,6 +44,9 @@ class Connection {
     struct ibv_port_attr portinfo;
   } ib_state_t;
 
+  ib_state_t* ib_state{nullptr};
+
+ protected:
   typedef struct dest_info {
     int lid;
     int qpn;
@@ -165,8 +168,6 @@ class Connection {
   GPUIBBackend* backend{nullptr};
 
   uint32_t sq_size{1024};
-
-  ib_state_t* ib_state{nullptr};
 
   char* requested_dev{nullptr};
 

@@ -75,17 +75,6 @@ class NetworkImpl {
   void heap_memory_rkey(char *local_heap_base, size_t heap_size, MPI_Comm thread_comm);
 
   /**
-   * @brief Allocate and initialize the atomic region.
-   *
-   * The atomic region is used by the atomic operations which have return
-   * values. The library user does not need to provide an address for the
-   * return value so we are forced to do it on their behalf.
-   *
-   * The atomic_ret member is initialized upon completion of this method.
-   */
-  void setup_atomic_region();
-
-  /**
    * @brief Allocate and initialize device-side queue pair objects.
    *
    * Upon completion, the gpu_qps member will be initialized.

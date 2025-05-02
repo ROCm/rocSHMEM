@@ -34,7 +34,8 @@
 
 #include <infiniband/mlx5dv.h>
 
-#include "atomic_return.hpp"
+#include "containers/free_list.hpp"
+#include "memory/hip_allocator.hpp"
 
 namespace rocshmem {
 
@@ -52,10 +53,8 @@ class QueuePair {
 
   /**
    * @brief Constructor.
-   *
-   * @param[in] backend GPUIBBackend needed for member access.
    */
-  explicit QueuePair(GPUIBBackend *backend);
+  explicit QueuePair(struct ibv_pd* pd);
 
   /**
    * @brief Create and enqueue a non-blocking put work queue entry (wqe).
@@ -106,8 +105,6 @@ class QueuePair {
    */
   __device__ void atomic_nofetch(void *dest, int64_t value, int64_t cond, int pe, uint8_t atomic_op);
 
-  atomic_ret_t atomic_ret{};
-
   char *const *base_heap{nullptr};
 
  private:
@@ -119,12 +116,8 @@ class QueuePair {
    * @param[in] laddr Local address.
    * @param[in] raddr Remote address.
    * @param[in] opcode Operation to be performed.
-   * @param[in] atomic_data An atomic data value to be used.
-   * @param[in] atomic_cmp An atomic comparison operation to be performed.
-   * @param[in] atomic_ret_pos Index into atomic return structure.
    */
-  __device__ __attribute__((noinline)) void post_wqe_amo(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode,
-                                                         int64_t atomic_data, int64_t atomic_cmp, uint64_t atomic_ret_pos);
+  __device__ __attribute__((noinline)) uint64_t post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
 
   /**
    * @brief Helper method to build work requests for the send queue.
@@ -208,6 +201,19 @@ class QueuePair {
   uint32_t qp_num{0};
   uint32_t rkey{0};
   uint32_t lkey{0};
+
+  uint64_t* nonfetching_atomic{nullptr};
+  uint32_t nonfetching_atomic_lkey{0};
+
+  uint64_t* fetching_atomic{nullptr};
+  uint32_t fetching_atomic_lkey{0};
+
+  static const uint32_t FETCHING_ATOMIC_CNT{1024};
+  static_assert(FETCHING_ATOMIC_CNT % __AMDGCN_WAVEFRONT_SIZE == 0);
+  using FreeListT = FreeList<uint64_t*, HIPAllocator>;
+  FreeListT* fetching_atomic_freelist{nullptr};
+
+  HIPAllocator allocator{};
 };
 
 }  // namespace rocshmem

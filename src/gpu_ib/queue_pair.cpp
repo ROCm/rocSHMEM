@@ -26,14 +26,30 @@
 
 #include "backend_ib.hpp"
 #include "endian.hpp"
+#include "gpuib_macros.inl"
 #include "segment_builder.hpp"
 #include "util.hpp"
 
 namespace rocshmem {
 
-QueuePair::QueuePair(GPUIBBackend *backend) {
-  atomic_ret.atomic_lkey = backend->networkImpl.atomic_ret->atomic_lkey;
-  atomic_ret.atomic_counter = 0;
+QueuePair::QueuePair(struct ibv_pd* pd) {
+  allocator.allocate((void**)&nonfetching_atomic, 8);
+  int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
+  ibv_mr *mr = ibv_reg_mr(pd, nonfetching_atomic, 8, access);
+  GPUIB_CHECK_NNULL(mr, "ibv_reg_mr");
+  nonfetching_atomic_lkey = htobe32(mr->lkey);
+
+  allocator.allocate((void**)&fetching_atomic, 8 * FETCHING_ATOMIC_CNT);
+  access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
+  mr = ibv_reg_mr(pd, fetching_atomic, 8 * FETCHING_ATOMIC_CNT, access);
+  GPUIB_CHECK_NNULL(mr, "ibv_reg_mr");
+  fetching_atomic_lkey = htobe32(mr->lkey);
+
+  allocator.allocate((void**)&fetching_atomic_freelist, sizeof(FreeListT*));
+  new (fetching_atomic_freelist) FreeListT();
+  for(int i{0}; i < FETCHING_ATOMIC_CNT; i+=__AMDGCN_WAVEFRONT_SIZE) {
+    fetching_atomic_freelist->push_back(fetching_atomic + i);
+  }
 }
 
 __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint32_t my_sq_counter) {
@@ -179,38 +195,83 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   }
 }
 
-__device__ void QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode,
-                                                 int64_t atomic_data, int64_t atomic_cmp, uint64_t atomic_ret_pos) {
-  uint32_t num_wqes = 1;
+__device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
+  uint64_t activemask = __ballot(1);
+  uint8_t num_active_lanes = __popcll(activemask);
+  uint8_t my_logical_lane_id = __popcll(activemask & __lanemask_lt());
+  bool is_leader{my_logical_lane_id == 0};
+  const uint64_t leader_phys_lane_id = __ffsll((unsigned long long)activemask) - 1;
+  uint8_t num_wqes{num_active_lanes};
+  uint32_t wave_sq_counter{0};
 
-  uint64_t my_sq_counter = atomicAdd(&sq_posted, num_wqes);
-  uint64_t my_sq_index = my_sq_counter % sq_wqe_cnt;
+  if (is_leader) {
+    wave_sq_counter = __hip_atomic_fetch_add(&sq_posted, num_wqes, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+  }
+  wave_sq_counter = __shfl(wave_sq_counter, leader_phys_lane_id);
+  uint32_t my_sq_counter = wave_sq_counter + my_logical_lane_id;
+  uint32_t my_sq_index = my_sq_counter % sq_wqe_cnt;
 
-  uint32_t lkey_in_stack_frame = lkey;
-  uint32_t rkey_in_stack_frame = rkey;
+  while (true) {
+    uint32_t db_touched = __hip_atomic_load(&sq_db_touched, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+    uint32_t sunk = __hip_atomic_load(&sq_sunk, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+    uint32_t num_active_sq_entries = db_touched - sunk;
+    uint32_t num_free_entries = min(sq_wqe_cnt, cq_cnt) - num_active_sq_entries;
+    uint32_t num_entries_until_wave_last_entry = wave_sq_counter + num_active_lanes - db_touched;
+    if (num_free_entries > num_entries_until_wave_last_entry) {
+      break;
+    }
+    quiet();
+  }
+
+  uint64_t* wave_fetch_atomic{nullptr};
+  if (fetching) {
+    if (is_leader) {
+      auto res = fetching_atomic_freelist->pop_front();
+      while (!res.success) {
+        res = fetching_atomic_freelist->pop_front();
+      }
+      wave_fetch_atomic = res.value;
+    }
+    wave_fetch_atomic = (uint64_t*)__shfl((uint64_t)wave_fetch_atomic, leader_phys_lane_id);
+  }
+
+  outstanding_wqes[my_sq_counter % OUTSTANDING_TABLE_SIZE] = my_sq_counter;
 
   SegmentBuilder seg_build(my_sq_index, sq_buf);
-//  seg_build.update_ctrl_seg(opcode, my_sq_counter, ctrl_qp_sq_in_stack_frame, ctrl_sig_in_stack_frame);
-//  seg_build.update_raddr_seg(raddr, rkey_in_stack_frame);
+  seg_build.update_ctrl_seg(my_sq_counter, opcode, 0, qp_num, MLX5_WQE_CTRL_CQ_UPDATE, 4, 0, 0);
+  seg_build.update_raddr_seg(raddr, rkey);
+  seg_build.update_atomic_seg(atomic_data, atomic_cmp);
+  if (fetching) {
+    seg_build.update_data_seg(wave_fetch_atomic + my_logical_lane_id, 8, fetching_atomic_lkey);
+  } else {
+    seg_build.update_data_seg(nonfetching_atomic, 8, nonfetching_atomic_lkey);
+  }
+  __atomic_signal_fence(__ATOMIC_SEQ_CST);
 
-//  if (opcode == MLX5_OPCODE_ATOMIC_FA || opcode == MLX5_OPCODE_ATOMIC_CS) {
-//    seg_build.update_atomic_seg(atomic_data, atomic_cmp);
-//    size = 8;
-//    lkey_in_stack_frame = atomic_ret.atomic_lkey;
-//    laddr = &atomic_ret.atomic_base_ptr[atomic_ret_pos];
-//  }
+  if (is_leader) {
+    uint32_t db_touched {0};
+    do {
+      db_touched = __hip_atomic_load(&sq_db_touched, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+    } while (db_touched != wave_sq_counter);
 
-//  seg_build.update_data_seg(laddr, size, lkey_in_stack_frame);
+    uint8_t *base_ptr = reinterpret_cast<uint8_t*>(sq_buf);
+    uint64_t* ctrl_wqe_8B_for_db = reinterpret_cast<uint64_t*>(&base_ptr[64 * ((wave_sq_counter + num_wqes - 1) % sq_wqe_cnt)]);
+    ring_doorbell(*ctrl_wqe_8B_for_db, wave_sq_counter + num_wqes);
 
-//  uint16_t be_sq_counter;
-//  uint16_t sq_counter_u16 = my_sq_counter;
-//  swap_endian_store(&be_sq_counter, sq_counter_u16);
+    __hip_atomic_fetch_add(&quiet_posted, num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+    __hip_atomic_store(&sq_db_touched, wave_sq_counter + num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+  }
 
-//  if (ring_db) {
-//    uint64_t db_val = sq_buf[8 * ((be_sq_counter - num_wqes) % sq_wqe_cnt)];
-//    update_wqe_ce(num_wqes);
-//    ring_doorbell(db_val);
-//  }
+  uint64_t ret{0};
+  if (fetching) {
+    quiet();
+    ret = wave_fetch_atomic[my_logical_lane_id];
+    __atomic_signal_fence(__ATOMIC_SEQ_CST);
+    if (is_leader) {
+      fetching_atomic_freelist->push_back(wave_fetch_atomic);
+    }
+  }
+  return ret;
 }
 
 /******************************************************************************
@@ -228,27 +289,14 @@ __device__ void QueuePair::put_nbi_wave(void *dest, const void *source, size_t n
   post_wqe_rma(pe, nelems, src, dst, MLX5_OPCODE_RDMA_WRITE);
 }
 
-__device__ int64_t QueuePair::atomic_fetch(void *dest, int64_t value, int64_t cond, int pe, uint8_t atomic_op) {
-  uint64_t pos = atomicAdd(&atomic_ret.atomic_counter, 1);
-  pos = pos % max_nb_atomic;
-  int64_t *atomic_base_ptr = reinterpret_cast<int64_t*>(atomic_ret.atomic_base_ptr);
-  int64_t *load_address = &atomic_base_ptr[pos];
-  *load_address = -100;
+__device__ int64_t QueuePair::atomic_fetch(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe, uint8_t atomic_op) {
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
-  post_wqe_amo(pe, sizeof(int64_t), nullptr, dst, atomic_op, value, cond, pos);
-  quiet();
-  while (uncached_load(load_address) == -100) { }
-  int64_t ret = *load_address;
-  __threadfence();
-  return ret;
+  return post_wqe_amo(pe, sizeof(int64_t), dst, atomic_op, atomic_data, atomic_cmp, true);
 }
 
-__device__ void QueuePair::atomic_nofetch(void *dest, int64_t value, int64_t cond, int pe, uint8_t atomic_op) {
-  uint64_t pos = atomicAdd(&atomic_ret.atomic_counter, 1);
-  pos = pos % max_nb_atomic;
+__device__ void QueuePair::atomic_nofetch(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe, uint8_t atomic_op) {
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
-  post_wqe_amo(pe, sizeof(int64_t), nullptr, dst, atomic_op, value, cond, pos);
-  quiet();
+  post_wqe_amo(pe, sizeof(int64_t), dst, atomic_op, atomic_data, atomic_cmp, false);
 }
 
 }  // namespace rocshmem

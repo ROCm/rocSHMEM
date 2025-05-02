@@ -294,8 +294,6 @@ void Connection::finalize() {
   ibv_free_device_list(dev_list);
   int ret = ibv_dereg_mr(backend->networkImpl.heap_mr);
   GPUIB_CHECK_ZERO(ret, "ibv_dereg_mr");
-  ret = ibv_dereg_mr(backend->networkImpl.mr);
-  GPUIB_CHECK_ZERO(ret, "ibv_dereg_mr");
 }
 
 void Connection::ib_init(struct ibv_device* ib_dev, uint8_t port) {

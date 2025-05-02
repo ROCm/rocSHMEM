@@ -32,12 +32,6 @@
 
 namespace rocshmem {
 
-void NetworkImpl::setup_atomic_region() {
-  allocate_atomic_region(&atomic_ret, num_contexts);
-  connection->reg_mr(atomic_ret->atomic_base_ptr, sizeof(uint64_t) * max_nb_atomic * num_contexts, &mr);
-  atomic_ret->atomic_lkey = htobe32(mr->lkey);
-}
-
 void NetworkImpl::heap_memory_rkey(char *local_heap_base, size_t heap_size, MPI_Comm thread_comm) {
   /*
    * Allocate host-side memory to hold remote keys for all processing elements.
@@ -103,7 +97,7 @@ void NetworkImpl::setup_gpu_qps(GPUIBBackend *backend) {
   int connections = connection->total_number_connections();
   CHECK_HIP(hipMalloc(&gpu_qps, sizeof(QueuePair) * connections));
   for (int i{0}; i < connections; i++) {
-    new (&gpu_qps[i]) QueuePair(backend);
+    new (&gpu_qps[i]) QueuePair(connection->ib_state->pd);
     connection->init_gpu_qp_from_connection(&gpu_qps[i], i);
   }
 }
@@ -116,7 +110,6 @@ void NetworkImpl::networkHostSetup(GPUIBBackend *backend) {
   connection->initialize(num_contexts);
   const auto &heap_bases{backend->heap.get_heap_bases()};
   heap_memory_rkey(heap_bases[my_pe], backend->heap.get_size(), backend->thread_comm);
-  setup_atomic_region();
   setup_gpu_qps(backend);
 }
 
@@ -138,7 +131,6 @@ void NetworkImpl::networkHostInit(GPUIBContext *ctx, int context_id) {
     int offset = num_pes * context_id + i;
     new (ctx->getQueuePair(i)) QueuePair(gpu_qps[offset]);
     auto *qp = ctx->getQueuePair(i);
-    qp->atomic_ret.atomic_base_ptr = &atomic_ret->atomic_base_ptr[max_nb_atomic * context_id];
     qp->base_heap = ctx->base_heap;
   }
 }
