@@ -58,6 +58,5 @@ cmake \
     -DBUILD_FUNCTIONAL_TESTS=ON \
     -DBUILD_EXAMPLES=ON \
     -DBUILD_UNIT_TESTS=OFF \
-    -DBUILD_CODE_COVERAGE=ON \
     $src_path
 cmake --build . --parallel 8
