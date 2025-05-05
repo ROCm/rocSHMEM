@@ -135,14 +135,14 @@ class QueuePair {
    *
    * @param[in] db_val Doorbell value is written by method.
    */
-  __device__ void ring_doorbell(uint64_t db_val, uint32_t my_sq_counter);
+  __device__ void ring_doorbell(uint64_t db_val, uint64_t my_sq_counter);
 
   db_reg_t db{};
 
-  uint32_t cq_consumer{0};
-  uint32_t quiet_posted{0};
-  uint32_t quiet_active{0};
-  uint32_t quiet_completed{0};
+  uint64_t cq_consumer{0};
+  uint64_t quiet_posted{0};
+  uint64_t quiet_active{0};
+  uint64_t quiet_completed{0};
 
   /*
    * struct mlx5dv_cq {
@@ -189,12 +189,12 @@ class QueuePair {
   volatile uint32_t *dbrec{nullptr};
   uint64_t *sq_buf{nullptr};
   uint16_t sq_wqe_cnt{0};
-  uint32_t sq_posted{0};
-  uint32_t sq_db_touched{0};
-  uint32_t sq_sunk{0};
+  uint64_t sq_posted{0};
+  uint64_t sq_db_touched{0};
+  uint64_t sq_sunk{0};
 
   static constexpr uint16_t OUTSTANDING_TABLE_SIZE = -1;
-  uint32_t outstanding_wqes[OUTSTANDING_TABLE_SIZE]{0};
+  uint64_t outstanding_wqes[OUTSTANDING_TABLE_SIZE]{0};
 
   uint32_t qp_num{0};
   uint32_t rkey{0};
