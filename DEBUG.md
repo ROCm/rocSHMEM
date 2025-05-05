@@ -1,7 +1,7 @@
 Hacking and Debugging RocSHMEM
 ==============================
 
-This documentation is mostly for core RocSHMEM developpers. Power users may find it useful.
+This documentation is mostly for core RocSHMEM developpers and contributors. Power users may still find it useful.
 
 How to debug parallel programs
 ------------------------------
@@ -33,7 +33,7 @@ Do not forget to delete `COMPILING_TARGETS` again when disabling ASAN (otherwise
 
 You need to set environment variable `HSA_XNACK=1`. Do not forget to unset this variable when not using ASAN (it will impact performance).
 
-You may need to add path to `libclang_rt.asan-x86_64.so` to `LD_LIBRARY_PATH` by hand. Depending on the ROCm version, it may be in an unusual place, e.g., `$ROCM_ROOT/lib/llvm/lib/clang/19/lib/linux/libclang_rt.asan-x86_64.so`; `find /opt/rocm -name libclang_rt.asan-x86_64.so` may be required to find it.
+You may need to add the path to `libclang_rt.asan-x86_64.so` into `LD_LIBRARY_PATH` by hand. Depending on the ROCm version, it may be in an unusual place, e.g., `$ROCM_ROOT/lib/llvm/lib/clang/19/lib/linux/libclang_rt.asan-x86_64.so`; `find /opt/rocm -name libclang_rt.asan-x86_64.so` may be required to find it.
 
 ASAN may [crash when using Open MPI][2]. If that happens, set environment variable `OMPI_MCA_memory=^patcher`. Do not forget to unset this variable when not using ASAN (it will impact performance).
 

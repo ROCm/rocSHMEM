@@ -139,8 +139,8 @@ if (NOT BUILD_TESTS_ONLY)
       "Target default GPUs if GPU_TARGETS is not defined.")
 
   if (ASAN)
-    message(STATUS "Adding xnack+ to GPU_TARGET to enable ASAN address sanitizer")
-    list(TRANSFORM GPU_TARGETS APPEND ":xnack+" REGEX "[^+]$")
+    message(STATUS "Removing xnack- from GPU_TARGET as these are invalid with ASAN address sanitizer")
+    list(FILTER GPU_TARGETS EXCLUDE REGEX ".*:xnack-$")
   endif()
 
   if (COMMAND rocm_check_target_ids)
