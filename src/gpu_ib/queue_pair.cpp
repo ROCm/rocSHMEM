@@ -52,8 +52,8 @@ QueuePair::QueuePair(struct ibv_pd* pd) {
   }
 }
 
-__device__ void QueuePair::ring_doorbell(uint64_t db_val, uint32_t my_sq_counter) {
-  swap_endian_store(const_cast<uint32_t*>(dbrec), my_sq_counter);
+__device__ void QueuePair::ring_doorbell(uint64_t db_val, uint64_t my_sq_counter) {
+  swap_endian_store(const_cast<uint32_t*>(dbrec), (uint32_t)my_sq_counter);
   __atomic_signal_fence(__ATOMIC_SEQ_CST);
 
   __hip_atomic_store(db.ptr, db_val, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
@@ -64,7 +64,7 @@ __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint32_t my_sq_counter
 
 __device__ void QueuePair::quiet() {
   constexpr size_t BROADCAST_SIZE = 1024 / __AMDGCN_WAVEFRONT_SIZE;
-  __shared__ uint32_t wqe_broadcast[BROADCAST_SIZE];
+  __shared__ uint64_t wqe_broadcast[BROADCAST_SIZE];
   uint8_t wavefront_id = get_flat_block_id() / __AMDGCN_WAVEFRONT_SIZE;
   wqe_broadcast[wavefront_id] = 0;
 
@@ -76,16 +76,16 @@ __device__ void QueuePair::quiet() {
 
   while (true) {
     bool done{false};
-    uint32_t quiet_amount{0};
-    uint32_t wave_cq_consumer{0};
+    uint64_t quiet_amount{0};
+    uint64_t wave_cq_consumer{0};
     while (!done) {
-      uint32_t posted = __hip_atomic_load(&quiet_posted, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
-      uint32_t active = __hip_atomic_load(&quiet_active, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
-      uint32_t completed = __hip_atomic_load(&quiet_completed, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+      uint64_t posted = __hip_atomic_load(&quiet_posted, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+      uint64_t active = __hip_atomic_load(&quiet_active, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+      uint64_t completed = __hip_atomic_load(&quiet_completed, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
       if (!(posted - completed)) {
         return;
       }
-      uint32_t quiet_val = posted - active;
+      uint64_t quiet_val = posted - active;
       if (!quiet_val) {
         continue;
       }
@@ -99,8 +99,8 @@ __device__ void QueuePair::quiet() {
       done = __shfl(done, leader_phys_lane_id);
     }
     wave_cq_consumer = __shfl(wave_cq_consumer, leader_phys_lane_id);
-    uint32_t my_cq_consumer = wave_cq_consumer + my_logical_lane_id;
-    uint32_t my_cq_index = my_cq_consumer % cq_cnt;
+    uint64_t my_cq_consumer = wave_cq_consumer + my_logical_lane_id;
+    uint64_t my_cq_index = my_cq_consumer % cq_cnt;
 
     if (my_logical_lane_id < quiet_amount) {
       volatile mlx5_cqe64 *cqe_entry = &cq_buf[my_cq_index];
@@ -122,14 +122,14 @@ __device__ void QueuePair::quiet() {
 
       uint16_t wqe_counter;
       swap_endian_store(const_cast<uint16_t*>(&wqe_counter), reinterpret_cast<uint16_t>(be_wqe_counter));
-      uint32_t wqe_id =  outstanding_wqes[wqe_counter];
+      uint64_t wqe_id =  outstanding_wqes[wqe_counter];
       __hip_atomic_fetch_max(&wqe_broadcast[wavefront_id], wqe_id, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_WORKGROUP);
       uint8_t mlx5_invld_bits = MLX5_CQE_INVALID << 4 | owner_bit;
       *((volatile uint8_t*)&cqe_entry->op_own) = mlx5_invld_bits;
       __atomic_signal_fence(__ATOMIC_SEQ_CST);
     }
     if (is_leader) {
-      uint32_t completed {0};
+      uint64_t completed {0};
       do {
         completed = __hip_atomic_load(&quiet_completed, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
       } while (completed != wave_cq_consumer);
@@ -137,7 +137,7 @@ __device__ void QueuePair::quiet() {
       swap_endian_store(const_cast<uint32_t*>(cq_dbrec), (uint32_t)(wave_cq_consumer + quiet_amount));
       __atomic_signal_fence(__ATOMIC_SEQ_CST);
 
-      uint32_t sunk_wqe_id = wqe_broadcast[wavefront_id];
+      uint64_t sunk_wqe_id = wqe_broadcast[wavefront_id];
       __hip_atomic_store(&sq_sunk, sunk_wqe_id, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
       __hip_atomic_fetch_add(&quiet_completed, quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
     }
@@ -151,21 +151,21 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   bool is_leader{my_logical_lane_id == 0};
   const uint64_t leader_phys_lane_id = __ffsll((unsigned long long)activemask) - 1;
   uint8_t num_wqes{num_active_lanes};
-  uint32_t wave_sq_counter{0};
+  uint64_t wave_sq_counter{0};
 
   if (is_leader) {
     wave_sq_counter = __hip_atomic_fetch_add(&sq_posted, num_wqes, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
   }
   wave_sq_counter = __shfl(wave_sq_counter, leader_phys_lane_id);
-  uint32_t my_sq_counter = wave_sq_counter + my_logical_lane_id;
-  uint32_t my_sq_index = my_sq_counter % sq_wqe_cnt;
+  uint64_t my_sq_counter = wave_sq_counter + my_logical_lane_id;
+  uint64_t my_sq_index = my_sq_counter % sq_wqe_cnt;
 
   while (true) {
-    uint32_t db_touched = __hip_atomic_load(&sq_db_touched, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
-    uint32_t sunk = __hip_atomic_load(&sq_sunk, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
-    uint32_t num_active_sq_entries = db_touched - sunk;
-    uint32_t num_free_entries = min(sq_wqe_cnt, cq_cnt) - num_active_sq_entries;
-    uint32_t num_entries_until_wave_last_entry = wave_sq_counter + num_active_lanes - db_touched;
+    uint64_t db_touched = __hip_atomic_load(&sq_db_touched, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+    uint64_t sunk = __hip_atomic_load(&sq_sunk, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+    uint64_t num_active_sq_entries = db_touched - sunk;
+    uint64_t num_free_entries = min(sq_wqe_cnt, cq_cnt) - num_active_sq_entries;
+    uint64_t num_entries_until_wave_last_entry = wave_sq_counter + num_active_lanes - db_touched;
     if (num_free_entries > num_entries_until_wave_last_entry) {
       break;
     }
@@ -181,7 +181,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   __atomic_signal_fence(__ATOMIC_SEQ_CST);
 
   if (is_leader) {
-    uint32_t db_touched {0};
+    uint64_t db_touched {0};
     do {
       db_touched = __hip_atomic_load(&sq_db_touched, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
     } while (db_touched != wave_sq_counter);
@@ -202,21 +202,21 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   bool is_leader{my_logical_lane_id == 0};
   const uint64_t leader_phys_lane_id = __ffsll((unsigned long long)activemask) - 1;
   uint8_t num_wqes{num_active_lanes};
-  uint32_t wave_sq_counter{0};
+  uint64_t wave_sq_counter{0};
 
   if (is_leader) {
     wave_sq_counter = __hip_atomic_fetch_add(&sq_posted, num_wqes, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
   }
   wave_sq_counter = __shfl(wave_sq_counter, leader_phys_lane_id);
-  uint32_t my_sq_counter = wave_sq_counter + my_logical_lane_id;
-  uint32_t my_sq_index = my_sq_counter % sq_wqe_cnt;
+  uint64_t my_sq_counter = wave_sq_counter + my_logical_lane_id;
+  uint64_t my_sq_index = my_sq_counter % sq_wqe_cnt;
 
   while (true) {
-    uint32_t db_touched = __hip_atomic_load(&sq_db_touched, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
-    uint32_t sunk = __hip_atomic_load(&sq_sunk, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
-    uint32_t num_active_sq_entries = db_touched - sunk;
-    uint32_t num_free_entries = min(sq_wqe_cnt, cq_cnt) - num_active_sq_entries;
-    uint32_t num_entries_until_wave_last_entry = wave_sq_counter + num_active_lanes - db_touched;
+    uint64_t db_touched = __hip_atomic_load(&sq_db_touched, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+    uint64_t sunk = __hip_atomic_load(&sq_sunk, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+    uint64_t num_active_sq_entries = db_touched - sunk;
+    uint64_t num_free_entries = min(sq_wqe_cnt, cq_cnt) - num_active_sq_entries;
+    uint64_t num_entries_until_wave_last_entry = wave_sq_counter + num_active_lanes - db_touched;
     if (num_free_entries > num_entries_until_wave_last_entry) {
       break;
     }
@@ -249,7 +249,7 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   __atomic_signal_fence(__ATOMIC_SEQ_CST);
 
   if (is_leader) {
-    uint32_t db_touched {0};
+    uint64_t db_touched {0};
     do {
       db_touched = __hip_atomic_load(&sq_db_touched, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
     } while (db_touched != wave_sq_counter);
