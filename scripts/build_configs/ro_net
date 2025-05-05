@@ -41,7 +41,7 @@ cmake                                    \
     -DCMAKE_VERBOSE_MAKEFILE=OFF         \
     -DBUILD_ROCSHMEM_IPC_LIB=OFF         \
     -DBUILD_ROCSHMEM_RO_IPC_LIB=OFF      \
-    -DBUILD_ROCSHMEM_RO_LIB=OFF          \
+    -DBUILD_ROCSHMEM_RO_LIB=ON           \
     $src_path
 cmake --build . --parallel 8
 cmake --install .
