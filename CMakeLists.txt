@@ -41,11 +41,11 @@ endif()
 ###############################################################################
 option(DEBUG "Enable debug trace" OFF)
 option(PROFILE "Enable statistics and timing support" OFF)
-option(USE_RO "Enable RO conduit." ON)
+option(USE_RO "Enable RO conduit." OFF)
 option(USE_IPC "Enable IPC support (using HIP)" OFF)
 option(USE_THREADS "Enable workgroup threads to share network queues" OFF)
 option(USE_WF_COAL "Enable wavefront message coalescing" OFF)
-option(USE_COHERENT_HEAP "Enable support for coherent systems" OFF)
+option(USE_COHERENT_HEAP "Enable support for coherent systems" ON)
 option(USE_MANAGED_HEAP "Enable managed memory" OFF)
 option(USE_HOST_HEAP "Enable host memory using malloc/free" OFF)
 option(USE_HIP_HOST_HEAP "Enable host memory using hip api" OFF)
@@ -62,6 +62,10 @@ option(BUILD_SOS_TESTS "Build the host-facing tests" OFF)
 option(BUILD_UNIT_TESTS "Build the unit tests" ON)
 option(BUILD_TESTS_ONLY "Build only tests. Used to link agains rocSHMEM in a ROCm Release" OFF)
 
+option(BUILD_ROCSHMEM_IPC_LIB "Build librocshmem_ipc.a" ON)
+option(BUILD_ROCSHMEM_RO "Build librocshmem_ro.a (for debug purposes)" OFF)
+option(BUILD_ROCSHMEM_RO_IPC_LIB "Build librocshmem_ro_ipc.a" ON)
+
 option(BUILD_LOCAL_GPU_TARGET_ONLY "Build only for GPUs detected on this machine" OFF)
 
 configure_file(cmake/rocshmem_config.h.in rocshmem_config.h)
@@ -69,6 +73,14 @@ configure_file(cmake/rocshmem_config.h.in rocshmem_config.h)
 ###############################################################################
 # GLOBAL COMPILE FLAGS
 ###############################################################################
+
+
+if ((NOT BUILD_ROCSHMEM_IPC_LIB) AND
+    (NOT BUILD_ROCSHMEM_RO_LIB) AND
+    (NOT BUILD_ROCSHMEM_RO_IPC_LIB))
+  message(FATAL_ERROR "Neither IPC, RO, nor RO_IPC libraries were not selected.")
+endif()
+
 if (DEFINED ENV{ROCM_PATH})
   set(ROCM_PATH "$ENV{ROCM_PATH}" CACHE STRING "ROCm install directory")
 else()
@@ -98,12 +110,6 @@ set(ROCMCHECKS_WARN_TOOLCHAIN_VAR OFF)
 
 include(cmake/rocm_local_targets.cmake)
 
-set(DEFAULT_GPUS
-      gfx90a:xnack-;
-      gfx90a:xnack+;
-      gfx942:xnack-;
-      gfx942:xnack+)
-
 ###############################################################################
 # PROJECT
 ###############################################################################
@@ -115,98 +121,92 @@ include(ROCMCheckTargetIds)
 rocm_setup_version(VERSION 2.0.0)
 project(rocshmem VERSION 2.0.0 LANGUAGES CXX)
 
-###############################################################################
-# CREATE ROCSHMEM LIBRARY
-###############################################################################
-if (NOT BUILD_TESTS_ONLY)
-  add_library(${PROJECT_NAME})
-  add_library(roc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
-  add_subdirectory(src)
+rocshmem_set_gpu_targets()
 
-  #############################################################################
-  # SET GPU ARCHITECTURES
-  #############################################################################
-  if (BUILD_LOCAL_GPU_TARGET_ONLY)
-    message(STATUS "Building only for local GPU target")
-    if (COMMAND rocm_local_targets)
-      rocm_local_targets(DEFAULT_GPUS)
-    else()
-      message(WARNING "Unable to determine local GPU targets. Falling back to default GPUs.")
-    endif()
-  endif()
+find_package(MPI REQUIRED)
+find_package(hip REQUIRED)
+find_package(hsa-runtime64 REQUIRED)
 
-  set(GPU_TARGETS "${DEFAULT_GPUS}" CACHE STRING
-      "Target default GPUs if GPU_TARGETS is not defined.")
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+find_package(Threads REQUIRED)
 
-  if (COMMAND rocm_check_target_ids)
-    message(STATUS "Checking for ROCm support for GPU targets: " "${GPU_TARGETS}")
-    rocm_check_target_ids(SUPPORTED_GPUS TARGETS ${GPU_TARGETS})
-  else()
-    message(WARNING "Unable to check for supported GPU targets. Falling back to default GPUs.")
-    set(SUPPORTED_GPUS ${DEFAULT_GPUS})
-  endif()
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-  set(COMPILING_TARGETS "${SUPPORTED_GPUS}" CACHE STRING "GPU targets to compile for.")
-  message(STATUS "Compiling for ${COMPILING_TARGETS}")
+include_directories(
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>               # rocshmem_config.h
+  $<INSTALL_INTERFACE:include>
+  ${MPI_CXX_HEADER_DIR}
+)
 
-  foreach (target ${COMPILING_TARGETS})
-    list(APPEND offload_flags --offload-arch=${target})
-  endforeach()
-  add_compile_options(${offload_flags})
+link_libraries(
+  Threads::Threads
+  ${MPI_mpi_LIBRARY}
+  ${MPI_mpicxx_LIBRARY}
+  hip::device
+  hip::host
+  hsa-runtime64::hsa-runtime64
+  -fgpu-rdc
+)
 
-  #############################################################################
-  # PACKAGE DEPENDENCIES
-  #############################################################################
-  find_package(MPI REQUIRED)
-  find_package(hip REQUIRED)
-  find_package(hsa-runtime64 REQUIRED)
+add_compile_options("-fgpu-rdc")
 
-  set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
-  set(THREADS_PREFER_PTHREAD_FLAG TRUE)
-  find_package(Threads REQUIRED)
-
-  #############################################################################
-  # LINKING AND INCLUDE DIRECTORIES
-  #############################################################################
-  target_include_directories(
-    ${PROJECT_NAME}
-    PUBLIC
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-      $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>               # rocshmem_config.h
-      $<INSTALL_INTERFACE:include>
-      ${MPI_CXX_HEADER_DIR}
-  )
-
-  target_link_libraries(
-    ${PROJECT_NAME}
-    PUBLIC
-      Threads::Threads
-      ${MPI_mpi_LIBRARY}
-      ${MPI_mpicxx_LIBRARY}
-      hip::device
-      hip::host
-      hsa-runtime64::hsa-runtime64
+if (BUILD_TESTS_ONLY)
+  include_directories(
+    $<BUILD_INTERFACE:${ROCSHMEM_HOME}/include>
   )
 endif()
 
 ###############################################################################
-# TEST SUBDIRECTORIES
+# CREATE ROCSHMEM LIBRARY MACRO
 ###############################################################################
+
+macro(rocshmem_add_library ROCSHMEM_LIB_NAME EXTRA_FLAGS)
+  if (NOT BUILD_TESTS_ONLY)
+    add_library(${ROCSHMEM_LIB_NAME})
+    add_library(roc::${ROCSHMEM_LIB_NAME} ALIAS ${ROCSHMEM_LIB_NAME})
+
+    rocm_install(TARGETS ${ROCSHMEM_LIB_NAME})
+
+    rocm_export_targets(
+      TARGETS roc::${ROCSHMEM_LIB_NAME}
+      NAMESPACE roc::
+    )
+  endif()
+
+  list(APPEND ROCSHMEM_LIB_NAMES ${ROCSHMEM_LIB_NAME})
+endmacro()
+
+###############################################################################
+# CREATE ROCSHMEM LIBRARY
+###############################################################################
+if (BUILD_ROCSHMEM_IPC_LIB)
+  rocshmem_add_library(rocshmem "-DUSE_IPC=ON -DUSE_SINGLE_NODE=ON")
+endif()
+
+if (BUILD_ROCSHMEM_RO_LIB)
+    rocshmem_add_library(rocshmem_ro "-DUSE_RO=ON")
+endif()
+
+if (BUILD_ROCSHMEM_RO_IPC_LIB)
+  rocshmem_add_library(rocshmem_ro_ipc "-DUSE_RO=ON -DUSE_IPC=ON")
+endif()
+
+if (NOT BUILD_TESTS_ONLY)
+  add_subdirectory(src)
+endif()
+
 add_subdirectory(tests)
 
 if (BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
 
+###############################################################################
+# INSTALL ROCSHMEM LIBRARY(S)
+###############################################################################
 if (NOT BUILD_TESTS_ONLY)
-  #############################################################################
-  # INSTALL
-  #############################################################################
-  include(ROCMInstallTargets)
-  include(ROCMCreatePackage)
-
-  rocm_install(TARGETS rocshmem)
-
   rocm_install(
     DIRECTORY ${CMAKE_SOURCE_DIR}/include/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
@@ -222,11 +222,6 @@ if (NOT BUILD_TESTS_ONLY)
       hsa-rocr
       hip-runtime-amd
       rocm-dev
-  )
-
-  rocm_export_targets(
-    TARGETS roc::rocshmem
-    NAMESPACE roc::
   )
 
   rocm_create_package(

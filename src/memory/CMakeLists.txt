@@ -25,10 +25,12 @@
 ###############################################################################
 # ADD ROCSHMEM TARGET FOR FILES IN CURRENT DIRECTORY
 ###############################################################################
-target_sources(
-  ${PROJECT_NAME}
-  PRIVATE
-    single_heap.cpp
-    memory_allocator.cpp
-    dlmalloc.cpp
-)
+foreach(ROCSHMEM_LIB_NAME IN LISTS ROCSHMEM_LIB_NAMES)
+  target_sources(
+    ${ROCSHMEM_LIB_NAME}
+    PRIVATE
+      single_heap.cpp
+      memory_allocator.cpp
+      dlmalloc.cpp
+  )
+endforeach()

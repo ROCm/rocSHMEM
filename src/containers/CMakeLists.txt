@@ -25,9 +25,11 @@
 ###############################################################################
 # ADD ROCSHMEM TARGET FOR FILES IN CURRENT DIRECTORY
 ###############################################################################
-target_sources(
-  ${PROJECT_NAME}
-  PRIVATE
-    share_strategy.cpp
-    strategies.cpp
-)
+foreach(ROCSHMEM_LIB_NAME IN LISTS ROCSHMEM_LIB_NAMES)
+  target_sources(
+    ${ROCSHMEM_LIB_NAME}
+    PRIVATE
+      share_strategy.cpp
+      strategies.cpp
+  )
+endforeach()

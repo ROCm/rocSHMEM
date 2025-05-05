@@ -34,56 +34,26 @@ set(EXAMPLE_SOURCES
   rocshmem_init_attr_test.cc
 )
 
-foreach(SOURCE_FILE IN LISTS EXAMPLE_SOURCES)
-  get_filename_component(EXECUTABLE_NAME ${SOURCE_FILE} NAME_WE)
+foreach(ROCSHMEM_LIB_NAME IN LISTS ROCSHMEM_LIB_NAMES)
+  foreach(SOURCE_FILE IN LISTS EXAMPLE_SOURCES)
+    get_filename_component(EXECUTABLE_NAME ${SOURCE_FILE} NAME_WE)
+    string(REPLACE "rocshmem" "${ROCSHMEM_LIB_NAME}" EXECUTABLE_NAME ${EXECUTABLE_NAME})
 
-  add_executable(${EXECUTABLE_NAME} ${SOURCE_FILE})
+    add_executable(${EXECUTABLE_NAME} ${SOURCE_FILE})
 
-  if (BUILD_TESTS_ONLY)
-    find_package(MPI REQUIRED)
-
-    target_include_directories(
-      ${EXECUTABLE_NAME}
-      PRIVATE
-        $<BUILD_INTERFACE:${ROCSHMEM_HOME}/include>
-        $<BUILD_INTERFACE:${MPI_CXX_HEADER_DIR}>
-    )
-
-    foreach (target ${DEFAULT_GPUS})
-      list(APPEND offload_flags --offload-arch=${target})
-    endforeach()
-
-    target_compile_options(
-      ${EXECUTABLE_NAME}
-      PRIVATE
-        ${offload_flags}
-        -fgpu-rdc
-    )
-
-    target_link_libraries(
-      ${EXECUTABLE_NAME}
-      PRIVATE
-        ${MPI_mpi_LIBRARY}
-        ${MPI_mpicxx_LIBRARY}
-        ${offload_flags}
-        -L${ROCSHMEM_HOME}/lib
-        -lamdhip64
-        -lhsa-runtime64
-        -lrocshmem
-        -fgpu-rdc
-    )
-  else()
-    target_include_directories(
-      ${EXECUTABLE_NAME}
-      PRIVATE
-        roc::rocshmem
-    )
-
-    target_link_libraries(
-      ${EXECUTABLE_NAME}
-      PRIVATE
-        roc::rocshmem
-        -fgpu-rdc
-    )
-  endif()
+    if (BUILD_TESTS_ONLY)
+      target_link_libraries(
+        ${EXECUTABLE_NAME}
+        PRIVATE
+          -L${ROCSHMEM_HOME}/lib
+          -l${ROCSHMEM_LIB_NAME}
+      )
+    else()
+      target_link_libraries(
+        ${EXECUTABLE_NAME}
+        PRIVATE
+          roc::${ROCSHMEM_LIB_NAME}
+      )
+    endif()
+  endforeach()
 endforeach()

@@ -35,19 +35,20 @@ fi
 
 src_path=$(dirname "$(realpath $0)")/../../
 
-cmake \
-    -DCMAKE_BUILD_TYPE=Debug \
+cmake                                    \
+    -DCMAKE_BUILD_TYPE=Debug             \
     -DCMAKE_INSTALL_PREFIX=$install_path \
-    -DCMAKE_VERBOSE_MAKEFILE=OFF \
-    -DDEBUG=OFF \
-    -DPROFILE=OFF \
-    -DUSE_IPC=OFF \
-    -DUSE_COHERENT_HEAP=ON \
-    -DUSE_THREADS=OFF \
-    -DUSE_WF_COAL=OFF \
-    -DUSE_HOST_SIDE_HDP_FLUSH=OFF\
-    -DUSE_MANAGED_HEAP=OFF \
-    -DUSE_RO=ON \
+    -DCMAKE_VERBOSE_MAKEFILE=OFF         \
+    -DBUILD_ROCSHMEM_IPC_LIB=OFF         \
+    -DBUILD_ROCSHMEM_RO_IPC_LIB=OFF      \
+    -DBUILD_ROCSHMEM_RO_LIB=OFF          \
     $src_path
 cmake --build . --parallel 8
 cmake --install .
+
+# CI Backwards Compatibility
+mv ./tests/functional_tests/rocshmem_ro_functional_driver \
+   ./tests/functional_tests/rocshmem_example_driver
+
+mv ./tests/unit_tests/rocshmem_ro_unit_tests \
+   ./tests/unit_tests/rocshmem_unit_tests

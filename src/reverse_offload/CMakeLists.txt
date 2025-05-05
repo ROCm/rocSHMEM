@@ -25,13 +25,15 @@
 ###############################################################################
 # ADD ROCSHMEM TARGET FOR FILES IN CURRENT DIRECTORY
 ###############################################################################
-target_sources(
-  ${PROJECT_NAME}
-  PRIVATE
-    backend_ro.cpp
-    context_ro_device.cpp
-    context_ro_host.cpp
-    mpi_transport.cpp
-    queue.cpp
-    ro_net_team.cpp
-)
+foreach(ROCSHMEM_LIB_NAME IN LISTS ROCSHMEM_LIB_NAMES)
+  target_sources(
+    ${ROCSHMEM_LIB_NAME}
+    PRIVATE
+      backend_ro.cpp
+      context_ro_device.cpp
+      context_ro_host.cpp
+      mpi_transport.cpp
+      queue.cpp
+      ro_net_team.cpp
+  )
+endforeach()

@@ -22,95 +22,70 @@
 # IN THE SOFTWARE.
 ###############################################################################
 
-set(TESTS_NAME rocshmem_example_driver)
+set(TESTS_NAME rocshmem_functional_driver)
 
-###############################################################################
-# SOURCES
-###############################################################################
-add_executable(${TESTS_NAME} "")
-
-target_include_directories(
-  ${TESTS_NAME}
-  PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-target_sources(
-  ${TESTS_NAME}
-  PRIVATE
-    barrier_all_tester.cpp
-    sync_tester.cpp
-    test_driver.cpp
-    tester.cpp
-    tester_arguments.cpp
-    ping_pong_tester.cpp
-    ping_all_tester.cpp
-    primitive_tester.cpp
-    primitive_mr_tester.cpp
-    default_ctx_primitive_tester.cpp
-    team_ctx_primitive_tester.cpp
-    team_ctx_infra_tester.cpp
-    amo_bitwise_tester.cpp
-    amo_extended_tester.cpp
-    amo_standard_tester.cpp
-    random_access_tester.cpp
-    shmem_ptr_tester.cpp
-    signaling_operations_tester.cpp
-    signaling_operations_tester.hpp
-    workgroup_primitives.cpp
-    empty_tester.cpp
-    wavefront_primitives.cpp
-)
-
-###############################################################################
-# ROCSHMEM
-###############################################################################
-if (BUILD_TESTS_ONLY)
-  find_package(MPI REQUIRED)
+foreach(ROCSHMEM_LIB_NAME IN LISTS ROCSHMEM_LIB_NAMES)
+  ###############################################################################
+  # SOURCES
+  ###############################################################################
+  string(REPLACE "rocshmem" "${ROCSHMEM_LIB_NAME}" EXECUTABLE_NAME ${TESTS_NAME})
+  add_executable(${EXECUTABLE_NAME})
 
   target_include_directories(
-    ${TESTS_NAME}
+    ${EXECUTABLE_NAME}
     PRIVATE
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
-      $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-      $<BUILD_INTERFACE:${ROCSHMEM_HOME}/include>
-      $<BUILD_INTERFACE:${MPI_CXX_HEADER_DIR}>
+      ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
-  foreach (target ${DEFAULT_GPUS})
-    list(APPEND offload_flags --offload-arch=${target})
-  endforeach()
-
-  target_compile_options(
-    ${TESTS_NAME}
+  target_sources(
+    ${EXECUTABLE_NAME}
     PRIVATE
-      ${offload_flags}
-      -fgpu-rdc
+      barrier_all_tester.cpp
+      sync_tester.cpp
+      test_driver.cpp
+      tester.cpp
+      tester_arguments.cpp
+      ping_pong_tester.cpp
+      ping_all_tester.cpp
+      primitive_tester.cpp
+      primitive_mr_tester.cpp
+      default_ctx_primitive_tester.cpp
+      team_ctx_primitive_tester.cpp
+      team_ctx_infra_tester.cpp
+      amo_bitwise_tester.cpp
+      amo_extended_tester.cpp
+      amo_standard_tester.cpp
+      random_access_tester.cpp
+      shmem_ptr_tester.cpp
+      signaling_operations_tester.cpp
+      signaling_operations_tester.hpp
+      workgroup_primitives.cpp
+      empty_tester.cpp
+      wavefront_primitives.cpp
   )
 
-  target_link_libraries(
-    ${TESTS_NAME}
-    PRIVATE
-      ${MPI_mpi_LIBRARY}
-      ${MPI_mpicxx_LIBRARY}
-      ${offload_flags}
-      -L${ROCSHMEM_HOME}/lib
-      -lamdhip64
-      -lhsa-runtime64
-      -lrocshmem
-      -fgpu-rdc
-  )
-else()
-  target_include_directories(
-    ${TESTS_NAME}
-    PRIVATE
-      roc::rocshmem
-  )
+  ###############################################################################
+  # ROCSHMEM
+  ###############################################################################
+  if (BUILD_TESTS_ONLY)
+    target_include_directories(
+      ${EXECUTABLE_NAME}
+      PRIVATE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
+    )
 
-  target_link_libraries(
-    ${TESTS_NAME}
-    PRIVATE
-      roc::rocshmem
-      -fgpu-rdc
-  )
-endif()
+    target_link_libraries(
+      ${EXECUTABLE_NAME}
+      PRIVATE
+        -L${ROCSHMEM_HOME}/lib
+        -l${ROCSHMEM_LIB_NAME}
+    )
+  else()
+    target_link_libraries(
+      ${EXECUTABLE_NAME}
+      PRIVATE
+        roc::${ROCSHMEM_LIB_NAME}
+    )
+  endif()
+endforeach()

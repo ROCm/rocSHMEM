@@ -59,108 +59,6 @@ endif()
 project(rocshmem_unit_tests VERSION 1.0.0 LANGUAGES CXX)
 
 ###############################################################################
-# SOURCES
-###############################################################################
-add_executable(${PROJECT_NAME} "")
-
-target_include_directories(
-  ${PROJECT_NAME}
-  PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/../../library
-)
-
-target_sources(
-  ${PROJECT_NAME}
-  PRIVATE
-    shmem_gtest.cpp
-    heap_memory_gtest.cpp
-    hipmalloc_gtest.cpp
-    bin_gtest.cpp
-    binner_gtest.cpp
-    #bitwise_gtest.cpp # Test is disabled becasue of compilation errors
-    address_record_gtest.cpp
-    index_strategy_gtest.cpp
-    single_heap_gtest.cpp
-    symmetric_heap_gtest.cpp
-    pow2_bins_gtest.cpp
-    dlmalloc_gtest.cpp
-    remote_heap_info_gtest.cpp
-    mpi_init_singleton_gtest.cpp
-    abql_block_mutex_gtest.cpp
-    notifier_gtest.cpp
-    free_list_gtest.cpp
-    wavefront_size_gtest.cpp
-    atomic_wf_queue_gtest.cpp
-)
-
-if (USE_IPC)
-  target_sources(
-    ${PROJECT_NAME}
-    PRIVATE
-      ipc_impl_simple_coarse_gtest.cpp
-      ipc_impl_simple_fine_gtest.cpp
-      ipc_impl_tiled_fine_gtest.cpp
-  )
-endif()
-
-###############################################################################
-# ROCSHMEM DEPENDENCY
-###############################################################################
-find_package(hip REQUIRED)
-
-if (BUILD_TESTS_ONLY)
-  find_package(MPI REQUIRED)
-
-  target_include_directories(
-    ${PROJECT_NAME}
-    PRIVATE
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
-      $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-      $<BUILD_INTERFACE:${ROCSHMEM_HOME}/include>
-      $<BUILD_INTERFACE:${MPI_CXX_HEADER_DIR}>
-  )
-
-  foreach (target ${DEFAULT_GPUS})
-    list(APPEND offload_flags --offload-arch=${target})
-  endforeach()
-
-  target_compile_options(
-    ${PROJECT_NAME}
-    PRIVATE
-      ${offload_flags}
-      -fgpu-rdc
-  )
-
-  target_link_libraries(
-    ${PROJECT_NAME}
-    PRIVATE
-      ${MPI_mpi_LIBRARY}
-      ${MPI_mpicxx_LIBRARY}
-      ${offload_flags}
-      -L${ROCSHMEM_HOME}/lib
-      -lamdhip64
-      -lhsa-runtime64
-      -lrocshmem
-      -fgpu-rdc
-  )
-else()
-  target_include_directories(
-    ${PROJECT_NAME}
-    PRIVATE
-      roc::rocshmem
-  )
-
-  target_link_libraries(
-    ${PROJECT_NAME}
-    PRIVATE
-      roc::rocshmem
-      hip::host
-      -fgpu-rdc
-  )
-endif()
-
-###############################################################################
 # GTEST DEPENDENCY
 ###############################################################################
 # These packages are required for the unit tests
@@ -182,10 +80,80 @@ set(BUILD_GTEST ON CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(googletest)
 
-target_link_libraries(
-  ${PROJECT_NAME}
-  PRIVATE
-    gtest
-    gtest_main
-    roc::rocthrust
-)
+foreach(ROCSHMEM_LIB_NAME IN LISTS ROCSHMEM_LIB_NAMES)
+  ###############################################################################
+  # SOURCES
+  ###############################################################################
+  string(REPLACE "rocshmem" "${ROCSHMEM_LIB_NAME}" EXECUTABLE_NAME ${PROJECT_NAME})
+  add_executable(${EXECUTABLE_NAME} "")
+
+  target_include_directories(
+    ${EXECUTABLE_NAME}
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}
+      ${CMAKE_SOURCE_DIR}/../../library
+  )
+
+  target_sources(
+    ${EXECUTABLE_NAME}
+    PRIVATE
+      shmem_gtest.cpp
+      heap_memory_gtest.cpp
+      hipmalloc_gtest.cpp
+      bin_gtest.cpp
+      binner_gtest.cpp
+      #bitwise_gtest.cpp # Test is disabled becasue of compilation errors
+      address_record_gtest.cpp
+      index_strategy_gtest.cpp
+      single_heap_gtest.cpp
+      symmetric_heap_gtest.cpp
+      pow2_bins_gtest.cpp
+      dlmalloc_gtest.cpp
+      remote_heap_info_gtest.cpp
+      mpi_init_singleton_gtest.cpp
+      abql_block_mutex_gtest.cpp
+      notifier_gtest.cpp
+      free_list_gtest.cpp
+      wavefront_size_gtest.cpp
+      atomic_wf_queue_gtest.cpp
+  )
+
+  if (USE_IPC)
+    target_sources(
+      ${EXECUTABLE_NAME}
+      PRIVATE
+        ipc_impl_simple_coarse_gtest.cpp
+        ipc_impl_simple_fine_gtest.cpp
+        ipc_impl_tiled_fine_gtest.cpp
+    )
+  endif()
+
+  ###############################################################################
+  # ROCSHMEM DEPENDENCY
+  ###############################################################################
+
+  if (BUILD_TESTS_ONLY)
+    target_link_libraries(
+      ${EXECUTABLE_NAME}
+      PRIVATE
+        -L${ROCSHMEM_HOME}/lib
+        -l${ROCSHMEM_LIB_NAME}
+    )
+  else()
+    target_link_libraries(
+      ${EXECUTABLE_NAME}
+      PRIVATE
+        roc::${ROCSHMEM_LIB_NAME}
+    )
+  endif()
+
+  target_link_libraries(
+    ${EXECUTABLE_NAME}
+    PRIVATE
+      gtest
+      gtest_main
+      roc::rocthrust
+  )
+endforeach()
+
+

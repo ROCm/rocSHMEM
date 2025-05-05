@@ -25,37 +25,30 @@
 ###############################################################################
 # ADD ROCSHMEM TARGET FOR FILES IN CURRENT DIRECTORY
 ###############################################################################
-target_sources(
-  ${PROJECT_NAME}
-  PRIVATE
-    atomic_return.cpp
-    backend_bc.cpp
-    context_host.cpp
-    context_device.cpp
-    mpi_init_singleton.cpp
-    rocshmem_gpu.cpp
-    rocshmem.cpp
-    team.cpp
-    team_tracker.cpp
-    util.cpp
-    wf_coal_policy.cpp
-    ipc_policy.cpp
-)
+foreach(ROCSHMEM_LIB_NAME IN LISTS ROCSHMEM_LIB_NAMES)
+  target_sources(
+    ${ROCSHMEM_LIB_NAME}
+    PRIVATE
+      atomic_return.cpp
+      backend_bc.cpp
+      context_host.cpp
+      context_device.cpp
+      mpi_init_singleton.cpp
+      rocshmem_gpu.cpp
+      rocshmem.cpp
+      team.cpp
+      team_tracker.cpp
+      util.cpp
+      wf_coal_policy.cpp
+      ipc_policy.cpp
+  )
 
-target_compile_options(
-  ${PROJECT_NAME}
-  PUBLIC
-    -fgpu-rdc
-#   xnack allows address translation fault recovery
-#   required option for managed heap configs
-#    -mxnack
-)
-
-#target_link_options(
-  #${PROJECT_NAME}
-  #PUBLIC
-    #--hip-link
-#)
+  target_compile_options(
+    ${ROCSHMEM_LIB_NAME}
+    PUBLIC
+      -fgpu-rdc
+  )
+endforeach()
 
 ###############################################################################
 # ROCSHMEM TARGET FOR BACKENDS
