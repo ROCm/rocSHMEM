@@ -34,12 +34,14 @@ namespace rocshmem {
 
 QueuePair::QueuePair(struct ibv_pd* pd) {
   allocator.allocate((void**)&nonfetching_atomic, 8);
+  CHECK_HIP(hipMemset(nonfetching_atomic, 0, 8));
   int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
   ibv_mr *mr = ibv_reg_mr(pd, nonfetching_atomic, 8, access);
   GPUIB_CHECK_NNULL(mr, "ibv_reg_mr");
   nonfetching_atomic_lkey = htobe32(mr->lkey);
 
   allocator.allocate((void**)&fetching_atomic, 8 * FETCHING_ATOMIC_CNT);
+  CHECK_HIP(hipMemset(fetching_atomic, 0, 8 * FETCHING_ATOMIC_CNT));
   access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
   mr = ibv_reg_mr(pd, fetching_atomic, 8 * FETCHING_ATOMIC_CNT, access);
   GPUIB_CHECK_NNULL(mr, "ibv_reg_mr");
