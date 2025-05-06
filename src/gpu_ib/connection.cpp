@@ -365,11 +365,6 @@ void Connection::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
   }
 }
 
-void Connection::set_rdma_seg(mlx5_wqe_raddr_seg* rdma, uint64_t address, uint32_t rkey) {
-  rdma->raddr = htobe64(address);
-  rdma->rkey = htobe32(rkey);
-}
-
 void* Connection::buf_alloc([[maybe_unused]] struct ibv_pd* pd,
                             [[maybe_unused]] void* pd_context, size_t size,
                             [[maybe_unused]] size_t alignment,
