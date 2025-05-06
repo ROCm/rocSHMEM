@@ -33,6 +33,7 @@ target_sources(
     rocshmem.cpp
     team.cpp
     team_tracker.cpp
+    topology.cpp
     util.cpp
     wf_coal_policy.cpp
 )

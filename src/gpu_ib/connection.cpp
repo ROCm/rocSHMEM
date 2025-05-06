@@ -27,6 +27,7 @@
 #include "queue_pair.hpp"
 #include "rocshmem_config.h"
 #include "util.hpp"
+#include "topology.hpp"
 
 namespace rocshmem {
 
@@ -232,14 +233,22 @@ void dump_mlx5dv_cq(struct mlx5dv_cq *cq_dv, int conn_num) {
 Connection::Connection(GPUIBBackend* b) : backend(b) {
   char* value{nullptr};
   if ((value = getenv("ROCSHMEM_USE_IB_HCA"))) {
-    requested_dev = value;
+    requested_dev = strdup(value);
+  } else {
+    int gpu_dev = 0;
+    CHECK_HIP(hipGetDevice(&gpu_dev));
+    int nic_dev = rocshmem::GetClosestNicToGpu(gpu_dev, &requested_dev);
+    assert (nic_dev != -1);
   }
+
   if ((value = getenv("ROCSHMEM_SQ_SIZE"))) {
     sq_size = atoi(value);
   }
 }
 
 Connection::~Connection() {
+  if (requested_dev != nullptr)
+    free (requested_dev);
   delete ib_state;
 }
 

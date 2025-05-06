@@ -190,6 +190,8 @@ if (NOT BUILD_TESTS_ONLY)
     PUBLIC
       ${IBVERBS_LIBRARIES}
   )
+  link_libraries(numa)
+
 endif()
 
 ###############################################################################
