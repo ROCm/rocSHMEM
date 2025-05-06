@@ -153,8 +153,6 @@ class Connection {
 
   void init_parent_domain_attr(ibv_parent_domain_init_attr* attr);
 
-  void set_rdma_seg(mlx5_wqe_raddr_seg* rdma, uint64_t address, uint32_t rkey);
-
   ibv_cq* create_cq(ibv_context* context, ibv_pd* pd, int cqe);
 
   ibv_qp* create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr_ex* qp_attr, ibv_cq* rcq);
