@@ -79,7 +79,7 @@ class NetworkImpl {
    *
    * Upon completion, the gpu_qps member will be initialized.
    */
-  void setup_gpu_qps(GPUIBBackend *backend);
+  void setup_gpu_qps();
 
   /**
    * @brief The backend delegates some InfiniBand connection setup to
