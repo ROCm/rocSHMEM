@@ -65,8 +65,6 @@ int get_ls_non_zero_bit(char *bitmask, int mask_length) {
 }
 
 GPUIBBackend::GPUIBBackend(MPI_Comm comm) {
-  int num_cus{};
-  CHECK_HIP(hipDeviceGetAttribute(&num_cus, hipDeviceAttributeMultiprocessorCount, 0));
   CHECK_HIP(hipMalloc(&print_lock, sizeof(*print_lock)));
   *print_lock = 0;
   int* print_lock_addr{nullptr};
@@ -76,7 +74,6 @@ GPUIBBackend::GPUIBBackend(MPI_Comm comm) {
   CHECK_HIP(hipGetSymbolAddress(reinterpret_cast<void**>(&device_backend_proxy_addr), HIP_SYMBOL(device_backend_proxy)));
   GPUIBBackend* this_temp_addr{this};
   CHECK_HIP(hipMemcpy(device_backend_proxy_addr, &this_temp_addr, sizeof(this), hipMemcpyDefault));
-  CHECK_HIP( hipHostMalloc(reinterpret_cast<void**>(&done_init), sizeof(uint8_t)));
   if (auto maximum_num_contexts_str = getenv("ROCSHMEM_MAX_NUM_CONTEXTS")) {
     std::stringstream sstream(maximum_num_contexts_str);
     sstream >> maximum_num_contexts_;

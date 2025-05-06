@@ -24,7 +24,6 @@
 
 #include <mpi.h>
 
-#include "atomic_return.hpp"
 #include "backend_ib.hpp"
 #include "connection.hpp"
 #include "context_incl.hpp"

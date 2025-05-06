@@ -365,11 +365,6 @@ void Connection::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
   }
 }
 
-void Connection::set_rdma_seg(mlx5_wqe_raddr_seg* rdma, uint64_t address, uint32_t rkey) {
-  rdma->raddr = htobe64(address);
-  rdma->rkey = htobe32(rkey);
-}
-
 void* Connection::buf_alloc([[maybe_unused]] struct ibv_pd* pd,
                             [[maybe_unused]] void* pd_context, size_t size,
                             [[maybe_unused]] size_t alignment,
@@ -432,7 +427,6 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
    * };
   */
 
-  gpu_qp->cq_buf_head = reinterpret_cast<mlx5_cqe64*>(cq_out.buf);
   gpu_qp->cq_buf = reinterpret_cast<mlx5_cqe64*>(cq_out.buf);
   gpu_qp->cq_cnt = cq_out.cqe_cnt;
   gpu_qp->cq_log_cnt = log2(cq_out.cqe_cnt);
@@ -472,7 +466,6 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
    */
 
   gpu_qp->dbrec = &qp_out.dbrec[1]; // points to two pointers: 0 -> MLX5_REC_DBR, 1 -> MLX5_SND_DBR
-  gpu_qp->sq_buf_head = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
   gpu_qp->sq_buf = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
   gpu_qp->sq_wqe_cnt = qp_out.sq.wqe_cnt;
   gpu_qp->rkey = htobe32(backend->networkImpl.heap_rkey[conn_num % backend->num_pes]);

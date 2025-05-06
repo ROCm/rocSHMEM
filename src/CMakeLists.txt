@@ -26,7 +26,6 @@
 target_sources(
   ${PROJECT_NAME}
   PRIVATE
-    atomic_return.cpp
     context_host.cpp
     context_device.cpp
     mpi_init_singleton.cpp

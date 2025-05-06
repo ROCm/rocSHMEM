@@ -42,16 +42,12 @@ class WfCoalOn {
   __device__ bool coalesce(int pe, const void *source, const void *dest, size_t *size);
 };
 
-// clang-format off
-NOWARN(-Wunused-parameter,
 class WfCoalOff {
  public:
   __device__ bool coalesce(int pe, const void *source, const void *dest, size_t *size) {
     return true;
   }
 };
-)
-// clang-format on
 
 /*
  * Compile time configuration options will enable or disable this feature.
