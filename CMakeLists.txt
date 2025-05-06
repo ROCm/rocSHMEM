@@ -62,8 +62,8 @@ option(BUILD_SOS_TESTS "Build the host-facing tests" OFF)
 option(BUILD_UNIT_TESTS "Build the unit tests" ON)
 option(BUILD_TESTS_ONLY "Build only tests. Used to link agains rocSHMEM in a ROCm Release" OFF)
 
-option(BUILD_ROCSHMEM_IPC_LIB "Build librocshmem_ipc.a" ON)
-option(BUILD_ROCSHMEM_RO "Build librocshmem_ro.a (for debug purposes)" OFF)
+option(BUILD_ROCSHMEM_IPC_LIB "Build librocshmem.a" ON)
+option(BUILD_ROCSHMEM_RO_LIB "Build librocshmem_ro.a (for debug purposes)" OFF)
 option(BUILD_ROCSHMEM_RO_IPC_LIB "Build librocshmem_ro_ipc.a" ON)
 
 option(BUILD_LOCAL_GPU_TARGET_ONLY "Build only for GPUs detected on this machine" OFF)
@@ -73,7 +73,6 @@ configure_file(cmake/rocshmem_config.h.in rocshmem_config.h)
 ###############################################################################
 # GLOBAL COMPILE FLAGS
 ###############################################################################
-
 
 if ((NOT BUILD_ROCSHMEM_IPC_LIB) AND
     (NOT BUILD_ROCSHMEM_RO_LIB) AND
@@ -167,6 +166,8 @@ macro(rocshmem_add_library ROCSHMEM_LIB_NAME EXTRA_FLAGS)
     add_library(${ROCSHMEM_LIB_NAME})
     add_library(roc::${ROCSHMEM_LIB_NAME} ALIAS ${ROCSHMEM_LIB_NAME})
 
+    target_compile_definitions(${ROCSHMEM_LIB_NAME} PRIVATE ${EXTRA_FLAGS})
+
     rocm_install(TARGETS ${ROCSHMEM_LIB_NAME})
 
     rocm_export_targets(
@@ -186,7 +187,7 @@ if (BUILD_ROCSHMEM_IPC_LIB)
 endif()
 
 if (BUILD_ROCSHMEM_RO_LIB)
-    rocshmem_add_library(rocshmem_ro "-DUSE_RO=ON")
+  rocshmem_add_library(rocshmem_ro "-DUSE_RO=ON")
 endif()
 
 if (BUILD_ROCSHMEM_RO_IPC_LIB)
