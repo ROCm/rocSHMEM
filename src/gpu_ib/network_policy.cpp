@@ -93,11 +93,12 @@ void NetworkImpl::heap_memory_rkey(char *local_heap_base, size_t heap_size, MPI_
   lkey = heap_mr->lkey;
 }
 
-void NetworkImpl::setup_gpu_qps(GPUIBBackend *backend) {
+void NetworkImpl::setup_gpu_qps() {
   int connections = connection->total_number_connections();
   CHECK_HIP(hipMalloc(&gpu_qps, sizeof(QueuePair) * connections));
   for (int i{0}; i < connections; i++) {
-    new (&gpu_qps[i]) QueuePair(connection->ib_state->pd);
+    QueuePair qp(connection->ib_state->pd);
+    CHECK_HIP(hipMemcpy(&gpu_qps[i], &qp, sizeof(QueuePair), hipMemcpyDefault));
     connection->init_gpu_qp_from_connection(&gpu_qps[i], i);
   }
 }
@@ -110,7 +111,7 @@ void NetworkImpl::networkHostSetup(GPUIBBackend *backend) {
   connection->initialize(num_contexts);
   const auto &heap_bases{backend->heap.get_heap_bases()};
   heap_memory_rkey(heap_bases[my_pe], backend->heap.get_size(), backend->thread_comm);
-  setup_gpu_qps(backend);
+  setup_gpu_qps();
 }
 
 void NetworkImpl::networkHostFinalize() {
@@ -129,7 +130,7 @@ void NetworkImpl::networkHostInit(GPUIBContext *ctx, int context_id) {
   CHECK_HIP(hipMemset(ctx->device_qp_proxy, 0, sizeof(QueuePair) * num_pes));
   for (int i{0}; i < num_pes; i++) {
     int offset = num_pes * context_id + i;
-    new (ctx->getQueuePair(i)) QueuePair(gpu_qps[offset]);
+    CHECK_HIP(hipMemcpy(ctx->getQueuePair(i), &gpu_qps[offset], sizeof(QueuePair), hipMemcpyDefault));
     auto *qp = ctx->getQueuePair(i);
     qp->base_heap = ctx->base_heap;
   }
