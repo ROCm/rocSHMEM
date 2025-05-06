@@ -193,7 +193,7 @@ class QueuePair {
   uint64_t sq_db_touched{0};
   uint64_t sq_sunk{0};
 
-  static constexpr uint16_t OUTSTANDING_TABLE_SIZE = -1;
+  static constexpr size_t OUTSTANDING_TABLE_SIZE = 65536;
   uint64_t outstanding_wqes[OUTSTANDING_TABLE_SIZE]{0};
 
   uint32_t qp_num{0};
