@@ -37,13 +37,17 @@ __device__ void GPUIBContext::internal_direct_barrier(int pe, int PE_start, int 
     }
     __threadfence_system();
     for (size_t i{1}, j = PE_start + stride; i < n_pes; ++i, j += stride) {
-      put_nbi(&pSync[0], &flag_val, 1, j);
+      pSync[0] = flag_val;
+      put(&pSync[0], &pSync[0], 1, j);
+      pSync[0] = ROCSHMEM_SYNC_VALUE;
     }
   } else {
     size_t pe_offset = (pe - PE_start) / stride;
-    put_nbi(&pSync[pe_offset], &flag_val, 1, PE_start);
+    pSync[pe_offset] = flag_val;
+    put(&pSync[pe_offset], &pSync[pe_offset], 1, PE_start);
     wait_until(&pSync[0], ROCSHMEM_CMP_EQ, flag_val);
     pSync[0] = ROCSHMEM_SYNC_VALUE;
+    pSync[pe_offset] = ROCSHMEM_SYNC_VALUE;
     __threadfence_system();
   }
 }
@@ -65,7 +69,27 @@ __device__ void GPUIBContext::internal_atomic_barrier(int pe, int PE_start, int 
   }
 }
 
-__device__ void GPUIBContext::internal_sync(int pe, int PE_start, int stride, int PE_size, int64_t *pSync) {
+__device__ void GPUIBContext::internal_sync(int pe, int PE_start, int stride,
+                                          int PE_size, int64_t *pSync) {
+  if (PE_size < 64) {
+    internal_direct_barrier(pe, PE_start, stride, PE_size, pSync);
+  } else {
+    internal_atomic_barrier(pe, PE_start, stride, PE_size, pSync);
+  }
+}
+
+__device__ void GPUIBContext::internal_sync_wave(int pe, int PE_start, int stride,
+                                          int PE_size, int64_t *pSync) {
+  if (is_thread_zero_in_wave()) {
+    if (PE_size < 64) {
+      internal_direct_barrier(pe, PE_start, stride, PE_size, pSync);
+    } else {
+      internal_atomic_barrier(pe, PE_start, stride, PE_size, pSync);
+    }
+  }
+}
+
+__device__ void GPUIBContext::internal_sync_wg(int pe, int PE_start, int stride, int PE_size, int64_t *pSync) {
   __syncthreads();
   if (is_thread_zero_in_block()) {
     if (PE_size < 64) {
@@ -94,11 +118,31 @@ __device__ void GPUIBContext::sync_all() {
   internal_sync(my_pe, 0, 1, num_pes, barrier_sync);
 }
 
+__device__ void GPUIBContext::sync_all_wave() {
+  internal_sync_wave(my_pe, 0, 1, num_pes, barrier_sync);
+}
+
+__device__ void GPUIBContext::sync_all_wg() {
+  internal_sync_wg(my_pe, 0, 1, num_pes, barrier_sync);
+}
+
 __device__ void GPUIBContext::barrier_all() {
+  quiet();
+  sync_all();
+}
+
+__device__ void GPUIBContext::barrier_all_wave() {
+  if (is_thread_zero_in_wave()) {
+    quiet();
+  }
+  sync_all_wave();
+}
+
+__device__ void GPUIBContext::barrier_all_wg() {
   if (is_thread_zero_in_block()) {
     quiet();
   }
-  sync_all();
+  sync_all_wg();
   __syncthreads();
 }
 

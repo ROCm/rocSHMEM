@@ -83,6 +83,16 @@ void Context::barrier_all() {
 }
 
 __device__
+void Context::barrier_all_wave() {
+  static_cast<GPUIBContext*>(this)->barrier_all_wave();
+}
+
+__device__
+void Context::barrier_all_wg() {
+  static_cast<GPUIBContext*>(this)->barrier_all_wg();
+}
+
+__device__
 void Context::barrier(rocshmem_team_t team) {
   static_cast<GPUIBContext*>(this)->barrier(team);
 }

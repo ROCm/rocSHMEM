@@ -30,9 +30,12 @@ using namespace rocshmem;
  * DEVICE TEST KERNEL
  *****************************************************************************/
 __global__ void BarrierAllTest(int loop, int skip, long long int *start_time,
-                               long long int *end_time) {
+                               long long int *end_time, TestType type,
+                               int wf_size) {
   __shared__ rocshmem_ctx_t ctx;
+  int t_id  = get_flat_block_id();
   int wg_id = get_flat_grid_id();
+  int wf_id = t_id / wf_size;
 
   rocshmem_wg_ctx_create(&ctx);
 
@@ -41,17 +44,25 @@ __global__ void BarrierAllTest(int loop, int skip, long long int *start_time,
       start_time[wg_id] = wall_clock64();
     }
 
-    __syncthreads();
-
-    /**
-     * The function `rocshmem_ctx_wg_barrier_all` should be called from only
-     * one group within the grid to avoid unintended behavior.
-     */
-    if (is_block_zero_in_grid()) {
-      rocshmem_ctx_wg_barrier_all(ctx);
+    switch (type) {
+      case BarrierAllTestType:
+        if(t_id == 0) {
+          rocshmem_ctx_barrier_all(ctx);
+        }
+        break;
+      case WAVEBarrierAllTestType:
+        if(wf_id == 0) {
+          rocshmem_ctx_barrier_all_wave(ctx);
+        }
+        break;
+      case WGBarrierAllTestType:
+        rocshmem_ctx_barrier_all_wg(ctx);
+        break;
+      default:
+        break;
     }
+    __syncthreads();
   }
-  __syncthreads();
 
   if (hipThreadIdx_x == 0) {
     end_time[wg_id] = wall_clock64();
@@ -72,10 +83,10 @@ void BarrierAllTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(BarrierAllTest, gridSize, blockSize, shared_bytes, stream,
-                     loop, args.skip, start_time, end_time);
+                     loop, args.skip, start_time, end_time, _type, wf_size);
 
-  num_msgs = loop + args.skip;
-  num_timed_msgs = loop;
+  num_msgs = (loop + args.skip) * gridSize.x;
+  num_timed_msgs = loop * gridSize.x;
 }
 
 void BarrierAllTester::resetBuffers(uint64_t size) {}

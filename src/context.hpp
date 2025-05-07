@@ -93,6 +93,12 @@ class Context {
   void barrier_all();
 
   __device__
+  void barrier_all_wave();
+
+  __device__
+  void barrier_all_wg();
+
+  __device__
   void barrier(rocshmem_team_t team);
 
   __device__
