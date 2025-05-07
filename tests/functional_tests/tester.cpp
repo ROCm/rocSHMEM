@@ -44,6 +44,7 @@
 #include "team_ctx_infra_tester.hpp"
 #include "team_ctx_primitive_tester.hpp"
 #include "wavefront_primitives.hpp"
+#include "put_a2a_tester.hpp"
 
 Tester::Tester(TesterArguments args) : args(args) {
   _type = (TestType)args.algorithm;
@@ -263,6 +264,10 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       if (rank == 0)
         std::cout << "Non-Blocking WAVE level Puts ###" << std::endl;
       testers.push_back(new WaveFrontPrimitiveTester(args));
+      return testers;
+    case PutA2aTestType:
+      if (rank == 0) std::cout << "A2A Put Multi Dest in Wave ###" << std::endl;
+      testers.push_back(new PutA2aTester(args));
       return testers;
     default:
       if (rank == 0) std::cout << "Empty Test ###" << std::endl;
