@@ -427,6 +427,9 @@ ibv_cq* Connection::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
 }
 
 void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
+#ifdef USE_BNXT
+  fprintf(stderr, "%s not implemented for bnxt\n", __func__);
+#else
   mlx5dv_cq cq_out;
   mlx5dv_obj mlx_obj;
   mlx_obj.cq.in = cqs[conn_num];
@@ -494,12 +497,9 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   int hip_dev_id{-1};
   CHECK_HIP(hipGetDevice(&hip_dev_id));
   void* gpu_ptr{nullptr};
-#ifdef USE_BNXT
-  gpu_ptr = qp_out.bf.reg;
-#else
   rocm_memory_lock_to_fine_grain(qp_out.bf.reg, qp_out.bf.size * 2, &gpu_ptr, hip_dev_id);
-#endif
   gpu_qp->db.ptr = reinterpret_cast<uint64_t*>(gpu_ptr);
+#endif
 }
 
 ibv_qp* Connection::create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr_ex* qp_attr, ibv_cq* cq) {
