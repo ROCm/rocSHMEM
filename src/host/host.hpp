@@ -28,8 +28,7 @@
  * Defines the HostInterface class.
  *
  * The file contains the HostInterface class that defines all the
- * host-facing functions that will be used by all host contexts of
- * any backend type.
+ * host-facing functions that will be used by all host contexts.
  */
 
 #include <mpi.h>

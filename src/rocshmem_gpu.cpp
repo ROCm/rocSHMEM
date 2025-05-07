@@ -31,7 +31,7 @@
 #include <hip/hip_runtime.h>
 
 #include "context_incl.hpp"
-#include "gpu_ib/backend_ib.hpp"
+#include "gpu_ib/gda_device.hpp"
 #include "team.hpp"
 #include "templates.hpp"
 #include "util.hpp"
@@ -44,7 +44,7 @@ namespace rocshmem {
 
 __device__ __constant__ rocshmem_ctx_t ROCSHMEM_CTX_DEFAULT{};
 
-__constant__ GPUIBBackend *device_backend_proxy;
+__constant__ GDADevice *device_proxy;
 
 /******************************************************************************
  ************************** Default Context Wrappers **************************
@@ -142,7 +142,7 @@ int rocshmem_wg_ctx_create(rocshmem_ctx_t *ctx) {
   bool result{true};
   if (get_flat_block_id() == 0) {
     ctx->team_opaque = reinterpret_cast<TeamInfo*>(ROCSHMEM_CTX_DEFAULT.team_opaque);
-    result = device_backend_proxy->create_ctx(ctx);
+    result = device_proxy->create_ctx(ctx);
   }
   __syncthreads();
   return result == true ? 0 : -1;
@@ -159,7 +159,7 @@ int rocshmem_wg_team_create_ctx(rocshmem_team_t team, rocshmem_ctx_t *ctx) {
     Team *team_obj{get_internal_team(team)};
     TeamInfo *info_wrt_world = team_obj->tinfo_wrt_world;
     ctx->team_opaque = info_wrt_world;
-    result = device_backend_proxy->create_ctx(ctx);
+    result = device_proxy->create_ctx(ctx);
   }
   __syncthreads();
 
@@ -169,7 +169,7 @@ int rocshmem_wg_team_create_ctx(rocshmem_team_t team, rocshmem_ctx_t *ctx) {
 __device__
 void rocshmem_wg_ctx_destroy([[maybe_unused]] rocshmem_ctx_t *ctx) {
   if (get_flat_block_id() == 0) {
-    device_backend_proxy->destroy_ctx(ctx);
+    device_proxy->destroy_ctx(ctx);
   }
 }
 

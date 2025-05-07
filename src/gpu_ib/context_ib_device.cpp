@@ -26,29 +26,23 @@
 #include <rocshmem/rocshmem.hpp>
 
 #include "context_incl.hpp"
-#include "backend_ib.hpp"
+#include "gda_device.hpp"
 #include "queue_pair.hpp"
 
 namespace rocshmem {
 
-GPUIBContext::GPUIBContext(GPUIBBackend *backend, int idx)
-    : Context(backend) {
-  networkImpl = backend->networkImpl;
-  base_heap = backend->heap.get_heap_bases().data();
-  networkImpl.networkHostInit(this, idx);
-  ctx_id_ = idx;
-  size_t barrier_sync_offset = ctx_id_ * ROCSHMEM_BARRIER_SYNC_SIZE;
-
-  barrier_sync = backend->barrier_sync + barrier_sync_offset;
-}
-
-__device__ __host__ QueuePair *GPUIBContext::getQueuePair(int pe) {
-  return networkImpl.getQueuePair(device_qp_proxy, pe);
+GPUIBContext::GPUIBContext(GDADevice *device, int idx)
+    : Context(device) {
+  base_heap = device->heap.get_heap_bases().data();
+  barrier_sync = device->barrier_sync;
+  device->initialize_context(this, idx);
+  size_t barrier_sync_offset = idx * ROCSHMEM_BARRIER_SYNC_SIZE;
+  barrier_sync = device->barrier_sync + barrier_sync_offset;
 }
 
 __device__ void GPUIBContext::quiet() {
-  for (int k = 0; k < networkImpl.num_pes; k++) {
-    getQueuePair(k)->quiet();
+  for (int k = 0; k < num_pes; k++) {
+    qps[k].quiet();
   }
 }
 
@@ -58,15 +52,14 @@ __device__ void *GPUIBContext::shmem_ptr(const void *dest, int pe) {
 
 __device__ void GPUIBContext::putmem(void *dest, const void *source, size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
-  auto *qp = getQueuePair(pe);
   bool need_turn {true};
   uint64_t turns = __ballot(need_turn);
   while (turns) {
     uint8_t lane = __ffsll((unsigned long long)turns) - 1;
     int pe_turn = __shfl(pe, lane);
     if (pe_turn == pe) {
-      qp->put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
-      qp->quiet();
+      qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
+      qps[pe].quiet();
       need_turn = false;
     }
     turns = __ballot(need_turn);
@@ -75,14 +68,13 @@ __device__ void GPUIBContext::putmem(void *dest, const void *source, size_t nele
 
 __device__ void GPUIBContext::putmem_nbi(void *dest, const void *source, size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
-  auto *qp = getQueuePair(pe);
   bool need_turn {true};
   uint64_t turns = __ballot(need_turn);
   while (turns) {
     uint8_t lane = __ffsll((unsigned long long)turns) - 1;
     int pe_turn = __shfl(pe, lane);
     if (pe_turn == pe) {
-      qp->put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
+      qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
       need_turn = false;
     }
     turns = __ballot(need_turn);
@@ -91,16 +83,14 @@ __device__ void GPUIBContext::putmem_nbi(void *dest, const void *source, size_t 
 
 __device__ void GPUIBContext::putmem_wave(void *dest, const void *source, size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
-  auto *qp = getQueuePair(pe);
-  qp->put_nbi_wave(base_heap[pe] + L_offset, source, nelems, pe);
-  qp->quiet();
+  qps[pe].put_nbi_wave(base_heap[pe] + L_offset, source, nelems, pe);
+  qps[pe].quiet();
 }
 
 __device__ void GPUIBContext::putmem_nbi_wave(void *dest, const void *source, size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
   if (is_thread_zero_in_wave()) {
-    auto *qp = getQueuePair(pe);
-    qp->put_nbi_wave(base_heap[pe] + L_offset, source, nelems, pe);
+    qps[pe].put_nbi_wave(base_heap[pe] + L_offset, source, nelems, pe);
   }
 }
 

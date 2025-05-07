@@ -25,14 +25,14 @@
 #include <mpi.h>
 
 #include "context_incl.hpp"
-#include "backend_ib.hpp"
 #include "host/host.hpp"
+#include "gda_device.hpp"
 
 namespace rocshmem {
 
-GPUIBHostContext::GPUIBHostContext(GPUIBBackend *b)
-    : Context(b) {
-  host_interface = b->host_interface;
+GPUIBHostContext::GPUIBHostContext(GDADevice *device)
+    : Context(device) {
+  host_interface = device->host_interface;
   context_window_info = host_interface->acquire_window_context();
 }
 

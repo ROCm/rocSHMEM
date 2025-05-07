@@ -30,7 +30,7 @@ namespace rocshmem {
 
 class Team;
 class GPUIBTeam;
-class GPUIBBackend;
+class GDADevice;
 
 class TeamInfo {
  public:
@@ -75,14 +75,14 @@ class Team {
   /**
    * @brief Constructor.
    *
-   * @param handle The handle to the backend
+   * @param device
    * @param team_info_wrt_parent information about this team wrt parent
    * @param team_info_wrt_world information about this team wrt TEAM_WORLD
    * @param num_pes number of PEs in this team
    * @param _my_pe the index of this PE in the team
    * @param _mpi_comm MPI Communicator representing the team
    */
-  Team(GPUIBBackend* handle, TeamInfo* team_info_wrt_parent, TeamInfo* team_info_wrt_world, int num_pes, int my_pe, MPI_Comm mpi_comm);
+  Team(GDADevice* device, TeamInfo* team_info_wrt_parent, TeamInfo* team_info_wrt_world, int num_pes, int my_pe, MPI_Comm mpi_comm);
 
   /**
    * @brief Destructor.

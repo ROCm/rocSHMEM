@@ -30,7 +30,7 @@
 
 namespace rocshmem {
 
-class GPUIBBackend;
+class GDADevice;
 
 /**
  * @file context.hpp
@@ -41,9 +41,9 @@ class GPUIBBackend;
  */
 class Context {
  public:
-  __host__ Context(GPUIBBackend* handle);
+  __host__ Context(GDADevice* device);
 
-  __device__ Context(GPUIBBackend* handle);
+  __device__ Context(GDADevice* device);
 
   /**************************************************************************
    ***************************** DEVICE METHODS *****************************
@@ -236,12 +236,12 @@ class Context {
    ***************************** PUBLIC MEMBERS *****************************
    *************************************************************************/
   /**
-   * @brief Duplicated local copy of backend's num_pes
+   * @brief Duplicated local copy of device's num_pes
    */
   int num_pes{0};
 
   /**
-   * @brief Duplicated local copy of backend's my_pe
+   * @brief Duplicated local copy of device's my_pe
    */
   int my_pe{-1};
 

@@ -29,7 +29,7 @@ namespace rocshmem {
 
 class GPUIBHostContext : public Context {
  public:
-  GPUIBHostContext(GPUIBBackend *b);
+  GPUIBHostContext(GDADevice *device);
 
   ~GPUIBHostContext();
 

@@ -20,16 +20,49 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "connection.hpp"
-#include "gpuib_macros.inl"
+#include "gda_device.hpp"
 
-#include "backend_ib.hpp"
+#include <cstdio>
+#include <cstdlib>
+#include <endian.h>
+#include <mpi.h>
+#include <mutex>
+#include <rocshmem/rocshmem.hpp>
+#include <unistd.h>
+
+#include "context_incl.hpp"
+#include "gpuib_macros.inl"
+#include "gpu_ib_team.hpp"
+#include "host/host.hpp"
 #include "queue_pair.hpp"
-#include "rocshmem_config.h"
-#include "util.hpp"
-#include "topology.hpp"
 
 namespace rocshmem {
+
+#define NET_CHECK(cmd) {                                     \
+    if (cmd != MPI_SUCCESS) {                                \
+      fprintf(stderr, "Unrecoverable error: MPI Failure\n"); \
+      abort();                                               \
+    }                                                        \
+  }
+
+extern rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
+
+rocshmem_team_t get_external_team(GPUIBTeam *team) {
+  return reinterpret_cast<rocshmem_team_t>(team);
+}
+
+int get_ls_non_zero_bit(char *bitmask, int mask_length) {
+  int position{-1};
+  for (int bit_i{0}; bit_i < mask_length; bit_i++) {
+    int byte_i = bit_i / CHAR_BIT;
+    if (bitmask[byte_i] & (1 << (bit_i % CHAR_BIT))) {
+      position = bit_i;
+      break;
+    }
+  }
+
+  return position;
+}
 
 static void dump_ibv_context(struct ibv_context* x) {
   /*
@@ -230,41 +263,44 @@ void dump_mlx5dv_cq(struct mlx5dv_cq *cq_dv, int conn_num) {
   DPRINTF("================== CQ_DUMP_END ================\n");
 }
 
-Connection::Connection(GPUIBBackend* b) : backend(b) {
+GDADevice::GDADevice(MPI_Comm _comm) {
+  CHECK_HIP(hipMalloc(&print_lock, sizeof(*print_lock)));
+  *print_lock = 0;
+  int* print_lock_addr{nullptr};
+  CHECK_HIP(hipGetSymbolAddress(reinterpret_cast<void**>(&print_lock_addr), HIP_SYMBOL(print_lock)));
+  CHECK_HIP(hipMemcpy(print_lock_addr, &print_lock, sizeof(print_lock), hipMemcpyDefault));
+
+  int* device_proxy_symbol_addr{nullptr};
+  CHECK_HIP(hipGetSymbolAddress(reinterpret_cast<void**>(&device_proxy_symbol_addr), HIP_SYMBOL(device_proxy)));
+  GDADevice* this_temp_addr{this};
+  CHECK_HIP(hipMemcpy(device_proxy_symbol_addr, &this_temp_addr, sizeof(this), hipMemcpyDefault));
+
+  if (auto maximum_num_contexts_str = getenv("ROCSHMEM_MAX_NUM_CONTEXTS")) {
+    std::stringstream sstream(maximum_num_contexts_str);
+    sstream >> maximum_num_contexts_;
+  }
   char* value{nullptr};
   if ((value = getenv("ROCSHMEM_USE_IB_HCA"))) {
-    requested_dev = strdup(value);
-  } else {
-    int gpu_dev = 0;
-    CHECK_HIP(hipGetDevice(&gpu_dev));
-    int nic_dev = rocshmem::GetClosestNicToGpu(gpu_dev, &requested_dev);
-    assert (nic_dev != -1);
+    requested_dev = value;
   }
-
   if ((value = getenv("ROCSHMEM_SQ_SIZE"))) {
     sq_size = atoi(value);
   }
-}
 
-Connection::~Connection() {
-  if (requested_dev != nullptr)
-    free (requested_dev);
-  delete ib_state;
-}
+  init_mpi_once(_comm);
+  comm = _comm;
+  NET_CHECK(MPI_Comm_size(comm, &num_pes));
+  NET_CHECK(MPI_Comm_rank(comm, &my_pe));
 
-void Connection::reg_mr(void* ptr, size_t size, ibv_mr** mr) {
-  int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
+  host_interface = new HostInterface(comm, &heap);
+  setup_default_host_ctx();
+  setup_team_world();
 
-  *mr = ibv_reg_mr(ib_state->pd, ptr, size, access);
-  GPUIB_CHECK_NNULL(*mr, "ibv_reg_mr");
-}
+  init_teams();
+  init_collective();
 
-unsigned Connection::total_number_connections() {
-  return backend->maximum_num_contexts_ * backend->num_pes;
-}
-
-void Connection::initialize(int num_contexts) {
-  dest_info.resize(backend->num_pes * num_contexts);
+  NET_CHECK(MPI_Barrier(comm));
+  dest_info.resize(num_pes * (maximum_num_contexts_ + 1));
   int ib_devices{0};
   dev_list = ibv_get_device_list(&ib_devices);
   GPUIB_CHECK_NNULL(dev_list, "ibv_get_device");
@@ -283,30 +319,267 @@ void Connection::initialize(int num_contexts) {
   ib_init(ib_dev, port);
   create_qps(port, &ib_state->portinfo);
 
-  auto npes = backend->num_pes;
+  auto npes = num_pes;
   auto dinfo = dest_info.data();
-  for (int i{0}; i < num_contexts; i++) {
-    MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t), MPI_CHAR, dinfo + i * npes, sizeof(dest_info_t), MPI_CHAR, backend->backend_comm);
+  for (int i{0}; i < maximum_num_contexts_ + 1; i++) {
+    MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t), MPI_CHAR, dinfo + i * npes, sizeof(dest_info_t), MPI_CHAR, comm);
   }
 
   for (int i{0}; i < qps.size(); i++) {
     change_status_rtr(qps[i], &dest_info[i], port);
   }
-  MPI_Barrier(backend->backend_comm);
+  MPI_Barrier(comm);
   for (int i{0}; i < qps.size(); i++) {
     change_status_rts(qps[i], &dest_info[i]);
     dump_ibv_qp(qps[i], i);
   }
-  MPI_Barrier(backend->backend_comm);
+  MPI_Barrier(comm);
+
+  heap_memory_rkey();
+  setup_gpu_qps();
+  setup_ctxs();
+  setup_default_ctx();
+  NET_CHECK(MPI_Barrier(comm));
 }
 
-void Connection::finalize() {
+GDADevice::~GDADevice() {
+  CHECK_HIP(hipFree(print_lock));
+
+  destroy_teams();
+  auto *team_world{team_tracker.get_team_world()};
+  team_world->~Team();
+  CHECK_HIP(hipFree(team_world));
+
+  delete default_host_ctx_;
+  CHECK_HIP(hipFree(default_ctx_->qps));
+  CHECK_HIP(hipFree(default_ctx_));
+  default_ctx_ = nullptr;
+
+  delete host_interface;
+  host_interface = nullptr;
+
+  CHECK_HIP(hipFree(gpu_qps));
+  gpu_qps = nullptr;
+
+  CHECK_HIP(hipHostFree(heap_rkey));
+
   ibv_free_device_list(dev_list);
-  int ret = ibv_dereg_mr(backend->networkImpl.heap_mr);
+
+  int ret = ibv_dereg_mr(heap_mr);
   GPUIB_CHECK_ZERO(ret, "ibv_dereg_mr");
+
+  CHECK_HIP(hipFree(ctx_array));
+
+  delete ib_state;
 }
 
-void Connection::ib_init(struct ibv_device* ib_dev, uint8_t port) {
+__device__ bool GDADevice::create_ctx(rocshmem_ctx_t *ctx) {
+  GPUIBContext *ctx_;
+  auto pop_result = ctx_free_list.get()->pop_front();
+  if (!pop_result.success) {
+    return false;
+  }
+  ctx_ = pop_result.value;
+
+  ctx->ctx_opaque = ctx_;
+  return true;
+}
+
+void GDADevice::create_ctx(void **ctx) {
+  GPUIBHostContext *new_ctx = nullptr;
+  new_ctx = new GPUIBHostContext(this);
+  *ctx = new_ctx;
+}
+
+void GDADevice::destroy_ctx(Context *ctx) {
+  GPUIBHostContext *gpu_ib_host_ctx = reinterpret_cast<GPUIBHostContext*>(ctx);
+  delete gpu_ib_host_ctx;
+}
+
+__device__ void GDADevice::destroy_ctx(rocshmem_ctx_t *ctx) {
+  ctx_free_list.get()->push_back(static_cast<GPUIBContext*>(ctx->ctx_opaque));
+}
+
+__host__ void GDADevice::global_exit(int status) {
+  MPI_Abort(comm, status);
+}
+
+void GDADevice::create_team(Team *parent_team, TeamInfo *team_info_wrt_parent, TeamInfo *team_info_wrt_world, int num_pes, int my_pe_in_new_team, MPI_Comm team_comm, rocshmem_team_t *new_team) {
+  NET_CHECK(MPI_Allreduce(team_pool_bitmask_, team_reduced_bitmask_, team_bitmask_size_, MPI_CHAR, MPI_BAND, team_comm));
+
+  auto max_num_teams{team_tracker.get_max_num_teams()};
+
+  int common_index = get_ls_non_zero_bit(team_reduced_bitmask_, max_num_teams);
+  if (common_index < 0) { abort(); }
+  int byte = common_index / CHAR_BIT;
+  team_pool_bitmask_[byte] &= ~(1 << (common_index % CHAR_BIT));
+
+  GPUIBTeam *new_team_obj;
+  CHECK_HIP(hipMalloc(&new_team_obj, sizeof(GPUIBTeam)));
+  new (new_team_obj) GPUIBTeam(this, team_info_wrt_parent, team_info_wrt_world, num_pes, my_pe_in_new_team, team_comm, common_index);
+
+  *new_team = get_external_team(new_team_obj);
+}
+
+void GDADevice::destroy_team(rocshmem_team_t team) {
+  GPUIBTeam *team_obj = get_internal_gpu_ib_team(team);
+
+  int bit = team_obj->pool_index_;
+  int byte_i = bit / CHAR_BIT;
+  team_pool_bitmask_[byte_i] |= 1 << (bit % CHAR_BIT);
+
+  team_obj->~GPUIBTeam();
+
+  CHECK_HIP(hipFree(team_obj));
+}
+
+
+void GDADevice::init_collective() {
+  size_t one_sync_size_bytes {sizeof(*barrier_sync)};
+  size_t total_sync_elems {ROCSHMEM_BARRIER_SYNC_SIZE * (maximum_num_contexts_ + 1)};
+  size_t sync_size_bytes {one_sync_size_bytes * total_sync_elems};
+
+  heap.malloc(reinterpret_cast<void**>(&barrier_sync), sync_size_bytes);
+  for (int i{0}; i < total_sync_elems; i++) {
+    barrier_sync[i] = ROCSHMEM_SYNC_VALUE;
+  }
+
+  NET_CHECK(MPI_Barrier(comm));
+}
+
+void GDADevice::setup_default_host_ctx() {
+  default_host_ctx_ = new GPUIBHostContext(this);
+  ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque = default_host_ctx_;
+}
+
+void GDADevice::setup_ctxs() {
+  CHECK_HIP(hipMalloc(&ctx_array, sizeof(GPUIBContext) * (maximum_num_contexts_ + 1)));
+  for (int i = 0; i < maximum_num_contexts_; i++) {
+    new (&ctx_array[i]) GPUIBContext(this, i);
+    ctx_free_list.get()->push_back(ctx_array + i);
+  }
+}
+
+void GDADevice::setup_default_ctx() {
+  CHECK_HIP(hipMalloc(&default_ctx_, sizeof(GPUIBContext)));
+  new (default_ctx_) GPUIBContext(this, maximum_num_contexts_);
+
+  int *symbol_address;
+  CHECK_HIP(hipGetSymbolAddress(reinterpret_cast<void**>(&symbol_address), HIP_SYMBOL(ROCSHMEM_CTX_DEFAULT)));
+
+  TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
+  rocshmem_ctx_t ctx_default_host{default_ctx_, tinfo};
+
+  CHECK_HIP(hipMemcpy(symbol_address, &ctx_default_host, sizeof(rocshmem_ctx_t), hipMemcpyDefault));
+}
+
+void GDADevice::setup_team_world() {
+  TeamInfo *team_info_wrt_parent;
+  CHECK_HIP(hipMalloc(&team_info_wrt_parent, sizeof(TeamInfo)));
+  new (team_info_wrt_parent) TeamInfo(nullptr, 0, 1, num_pes);
+
+  TeamInfo *team_info_wrt_world;
+  CHECK_HIP(hipMalloc(&team_info_wrt_world, sizeof(TeamInfo)));
+  new (team_info_wrt_world) TeamInfo(nullptr, 0, 1, num_pes);
+
+  GPUIBTeam *team_world{nullptr};
+  CHECK_HIP(hipMalloc(&team_world, sizeof(GPUIBTeam)));
+  new (team_world) GPUIBTeam(this, team_info_wrt_parent, team_info_wrt_world, num_pes, my_pe, comm, 0);
+
+  team_tracker.set_team_world(team_world);
+  ROCSHMEM_TEAM_WORLD = reinterpret_cast<rocshmem_team_t>(team_world);
+}
+
+void GDADevice::init_mpi_once(MPI_Comm comm) {
+  static std::mutex init_mutex;
+  const std::lock_guard<std::mutex> lock(init_mutex);
+
+  int init_done{0};
+  NET_CHECK(MPI_Initialized(&init_done));
+  if (init_done == 0) {
+    int provided;
+    NET_CHECK(MPI_Init_thread(nullptr, nullptr, MPI_THREAD_MULTIPLE, &provided));
+  }
+}
+
+void GDADevice::init_teams() {
+  auto max_num_teams{team_tracker.get_max_num_teams()};
+  barrier_pSync_pool = reinterpret_cast<long*>(rocshmem_malloc(sizeof(long) * ROCSHMEM_BARRIER_SYNC_SIZE * max_num_teams));
+  long *barrier_pSync;
+  for (int team_i{0}; team_i < max_num_teams; team_i++) {
+    barrier_pSync = reinterpret_cast<long*>(&barrier_pSync_pool[team_i * ROCSHMEM_BARRIER_SYNC_SIZE]);
+    for (int i{0}; i < ROCSHMEM_BARRIER_SYNC_SIZE; i++) {
+      barrier_pSync[i] = ROCSHMEM_SYNC_VALUE;
+    }
+  }
+
+  team_bitmask_size_ = (max_num_teams % CHAR_BIT) ? (max_num_teams / CHAR_BIT + 1) : (max_num_teams / CHAR_BIT);
+  team_pool_bitmask_ = reinterpret_cast<char*>(malloc(team_bitmask_size_));
+  team_reduced_bitmask_ = reinterpret_cast<char*>(malloc(team_bitmask_size_));
+
+  memset(team_pool_bitmask_, 0, team_bitmask_size_);
+  memset(team_reduced_bitmask_, 0, team_bitmask_size_);
+  for (int bit_i{1}; bit_i < max_num_teams; bit_i++) {
+    int byte_i = bit_i / CHAR_BIT;
+    team_pool_bitmask_[byte_i] |= 1 << (bit_i % CHAR_BIT);
+  }
+
+  NET_CHECK(MPI_Barrier(comm));
+}
+
+void GDADevice::destroy_teams() {
+  rocshmem_free(barrier_pSync_pool);
+  free(team_pool_bitmask_);
+  free(team_reduced_bitmask_);
+}
+
+void GDADevice::heap_memory_rkey() {
+  auto *base_heap = heap.get_local_heap_base();
+  int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
+  heap_mr = ibv_reg_mr(ib_state->pd, base_heap, heap.get_size(), access);
+  GPUIB_CHECK_NNULL(heap_mr, "ibv_reg_mr");
+
+  const size_t rkeys_size = sizeof(uint32_t) * num_pes;
+  uint32_t *host_rkey_cpy = reinterpret_cast<uint32_t*>(malloc(rkeys_size));
+  if (!host_rkey_cpy) { abort(); }
+
+  CHECK_HIP(hipHostMalloc(&heap_rkey, sizeof(uint32_t) * num_pes));
+  heap_rkey[my_pe] = heap_mr->rkey;
+
+  hipStream_t stream;
+  CHECK_HIP(hipStreamCreateWithFlags(&stream, hipStreamNonBlocking));
+  CHECK_HIP(hipMemcpyAsync(host_rkey_cpy, heap_rkey, rkeys_size, hipMemcpyDeviceToHost, stream));
+  CHECK_HIP(hipStreamSynchronize(stream));
+
+  MPI_Allgather(MPI_IN_PLACE, sizeof(uint32_t), MPI_CHAR, host_rkey_cpy, sizeof(uint32_t), MPI_CHAR, comm);
+
+  CHECK_HIP(hipMemcpyAsync(heap_rkey, host_rkey_cpy, rkeys_size, hipMemcpyHostToDevice, stream));
+  CHECK_HIP(hipStreamSynchronize(stream));
+  CHECK_HIP(hipStreamDestroy(stream));
+
+  free(host_rkey_cpy);
+}
+
+void GDADevice::setup_gpu_qps() {
+  CHECK_HIP(hipMalloc(&gpu_qps, sizeof(QueuePair) * (maximum_num_contexts_ + 1) * num_pes));
+  for (int i{0}; i < (maximum_num_contexts_ + 1) * num_pes; i++) {
+    QueuePair qp(ib_state->pd);
+    CHECK_HIP(hipMemcpy(&gpu_qps[i], &qp, sizeof(QueuePair), hipMemcpyDefault));
+    initialize_gpu_qp(&gpu_qps[i], i);
+  }
+}
+
+void GDADevice::initialize_context(GPUIBContext *ctx, int context_id) {
+  CHECK_HIP(hipMalloc(&ctx->qps, sizeof(QueuePair) * num_pes));
+  CHECK_HIP(hipMemset(ctx->qps, 0, sizeof(QueuePair) * num_pes));
+  for (int i{0}; i < num_pes; i++) {
+    int offset = num_pes * context_id + i;
+    CHECK_HIP(hipMemcpy(&ctx->qps[i], &gpu_qps[offset], sizeof(QueuePair), hipMemcpyDefault));
+    ctx->qps[i].base_heap = ctx->base_heap;
+  }
+}
+
+void GDADevice::ib_init(struct ibv_device* ib_dev, uint8_t port) {
   ib_state = new ib_state_t;
   GPUIB_CHECK_NNULL(ib_state, "ib_state object create");
 
@@ -331,31 +604,31 @@ void Connection::ib_init(struct ibv_device* ib_dev, uint8_t port) {
 }
 
 template <typename StateType>
-void Connection::try_to_modify_qp(ibv_qp* qp, StateType state) {
+void GDADevice::try_to_modify_qp(ibv_qp* qp, StateType state) {
   int err = ibv_modify_qp(qp, &state.exp_qp_attr, state.exp_attr_mask);
   GPUIB_CHECK_ZERO(err, "ibv_modify_qp");
 }
 
-void Connection::init_qp_status(ibv_qp* qp, uint8_t port) {
+void GDADevice::init_qp_status(ibv_qp* qp, uint8_t port) {
   try_to_modify_qp<InitQPState>(qp, initqp(port));
 }
 
-void Connection::change_status_rtr(ibv_qp* qp, dest_info_t* dest, uint8_t port) {
+void GDADevice::change_status_rtr(ibv_qp* qp, dest_info_t* dest, uint8_t port) {
   try_to_modify_qp<RtrState>(qp, rtr(dest, port));
 }
 
-void Connection::change_status_rts(ibv_qp* qp, dest_info_t* dest) {
+void GDADevice::change_status_rts(ibv_qp* qp, dest_info_t* dest) {
   try_to_modify_qp<RtsState>(qp, rts(dest));
 }
 
-void Connection::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
+void GDADevice::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
   ibv_qp_cap cap{};
   cap.max_send_wr = sq_size;
   cap.max_send_sge = 1;
   cap.max_inline_data = 0;
   QPInitAttr qp_init_attr{qpattr(cap)};
-  cqs.resize(total_number_connections());
-  qps.resize(total_number_connections());
+  cqs.resize((maximum_num_contexts_ + 1) * num_pes);
+  qps.resize((maximum_num_contexts_ + 1) * num_pes);
   int max_num_cqe = qp_init_attr.attr.cap.max_send_wr;
   for (auto& entry : cqs) {
     entry = create_cq(ib_state->context, ib_state->pd, max_num_cqe);
@@ -375,32 +648,27 @@ void Connection::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
   }
 }
 
-void* Connection::buf_alloc([[maybe_unused]] struct ibv_pd* pd,
-                            [[maybe_unused]] void* pd_context, size_t size,
-                            [[maybe_unused]] size_t alignment,
-                            [[maybe_unused]] uint64_t resource_type) {
+void* GDADevice::buf_alloc(struct ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type) {
   void* dev_ptr{nullptr};
   CHECK_HIP(hipHostMalloc(reinterpret_cast<void**>(&dev_ptr), size, hipHostMallocDefault));
   memset(dev_ptr, 0, size);
   return dev_ptr;
 }
 
-void Connection::buf_release([[maybe_unused]] struct ibv_pd* pd,
-                             [[maybe_unused]] void* pd_context, void* ptr,
-                             [[maybe_unused]] uint64_t resource_type) {
+void GDADevice::buf_release(struct ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type) {
   CHECK_HIP(hipFree(ptr));
 }
 
-void Connection::init_parent_domain_attr(ibv_parent_domain_init_attr* attr1) {
+void GDADevice::init_parent_domain_attr(ibv_parent_domain_init_attr* attr1) {
   attr1->pd = ib_state->pd;
   attr1->td = nullptr;
   attr1->comp_mask = IBV_PARENT_DOMAIN_INIT_ATTR_ALLOCATORS;
-  attr1->alloc = Connection::buf_alloc;
-  attr1->free = Connection::buf_release;
+  attr1->alloc = GDADevice::buf_alloc;
+  attr1->free = GDADevice::buf_release;
   attr1->pd_context = nullptr;
 }
 
-ibv_cq* Connection::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
+ibv_cq* GDADevice::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
   ibv_cq_init_attr_ex cq_attr;
   memset(&cq_attr, 0, sizeof(ibv_cq_init_attr_ex));
   cq_attr.cqe = cqe;
@@ -417,7 +685,7 @@ ibv_cq* Connection::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
   return cq;
 }
 
-void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
+void GDADevice::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   mlx5dv_cq cq_out;
   mlx5dv_obj mlx_obj;
   mlx_obj.cq.in = cqs[conn_num];
@@ -478,8 +746,8 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   gpu_qp->dbrec = &qp_out.dbrec[1]; // points to two pointers: 0 -> MLX5_REC_DBR, 1 -> MLX5_SND_DBR
   gpu_qp->sq_buf = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
   gpu_qp->sq_wqe_cnt = qp_out.sq.wqe_cnt;
-  gpu_qp->rkey = htobe32(backend->networkImpl.heap_rkey[conn_num % backend->num_pes]);
-  gpu_qp->lkey = htobe32(backend->networkImpl.heap_mr->lkey);
+  gpu_qp->rkey = htobe32(heap_rkey[conn_num % num_pes]);
+  gpu_qp->lkey = htobe32(heap_mr->lkey);
   gpu_qp->qp_num = qps[conn_num]->qp_num;
   // The 2 in qp_out.bf.size * 2 below facilitates the switching between blue flame registers
   int hip_dev_id{-1};
@@ -489,7 +757,7 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   gpu_qp->db.ptr = reinterpret_cast<uint64_t*>(gpu_ptr);
 }
 
-ibv_qp* Connection::create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr_ex* qp_attr, ibv_cq* cq) {
+ibv_qp* GDADevice::create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr_ex* qp_attr, ibv_cq* cq) {
   ibv_qp* qp{nullptr};
   assert(pd);
   assert(context);
@@ -503,7 +771,7 @@ ibv_qp* Connection::create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr
   return qp;
 }
 
-Connection::InitQPState Connection::initqp(uint8_t port) {
+GDADevice::InitQPState GDADevice::initqp(uint8_t port) {
   InitQPState init{};
   init.exp_qp_attr.qp_access_flags = IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
   init.exp_qp_attr.port_num = port;
@@ -511,7 +779,7 @@ Connection::InitQPState Connection::initqp(uint8_t port) {
   return init;
 }
 
-Connection::RtrState Connection::rtr(dest_info_t* dest, uint8_t port) {
+GDADevice::RtrState GDADevice::rtr(dest_info_t* dest, uint8_t port) {
   RtrState rtr{};
   rtr.exp_qp_attr.dest_qp_num = dest->qpn;
   rtr.exp_qp_attr.rq_psn = dest->psn;
@@ -528,26 +796,18 @@ Connection::RtrState Connection::rtr(dest_info_t* dest, uint8_t port) {
   return rtr;
 }
 
-Connection::RtsState Connection::rts(dest_info_t* dest) {
+GDADevice::RtsState GDADevice::rts(dest_info_t* dest) {
   RtsState rts{};
   rts.exp_qp_attr.sq_psn = dest->psn;
   rts.exp_attr_mask |= IBV_QP_SQ_PSN;
   return rts;
 }
 
-void Connection::initialize_rkey_handle(uint32_t** heap_rkey_handle, ibv_mr* mr) {
-  CHECK_HIP(hipHostMalloc(heap_rkey_handle, sizeof(uint32_t) * backend->num_pes));
-  (*heap_rkey_handle)[backend->my_pe] = mr->rkey;
-}
-
-void Connection::free_rkey_handle(uint32_t* heap_rkey_handle) {
-  CHECK_HIP(hipHostFree(heap_rkey_handle));
-}
-
-Connection::QPInitAttr Connection::qpattr(ibv_qp_cap cap) {
+GDADevice::QPInitAttr GDADevice::qpattr(ibv_qp_cap cap) {
   QPInitAttr qpattr(cap);
   qpattr.attr.qp_type = IBV_QPT_RC;
   return qpattr;
 }
 
 }  // namespace rocshmem
+

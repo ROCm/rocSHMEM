@@ -22,14 +22,14 @@
 
 #include "gpu_ib_team.hpp"
 
-#include "backend_ib.hpp"
+#include "gda_device.hpp"
 
 namespace rocshmem {
 
-GPUIBTeam::GPUIBTeam(GPUIBBackend *b, TeamInfo *team_info_parent, TeamInfo *team_info_world, int num_pes, int my_pe, MPI_Comm mpi_comm, int pool_index)
-    : Team(b, team_info_parent, team_info_world, num_pes, my_pe, mpi_comm) {
+GPUIBTeam::GPUIBTeam(GDADevice *device, TeamInfo *team_info_parent, TeamInfo *team_info_world, int num_pes, int my_pe, MPI_Comm mpi_comm, int pool_index)
+    : Team(device, team_info_parent, team_info_world, num_pes, my_pe, mpi_comm) {
   pool_index_ = pool_index;
-  barrier_pSync = &(b->barrier_pSync_pool[pool_index * ROCSHMEM_BARRIER_SYNC_SIZE]);
+  barrier_pSync = &(device->barrier_pSync_pool[pool_index * ROCSHMEM_BARRIER_SYNC_SIZE]);
 }
 
 GPUIBTeam::~GPUIBTeam() {}

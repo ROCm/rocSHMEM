@@ -24,7 +24,7 @@
 
 #include <hip/hip_runtime.h>
 
-#include "backend_ib.hpp"
+#include "gda_device.hpp"
 #include "endian.hpp"
 #include "gpuib_macros.inl"
 #include "segment_builder.hpp"

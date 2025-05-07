@@ -25,7 +25,7 @@
 
 #include "team.hpp"
 
-#include "gpu_ib/backend_ib.hpp"
+#include "gpu_ib/gda_device.hpp"
 #include "util.hpp"
 
 namespace rocshmem {
@@ -56,8 +56,8 @@ __host__ __device__ TeamInfo::TeamInfo(Team* _parent_team, int _pe_start, int _s
   log_stride = log2(stride);
 }
 
-Team::Team(GPUIBBackend* handle, TeamInfo* team_info_wrt_parent, TeamInfo* team_info_wrt_world, int _num_pes, int _my_pe, MPI_Comm _mpi_comm)
-    : world_size(handle->getNumPEs()), my_pe_in_world(handle->getMyPE()), tinfo_wrt_parent(team_info_wrt_parent), tinfo_wrt_world(team_info_wrt_world),
+Team::Team(GDADevice* device, TeamInfo* team_info_wrt_parent, TeamInfo* team_info_wrt_world, int _num_pes, int _my_pe, MPI_Comm _mpi_comm)
+    : world_size(device->num_pes), my_pe_in_world(device->my_pe), tinfo_wrt_parent(team_info_wrt_parent), tinfo_wrt_world(team_info_wrt_world),
       num_pes(_num_pes), my_pe(_my_pe), mpi_comm(_mpi_comm) {
 }
 
