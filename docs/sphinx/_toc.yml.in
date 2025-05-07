@@ -7,17 +7,14 @@ subtrees:
   - file: introduction.rst
     title: Introduction
 
-- caption: Install rocSHMEM
+- caption: Using rocSHMEM
   entries:
   - file: install.rst
     title: Install rocSHMEM
+  - file: compile_and_run.rst
+    title: Compile and Run Programs
 
-- caption: Environment Variables
-  entries:
-  - file: environment_variables.rst
-    title: Environment Variables
-
-- chapter: API Reference
+- caption: API Reference
   entries:
   - file: api/init.rst
     title: Library Setup, Exit, and Query Routines
@@ -25,8 +22,8 @@ subtrees:
     title: Memory Management Routines
   - file: api/teams.rst
     title: Team Management Routines
-  - file: api/comm.rst
-    title: Communication Management Routines
+  - file: api/ctx.rst
+    title: Context Management Routines
   - file: api/rma.rst
     title: Remote Memory Access Routines
   - file: api/amo.rst

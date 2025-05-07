@@ -10,24 +10,40 @@ Installing rocSHMEM
 
 This topic describes how to install rocSHMEM.
 
-The README from the rocSHMEM distribution may contain additional information
-`<https://github.com/ROCm/rocSHMEM/README.md>`_.
+The file `README.md <https://github.com/ROCm/rocSHMEM/blob/rocm-6.4.0/README.md>`_ in the rocSHMEM sources may contain additional information.
 
 Requirements
 ---------------------------
 
-#. ROCm stack installed on the system (HIP runtime)
+1. ROCm stack installed on the system (HIP runtime)
 
   * ROCm v6.4.0 or later
 
-#. AMD GPUs
+2. AMD GPUs
 
   * MI250X
 
   * MI300X
 
-#. ROCm-aware Open MPI and UCX as described in Building Dependencies
+3. ROCm-aware Open MPI and UCX as described in Building Dependencies
 
+Installing from a Package Manager
+---------------------------------
+
+On Ubuntu, rocSHMEM can be installed with the following command:
+
+.. code-block:: bash
+
+   apt install rocshmem-dev
+
+.. note::
+
+  This installation method requires ROCm 6.4 or newer. Dependencies
+  (open MPI and UCX) still need to be built following the instructions
+  in the next paragraph, as the distribution packaged versions do not
+  include full accelerator support.
+
+.. _install-dependencies:
 
 Building Dependencies
 ---------------------------
@@ -69,19 +85,6 @@ check for fitness with your system.
 
 For more information on OpenMPI-UCX support, please visit:
 `GPU-enabled Message Passing Interface <https://rocm.docs.amd.com/en/latest/how-to/gpu-enabled-mpi.html>`_
-
-Installing from a Package Manger
----------------------------------
-
-On Ubuntu, rocSHMEM can be installed with the following command:
-
-.. code-block:: bash
-
-   apt install rocshmem-dev
-
-.. note::
-
-  This installation method requires ROCm 6.4 or newer.
 
 Installing rocSHMEM from Source
 --------------------------------

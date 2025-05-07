@@ -14,7 +14,7 @@ ROCSHMEM_BARRIER_ALL
 .. cpp:function:: __device__ void rocshmem_ctx_wg_barrier_all(rocshmem_ctx_t ctx)
 .. cpp:function:: __device__ void rocshmem_wg_barrier_all()
 
-  :param ctx: Context with which to perform this operation.
+  :param ctx: Context with which to perform this operation
   :returns:   None
 
 **Description:**
@@ -27,8 +27,8 @@ ROCSHMEM_TEAM_SYNC
 .. cpp:function:: __device__ void rocshmem_ctx_wg_team_sync(rocshmem_ctx_t ctx, rocshmem_team_t team)
 .. cpp:function:: __device__ void rocshmem_wg_team_sync(rocshmem_team_t team)
 
-  :param ctx:  Context with which to perform this operation.
-  :param team: Team with which to perform this operation.
+  :param ctx:  Context with which to perform this operation
+  :param team: Team with which to perform this operation
   :returns:    None
 
 **Description:**
@@ -45,7 +45,7 @@ ROCSHMEM_SYNC_ALL
 .. cpp:function:: __device__ void rocshmem_ctx_wg_sync_all(rocshmem_ctx_t ctx)
 .. cpp:function:: __device__ void rocshmem_wg_sync_all()
 
-  :param ctx:  Context with which to perform this operation.
+  :param ctx:  Context with which to perform this operation
   :returns:    None
 
 **Description:**
@@ -57,12 +57,12 @@ ROSHMEM_ALLTOALL
 
 .. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_wg_alltoall(rocshmem_ctx_t ctx, rocshmem_team_t team, TYPE *dest, const TYPE *source, int nelems)
 
-  :param team:   The team participating in the collective.
-  :param dest:   Destination address. Must be an address on the
-                 symmetric heap.
-  :param source: Source address. Must be an address on the symmetric
-                 heap.
-  :param nelems: Number of data blocks transferred per pair of PEs.
+  :param team:   The team participating in the collective
+  :param dest:   Destination address; Must be an address on the
+                 symmetric heap
+  :param source: Source address; Must be an address on the symmetric
+                 heap
+  :param nelems: Number of data blocks transferred per pair of PEs
   :returns:      None
 
 **Description:**
@@ -77,13 +77,13 @@ ROCSHMEM_BROADCAST
 
 .. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_wg_broadcast(rocshmem_ctx_t ctx, rocshmem_team_t team, TYPE *dest, const TYPE *source, int nelems, int pe_root)
 
-  :param ctx:    Context with which to perform this collective.
-  :param team:   The team participating in the collective.
-  :param dest:   Destination address. Must be an address on the
-                 symmetric heap.
-  :param source: Source address. Must be an address on the symmetric
-                 heap.
-  :param nelems: Number of data blocks transferred per pair of PEs.
+  :param ctx:    Context with which to perform this collective
+  :param team:   The team participating in the collective
+  :param dest:   Destination address; Must be an address on the
+                 symmetric heap
+  :param source: Source address; Must be an address on the symmetric
+                 heap
+  :param nelems: Number of data blocks transferred per pair of PEs
   :returns:      None
 
 **Description:**
@@ -97,12 +97,12 @@ ROCSHMEM_FCOLLECT
 
 .. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_wg_fcollect(rocshmem_ctx_t ctx, rocshmem_team_t team, TYPE *dest, const TYPE *source, int nelems)
 
-  :param ctx:    Context with which to perform this collective.
-  :param team:   The team participating in the collective.
-  :param dest:   Destination address. Must be an address on the
-                 symmetric heap.
-  :param source: Source address. Must be an address on the symmetric
-                 heap.
+  :param ctx:    Context with which to perform this collective
+  :param team:   The team participating in the collective
+  :param dest:   Destination address; Must be an address on the
+                 symmetric heap
+  :param source: Source address; Must be an address on the symmetric
+                 heap
   :param nelems: Number of data blocks transferred per pair of PEs.
   :returns:      None
 
@@ -114,14 +114,14 @@ ROCSHMEM_REDUCTION
 ------------------
 .. cpp:function:: __device__ int rocshmem_ctx_TYPENAME_OPNAME_wg_reduce(rocshmem_ctx_t ctx, rocshmem_team_t team, TYPE *dest, const TYPE *source, int nreduce)
 
-  :param ctx:     Context with which to perform this collective.
-  :param team:    The team participating in the collective.
-  :param dest:    Destination address. Must be an address on the
-                  symmetric heap.
-  :param source:  Source address. Must be an address on the symmetric
-                  heap.
-  :param nreduce: Number of data blocks transferred per pair of PEs.
-  :returns:       Zero on successful local completion. Nonzero otherwise.
+  :param ctx:     Context with which to perform this collective
+  :param team:    The team participating in the collective
+  :param dest:    Destination address; Must be an address on the
+                  symmetric heap
+  :param source:  Source address; Must be an address on the symmetric
+                  heap
+  :param nreduce: Number of data blocks transferred per pair of PEs
+  :returns:       Zero on successful local completion; Nonzero otherwise
 
 
 **Description:**

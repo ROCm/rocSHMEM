@@ -24,14 +24,14 @@ ROCSHMEM_PUTMEM_SIGNAL
 .. cpp:function:: __device__ void rocshmem_ctx_putmem_signal_nbi_wave(rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, uint64_t *sig_addr, uint64_t signal, int sig_op, int pe)
 .. cpp:function:: __device__ void rocshmem_ctx_putmem_signal_nbi_wg(rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, uint64_t *sig_addr, uint64_t signal, int sig_op, int pe)
 
-  :param ctx:      Context with which to perform this operation.
-  :param dest:     Destination address. Must be an address on the symmetric heap.
-  :param source:   Source address. Must be an address on the symmetric heap.
+  :param ctx:      Context with which to perform this operation
+  :param dest:     Destination address; Must be an address on the symmetric heap
+  :param source:   Source address; Must be an address on the symmetric heap
   :param nelems:   The number of bytes to transfer
-  :param sig_addr: Signal address. Must be an address on the symmetric heap.
-  :param signal:   Signal value.
-  :param sig_op:   Atomic operation to apply the signal value.
-  :param pe:       PE of the remote process.
+  :param sig_addr: Signal address; Must be an address on the symmetric heap
+  :param signal:   Signal value
+  :param sig_op:   Atomic operation to apply the signal value
+  :param pe:       PE of the remote process
   :returns:        None
 
 **Description:**
@@ -55,14 +55,14 @@ ROCSHMEM_PUT_SIGNAL
 .. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_put_signal_nbi_wave(rocshmem_ctx_t ctx, TYPE *dest, const TYPE *source, size_t nelems, uint64_t *sig_addr, uint64_t signal, int sig_op, int pe)
 .. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_put_signal_nbi_wg(rocshmem_ctx_t ctx, TYPE *dest, const TYPE *source, size_t nelems, uint64_t *sig_addr, uint64_t signal, int sig_op, int pe)
 
-  :param ctx:      Context with which to perform this operation.
-  :param dest:     Destination address. Must be an address on the symmetric heap.
-  :param source:   Source address. Must be an address on the symmetric heap.
+  :param ctx:      Context with which to perform this operation
+  :param dest:     Destination address; Must be an address on the symmetric heap
+  :param source:   Source address; Must be an address on the symmetric heap
   :param nelems:   The number of elements of size TYPE to transfer
-  :param sig_addr: Signal address. Must be an address on the symmetric heap.
-  :param signal:   Signal value.
-  :param sig_op:   Atomic operation to apply the signal value.
-  :param pe:       PE of the remote process.
+  :param sig_addr: Signal address; Must be an address on the symmetric heap
+  :param signal:   Signal value
+  :param sig_op:   Atomic operation to apply the signal value
+  :param pe:       PE of the remote process
   :returns:        None
 
 **Description:**
@@ -74,11 +74,11 @@ Valid ``TYPENAME`` and ``TYPE`` values can be seen at :ref:`RMA_TYPES`.
 ROCSHMEM_SIGNAL_FETCH
 ---------------------
 
-.. cpp:function:: __device__ uint64_t rocshmem_signal_fetch(const uint64_t *sig_addr);
-.. cpp:function:: __device__ uint64_t rocshmem_signal_fetch_wg(const uint64_t *sig_addr);
-.. cpp:function:: __device__ uint64_t rocshmem_signal_fetch_wave(const uint64_t *sig_addr);
+.. cpp:function:: __device__ uint64_t rocshmem_signal_fetch(const uint64_t *sig_addr)
+.. cpp:function:: __device__ uint64_t rocshmem_signal_fetch_wg(const uint64_t *sig_addr)
+.. cpp:function:: __device__ uint64_t rocshmem_signal_fetch_wave(const uint64_t *sig_addr)
 
-  :param sig_addr: Signal address. Must be an address on the symmetric heap.
+  :param sig_addr: Signal address; Must be an address on the symmetric heap
   :returns:        Value at sig_addr
 
 **Description:**

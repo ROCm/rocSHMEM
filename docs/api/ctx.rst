@@ -2,10 +2,10 @@
   :description: rocSHMEM intra-kernel networking runtime for AMD dGPUs on the ROCm platform.
   :keywords: rocSHMEM, API, ROCm, documentation, HIP, Networking, Communication
 
-.. _rocshmem-api-comm:
+.. _rocshmem-api-ctx:
 
 -----------------------------------
-Communication Management Routines
+Context Management Routines
 -----------------------------------
 
 ROCSHMEM_CTX_CREATE
@@ -14,13 +14,13 @@ ROCSHMEM_CTX_CREATE
 .. cpp:function:: __device__ int rocshmem_wg_ctx_create(int64_t options, rocshmem_ctx_t *ctx)
 .. cpp:function:: __device__ int rocshmem_wg_team_create_ctx(rocshmem_team_t team, long options, rocshmem_ctx_t *ctx)
         
-  :param team:    Team handle for given operation. 
-  :param options: Options for context creation. Ignored in current design. Please use a value of 0.
-  :param ctx:     Context handle.
+  :param team:    Team handle to derive the context from
+  :param options: Options for context creation (Ignored in current design, please use a value of 0)
+  :param ctx:     Context handle
  
-  :returns:       All threads returns 0 if the context was created successfully. 
+  :returns:       All threads returns 0 if the context was created successfully;
                   If any thread returns non-zero value, the operation failed and a higher number of
-                  `ROCSHMEM_MAX_NUM_CONTEXTS` is required.
+                  `ROCSHMEM_MAX_NUM_CONTEXTS` is required
 
 **Description:**
 Creates an OpenSHMEM context. By design, the context is private to the calling work-group.
@@ -30,8 +30,10 @@ ROCSHMEM_CTX_DESTROY
 --------------------
 
 .. cpp:function:: __device__ void rocshmem_wg_ctx_destroy(rocshmem_ctx_t *ctx)
-  :param ctx:     Context handle.
-  :returns:       None.
+
+  :param ctx:     Context handle
+
+  :returns:       None
 
 **Description:**
 Destroys an rocSHMEM context.
