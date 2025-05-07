@@ -55,19 +55,35 @@ __device__ void *GPUIBContext::shmem_ptr(const void *dest, int pe) {
 
 __device__ void GPUIBContext::putmem(void *dest, const void *source, size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
-  bool must_send_message = wf_coal_.coalesce(pe, source, dest, &nelems);
-  if (!must_send_message) return;
   auto *qp = getQueuePair(pe);
-  qp->put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
-  qp->quiet();
+  bool need_turn {true};
+  uint64_t turns = __ballot(need_turn);
+  while (turns) {
+    uint8_t lane = __ffsll((unsigned long long)turns) - 1;
+    int pe_turn = __shfl(pe, lane);
+    if (pe_turn == pe) {
+      qp->put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
+      qp->quiet();
+      need_turn = false;
+    }
+    turns = __ballot(need_turn);
+  }
 }
 
 __device__ void GPUIBContext::putmem_nbi(void *dest, const void *source, size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
-  bool must_send_message = wf_coal_.coalesce(pe, source, dest, &nelems);
-  if (!must_send_message) return;
   auto *qp = getQueuePair(pe);
-  qp->put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
+  bool need_turn {true};
+  uint64_t turns = __ballot(need_turn);
+  while (turns) {
+    uint8_t lane = __ffsll((unsigned long long)turns) - 1;
+    int pe_turn = __shfl(pe, lane);
+    if (pe_turn == pe) {
+      qp->put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
+      need_turn = false;
+    }
+    turns = __ballot(need_turn);
+  }
 }
 
 __device__ void GPUIBContext::putmem_wave(void *dest, const void *source, size_t nelems, int pe) {
