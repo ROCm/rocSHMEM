@@ -319,11 +319,13 @@ void Connection::ib_init(struct ibv_device* ib_dev, uint8_t port) {
   GPUIB_CHECK_NNULL(ib_state->pd, "ib allocate pd");
   dump_ibv_pd(ib_state->pd);
 
+#ifndef USE_BNXT
   ibv_parent_domain_init_attr pattr;
   init_parent_domain_attr(&pattr);
   ib_state->pd = ibv_alloc_parent_domain(ib_state->context, &pattr);
   GPUIB_CHECK_NNULL(ib_state->pd, "ibv_alloc_parent_domain");
   dump_ibv_pd(ib_state->pd);
+#endif
 
   int err = ibv_query_port(ib_state->context, port, &ib_state->portinfo);
   GPUIB_CHECK_ZERO(err, "ibv_query_port");
@@ -401,6 +403,11 @@ void Connection::init_parent_domain_attr(ibv_parent_domain_init_attr* attr1) {
 }
 
 ibv_cq* Connection::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
+  ibv_cq *cq;
+
+#ifdef USE_BNXT
+  cq = ibv_create_cq(context, cqe, NULL, NULL, 0);
+#else
   ibv_cq_init_attr_ex cq_attr;
   memset(&cq_attr, 0, sizeof(ibv_cq_init_attr_ex));
   cq_attr.cqe = cqe;
@@ -412,8 +419,10 @@ ibv_cq* Connection::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
   cq_attr.parent_domain = pd;
   ibv_cq_ex* cq_ex = ibv_create_cq_ex(context, &cq_attr);
   GPUIB_CHECK_NNULL(cq_ex, "ibv_create_cq_ex");
-  ibv_cq *cq = ibv_cq_ex_to_cq(cq_ex);
+  cq = ibv_cq_ex_to_cq(cq_ex);
   GPUIB_CHECK_NNULL(cq, "ibv_cq_ex_to_cq");
+#endif
+
   return cq;
 }
 
@@ -485,7 +494,11 @@ void Connection::init_gpu_qp_from_connection(QueuePair* gpu_qp, int conn_num) {
   int hip_dev_id{-1};
   CHECK_HIP(hipGetDevice(&hip_dev_id));
   void* gpu_ptr{nullptr};
+#ifdef USE_BNXT
+  gpu_ptr = qp_out.bf.reg;
+#else
   rocm_memory_lock_to_fine_grain(qp_out.bf.reg, qp_out.bf.size * 2, &gpu_ptr, hip_dev_id);
+#endif
   gpu_qp->db.ptr = reinterpret_cast<uint64_t*>(gpu_ptr);
 }
 

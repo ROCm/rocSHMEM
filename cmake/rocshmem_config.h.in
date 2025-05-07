@@ -5,3 +5,4 @@
 #cmakedefine USE_UNCACHED_HEAP
 #cmakedefine USE_ALLOC_DLMALLOC
 #cmakedefine USE_ALLOC_POW2BINS
+#cmakedefine USE_BNXT
