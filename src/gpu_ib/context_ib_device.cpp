@@ -36,7 +36,10 @@ GPUIBContext::GPUIBContext(GPUIBBackend *backend, int idx)
   networkImpl = backend->networkImpl;
   base_heap = backend->heap.get_heap_bases().data();
   networkImpl.networkHostInit(this, idx);
-  barrier_sync = backend->barrier_sync;
+  ctx_id_ = idx;
+  size_t barrier_sync_offset = ctx_id_ * ROCSHMEM_BARRIER_SYNC_SIZE;
+
+  barrier_sync = backend->barrier_sync + barrier_sync_offset;
 }
 
 __device__ __host__ QueuePair *GPUIBContext::getQueuePair(int pe) {

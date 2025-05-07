@@ -250,10 +250,13 @@ void GPUIBBackend::teams_destroy() {
 }
 
 void GPUIBBackend::rocshmem_collective_init() {
-  size_t one_sync_size_bytes{sizeof(*barrier_sync)};
-  size_t sync_size_bytes{one_sync_size_bytes * ROCSHMEM_BARRIER_SYNC_SIZE};
+  size_t one_sync_size_bytes {sizeof(*barrier_sync)};
+  size_t total_sync_elems {
+    ROCSHMEM_BARRIER_SYNC_SIZE * (maximum_num_contexts_ + 1)};
+  size_t sync_size_bytes {one_sync_size_bytes * total_sync_elems};
+
   heap.malloc(reinterpret_cast<void**>(&barrier_sync), sync_size_bytes);
-  for (int i{0}; i < num_pes; i++) {
+  for (int i{0}; i < total_sync_elems; i++) {
     barrier_sync[i] = ROCSHMEM_SYNC_VALUE;
   }
   NET_CHECK(MPI_Barrier(backend_comm));

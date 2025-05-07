@@ -128,7 +128,8 @@ void TesterArguments::get_rocshmem_arguments() {
   myid = rocshmem_my_pe();
 
   TestType type = (TestType)algorithm;
-  if ((type != BarrierAllTestType) && (type != SyncAllTestType) &&
+  if ((type != BarrierAllTestType) && (type != WAVEBarrierAllTestType) &&
+      (type != WGBarrierAllTestType) && (type != SyncAllTestType) &&
       (type != SyncTestType) && (type != PingAllTestType) &&
       (type != TeamBarrierTestType)) {
     if (numprocs != 2) {

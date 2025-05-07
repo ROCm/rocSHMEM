@@ -48,7 +48,15 @@ class GPUIBContext : public Context {
 
   __device__ void barrier_all();
 
+  __device__ void barrier_all_wave();
+
+  __device__ void barrier_all_wg();
+
   __device__ void sync_all();
+
+  __device__ void sync_all_wave();
+
+  __device__ void sync_all_wg();
 
   __device__ void sync(rocshmem_team_t team);
 
@@ -96,6 +104,10 @@ class GPUIBContext : public Context {
 
   __device__ void internal_sync(int pe, int PE_start, int stride, int PE_size, int64_t *pSync);
 
+  __device__ void internal_sync_wave(int pe, int PE_start, int stride, int PE_size, int64_t *pSync);
+
+  __device__ void internal_sync_wg(int pe, int PE_start, int stride, int PE_size, int64_t *pSync);
+
   __device__ void quiet_single(int cq_num);
 
  public:
@@ -106,6 +118,11 @@ class GPUIBContext : public Context {
   int64_t *barrier_sync{nullptr};
 
   NetworkImpl networkImpl{};
+
+  /**
+   * @brief Decive context Id
+   */
+  unsigned int ctx_id_{};
 };
 
 }  // namespace rocshmem
