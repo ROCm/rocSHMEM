@@ -117,7 +117,7 @@ class SymmetricHeap {
   /**
    * @brief Implementation of remote heaps
    */
-  RemoteHeapInfoType remote_heap_info_{single_heap_.get_base_ptr(), single_heap_.get_size()};
+  RemoteHeapInfoType remote_heap_info_{};
 };
 
 }  // namespace rocshmem

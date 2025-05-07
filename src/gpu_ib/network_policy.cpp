@@ -109,7 +109,7 @@ void NetworkImpl::networkHostSetup(GPUIBBackend *backend) {
   connection = new Connection(backend);
   connection->initialize(num_contexts);
   const auto &heap_bases{backend->heap.get_heap_bases()};
-  heap_memory_rkey(heap_bases[my_pe], backend->heap.get_size(), backend->thread_comm);
+  heap_memory_rkey(heap_bases[my_pe], backend->heap.get_size(), backend->backend_comm);
   setup_gpu_qps();
 }
 
