@@ -62,6 +62,7 @@
 #include "team_reduction_tester.hpp"
 #include "wavefront_primitives.hpp"
 #include "workgroup_primitives.hpp"
+#include "put_a2a_tester.hpp"
 
 #include "backend_bc.hpp"
 extern Backend* backend;
@@ -529,6 +530,10 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
     case WAVESignalFetchTestType:
       if (rank == 0) std::cout << "Wave Signal Fetch ###" << std::endl;
       testers.push_back(new SignalingOperationsTester(args));
+      return testers;
+    case PutA2aTestType:
+      if (rank == 0) std::cout << "A2A Put Multi Dest in Wave ###" << std::endl;
+      testers.push_back(new PutA2aTester(args));
       return testers;
     default:
       if (rank == 0) std::cout << "Empty Test ###" << std::endl;

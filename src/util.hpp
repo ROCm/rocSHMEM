@@ -201,10 +201,10 @@ __device__ __forceinline__ int get_flat_block_size() {
 }
 
 /*
- * Returns the number of threads in the caller's flattened grid.
+ * Returns the number of blocks in the caller's flattened grid.
  */
 __device__ __forceinline__ int get_flat_grid_size() {
-  return get_flat_block_size() * hipGridDim_x * hipGridDim_y * hipGridDim_z;
+  return hipGridDim_x * hipGridDim_y * hipGridDim_z;
 }
 
 /*

@@ -120,6 +120,7 @@ enum TestType {
   PutmemOnStreamTestType = 80,
   PutmemSignalOnStreamTestType = 81,
   SignalWaitUntilOnStreamTestType = 82,
+  PutA2aTestType = 83,
 };
 
 enum OpType { PutType = 0, GetType = 1 };
