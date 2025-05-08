@@ -11,7 +11,7 @@ to provide GPU-centric networking through an OpenSHMEM-like interface.
 This intra-kernel networking library simplifies application code complexity and
 enables more fine-grained communication/computation overlap
 than traditional host-driven networking.
-rocSHMEM uses a single symmetric heap (SHEAP) that is allocated on GPU memories.
+rocSHMEM uses a single symmetric heap (SHEAP) that is allocated on GPU memories. To learn more, see :doc:`introduction`
 
 The code is open and hosted at `<https://github.com/ROCm/rocSHMEM>`_.
 
