@@ -105,6 +105,9 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
     case PutNBIMRTestType:
       min_msg_size = max_msg_size;
       break;
+    case PutA2aTestType:
+      min_msg_size = max_msg_size = 4;
+      break;
     default:
       break;
   }
@@ -131,7 +134,7 @@ void TesterArguments::get_rocshmem_arguments() {
   if ((type != BarrierAllTestType) && (type != WAVEBarrierAllTestType) &&
       (type != WGBarrierAllTestType) && (type != SyncAllTestType) &&
       (type != SyncTestType) && (type != PingAllTestType) &&
-      (type != TeamBarrierTestType)) {
+      (type != TeamBarrierTestType) && (type != PutA2aTestType)) {
     if (numprocs != 2) {
       if (myid == 0) {
         std::cerr << "This test requires exactly two processes, we have "
