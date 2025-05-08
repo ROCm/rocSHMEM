@@ -5,7 +5,7 @@
 .. _rocshmem-introduction:
 
 ---------------------------
-Introduction
+What is rocSHMEM?
 ---------------------------
 
 The ROCm OpenSHMEM (rocSHMEM) runtime is part of an AMD and AMD Research initiative
