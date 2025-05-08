@@ -53,6 +53,45 @@ Finalizes device-side rocSHMEM resources.
 Must be called before work-group completion if the work-group also called ``rocshmem_wg_init``.
 Must be called collectively by all threads in the work-group.
 
+ROCSHMEM_INIT_ATTR
+------------------
+.. cpp:function:: __host__ int rocshmem_init_attr(unsigned int flags, rocshmem_init_attr_t *attr)
+
+  :param flags: initialization method to be used.
+                Valid values are ROCSHMEM_INIT_WITH_UNIQUEID and
+                ROCSHMEM_INIT_WITH_MPI_COMM
+  :param attr:  attribute structure specifying input characteristics
+
+  :returns int: returns 0 upon success; otherwise, it returns a nonzero value
+
+**Description:**
+Initialize the rocSHMEM runtime and underlying transport layer using
+the provided mode and attributes.
+
+ROCSHMEM_GET_UNIQUEID
+---------------------
+.. cpp:function:: __host__ int rocshmem_get_uniqueid(rocshmem_uniqueid_t *uid)
+
+  :param uid: pointer to an unique id handle
+  :returns:    returns 0 upon success; otherwise, it returns a nonzero value
+
+**Description:**
+Return a uniqueID
+
+ROCSHMEM_SET_ATTR_UNIQUEID_ARGS
+-------------------------------
+.. cpp:function:: __host__ int rocshmem_set_attr_uniqueid_args(int rank, int nranks, rocshmem_uniqueid_t *uid, rocshmem_init_attr_t *attr)
+
+  :param rank:   rank of the calling process
+  :param nranks: number of pes
+  :param uid:    unique ID used to identify the group processes.
+  :param attr:   attribute structure to be passed to rocshmem_init_attr
+
+  :returns:      returns 0 upon success; otherwise, it returns a nonzero value
+
+**Description:**
+Initializes the rocshmem_init_attr_t struct
+
 ROCSHMEM_N_PES
 --------------
 
