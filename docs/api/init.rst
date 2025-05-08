@@ -57,9 +57,7 @@ ROCSHMEM_INIT_ATTR
 ------------------
 .. cpp:function:: __host__ int rocshmem_init_attr(unsigned int flags, rocshmem_init_attr_t *attr)
 
-  :param flags: initialization method to be used.
-                Valid values are ROCSHMEM_INIT_WITH_UNIQUEID and
-                ROCSHMEM_INIT_WITH_MPI_COMM
+  :param flags: initialization method to be used
   :param attr:  attribute structure specifying input characteristics
 
   :returns int: returns 0 upon success; otherwise, it returns a nonzero value
@@ -67,6 +65,8 @@ ROCSHMEM_INIT_ATTR
 **Description:**
 Initialize the rocSHMEM runtime and underlying transport layer using
 the provided mode and attributes.
+The parameter ``flags`` can be either 
+``ROCSHMEM_INIT_WITH_UNIQUEID`` or ``ROCSHMEM_INIT_WITH_MPI_COMM``.
 
 ROCSHMEM_GET_UNIQUEID
 ---------------------
