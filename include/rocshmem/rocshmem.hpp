@@ -434,13 +434,43 @@ __device__ ATTR_NO_INLINE void rocshmem_barrier_all_wg();
  * @brief perform a collective barrier between all PEs in the team.
  * The caller is blocked until the barrier is resolved.
  *
- * @param[in] team    The team on which to perform barrier synchronization
+ * This function must be invoked by a single thread within the PE.
+ *
+ * @param[in] handle GPU side handle.
+ *
+ * @param[in] team The team on which to perform barrier synchronization
  *
  * @return void
  */
-__device__ void rocshmem_barrier(rocshmem_team_t);
-
 __device__ void rocshmem_ctx_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team);
+
+/**
+ * @brief perform a collective barrier between all PEs in the team.
+ * The caller is blocked until the barrier is resolved.
+ *
+ * This function must be called as a wave-front collective.
+ *
+ * @param[in] handle GPU side handle.
+ *
+ * @param[in] team The team on which to perform barrier synchronization
+ *
+ * @return void
+ */
+__device__ void rocshmem_ctx_barrier_wave(rocshmem_ctx_t ctx, rocshmem_team_t team);
+
+/**
+ * @brief perform a collective barrier between all PEs in the team.
+ * The caller is blocked until the barrier is resolved.
+ *
+ * This function must be called as a work-group collective.
+ *
+ * @param[in] handle GPU side handle.
+ *
+ * @param[in] team The team on which to perform barrier synchronization
+ *
+ * @return void
+ */
+__device__ void rocshmem_ctx_barrier_wg(rocshmem_ctx_t ctx, rocshmem_team_t team);
 
 
 /**

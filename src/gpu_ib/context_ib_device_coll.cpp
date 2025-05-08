@@ -146,4 +146,47 @@ __device__ void GPUIBContext::barrier_all_wg() {
   __syncthreads();
 }
 
+__device__ void GPUIBContext::barrier(rocshmem_team_t team) {
+  GPUIBTeam *team_obj = reinterpret_cast<GPUIBTeam *>(team);
+  int pe = team_obj->my_pe_in_world;
+  int pe_start = team_obj->tinfo_wrt_world->pe_start;
+  int pe_stride = team_obj->tinfo_wrt_world->stride;
+  int pe_size = team_obj->num_pes;
+  long *p_sync = team_obj->barrier_pSync;
+
+  quiet();
+  internal_sync(pe, pe_start, pe_stride, pe_size, p_sync);
+}
+
+__device__ void GPUIBContext::barrier_wave(rocshmem_team_t team) {
+  GPUIBTeam *team_obj = reinterpret_cast<GPUIBTeam *>(team);
+
+  int pe = team_obj->my_pe_in_world;
+  int pe_start = team_obj->tinfo_wrt_world->pe_start;
+  int pe_stride = team_obj->tinfo_wrt_world->stride;
+  int pe_size = team_obj->num_pes;
+  long *p_sync = team_obj->barrier_pSync;
+
+  if (is_thread_zero_in_wave()) {
+    quiet();
+  }
+  internal_sync_wave(pe, pe_start, pe_stride, pe_size, p_sync);
+}
+
+__device__ void GPUIBContext::barrier_wg(rocshmem_team_t team) {
+  GPUIBTeam *team_obj = reinterpret_cast<GPUIBTeam *>(team);
+
+  int pe = team_obj->my_pe_in_world;
+  int pe_start = team_obj->tinfo_wrt_world->pe_start;
+  int pe_stride = team_obj->tinfo_wrt_world->stride;
+  int pe_size = team_obj->num_pes;
+  long *p_sync = team_obj->barrier_pSync;
+
+  if (is_thread_zero_in_block()) {
+    quiet();
+  }
+  internal_sync_wg(pe, pe_start, pe_stride, pe_size, p_sync);
+  __syncthreads();
+}
+
 }  // namespace rocshmem

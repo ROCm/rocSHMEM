@@ -134,7 +134,8 @@ void TesterArguments::get_rocshmem_arguments() {
   if ((type != BarrierAllTestType) && (type != WAVEBarrierAllTestType) &&
       (type != WGBarrierAllTestType) && (type != SyncAllTestType) &&
       (type != SyncTestType) && (type != PingAllTestType) &&
-      (type != TeamBarrierTestType) && (type != PutA2aTestType)) {
+      (type != TeamBarrierTestType) && (type != TeamWAVEBarrierTestType) &&
+      (type != TeamWGBarrierTestType) && (type != PutA2aTestType)) {
     if (numprocs != 2) {
       if (myid == 0) {
         std::cerr << "This test requires exactly two processes, we have "

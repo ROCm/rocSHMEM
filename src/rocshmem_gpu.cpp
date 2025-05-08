@@ -251,9 +251,12 @@ void rocshmem_ctx_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team) {
   get_internal_ctx(ctx)->barrier(team);
 }
 
-__device__
-void rocshmem_barrier(rocshmem_team_t team) {
-  get_internal_ctx(ROCSHMEM_CTX_DEFAULT)->barrier(team);
+__device__ void rocshmem_ctx_barrier_wave(rocshmem_ctx_t ctx, rocshmem_team_t team) {
+  get_internal_ctx(ctx)->barrier_wave(team);
+}
+
+__device__ void rocshmem_ctx_barrier_wg(rocshmem_ctx_t ctx, rocshmem_team_t team) {
+  get_internal_ctx(ctx)->barrier_wg(team);
 }
 
 __device__
