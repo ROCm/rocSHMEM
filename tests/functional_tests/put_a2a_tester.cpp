@@ -75,10 +75,14 @@ __global__ void PutA2aTest(int loop, int skip, long long int *start_time,
 
 static __global__ void verify_results_kernel(int *dest, size_t buf_size,
                                              bool *verification_error) {
-  int num_pe {rocshmem_n_pes()};
+  __shared__ rocshmem_ctx_t ctx;
+
+  rocshmem_wg_ctx_create(&ctx);
+
+  int num_pe {rocshmem_ctx_n_pes(ctx)};
   int num_wg {get_flat_grid_size()};
   int num_wl {get_flat_block_size()};
-  int my_pe {rocshmem_my_pe()};
+  int my_pe {rocshmem_ctx_my_pe(ctx)};
   int wg_id {get_flat_grid_id()};
   int wl_id {get_flat_block_id()};
 
@@ -96,6 +100,8 @@ static __global__ void verify_results_kernel(int *dest, size_t buf_size,
       *verification_error = true;
     }
   }
+
+  rocshmem_wg_ctx_destroy(&ctx);
 }
 
 /******************************************************************************
@@ -110,6 +116,8 @@ PutA2aTester::PutA2aTester(TesterArguments args) : Tester(args) {
     s_buf[wg * args.wg_size + lane] = (my_pe<<24) + (wg<<16) + lane; // set value for verification
   }
   r_buf = (int *)rocshmem_malloc(sizeof(int) * args.num_wgs * args.wg_size * num_pes);
+  CHECK_HIP(hipHostMalloc((void**)&verification_error, sizeof(bool)));
+  *verification_error = false;
 }
 
 PutA2aTester::~PutA2aTester() {

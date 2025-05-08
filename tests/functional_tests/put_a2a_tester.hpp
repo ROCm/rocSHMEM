@@ -51,6 +51,7 @@ class PutA2aTester : public Tester {
 
   int *r_buf;
   int *s_buf;
+  bool *verification_error {nullptr};
 };
 
 #endif
