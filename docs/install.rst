@@ -80,6 +80,7 @@ Configuration options are platform dependent, so please review the script to
 check for fitness with your system.
 
 .. code-block:: bash
+
   export BUILD_DIR=/path/to/not_rocshmem_src_or_build/dependencies
   /path/to/rocshmem_src/scripts/install_dependencies.sh
 

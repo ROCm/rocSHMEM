@@ -5,14 +5,18 @@ subtrees:
 - caption: Introduction
   entries:
   - file: introduction.rst
-    title: Introduction
+    title: What is rocSHMEM?
 
-- caption: Using rocSHMEM
+- caption: Install
   entries:
   - file: install.rst
     title: Install rocSHMEM
+
+
+- caption: How to
+  entries:
   - file: compile_and_run.rst
-    title: Compile and Run Programs
+    title: Compile and Run rocSHMEM Programs
 
 - caption: API Reference
   entries:
@@ -37,6 +41,6 @@ subtrees:
   - file: api/memory_ordering.rst
     title: Memory Ordering Routines
 
-- caption: License
+- caption: About
   entries:
-  - file: license.md
+  - file: license.rst

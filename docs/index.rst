@@ -32,7 +32,7 @@ The code is open and hosted at `<https://github.com/ROCm/rocSHMEM>`_.
       * :doc:`Memory Management Routines <./api/memory_management>`
       * :doc:`Team Management Routines <./api/teams>`
       * :doc:`Context Management Routines <./api/ctx>`
-      * :doc:`Remote Memory Access Routines <./api/rmo>`
+      * :doc:`Remote Memory Access Routines <./api/rma>`
       * :doc:`Atomic Memory Operations <./api/amo>`
       * :doc:`Signaling Operations <./api/sigops>`
       * :doc:`Collective Routines <./api/coll>`
