@@ -649,6 +649,7 @@ bool Tester::peLaunchesKernel() {
     case PutmemOnStreamTestType:
     case PutmemSignalOnStreamTestType:
     case SignalWaitUntilOnStreamTestType:
+    case PutA2aTestType:
       is_launcher = true;
       break;
     default:
