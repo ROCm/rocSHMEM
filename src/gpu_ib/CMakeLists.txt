@@ -26,14 +26,12 @@
 target_sources(
   ${PROJECT_NAME}
   PRIVATE
-    backend_ib.cpp
-    connection.cpp
     context_ib_device.cpp
     context_ib_device_coll.cpp
     context_ib_host.cpp
     endian.cpp
     gpu_ib_team.cpp
-    network_policy.cpp
+    gda_device.cpp
     queue_pair.cpp
     segment_builder.cpp
 )

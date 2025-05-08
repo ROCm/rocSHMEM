@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) 2025 Advanced Micro Devices, Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -20,23 +20,38 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_GPU_IB_CONNECTION_HPP_
-#define LIBRARY_SRC_GPU_IB_CONNECTION_HPP_
+#ifndef LIBRARY_SRC_GPU_IB_GDA_DEVICE_HPP_
+#define LIBRARY_SRC_GPU_IB_GDA_DEVICE_HPP_
+
+#include <hip/hip_runtime.h>
+#include <mpi.h>
+#include <rocshmem/rocshmem.hpp>
+#include <vector>
 
 #include <infiniband/verbs.h>
 extern "C" {
 #include <infiniband/mlx5dv.h>
 }
-#include <rocshmem/rocshmem.hpp>
-#include <vector>
+
+#include "context_incl.hpp"
+#include "containers/free_list_impl.hpp"
+#include "memory/hip_allocator.hpp"
+#include "memory/symmetric_heap.hpp"
+#include "queue_pair.hpp"
+#include "team_tracker.hpp"
 
 namespace rocshmem {
 
-class GPUIBBackend;
+class HostInterface;
+class Team;
+class TeamInfo;
+
+class GPUIBContext;
+class GPUIBHostContext;
 class QueuePair;
 
-class Connection {
- public:
+class GDADevice {
+ private:
   typedef struct ib_state {
     struct ibv_context* context;
     struct ibv_pd* pd;
@@ -44,9 +59,6 @@ class Connection {
     struct ibv_port_attr portinfo;
   } ib_state_t;
 
-  ib_state_t* ib_state{nullptr};
-
- protected:
   typedef struct dest_info {
     int lid;
     int qpn;
@@ -103,28 +115,43 @@ class Connection {
   };
 
  public:
-  Connection(GPUIBBackend* backend);
+  explicit GDADevice(MPI_Comm comm);
 
-  ~Connection();
+  ~GDADevice();
 
-  void initialize(int num_contexts);
+  void global_exit(int status);
 
-  void finalize();
+  void create_team(Team* parent_team, TeamInfo* team_info_wrt_parent, TeamInfo* team_info_wrt_world, int num_pes, int my_pe_in_new_team, MPI_Comm team_comm, rocshmem_team_t* new_team);
 
-  void reg_mr(void* ptr, size_t size, ibv_mr** mr);
+  void destroy_team(rocshmem_team_t team);
 
-  unsigned total_number_connections();
+  void create_ctx(void** ctx);
 
-  void initialize_rkey_handle(uint32_t** heap_rkey_handle, ibv_mr* mr);
+  __device__ bool create_ctx(rocshmem_ctx_t *ctx);
 
-  void free_rkey_handle(uint32_t* heap_rkey_handle);
+  void destroy_ctx(Context* ctx);
 
-  void init_gpu_qp_from_connection(QueuePair* qp, int conn_num);
+  __device__ void destroy_ctx(rocshmem_ctx_t* ctx);
 
-  std::vector<dest_info_t> dest_info;
+  void init_mpi_once(MPI_Comm comm);
 
- private:
-  Connection() = default;
+  void setup_default_ctx();
+
+  void setup_ctxs();
+
+  void setup_default_host_ctx();
+
+  void setup_team_world();
+
+  void init_collective();
+
+  void init_teams();
+
+  void destroy_teams();
+
+  void heap_memory_rkey();
+
+  void initialize_gpu_qp(QueuePair* qp, int conn_num);
 
   InitQPState initqp(uint8_t port);
 
@@ -145,8 +172,6 @@ class Connection {
   template <typename T>
   void try_to_modify_qp(ibv_qp* qp, T state);
 
-  void allocate_dynamic_members(int num_contexts);
-
   static void* buf_alloc(ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type);
 
   static void buf_release(ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type);
@@ -159,19 +184,68 @@ class Connection {
 
   void ib_init(ibv_device* ib_dev, uint8_t port);
 
-  std::vector<ibv_cq*> cqs;
+  void setup_gpu_qps();
 
-  std::vector<ibv_qp*> qps;
+  void initialize_context(GPUIBContext *ctx, int context_id);
 
-  GPUIBBackend* backend{nullptr};
-
-  uint32_t sq_size{1024};
+  HostInterface *host_interface{nullptr};
 
   char* requested_dev{nullptr};
 
   ibv_device** dev_list{nullptr};
+
+  ib_state_t* ib_state{nullptr};
+
+  std::vector<dest_info_t> dest_info;
+
+  char *team_pool_bitmask_{nullptr};
+
+  char *team_reduced_bitmask_{nullptr};
+
+  int team_bitmask_size_{-1};
+
+  TeamTracker team_tracker{};
+
+  long *barrier_pSync_pool{nullptr};
+
+  int64_t *barrier_sync{nullptr};
+
+  GPUIBContext *ctx_array{nullptr};
+
+  size_t maximum_num_contexts_{32};
+
+  GPUIBContext *default_ctx_{nullptr};
+
+  GPUIBHostContext *default_host_ctx_{nullptr};
+
+  FreeListProxy<HIPAllocator, GPUIBContext*> ctx_free_list{};
+
+  QueuePair *gpu_qps{nullptr};
+
+  std::vector<ibv_qp*> qps;
+
+  std::vector<ibv_cq*> cqs;
+
+  uint32_t sq_size{1024};
+
+  SymmetricHeap heap{};
+
+  uint32_t *heap_rkey{nullptr};
+
+  ibv_mr *heap_mr{nullptr};
+
+  MPI_Comm comm{};
+
+  int num_pes{0};
+
+  int my_pe{-1};
 };
+
+/**
+ * @brief Global handle used by the device to access the proxy.
+ */
+extern __constant__ GDADevice* device_proxy;
 
 }  // namespace rocshmem
 
-#endif  // LIBRARY_SRC_GPU_IB_CONNECTION_HPP_
+#endif

@@ -21,12 +21,12 @@
  *****************************************************************************/
 
 #include "context_incl.hpp"
-#include "gpu_ib/backend_ib.hpp"
+#include "gpu_ib/gda_device.hpp"
 
 namespace rocshmem {
 
-__host__ Context::Context(GPUIBBackend* handle)
-    : num_pes(handle->getNumPEs()), my_pe(handle->getMyPE()) {
+__host__ Context::Context(GDADevice* device)
+    : num_pes(device->num_pes), my_pe(device->my_pe) {
 }
 
 /******************************************************************************

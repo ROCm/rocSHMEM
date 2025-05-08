@@ -24,17 +24,15 @@
 #define LIBRARY_SRC_GPU_IB_CONTEXT_IB_DEVICE_HPP_
 
 #include "context.hpp"
-#include "network_policy.hpp"
 
 namespace rocshmem {
 
 class QueuePair;
+class GDADevice;
 
 class GPUIBContext : public Context {
  public:
-  GPUIBContext(GPUIBBackend *b, int idx);
-
-  __device__ __host__ QueuePair *getQueuePair(int pe);
+  GPUIBContext(GDADevice *device, int idx);
 
   __device__ void ctx_destroy();
 
@@ -111,18 +109,11 @@ class GPUIBContext : public Context {
   __device__ void quiet_single(int cq_num);
 
  public:
-  QueuePair *device_qp_proxy{nullptr};
+  QueuePair *qps{nullptr};
 
   char *const *base_heap{nullptr};
 
   int64_t *barrier_sync{nullptr};
-
-  NetworkImpl networkImpl{};
-
-  /**
-   * @brief Decive context Id
-   */
-  unsigned int ctx_id_{};
 };
 
 }  // namespace rocshmem

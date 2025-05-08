@@ -34,7 +34,7 @@
 #include <unistd.h>
 
 #include "context_incl.hpp"
-#include "gpu_ib/backend_ib.hpp"
+#include "gpu_ib/gda_device.hpp"
 #include "mpi_init_singleton.hpp"
 #include "team.hpp"
 #include "util.hpp"
@@ -42,29 +42,29 @@
 
 namespace rocshmem {
 
-#define VERIFY_BACKEND() {                                            \
-    if (!backend) {                                                   \
+#define VERIFY_DEVICE() {                                             \
+    if (!device) {                                                    \
       fprintf(stderr, "ROCSHMEM_ERROR: %s in file '%s' in line %d\n", \
               "Call 'rocshmem_init'", __FILE__, __LINE__);            \
       abort();                                                        \
     }                                                                 \
   }
 
-GPUIBBackend *backend = nullptr;
+GDADevice *device = nullptr;
 
 rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
 [[maybe_unused]] void inline library_init(MPI_Comm comm) {
-  assert(!backend);
+  assert(!device);
   int count = 0;
   if (hipGetDeviceCount(&count) != hipSuccess) { abort(); }
   if (count == 0) { abort(); }
 
   rocm_init();
 
-  CHECK_HIP(hipHostMalloc(&backend, sizeof(GPUIBBackend)));
-  backend = new (backend) GPUIBBackend(comm);
-  if (!backend) { abort(); }
+  CHECK_HIP(hipHostMalloc(&device, sizeof(GDADevice)));
+  device = new (device) GDADevice(comm);
+  if (!device) { abort(); }
 }
 
 [[maybe_unused]] __host__ int rocshmem_init_attr(unsigned int flags,
@@ -165,7 +165,7 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 }
 
 // Note: this function will be called before rocshmem_init_*, so one
-// cannot assume that a backend is already set
+// cannot assume that a device is already set
 [[maybe_unused]] __host__ int rocshmem_get_uniqueid(rocshmem_uniqueid_t *uid) {
   rocshmem_uniqueid_t tuid;
   if (uid == nullptr) {
@@ -186,53 +186,52 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 }
 
 [[maybe_unused]] __host__ int rocshmem_my_pe() {
-  if(backend == nullptr) {
+  if(device == nullptr) {
     MPIInitSingleton *s = s->GetInstance();
     return s->get_rank();
   }
   else
   {
-    return backend->getMyPE();
+    return device->my_pe;
   }
 }
 
 [[maybe_unused]] __host__ int rocshmem_n_pes() {
-  if(backend == nullptr) {
+  if(device == nullptr) {
     MPIInitSingleton *s = s->GetInstance();
     return s->get_nprocs();
   }
   else {
-    return backend->getNumPEs();
+    return device->num_pes;
   }
 }
 
 [[maybe_unused]] void *rocshmem_malloc(size_t size) {
-  VERIFY_BACKEND();
+  VERIFY_DEVICE();
   void *ptr;
-  backend->heap.malloc(&ptr, size);
+  device->heap.malloc(&ptr, size);
   rocshmem_barrier_all();
   return ptr;
 }
 
 [[maybe_unused]] void rocshmem_free(void *ptr) {
-  VERIFY_BACKEND();
+  VERIFY_DEVICE();
   rocshmem_barrier_all();
-  backend->heap.free(ptr);
+  device->heap.free(ptr);
 }
 
 [[maybe_unused]] void rocshmem_finalize() {
-  VERIFY_BACKEND();
-  backend->destroy_remaining_ctxs();
-  auto team_destroy{std::bind(&GPUIBBackend::team_destroy, backend, std::placeholders::_1)};
-  backend->team_tracker.destroy_all(team_destroy);
-  backend->~GPUIBBackend();
-  CHECK_HIP(hipHostFree(backend));
+  VERIFY_DEVICE();
+  auto destroy_team{std::bind(&GDADevice::destroy_team, device, std::placeholders::_1)};
+  device->team_tracker.destroy_all(destroy_team);
+  device->~GDADevice();
+  CHECK_HIP(hipHostFree(device));
   delete MPIInitSingleton::GetInstance();
 }
 
 void rocshmem_global_exit(int status) {
-  VERIFY_BACKEND();
-  backend->global_exit(status);
+  VERIFY_DEVICE();
+  device->global_exit(status);
 }
 
 /******************************************************************************
@@ -266,12 +265,12 @@ inline int pe_in_active_set(int start, int stride, int size, int pe) {
 int rocshmem_team_split_strided(rocshmem_team_t parent_team, int start, int stride, int size,
     [[maybe_unused]] const rocshmem_team_config_t *config,
     [[maybe_unused]] long config_mask, rocshmem_team_t *new_team) {
-  VERIFY_BACKEND();
+  VERIFY_DEVICE();
 
   *new_team = ROCSHMEM_TEAM_INVALID;
 
-  auto num_user_teams{backend->team_tracker.get_num_user_teams()};
-  auto max_num_teams{backend->team_tracker.get_max_num_teams()};
+  auto num_user_teams{device->team_tracker.get_num_user_teams()};
+  auto max_num_teams{device->team_tracker.get_max_num_teams()};
   if (num_user_teams >= max_num_teams - 1) {
     return -1;
   }
@@ -290,17 +289,17 @@ int rocshmem_team_split_strided(rocshmem_team_t parent_team, int start, int stri
   int stride_in_world = stride * parent_team_obj->tinfo_wrt_world->stride;
   int pe_end_in_world = pe_start_in_world + stride_in_world * (size - 1);
 
-  if (pe_end_in_world > backend->num_pes) {
+  if (pe_end_in_world > device->num_pes) {
     return -1;
   }
 
-  int my_pe_in_world = backend->my_pe;
+  int my_pe_in_world = device->my_pe;
   int my_pe_in_new_team = pe_in_active_set(pe_start_in_world, stride_in_world, size, my_pe_in_world);
 
   TeamInfo *team_info_wrt_parent, *team_info_wrt_world;
   CHECK_HIP(hipMalloc(&team_info_wrt_parent, sizeof(TeamInfo)));
   new (team_info_wrt_parent) TeamInfo(parent_team_obj, start, stride, size);
-  auto *team_world{backend->team_tracker.get_team_world()};
+  auto *team_world{device->team_tracker.get_team_world()};
   CHECK_HIP(hipMalloc(&team_info_wrt_world, sizeof(TeamInfo)));
   new (team_info_wrt_world) TeamInfo(team_world, pe_start_in_world, stride_in_world, size);
 
@@ -317,8 +316,8 @@ int rocshmem_team_split_strided(rocshmem_team_t parent_team, int start, int stri
   if (my_pe_in_new_team < 0) {
     *new_team = ROCSHMEM_TEAM_INVALID;
   } else {
-    backend->create_new_team(parent_team_obj, team_info_wrt_parent, team_info_wrt_world, size, my_pe_in_new_team, team_comm, new_team);
-    backend->team_tracker.track(*new_team);
+    device->create_team(parent_team_obj, team_info_wrt_parent, team_info_wrt_world, size, my_pe_in_new_team, team_comm, new_team);
+    device->team_tracker.track(*new_team);
   }
   return 0;
 }
@@ -327,8 +326,8 @@ void rocshmem_team_destroy(rocshmem_team_t team) {
   if (team == ROCSHMEM_TEAM_INVALID || team == ROCSHMEM_TEAM_WORLD) {
     return;
   }
-  backend->team_tracker.untrack(team);
-  backend->team_destroy(team);
+  device->team_tracker.untrack(team);
+  device->destroy_team(team);
 }
 
 int rocshmem_team_translate_pe(rocshmem_team_t src_team, int src_pe, rocshmem_team_t dst_team) {
@@ -401,17 +400,15 @@ Context *get_internal_ctx(rocshmem_ctx_t ctx) {
 
 int rocshmem_ctx_create(rocshmem_ctx_t *ctx) {
   void *phys_ctx;
-  backend->ctx_create(&phys_ctx);
+  device->create_ctx(&phys_ctx);
   ctx->ctx_opaque = phys_ctx;
   ctx->team_opaque = nullptr;
-  backend->track_ctx(reinterpret_cast<Context *>(phys_ctx));
   return 0;
 }
 
 void rocshmem_ctx_destroy(rocshmem_ctx_t ctx) {
   Context *phys_ctx = get_internal_ctx(ctx);
-  backend->untrack_ctx(phys_ctx);
-  backend->ctx_destroy(phys_ctx);
+  device->destroy_ctx(phys_ctx);
 }
 
 template <typename T>

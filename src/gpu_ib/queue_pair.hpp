@@ -39,8 +39,7 @@
 
 namespace rocshmem {
 
-class GPUIBBackend;
-class Connection;
+class GDADevice;
 
 typedef union db_reg {
   uint64_t *ptr;
@@ -49,7 +48,7 @@ typedef union db_reg {
 
 class QueuePair {
  public:
-  friend Connection;
+  friend GDADevice;
 
   /**
    * @brief Constructor.
