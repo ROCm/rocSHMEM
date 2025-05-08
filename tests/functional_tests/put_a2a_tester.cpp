@@ -36,8 +36,7 @@ __global__ void PutA2aTest(int loop, int skip, long long int *start_time,
                             ShmemContextType ctx_type) {
   __shared__ rocshmem_ctx_t ctx;
 
-  rocshmem_wg_init();
-  rocshmem_wg_ctx_create(ctx_type, &ctx);
+  rocshmem_wg_ctx_create(&ctx);
 
   int num_pe {rocshmem_ctx_n_pes(ctx)};
   int num_wg {get_flat_grid_size()};
@@ -72,7 +71,6 @@ __global__ void PutA2aTest(int loop, int skip, long long int *start_time,
     end_time[wg_id] = wall_clock64();
   }
   rocshmem_wg_ctx_destroy(&ctx);
-  rocshmem_wg_finalize();
 }
 
 /******************************************************************************
