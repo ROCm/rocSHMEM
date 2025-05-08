@@ -358,7 +358,8 @@ bool Tester::peLaunchesKernel() {
                 (_type == WGBarrierAllTestType) ||
                 (_type == SyncTestType) || (_type == SyncAllTestType) ||
                 (_type == RandomAccessTestType) ||
-                (_type == TeamBarrierTestType);
+                (_type == TeamBarrierTestType) ||
+                (_type == PutA2aTestType);
 
   return is_launcher;
 }
