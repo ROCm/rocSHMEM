@@ -108,7 +108,7 @@ ExecTest() {
   LAUNCHER=mpirun
   OPTIONS=" -n $NUM_RANKS -mca pml ucx"
   OPTIONS+=" -x ROCSHMEM_MAX_NUM_CONTEXTS=$ROCSHMEM_MAX_NUM_CONTEXTS"
-  OPTIONS+=" -x $PATH -x $LD_LIBRARY_PATH --display-map"
+  OPTIONS+=" -x PATH -x LD_LIBRARY_PATH --display map --map-by numa"
 
   if [[ "" != "$HOSTFILE" ]]
   then
