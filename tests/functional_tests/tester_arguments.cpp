@@ -149,6 +149,9 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
     case GTestType:
       min_msg_size = 1;
       max_msg_size = 1;
+    case PutA2aTestType:
+      min_msg_size = max_msg_size = 4;
+      break;
     default:
       break;
   }
@@ -209,6 +212,7 @@ void TesterArguments::get_arguments() {
     case PutmemOnStreamTestType:
     case PutmemSignalOnStreamTestType:
     case SignalWaitUntilOnStreamTestType:
+    case PutA2aTestType:
       requires_two_pes = false;
       break;
     default:

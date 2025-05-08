@@ -102,13 +102,15 @@ void PutA2aTester::resetBuffers(uint64_t size) {
 void PutA2aTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
                                 uint64_t size) {
   size_t shared_bytes = 0;
+  int num_pes {rocshmem_n_pes()};
 
   hipLaunchKernelGGL(PutA2aTest, gridSize, blockSize, shared_bytes, stream,
                      loop, args.skip, start_time, end_time, r_buf, s_buf,
                      _shmem_context);
 
-  num_msgs = (loop + args.skip) * gridSize.x * blockSize.x;
-  num_timed_msgs = loop * gridSize.x * blockSize.x;
+
+  num_msgs = (loop + args.skip) * gridSize.x * blockSize.x * num_pes;
+  num_timed_msgs = loop * gridSize.x * blockSize.x * num_pes;
 }
 
 void PutA2aTester::verifyResults(uint64_t size) {
