@@ -97,6 +97,14 @@ void Context::barrier(rocshmem_team_t team) {
   static_cast<GPUIBContext*>(this)->barrier(team);
 }
 
+__device__ void Context::barrier_wave(rocshmem_team_t team) {
+  static_cast<GPUIBContext*>(this)->barrier_wave(team);
+}
+
+__device__ void Context::barrier_wg(rocshmem_team_t team) {
+  static_cast<GPUIBContext*>(this)->barrier_wg(team);
+}
+
 __device__
 void Context::sync_all() {
   static_cast<GPUIBContext*>(this)->sync_all();

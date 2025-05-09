@@ -102,6 +102,12 @@ class Context {
   void barrier(rocshmem_team_t team);
 
   __device__
+  void barrier_wave(rocshmem_team_t team);
+
+  __device__
+  void barrier_wg(rocshmem_team_t team);
+
+  __device__
   void sync_all();
 
   __device__

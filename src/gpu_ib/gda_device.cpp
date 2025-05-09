@@ -370,6 +370,8 @@ GDADevice::~GDADevice() {
 
   CHECK_HIP(hipFree(ctx_array));
 
+  heap.free(reinterpret_cast<void**>(&barrier_sync));
+
   delete ib_state;
 }
 
@@ -504,7 +506,8 @@ void GDADevice::init_mpi_once(MPI_Comm comm) {
 
 void GDADevice::init_teams() {
   auto max_num_teams{team_tracker.get_max_num_teams()};
-  barrier_pSync_pool = reinterpret_cast<long*>(rocshmem_malloc(sizeof(long) * ROCSHMEM_BARRIER_SYNC_SIZE * max_num_teams));
+  size_t total_sync_elems = sizeof(long) * ROCSHMEM_BARRIER_SYNC_SIZE * max_num_teams;
+  heap.malloc(reinterpret_cast<void**>(&barrier_pSync_pool), total_sync_elems);
   long *barrier_pSync;
   for (int team_i{0}; team_i < max_num_teams; team_i++) {
     barrier_pSync = reinterpret_cast<long*>(&barrier_pSync_pool[team_i * ROCSHMEM_BARRIER_SYNC_SIZE]);
@@ -528,7 +531,7 @@ void GDADevice::init_teams() {
 }
 
 void GDADevice::destroy_teams() {
-  rocshmem_free(barrier_pSync_pool);
+  heap.free(barrier_pSync_pool);
   free(team_pool_bitmask_);
   free(team_reduced_bitmask_);
 }
