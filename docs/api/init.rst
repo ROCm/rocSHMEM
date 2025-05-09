@@ -57,13 +57,13 @@ ROCSHMEM_INIT_ATTR
 ------------------
 .. cpp:function:: __host__ int rocshmem_init_attr(unsigned int flags, rocshmem_init_attr_t *attr)
 
-  :param flags: initialization method to be used
-  :param attr:  attribute structure specifying input characteristics
+  :param flags: The initialization method to be used.
+  :param attr:  Attribute structure specifying input characteristics.
 
-  :returns int: returns 0 upon success; otherwise, it returns a nonzero value
+  :returns int: Returns ``0`` on success; otherwise, returns a nonzero value.
 
 **Description:**
-Initialize the rocSHMEM runtime and underlying transport layer using
+This routine initializes the rocSHMEM runtime and underlying transport layer using
 the provided mode and attributes.
 The parameter ``flags`` can be either 
 ``ROCSHMEM_INIT_WITH_UNIQUEID`` or ``ROCSHMEM_INIT_WITH_MPI_COMM``.
@@ -72,25 +72,25 @@ ROCSHMEM_GET_UNIQUEID
 ---------------------
 .. cpp:function:: __host__ int rocshmem_get_uniqueid(rocshmem_uniqueid_t *uid)
 
-  :param uid: pointer to an unique id handle
-  :returns:    returns 0 upon success; otherwise, it returns a nonzero value
+  :param uid: Pointer to a unique ID handle.
+  :returns:   Returns ``0`` on success; otherwise, returns a nonzero value.
 
 **Description:**
-Return a uniqueID
+This routine returns a unique ID.
 
 ROCSHMEM_SET_ATTR_UNIQUEID_ARGS
 -------------------------------
 .. cpp:function:: __host__ int rocshmem_set_attr_uniqueid_args(int rank, int nranks, rocshmem_uniqueid_t *uid, rocshmem_init_attr_t *attr)
 
-  :param rank:   rank of the calling process
-  :param nranks: number of pes
-  :param uid:    unique ID used to identify the group processes.
-  :param attr:   attribute structure to be passed to rocshmem_init_attr
+  :param rank:   Rank of the calling process.
+  :param nranks: Number of PEs.
+  :param uid:    Unique ID used to identify the group processes.
+  :param attr:   Attribute structure to be passed to ``rocshmem_init_attr_t``.
 
-  :returns:      returns 0 upon success; otherwise, it returns a nonzero value
+  :returns:      Returns ``0`` on success; otherwise, returns a nonzero value.
 
 **Description:**
-Initializes the rocshmem_init_attr_t struct
+This routine initializes the ``rocshmem_init_attr_t`` struct.
 
 ROCSHMEM_N_PES
 --------------
