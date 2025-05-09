@@ -1,0 +1,46 @@
+defaults:
+  numbered: False
+root: index
+subtrees:
+- caption: Introduction
+  entries:
+  - file: introduction.rst
+    title: What is rocSHMEM?
+
+- caption: Install
+  entries:
+  - file: install.rst
+    title: Install rocSHMEM
+
+
+- caption: How to
+  entries:
+  - file: compile_and_run.rst
+    title: Compile and Run rocSHMEM Programs
+
+- caption: API Reference
+  entries:
+  - file: api/init.rst
+    title: Library Setup, Exit, and Query Routines
+  - file: api/memory_management.rst
+    title: Memory Management Routines
+  - file: api/teams.rst
+    title: Team Management Routines
+  - file: api/ctx.rst
+    title: Context Management Routines
+  - file: api/rma.rst
+    title: Remote Memory Access Routines
+  - file: api/amo.rst
+    title: Atomic Memory Operations
+  - file: api/sigops.rst
+    title: Signaling Operations
+  - file: api/coll.rst
+    title: Collective Routines
+  - file: api/pt2pt_sync.rst
+    title: Point-to-Point Synchronization Routines
+  - file: api/memory_ordering.rst
+    title: Memory Ordering Routines
+
+- caption: About
+  entries:
+  - file: license.rst
