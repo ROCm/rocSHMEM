@@ -219,7 +219,7 @@ SHMEM_ATOMIC_FETCH_OR
   :return:        The old value of ``dest``.
 
 **Description:**
-This function atomically bitwise-or value to the value at ``dest`` on ``pe``.
+This function atomically bitwise-or ``value`` to the value at ``dest`` on ``pe``.
 The operation is blocking.
 
 Valid ``TYPENAME`` and ``TYPE`` values are listed in BITWISE_AMO_TYPES_.
