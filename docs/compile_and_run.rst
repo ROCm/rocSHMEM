@@ -16,7 +16,7 @@ Compiling and Linking with rocSHMEM
 rocSHMEM is a library that can be statically linked to your application during compilation with ``hipcc``.
 
 When compiling your application with ``hipcc``, you must include the rocSHMEM header files and the rocSHMEM library. 
-Because rocSHMEM depends on MPI, you must manually add the arguments for MPI linkage instead of using ``mpicc``.
+Since rocSHMEM depends on MPI, you must manually add the arguments for MPI linkage instead of using ``mpicc``.
 
 When using `hipcc` directly without a build system, AMD recommends performing the compilation and linking steps separately. 
 
