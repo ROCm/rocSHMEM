@@ -34,7 +34,7 @@ SHMEM_ATOMIC_SET
 
  :param ctx:  Context with which to perform this operation.
  :param dest: Destination address. Must be an address on the symmetric heap.
- :param val:  The value to be atomically set.
+ :param value:  The value to be atomically set.
  :param pe:   PE of the remote process.
 
  :returns:    None.
