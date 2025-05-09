@@ -75,7 +75,7 @@ SHMEM_ATOMIC_SWAP
 
   :param ctx:     Context with which to perform this operation.
   :param dest:    Destination address. Must be an address on the symmetric heap.
-  :param val:     The value to be atomically swapped.
+  :param value:     The value to be atomically swapped.
   :param pe:      PE of the remote process.
 
   :return:        The old value of ``dest``.
