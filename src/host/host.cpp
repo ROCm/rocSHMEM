@@ -38,7 +38,7 @@ namespace rocshmem {
 __host__ HostContextWindowInfo::HostContextWindowInfo(MPI_Comm comm_world,
                                                       SymmetricHeap* heap) {
   window_info_ =
-      new WindowInfo(comm_world, heap->get_local_heap_base(), heap->get_size());
+      new WindowInfoMPI(comm_world, heap->get_local_heap_base(), heap->get_size());
 }
 
 __host__ HostContextWindowInfo::~HostContextWindowInfo() {
@@ -166,29 +166,45 @@ __host__ HostInterface::~HostInterface() {
 __host__ void HostInterface::putmem_nbi(void* dest, const void* source,
                                         size_t nelems, int pe,
                                         WindowInfo* window_info) {
-  initiate_put(dest, source, nelems, pe, window_info);
+  WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
+  if (!window_info_mpi) {
+    abort();
+  }
+  initiate_put(dest, source, nelems, pe, window_info_mpi);
 }
 
 __host__ void HostInterface::getmem_nbi(void* dest, const void* source,
                                         size_t nelems, int pe,
                                         WindowInfo* window_info) {
-  initiate_get(dest, source, nelems, pe, window_info);
+  WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
+  if (!window_info_mpi) {
+    abort();
+  }
+  initiate_get(dest, source, nelems, pe, window_info_mpi);
 }
 
 __host__ void HostInterface::putmem(void* dest, const void* source,
                                     size_t nelems, int pe,
                                     WindowInfo* window_info) {
-  initiate_put(dest, source, nelems, pe, window_info);
+  WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
+  if (!window_info_mpi) {
+    abort();
+  }
+  initiate_put(dest, source, nelems, pe, window_info_mpi);
 
-  MPI_Win_flush_local(pe, window_info->get_win());
+  MPI_Win_flush_local(pe, window_info_mpi->get_win());
 }
 
 __host__ void HostInterface::getmem(void* dest, const void* source,
                                     size_t nelems, int pe,
                                     WindowInfo* window_info) {
-  initiate_get(dest, source, nelems, pe, window_info);
+  WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
+  if (!window_info_mpi) {
+    abort();
+  }
+  initiate_get(dest, source, nelems, pe, window_info_mpi);
 
-  MPI_Win_flush_local(pe, window_info->get_win());
+  MPI_Win_flush_local(pe, window_info_mpi->get_win());
 
   /*
    * Flush local HDP to ensure that the NIC's write
@@ -198,7 +214,11 @@ __host__ void HostInterface::getmem(void* dest, const void* source,
 }
 
 __host__ void HostInterface::fence(WindowInfo* window_info) {
-  complete_all(window_info->get_win());
+  WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
+  if (!window_info_mpi) {
+    abort();
+  }
+  complete_all(window_info_mpi->get_win());
 
   /*
    * Flush my HDP and the HDPs of remote GPUs.
@@ -216,7 +236,11 @@ __host__ void HostInterface::fence(WindowInfo* window_info) {
 }
 
 __host__ void HostInterface::quiet(WindowInfo* window_info) {
-  complete_all(window_info->get_win());
+  WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
+  if (!window_info_mpi) {
+    abort();
+  }
+  complete_all(window_info_mpi->get_win());
 
   /* Same explanation as in fence */
   hdp_policy_->hdp_flush();
@@ -226,7 +250,11 @@ __host__ void HostInterface::quiet(WindowInfo* window_info) {
 }
 
 __host__ void HostInterface::sync_all(WindowInfo* window_info) {
-  MPI_Win_sync(window_info->get_win());
+  WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
+  if (!window_info_mpi) {
+    abort();
+  }
+  MPI_Win_sync(window_info_mpi->get_win());
 
   hdp_policy_->hdp_flush();
   /*
@@ -241,7 +269,11 @@ __host__ void HostInterface::sync_all(WindowInfo* window_info) {
 }
 
 __host__ void HostInterface::barrier_all(WindowInfo* window_info) {
-  complete_all(window_info->get_win());
+  WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
+  if (!window_info_mpi) {
+    abort();
+  }
+  complete_all(window_info_mpi->get_win());
 
   /*
    * Flush my HDP cache so remote NICs will

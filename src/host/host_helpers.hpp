@@ -55,7 +55,7 @@ __host__ inline void HostInterface::complete_all(MPI_Win win) {
 
 __host__ inline void HostInterface::initiate_put(void* dest, const void* source,
                                                  size_t nelems, int pe,
-                                                 WindowInfo* window_info) {
+                                                 WindowInfoMPI* window_info) {
   MPI_Win win{window_info->get_win()};
   void* win_start{window_info->get_start()};
   void* win_end{window_info->get_end()};
@@ -79,7 +79,7 @@ __host__ inline void HostInterface::initiate_put(void* dest, const void* source,
 
 __host__ inline void HostInterface::initiate_get(void* dest, const void* source,
                                                  size_t nelems, int pe,
-                                                 WindowInfo* window_info) {
+                                                 WindowInfoMPI* window_info) {
   MPI_Win win{window_info->get_win()};
   void* win_start{window_info->get_start()};
   void* win_end{window_info->get_end()};

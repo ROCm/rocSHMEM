@@ -278,10 +278,10 @@ class HostInterface {
   }
 
   __host__ void initiate_put(void* dest, const void* source, size_t nelems,
-                             int pe, WindowInfo* window_info);
+                             int pe, WindowInfoMPI* window_info);
 
   __host__ void initiate_get(void* dest, const void* source, size_t nelems,
-                             int pe, WindowInfo* window_info);
+                             int pe, WindowInfoMPI* window_info);
 
   __host__ void complete_all(MPI_Win win);
 
