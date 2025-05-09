@@ -60,7 +60,7 @@ SHMEM_ATOMIC_COMPARE_SWAP
   :return:        The old value of ``dest``.
 
 **Description:**
-This function atomically compares the value in ``dest`` with ``cond``. If they are equal, it stores ``val`` in ``dest``.
+This function atomically compares the value in ``dest`` with ``cond``. If they are equal, it stores ``value`` in ``dest``.
 The operation returns the older value of ``dest`` to the calling PE.
 The operation is blocking.
 
