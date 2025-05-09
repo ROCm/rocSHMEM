@@ -1,17 +1,12 @@
 .. meta::
-  :description: rocSHMEM intra-kernel networking runtime for AMD dGPUs on the ROCm platform.
-  :keywords: rocSHMEM, API, ROCm, documentation, HIP, Networking, Communication
+  :description: rocSHMEM is a runtime that provides GPU-centric networking through an OpenSHMEM-like interface.
+  :keywords: rocSHMEM, ROCm, OpenSHMEM, library, API, IPC, RO
 
 ****************************
 rocSHMEM Documentation
 ****************************
 
-The ROCm OpenSHMEM (rocSHMEM) runtime is part of an AMD and AMD Research initiative
-to provide GPU-centric networking through an OpenSHMEM-like interface.
-This intra-kernel networking library simplifies application code complexity and
-enables more fine-grained communication/computation overlap
-than traditional host-driven networking.
-rocSHMEM uses a single symmetric heap (SHEAP) that is allocated on GPU memories. To learn more, see :doc:`introduction`
+The ROCm OpenSHMEM (rocSHMEM) runtime is an intra-kernel networking library that provides GPU-centric networking through an OpenSHMEM-like interface. It simplifies application code complexity and enables finer communication and computation overlap than traditional host-driven networking. rocSHMEM uses a single symmetric heap (SHEAP) allocated on GPU memories. For more information, see :doc:`introduction`
 
 The code is open and hosted at `<https://github.com/ROCm/rocSHMEM>`_.
 
