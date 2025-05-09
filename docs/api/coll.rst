@@ -15,11 +15,11 @@ ROCSHMEM_BARRIER_ALL
 .. cpp:function:: __device__ void rocshmem_ctx_barrier_all_wave(rocshmem_ctx_t ctx)
 .. cpp:function:: __device__ void rocshmem_ctx_barrier_all_wg(rocshmem_ctx_t ctx)
 
-  :param ctx: Context with which to perform this operation
-  :returns:   None
+  :param ctx: Context with which to perform this operation.
+  :returns:   None.
 
 **Description:**
-Perform a collective barrier between all PEs in the system.
+This routine performs a collective barrier across all PEs in the system.
 The caller is blocked until the barrier is resolved and all updates local and remote are completed.
 
 ROCSHMEM_BARRIER
