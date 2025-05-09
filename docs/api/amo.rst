@@ -199,7 +199,7 @@ SHMEM_ATOMIC_AND
   :return:        None
 
 **Description:**
-This function atomically bitwise-and value to the value at ``dest`` on ``pe``.
+This function atomically bitwise-and ``value`` to the value at ``dest`` on ``pe``.
 The operation is blocking.
 
 Valid ``TYPENAME`` and ``TYPE`` values are listed in BITWISE_AMO_TYPES_.
