@@ -40,7 +40,7 @@ SHMEM_ATOMIC_SET
  :returns:    None.
 
 **Description:**
-This function atomically sets the value ``val`` to ``dest`` on ``pe``.
+This function atomically sets the value ``value`` to ``dest`` on ``pe``.
 
 Valid ``TYPENAME`` and ``TYPE`` values are listed in EXTENDED_AMO_TYPES_.
 
