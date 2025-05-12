@@ -19,7 +19,7 @@ Defining how OpenSHMEM applications interact with GPUs remains an
 ongoing active discussion within the OpenSHMEM community, and the OpenSHMEM
 specification has yet to coalesce on this topic.
 rocSHMEM extends beyond the OpenSHMEM specification to add semantics that
-support GPU kernel communication, while maintaining close resemblance to
+support GPU kernel communication while maintaining close resemblance to
 the original OpenSHMEM specification semantics. 
 
 Applications using HIP can interface with rocSHMEM.
