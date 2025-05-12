@@ -101,6 +101,8 @@ class GPUIBContext : public Context {
   template <typename T>
   __device__ void put_nbi_wave(T *dest, const T *source, size_t nelems, int pe);
 
+  __device__ void fence();
+
  private:
   __device__ void internal_direct_barrier(int pe, int PE_start, int stride, int n_pes, int64_t *pSync);
 
