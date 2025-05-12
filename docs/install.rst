@@ -79,7 +79,7 @@ Alternatively, you can use a script to install dependencies:
 For more information about OpenMPI-UCX support, see
 `GPU-enabled Message Passing Interface <https://rocm.docs.amd.com/en/latest/how-to/gpu-enabled-mpi.html>`_.
 
-Installing rocSHMEM from Source
+Installing rocSHMEM from source
 --------------------------------
 
 To build and install rocSHMEM with the IPC on-node, GPU-to-GPU backend, run:
