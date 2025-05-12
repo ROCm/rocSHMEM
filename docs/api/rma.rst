@@ -76,9 +76,9 @@ ROCSHMEM_P
     :param ctx:    Context with which to perform this operation.
     :param dest:   Destination address. Must be an address on the symmetric heap.
     :param value:  Value to write to ``dest`` at ``pe``.
-    :param pe:     PE of the remote process
+    :param pe:     PE of the remote process.
 
-    :returns:      None
+    :returns:      None.
 
 **Description:**
 This routine writes a single value to to ``dest`` at ``pe``.
