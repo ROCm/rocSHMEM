@@ -97,7 +97,7 @@ void MPITransport::submitRequestsToMPI() {
       putMem(next_element.dst, next_element.src, next_element.ol1.size,
              next_element.PE, next_element.ro_net_win_id, queue_idx,
              next_element.status, true);
-      DPRINTF("Received PUT dst %p src %p size %lu pe %d win_id %d\n",
+      DPRINTF("Submitted PUT dst %p src %p size %lu pe %d win_id %d\n",
               next_element.dst, next_element.src, next_element.ol1.size,
               next_element.PE, next_element.ro_net_win_id);
       break;
@@ -112,7 +112,7 @@ void MPITransport::submitRequestsToMPI() {
       putMem(next_element.dst, source_buffer, next_element.ol1.size,
              next_element.PE, next_element.ro_net_win_id, queue_idx,
              next_element.status, true, true);
-      DPRINTF("Received P dst %p value %p pe %d\n", next_element.dst,
+      DPRINTF("Submitted P dst %p value %p pe %d\n", next_element.dst,
               next_element.src, next_element.PE);
       break;
     }
@@ -120,14 +120,14 @@ void MPITransport::submitRequestsToMPI() {
       getMem(next_element.dst, next_element.src, next_element.ol1.size,
              next_element.PE, next_element.ro_net_win_id, queue_idx,
              next_element.status, true);
-      DPRINTF("Received GET dst %p src %p size %lu pe %d\n", next_element.dst,
+      DPRINTF("Submitted GET dst %p src %p size %lu pe %d\n", next_element.dst,
               next_element.src, next_element.ol1.size, next_element.PE);
       break;
     case RO_NET_PUT_NBI:
       putMem(next_element.dst, next_element.src, next_element.ol1.size,
              next_element.PE, next_element.ro_net_win_id, queue_idx,
              next_element.status, false);
-      DPRINTF("Received PUT NBI dst %p src %p size %lu pe %d\n",
+      DPRINTF("Submitted PUT NBI dst %p src %p size %lu pe %d\n",
               next_element.dst, next_element.src, next_element.ol1.size,
               next_element.PE);
       break;
@@ -135,7 +135,7 @@ void MPITransport::submitRequestsToMPI() {
       getMem(next_element.dst, next_element.src, next_element.ol1.size,
              next_element.PE, next_element.ro_net_win_id, queue_idx,
              next_element.status, false);
-      DPRINTF("Received GET NBI dst %p src %p size %lu pe %d\n",
+      DPRINTF("Submitted GET NBI dst %p src %p size %lu pe %d\n",
               next_element.dst, next_element.src, next_element.ol1.size,
               next_element.PE);
       break;
@@ -146,7 +146,7 @@ void MPITransport::submitRequestsToMPI() {
              next_element.status, true,
              static_cast<ROCSHMEM_OP>(next_element.op),
              static_cast<ro_net_types>(next_element.datatype));
-      DPRINTF("Received AMO dst %p src %p Val %llu pe %d\n", next_element.dst,
+      DPRINTF("Submitted AMO dst %p src %p Val %llu pe %d\n", next_element.dst,
               next_element.src, next_element.ol1.atomic_value, next_element.PE);
       break;
     case RO_NET_AMO_FCAS:
@@ -156,7 +156,7 @@ void MPITransport::submitRequestsToMPI() {
               next_element.status, true,
               const_cast<void **>(&next_element.ol2.pWrk),
               static_cast<ro_net_types>(next_element.datatype));
-      DPRINTF("Received F_CSWAP dst %p src %p Val %llu pe %d cond %ld\n",
+      DPRINTF("Submitted F_CSWAP dst %p src %p Val %llu pe %d cond %ld\n",
               next_element.dst, next_element.src, next_element.ol1.atomic_value,
               next_element.PE,
               reinterpret_cast<int64_t>(next_element.ol2.pWrk));
@@ -168,9 +168,9 @@ void MPITransport::submitRequestsToMPI() {
                      static_cast<ROCSHMEM_OP>(next_element.op),
                      static_cast<ro_net_types>(next_element.datatype),
                      next_element.status, true);
-      DPRINTF("Received FLOAT_SUM_TEAM_REDUCE dst %p src %p size %lu team %d\n",
+      DPRINTF("Submitted FLOAT_SUM_TEAM_REDUCE dst %p src %p size %lu team %zd\n",
               next_element.dst, next_element.src, next_element.ol1.size,
-              next_element.team_comm);
+              (intptr_t)next_element.team_comm);
       break;
     case RO_NET_TEAM_BROADCAST:
       team_broadcast(next_element.dst, next_element.src, next_element.ol1.size,
@@ -179,10 +179,10 @@ void MPITransport::submitRequestsToMPI() {
                      static_cast<ro_net_types>(next_element.datatype),
                      next_element.status, true);
       DPRINTF(
-          "Received TEAM_BROADCAST dst %p src %p size %lu "
-          "team %d, PE_root %d \n",
+          "Submitted TEAM_BROADCAST dst %p src %p size %lu "
+          "team %zd, PE_root %d \n",
           next_element.dst, next_element.src, next_element.ol1.size,
-          next_element.team_comm, next_element.PE_root);
+          (intptr_t)next_element.team_comm, next_element.PE_root);
       break;
     case RO_NET_ALLTOALL:
       alltoall(next_element.dst, next_element.src, next_element.ol1.size,
@@ -190,9 +190,9 @@ void MPITransport::submitRequestsToMPI() {
                next_element.ol2.pWrk,
                static_cast<ro_net_types>(next_element.datatype),
                next_element.status, true);
-      DPRINTF("Received ALLTOALL  dst %p src %p size %lu team %d\n",
+      DPRINTF("Submitted ALLTOALL  dst %p src %p size %lu team %zd\n",
               next_element.dst, next_element.src, next_element.ol1.size,
-              next_element.team_comm);
+              (intptr_t)next_element.team_comm);
       break;
     case RO_NET_FCOLLECT:
       fcollect(next_element.dst, next_element.src, next_element.ol1.size,
@@ -200,30 +200,30 @@ void MPITransport::submitRequestsToMPI() {
                next_element.ol2.pWrk,
                static_cast<ro_net_types>(next_element.datatype),
                next_element.status, true);
-      DPRINTF("Received FCOLLECT  dst %p src %p size %lu team %d\n",
+      DPRINTF("Submitted FCOLLECT  dst %p src %p size %lu team %zd\n",
               next_element.dst, next_element.src, next_element.ol1.size,
-              next_element.team_comm);
+              (intptr_t)next_element.team_comm);
       break;
     case RO_NET_BARRIER:
       barrier(queue_idx, next_element.status, true,
-	      next_element.team_comm == NULL ? ro_net_comm_world : next_element.team_comm,
-	      true);
-      DPRINTF("Received Barrier_all\n");
+              next_element.team_comm == NULL ? ro_net_comm_world : next_element.team_comm,
+              true);
+      DPRINTF("Submitted Barrier_all\n");
       break;
     case RO_NET_SYNC:
       barrier(queue_idx, next_element.status, true,
-	      next_element.team_comm == NULL ? ro_net_comm_world : next_element.team_comm,
-	      false);
-      DPRINTF("Received Sync\n");
+              next_element.team_comm == NULL ? ro_net_comm_world : next_element.team_comm,
+              false);
+      DPRINTF("Submitted Sync\n");
       break;
     case RO_NET_FENCE:
     case RO_NET_QUIET:
       quiet(queue_idx, next_element.status);
-      DPRINTF("Received FENCE/QUIET\n");
+      DPRINTF("Submitted FENCE/QUIET\n");
       break;
     case RO_NET_FINALIZE:
       quiet(queue_idx, next_element.status);
-      DPRINTF("Received Finalize\n");
+      DPRINTF("Submitted Finalize\n");
       break;
     default:
       fprintf(stderr, "Invalid GPU Packet received, exiting....\n");
