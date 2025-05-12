@@ -13,8 +13,8 @@ ROCSHMEM_INIT
 
 .. cpp:function:: __host__ void rocshmem_init(void)
 
-  :Parameters: None
-  :returns: None
+  :Parameters: None.
+  :returns: None.
 
 **Description:**
 This routine initializes the rocSHMEM runtime and underlying transport layer.
@@ -25,8 +25,8 @@ you must select the device that this PE is associated to by calling
 
 .. cpp:function:: __device__ void rocshmem_wg_init(void)
 
-  :Parameters: None
-  :returns: None
+  :Parameters: None.
+  :returns: None.
 
 **Description:**
 This routine initializes device-side rocSHMEM resources.
@@ -37,16 +37,16 @@ ROCSHMEM_FINALIZE
 -----------------
 .. cpp:function:: __host__ void rocshmem_finalize(void)
 
-  :Parameters: None
-  :returns: None
+  :Parameters: None.
+  :returns: None.
 
 **Description:**
 This routine finalizes the rocSHMEM runtime.
 
 .. cpp:function:: __device__ void rocshmem_wg_finalize(void)
 
-  :Parameters: None
-  :returns: None
+  :Parameters: None.
+  :returns: None.
 
 **Description:**
 This routine finalizes device-side rocSHMEM resources.
@@ -68,8 +68,8 @@ It can be called before ``rocshmem_init``.
 .. cpp:function:: __device__ int rocshmem_n_pes(void)
 .. cpp:function:: __device__ int rocshmem_ctx_n_pes(rocshmem_ctx_t ctx)
 
-  :param ctx: GPU side context handle
-  :returns: Total number of PEs
+  :param ctx: GPU side context handle.
+  :returns: Total number of PEs.
 
 **Description:**
 This routine queries the total number of PEs for a given context.
