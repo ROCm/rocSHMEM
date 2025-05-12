@@ -37,8 +37,7 @@ Wavefront APIs
 Wavefront APIs are those with the ``_wave`` suffix.
 The parameters in which these routines are called must be
 the same for every thread in the wavefront.
-If any thread calls these routines with different parameters, the behavior is undefined.
-These APIs will block until the calling wavefront completes.
+The behavior is undefined if any thread calls these routines with different parameters. These APIs will block until the calling wavefront is complete.
 
 Workgroup APIs
 ==============
