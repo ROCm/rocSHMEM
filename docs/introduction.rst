@@ -45,5 +45,4 @@ Workgroup APIs
 The workgroup APIs are those with the ``_wg`` suffix or ``_wg_`` infix.
 The parameters in which these routines are called must be
 the same for every thread in the workgroup.
-If any thread calls these routines with different parameters, the behavior is undefined.
-These APIs will block until the calling workgroup completes.
+The behavior is undefined if any thread calls these routines with different parameters. These APIs will block until the calling workgroup is complete.
