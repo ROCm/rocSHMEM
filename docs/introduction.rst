@@ -23,7 +23,7 @@ support GPU kernel communication, while maintaining close resemblance to
 the original OpenSHMEM specification semantics. 
 
 Applications using HIP can easily interface with rocSHMEM.
-By using the HIP programming model,
+Using the HIP programming model,
 rocSHMEM provides ``__host__`` APIs for host code,
 and ``__device__`` APIs for GPU kernels.
 Device APIs without special suffixes or infixes , for example, ``_wg`` or ``_wave``, 
