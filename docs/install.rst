@@ -96,10 +96,10 @@ The build script passes configuration options to CMake to setup a canonical buil
 
 .. note::
 
-  Other experimental configuration scripts are available in `./scripts/build_configs`, but only `ipc_single` is currently supported.
+  Other experimental configuration scripts are available in ``./scripts/build_configs``, but only ``ipc_single`` is currently supported.
 
 
-By default, the library is installed in `~/rocshmem`. You can customize the installation path by running:
+By default, the library is installed in ``~/rocshmem``. You can customize the installation path by running:
 
 .. code-block:: bash
 
