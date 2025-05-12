@@ -45,8 +45,8 @@ ROCSHMEM_SYNC_ALL
 .. cpp:function:: __device__ void rocshmem_ctx_wg_sync_all(rocshmem_ctx_t ctx)
 .. cpp:function:: __device__ void rocshmem_wg_sync_all()
 
-  :param ctx:  Context with which to perform this operation
-  :returns:    None
+  :param ctx:  Context with which to perform this operation.
+  :returns:    None.
 
 **Description:**
 This routine behaves the same as ``rocshmem_wg_team_sync`` when called on the world team.
@@ -77,14 +77,14 @@ ROCSHMEM_BROADCAST
 
 .. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_wg_broadcast(rocshmem_ctx_t ctx, rocshmem_team_t team, TYPE *dest, const TYPE *source, int nelems, int pe_root)
 
-  :param ctx:    Context with which to perform this collective
-  :param team:   The team participating in the collective
-  :param dest:   Destination address; Must be an address on the
-                 symmetric heap
-  :param source: Source address; Must be an address on the symmetric
-                 heap
-  :param nelems: Number of data blocks transferred per pair of PEs
-  :returns:      None
+  :param ctx:    Context with which to perform this collective.
+  :param team:   The team participating in the collective.
+  :param dest:   Destination address. Must be an address on the
+                 symmetric heap.
+  :param source: Source address. Must be an address on the symmetric
+                 heap.
+  :param nelems: Number of data blocks transferred per pair of PEs.
+  :returns:      None.
 
 **Description:**
 This routine performs a broadcast across PEs in the team.
