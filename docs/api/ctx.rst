@@ -20,7 +20,7 @@ ROCSHMEM_CTX_CREATE
  
   :returns:       All threads returns ``0`` if the context was created successfully.
                   If any thread returns non-zero value, the operation fails and a higher number of
-                  `ROCSHMEM_MAX_NUM_CONTEXTS` is required.
+                  ``ROCSHMEM_MAX_NUM_CONTEXTS`` is required.
 
 **Description:**
 This routine creates an OpenSHMEM context. By design, the context is private to the calling work-group.
