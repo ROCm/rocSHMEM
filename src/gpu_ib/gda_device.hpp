@@ -115,7 +115,7 @@ class GDADevice {
   };
 
  public:
-  explicit GDADevice(MPI_Comm comm);
+  explicit GDADevice(MPI_Comm comm_in);
 
   ~GDADevice();
 
@@ -228,17 +228,17 @@ class GDADevice {
 
   uint32_t sq_size{1024};
 
-  SymmetricHeap heap{};
-
   uint32_t *heap_rkey{nullptr};
 
   ibv_mr *heap_mr{nullptr};
 
-  MPI_Comm comm{};
-
   int num_pes{0};
 
   int my_pe{-1};
+
+  MPI_Comm comm{};
+
+  SymmetricHeap heap;
 };
 
 /**

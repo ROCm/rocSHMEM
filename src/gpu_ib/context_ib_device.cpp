@@ -94,4 +94,11 @@ __device__ void GPUIBContext::putmem_nbi_wave(void *dest, const void *source, si
   }
 }
 
+__device__ void GPUIBContext::fence() {
+  for (int i{0}; i < num_pes; i++) {
+    qps[i].quiet();
+  }
+  __threadfence_system();
+}
+
 }  // namespace rocshmem

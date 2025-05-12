@@ -263,7 +263,7 @@ void dump_mlx5dv_cq(struct mlx5dv_cq *cq_dv, int conn_num) {
   DPRINTF("================== CQ_DUMP_END ================\n");
 }
 
-GDADevice::GDADevice(MPI_Comm _comm) {
+GDADevice::GDADevice(MPI_Comm _comm) : comm(_comm), heap(_comm) {
   CHECK_HIP(hipMalloc(&print_lock, sizeof(*print_lock)));
   *print_lock = 0;
   int* print_lock_addr{nullptr};
