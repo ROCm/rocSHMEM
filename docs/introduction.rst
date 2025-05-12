@@ -22,7 +22,7 @@ rocSHMEM extends beyond the OpenSHMEM specification to add semantics that
 support GPU kernel communication, while maintaining close resemblance to
 the original OpenSHMEM specification semantics. 
 
-Applications using HIP can easily interface with rocSHMEM.
+Applications using HIP can interface with rocSHMEM.
 Using the HIP programming model,
 rocSHMEM provides ``__host__`` APIs for host code,
 and ``__device__`` APIs for GPU kernels.
