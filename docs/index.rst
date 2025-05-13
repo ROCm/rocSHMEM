@@ -6,7 +6,7 @@
 rocSHMEM documentation
 ****************************
 
-The ROCm OpenSHMEM (rocSHMEM) runtime is an intra-kernel networking library that provides GPU-centric networking through an OpenSHMEM-like interface. It simplifies application code complexity and enables finer communication and computation overlap than traditional host-driven networking. rocSHMEM uses a single symmetric heap (SHEAP) allocated to GPU memories. For more information, see :doc:`introduction`
+The ROCm OpenSHMEM (rocSHMEM) runtime is an intra-kernel networking library that provides GPU-centric networking through an `OpenSHMEM-like <http://www.openshmem.org/site/>`_ interface. It simplifies application code complexity and enables finer communication and computation overlap than traditional host-driven networking. rocSHMEM uses a single symmetric heap (SHEAP) allocated to GPU memories. For more information, see :doc:`introduction`
 
 The code is open and hosted at `<https://github.com/ROCm/rocSHMEM>`_.
 
