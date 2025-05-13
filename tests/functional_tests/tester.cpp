@@ -523,6 +523,7 @@ void Tester::execute() {
     postLaunchKernel();
 
     // data validation
+    CHECK_HIP(hipDeviceSynchronize());
     verifyResults(size);
 
     barrier();
