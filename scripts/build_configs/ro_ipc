@@ -36,6 +36,7 @@ fi
 src_path=$(dirname "$(realpath $0)")/../../
 
 cmake \
+    -B${BUILD_DIR:-.} \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$install_path \
     -DCMAKE_VERBOSE_MAKEFILE=OFF \
@@ -51,5 +52,5 @@ cmake \
     -DUSE_RO=ON \
     -DCMAKE_C_COMPILER="/opt/rocm/bin/amdclang" \
     $src_path
-cmake --build . --parallel 8
-cmake --install .
+cmake --build ${BUILD_DIR:-.} --parallel 8
+cmake --install ${BUILD_DIR:-.}
