@@ -5,7 +5,7 @@
 .. _running-programs:
 
 --------------------------------------------------
-Compiling and Running rocSHMEM Programs
+Compiling and running rocSHMEM programs
 --------------------------------------------------
 
 This topic explains how to compile and run rocSHMEM programs.
