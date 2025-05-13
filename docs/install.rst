@@ -17,9 +17,9 @@ Requirements
 
 * AMD GPUs
 
-   * MI250X
+  * MI250X
 
-   * MI300X
+  * MI300X
 
 * ROCm-aware Open MPI and UCX. For more information, see :ref:`install-dependencies`.
 
@@ -38,7 +38,7 @@ On Ubuntu, you can install rocSHMEM by running:
 
 .. _install-dependencies:
 
-Building Dependencies
+Building dependencies
 ---------------------------
 
 rocSHMEM requires ROCm-Aware Open MPI and UCX. Other MPI implementations, such as MPICH, have not been fully tested.
