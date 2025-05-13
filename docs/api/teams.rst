@@ -5,7 +5,7 @@
 .. _rocshmem-api-teams:
 
 -------------------------
-Team Management Routines
+Team management routines
 -------------------------
 
 ROCSHMEM_TEAM_MY_PE

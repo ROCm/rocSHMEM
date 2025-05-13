@@ -5,7 +5,7 @@
 .. _rocshmem-api-ctx:
 
 -----------------------------------
-Context Management Routines
+Context management routines
 -----------------------------------
 
 ROCSHMEM_CTX_CREATE

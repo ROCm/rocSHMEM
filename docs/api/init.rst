@@ -5,7 +5,7 @@
 .. _rocshmem-api-init:
 
 ---------------------------------------
-Library Setup, Exit, and Query Routines
+Library setup, exit, and query routines
 ---------------------------------------
 
 ROCSHMEM_INIT

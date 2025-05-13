@@ -6,7 +6,7 @@
 
 
 ---------------------------
-Memory Management Routines
+Memory management routines
 ---------------------------
 
 ROCSHMEM_MALLOC

@@ -19,20 +19,20 @@ The code is open and hosted at `<https://github.com/ROCm/rocSHMEM>`_.
 
   .. grid-item-card:: How to
 
-      * :doc:`Compile and Run rocSHMEM Programs <./compile_and_run>`
+      * :doc:`Compile and run rocSHMEM programs <./compile_and_run>`
 
-  .. grid-item-card:: API Reference
+  .. grid-item-card:: API reference
 
-      * :doc:`Library Setup, Exit, and Query Routines <./api/init>`
-      * :doc:`Memory Management Routines <./api/memory_management>`
-      * :doc:`Team Management Routines <./api/teams>`
-      * :doc:`Context Management Routines <./api/ctx>`
-      * :doc:`Remote Memory Access Routines <./api/rma>`
-      * :doc:`Atomic Memory Operations <./api/amo>`
-      * :doc:`Signaling Operations <./api/sigops>`
-      * :doc:`Collective Routines <./api/coll>`
-      * :doc:`Point-to-Point Synchronization Routines <./api/pt2pt_sync>`
-      * :doc:`Memory Ordering Routines <./api/memory_ordering>`
+      * :doc:`Library setup, exit, and query routines <./api/init>`
+      * :doc:`Memory management routines <./api/memory_management>`
+      * :doc:`Team management routines <./api/teams>`
+      * :doc:`Context management routines <./api/ctx>`
+      * :doc:`Remote memory access routines <./api/rma>`
+      * :doc:`Atomic memory operations <./api/amo>`
+      * :doc:`Signaling operations <./api/sigops>`
+      * :doc:`Collective routines <./api/coll>`
+      * :doc:`Point-to-point synchronization routines <./api/pt2pt_sync>`
+      * :doc:`Memory ordering routines <./api/memory_ordering>`
 
 To contribute to the documentation, refer to
 `Contributing to ROCm <https://rocm.docs.amd.com/en/latest/contribute/contributing.html>`_.

@@ -5,7 +5,7 @@
 .. _rocshmem-api-sigops:
 
 ---------------------
-Signaling Operations
+Signaling operations
 ---------------------
 
 ROCSHMEM_PUTMEM_SIGNAL
@@ -84,7 +84,7 @@ ROCSHMEM_SIGNAL_FETCH
 **Description:**
 This function atomically fetches the value stored at ``sig_addr``.
 
-SIGNAL OPERATORS
+Signal operators
 ----------------
 .. _SIGNAL_OPERATORS:
 

@@ -5,7 +5,7 @@
 .. _rocshmem-api-coll:
 
 ---------------------------
-Collective Routines
+Collective routines
 ---------------------------
 
 ROCSHMEM_BARRIER_ALL
@@ -129,7 +129,7 @@ This routine  performs an allreduce operation across PEs in the team.
 
 Valid ``TYPENAME``, ``TYPE``, and ``OPNAME`` values are listed in :ref:`REDUCE_TYPES`.
 
-SUPPORTED REDUCTION TYPES AND OPERATIONS
+Supported reduction types and operations
 ----------------------------------------
 
 .. _REDUCE_TYPES:

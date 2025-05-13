@@ -5,7 +5,7 @@
 .. _rocshmem-api-memory-ordering:
 
 ---------------------------
-Memory Ordering Routines
+Memory ordering routines
 ---------------------------
 
 ROCSHMEM_FENCE

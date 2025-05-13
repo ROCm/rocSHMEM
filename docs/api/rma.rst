@@ -5,7 +5,7 @@
 .. _rocshmem-api-rma:
 
 -----------------------------------------
-Remote Memory Access Routines
+Remote memory access routines
 -----------------------------------------
 
 - Routines with the ``_wave`` and ``_wg`` suffixes require all threads in a wavefront and workgroup, respectively,
@@ -151,7 +151,7 @@ ROCSHMEM_G
 **Description:**
 This routine reads and returns single value from source at ``pe``.
 
-Supported RMA Data Types
+Supported RMA data types
 ------------------------
 
 The following table lists the supported RMA data types:

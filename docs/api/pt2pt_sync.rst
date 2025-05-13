@@ -5,7 +5,7 @@
 .. _rocshmem-api-pt2pt-sync:
 
 -----------------------------------------
-Point-to-Point Synchronization Routines
+Point-to-point synchronization routines
 -----------------------------------------
 
 ROCSHMEM_WAIT_UNTIL
@@ -97,7 +97,7 @@ ROCSHMEM_TEST
 This routine tests if the condition ``(*ivars cmp val)`` is true.
 
 
-Supported Comparisons
+Supported comparisons
 ---------------------
 
 .. _CMP_VALUES:

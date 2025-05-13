@@ -5,7 +5,7 @@
 .. _rocshmem-api-amo:
 
 ---------------------------
-Atomic Memory Operations
+Atomic memory operations
 ---------------------------
 
 You can call these functions from divergent control paths at the per-thread level.
@@ -284,7 +284,7 @@ The operation is blocking.
 
 Valid ``TYPENAME`` and ``TYPE`` values are listed in BITWISE_AMO_TYPES_.
 
-SUPPORTED AMO DATA TYPES
+Supported AMO data types
 ------------------------
 
 .. _STANDARD_AMO_TYPES:
