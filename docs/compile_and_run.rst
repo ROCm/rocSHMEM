@@ -10,7 +10,7 @@ Compiling and running rocSHMEM programs
 
 This topic explains how to compile and run rocSHMEM programs.
 
-Compiling and Linking with rocSHMEM
+Compiling and linking with rocSHMEM
 -----------------------------------
 
 rocSHMEM is a library that can be statically linked to your application during compilation with ``hipcc``. For more information, see :doc:`HIPCC <hipcc:index>`.
@@ -59,7 +59,7 @@ See the `Open MPI documentation <https://docs.open-mpi.org/en/main/>`_ for more 
   MPI library, especially when using the MPI built by yourself
   as part of :ref:`install-dependencies`.
 
-Environment Variables
+Environment variables
 ---------------------
 
 You can control the behavior of rocSHMEM by using the following environment variables:
