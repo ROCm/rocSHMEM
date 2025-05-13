@@ -13,7 +13,7 @@ This topic describes how to install rocSHMEM. For more information, see `README.
 Requirements
 ---------------------------
 
-1. ROCm v6.4.0 or later, including the :doc:`HIP runtime <hip:index>`.
+1. ROCm 6.4.0 or later, including the :doc:`HIP runtime <hip:index>`.
 
 2. AMD GPUs
 
