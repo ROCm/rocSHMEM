@@ -8,20 +8,20 @@
 Installing rocSHMEM
 ---------------------------
 
-This topic describes how to install rocSHMEM. For more information, see `README.md <https://github.com/ROCm/rocSHMEM/blob/rocm-6.4.0/README.md>`_ in the rocSHMEM GitHub repository.
+This topic describes how to install rocSHMEM.
 
 Requirements
 ---------------------------
 
-1. ROCm 6.4.0 or later, including the :doc:`HIP runtime <hip:index>`.
+* ROCm 6.4.0 or later, including the :doc:`HIP runtime <hip:index>`.
 
-2. AMD GPUs
+* AMD GPUs
 
    * MI250X
 
    * MI300X
 
-3. ROCm-aware Open MPI and UCX. For more information, see :ref:`install-dependencies`.
+* ROCm-aware Open MPI and UCX. For more information, see :ref:`install-dependencies`.
 
 Installing from a package manager
 ---------------------------------
@@ -43,7 +43,7 @@ Building Dependencies
 
 rocSHMEM requires ROCm-Aware Open MPI and UCX. Other MPI implementations, such as MPICH, have not been fully tested.
 
-To build and configure ROCm-Aware UCX v1.17.0 or later, run:
+To build and configure ROCm-Aware UCX 1.17.0 or later, run:
 
 .. code-block:: bash
 
@@ -54,7 +54,7 @@ To build and configure ROCm-Aware UCX v1.17.0 or later, run:
   make -j 8
   make -j 8 install
 
-To build Open MPI v5.0.7 or later with UCX support, run:
+To build Open MPI 5.0.7 or later with UCX support, run:
 
 .. code-block:: bash
 
