@@ -13,10 +13,10 @@ with open('../include/rocshmem/rocshmem.hpp', encoding='utf-8') as f:
     if not match:
         raise ValueError("VERSION not found!")
     version_number = match[1]
-left_nav_title = f"rocSHMEM {version_number} Documentation"
+left_nav_title = f"rocSHMEM {version_number} documentation"
 
 # for PDF output on Read the Docs
-project = "rocSHMEM Documentation"
+project = "rocSHMEM"
 author = "Advanced Micro Devices, Inc."
 copyright = "Copyright (c) 2025 Advanced Micro Devices, Inc. All rights reserved."
 version = version_number

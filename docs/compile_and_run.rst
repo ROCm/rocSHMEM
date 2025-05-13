@@ -1,24 +1,26 @@
--------------------------
-Running rocSHMEM Programs
--------------------------
+.. meta::
+   :description: Information on how to compile and run rocSHMEM programs.
+   :keywords: rocSHMEM, ROCm, library, API, compile, link, hipcc
 
-Compiling and Linking with rocSHMEM
+.. _running-programs:
+
+--------------------------------------------------
+Compiling and running rocSHMEM programs
+--------------------------------------------------
+
+This topic explains how to compile and run rocSHMEM programs.
+
+Compiling and linking with rocSHMEM
 -----------------------------------
 
-RocSHMEM is built as a library that can be statically
-linked to your application during compilation using ``hipcc``.
+rocSHMEM is a library that can be statically linked to your application during compilation with ``hipcc``. For more information, see :doc:`HIPCC <hipcc:index>`.
 
-During the compilation of your application, include the rocSHMEM header files
-and the rocSHMEM library when using ``hipcc``.
-Since rocSHMEM depends on MPI (in version 6.4.0, this requirement may be dropped
-in future versions) you will need to link with an MPI library.
-The arguments for MPI linkage must be added manually as opposed to using ``mpicc``.
+When compiling your application with ``hipcc``, you must include the rocSHMEM header files and the rocSHMEM library. 
+Because rocSHMEM depends on MPI, you must manually add the arguments for MPI linkage instead of using ``mpicc``.
 
-When using ``hipcc`` directly (as opposed to through a build system), we
-recommend performing the compilation and linking steps separately.
+When using ``hipcc`` directly without a build system, it's recommended to perform the compilation and linking steps separately. 
 
-For example, one can refer to how to compile the examples files (``./examples/*`` in
-the source tarball) with the following compile and link commands:
+Example compile and link commands are provided at the top of the example files in the ``examples`` directory:
 
 .. code-block:: bash
 
@@ -34,32 +36,33 @@ the source tarball) with the following compile and link commands:
     $OPENMPI_UCX_INSTALL_DIR/lib/libmpi.so                                        \
     -L/opt/rocm/lib -lamdhip64 -lhsa-runtime64
 
-If your project uses cmake, you may refer to 
+If your project uses CMake, see 
 `Using CMake with AMD ROCm <https://rocmdocs.amd.com/en/latest/conceptual/cmake-packages.html>`_.
 
 Running a rocSHMEM program
 --------------------------
 
-Program that use rocSHMEM will typically deploy multiple processes (Typically, one per GPU). 
-The MPI launcher (e.g., ``mpiexec`` when using Open MPI) is used to start the required number
-of processes. As an example, one may launch 2 getmem example processes (available when compiled from source) using the following command line:
+Programs using rocSHMEM typically deploy multiple processes, usually one per GPU.  
+The MPI launcher, for example, ``mpiexec`` with Open MPI, is used to start the required number
+of processes. For example, to launch two ``getmem`` example processes (available when compiled from source):
 
 .. code-block:: bash
 
   mpiexec --map-by numa --mca pml ucx --mca osc ucx -np 2 ./build/examples/rocshmem_getmem_test
 
-Please refer to the Open MPI documentation for more information about ``mpiexec`` command line parameters.
+See the `Open MPI documentation <https://docs.open-mpi.org/en/main/>`_ for more information about ``mpiexec`` command line parameters.
 
 .. note::
-  Some systems may have multiple installs of MPI, some of which would not
-  have GPU support enabled. Make sure you use the ``mpiexec`` from the expected
-  MPI library, notably when using the MPI you built yourself
+
+  Some systems may have multiple MPI installations, some of which do not
+  have GPU support enabled. You must use the ``mpiexec`` from the expected
+  MPI library, especially when using the MPI built by yourself
   as part of :ref:`install-dependencies`.
 
-Environment Variables
+Environment variables
 ---------------------
 
-The behavior of rocSHMEM can be controlled with the following environment variables:
+You can control the behavior of rocSHMEM by using the following environment variables:
 
 .. list-table:: Environment Variables
     :widths: 30 10 20
@@ -69,12 +72,12 @@ The behavior of rocSHMEM can be controlled with the following environment variab
       - Default Value
       - Description
     * - ROCSHMEM_HEAP_SIZE
-      - 1 GB
-      - Defines the size of the rocSHMEM symmetric heap.
+      - 1
+      - Defines the size of the rocSHMEM symmetric heap in GB.
         Note the heap is on the GPU memory.
     * - ROCSHMEM_MAX_NUM_CONTEXTS
       - 1024
-      - Defines the number of contexts an application can use
+      - Defines the number of contexts an application can use.
     * - ROCSHMEM_MAX_NUM_TEAMS
       - 40
-      - Defines the number of teams an application can use
+      - Defines the number of teams an application can use.

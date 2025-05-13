@@ -5,7 +5,7 @@
 .. _rocshmem-api-memory-ordering:
 
 ---------------------------
-Memory Ordering Routines
+Memory ordering routines
 ---------------------------
 
 ROCSHMEM_FENCE
@@ -16,12 +16,12 @@ ROCSHMEM_FENCE
 .. cpp:function:: __device__ void rocshmem_ctx_fence(rocshmem_ctx_t ctx)
 .. cpp:function:: __device__ void rocshmem_ctx_fence(rocshmem_ctx_t ctx, int pe)
 
- :param ctx: Context with which to perform this operation
- :param pe:  Destination pe
- :returns:   None
+ :param ctx: Context with which to perform this operation.
+ :param pe:  Destination ``pe``.
+ :returns:   None.
 
 **Description:**
-Guarantees order between messages in this context in accordance with OpenSHMEM semantics.
+This routine ensures order between messages in this context to follow OpenSHMEM semantics.
 
 ROCSHMEM_QUIET
 --------------
@@ -29,8 +29,8 @@ ROCSHMEM_QUIET
 .. cpp:function:: __device__ void rocshmem_ctx_quiet(rocshmem_ctx_t ctx)
 .. cpp:function:: __device__ void rocshmem_quiet()
 
- :param ctx: Context with which to perform this operation
- :returns:   None
+ :param ctx: Context with which to perform this operation.
+ :returns:   None.
 
 **Description:**
-Completes all previous operations posted to this context.
+This routine completes all previous operations posted to this context.

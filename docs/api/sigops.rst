@@ -5,7 +5,7 @@
 .. _rocshmem-api-sigops:
 
 ---------------------
-Signaling Operations
+Signaling operations
 ---------------------
 
 ROCSHMEM_PUTMEM_SIGNAL
@@ -24,20 +24,20 @@ ROCSHMEM_PUTMEM_SIGNAL
 .. cpp:function:: __device__ void rocshmem_ctx_putmem_signal_nbi_wave(rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, uint64_t *sig_addr, uint64_t signal, int sig_op, int pe)
 .. cpp:function:: __device__ void rocshmem_ctx_putmem_signal_nbi_wg(rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, uint64_t *sig_addr, uint64_t signal, int sig_op, int pe)
 
-  :param ctx:      Context with which to perform this operation
-  :param dest:     Destination address; Must be an address on the symmetric heap
-  :param source:   Source address; Must be an address on the symmetric heap
-  :param nelems:   The number of bytes to transfer
-  :param sig_addr: Signal address; Must be an address on the symmetric heap
-  :param signal:   Signal value
-  :param sig_op:   Atomic operation to apply the signal value
-  :param pe:       PE of the remote process
-  :returns:        None
+  :param ctx:      Context with which to perform this operation.
+  :param dest:     Destination address. Must be an address on the symmetric heap.
+  :param source:   Source address. Must be an address on the symmetric heap.
+  :param nelems:   The number of bytes to transfer.
+  :param sig_addr: Signal address. Must be an address on the symmetric heap.
+  :param signal:   Signal value.
+  :param sig_op:   Atomic operation to apply the signal value.
+  :param pe:       PE of the remote process.
+  :returns:        None.
 
 **Description:**
-Writes contiguous data of nelems bytes from source on the calling PE to dest at pe.
-Then applies sig_op at sig_addr using the signal value.
-Valid sig_op values can be seen at SIGNAL_OPERATORS_.
+This function writes contiguous data of ``nelems`` bytes from source on the calling PE to ``dest`` at ``pe``, 
+then applies ``sig_op`` at ``sig_addr`` with the signal value. 
+Valid ``sig_op values`` are listed in SIGNAL_OPERATORS_.
 
 ROCSHMEM_PUT_SIGNAL
 -------------------
@@ -55,21 +55,21 @@ ROCSHMEM_PUT_SIGNAL
 .. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_put_signal_nbi_wave(rocshmem_ctx_t ctx, TYPE *dest, const TYPE *source, size_t nelems, uint64_t *sig_addr, uint64_t signal, int sig_op, int pe)
 .. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_put_signal_nbi_wg(rocshmem_ctx_t ctx, TYPE *dest, const TYPE *source, size_t nelems, uint64_t *sig_addr, uint64_t signal, int sig_op, int pe)
 
-  :param ctx:      Context with which to perform this operation
-  :param dest:     Destination address; Must be an address on the symmetric heap
-  :param source:   Source address; Must be an address on the symmetric heap
-  :param nelems:   The number of elements of size TYPE to transfer
-  :param sig_addr: Signal address; Must be an address on the symmetric heap
-  :param signal:   Signal value
-  :param sig_op:   Atomic operation to apply the signal value
-  :param pe:       PE of the remote process
-  :returns:        None
+  :param ctx:      Context with which to perform this operation.
+  :param dest:     Destination address. Must be an address on the symmetric heap.
+  :param source:   Source address. Must be an address on the symmetric heap.
+  :param nelems:   The number of elements of size ``TYPE`` to transfer.
+  :param sig_addr: Signal address. Must be an address on the symmetric heap.
+  :param signal:   Signal value.
+  :param sig_op:   Atomic operation to apply the signal value.
+  :param pe:       PE of the remote process.
+  :returns:        None.
 
 **Description:**
-Writes contiguous data of nelems elements of TYPE from source on the calling PE to dest at pe.
-Then applies sig_op at sig_addr using the signal value.
-Valid sig_op values can be seen at SIGNAL_OPERATORS_.
-Valid ``TYPENAME`` and ``TYPE`` values can be seen at :ref:`RMA_TYPES`.
+This function writes contiguous data of ``nelems`` elements of ``TYPE`` from source on the calling PE to ``dest`` at ``pe``, 
+then applies ``sig_op`` at ``sig_addr`` with the signal value.
+Valid ``sig_op values`` are listed in SIGNAL_OPERATORS_.
+Valid ``TYPENAME`` and ``TYPE`` values are listed in :ref:`RMA_TYPES`.
 
 ROCSHMEM_SIGNAL_FETCH
 ---------------------
@@ -78,13 +78,13 @@ ROCSHMEM_SIGNAL_FETCH
 .. cpp:function:: __device__ uint64_t rocshmem_signal_fetch_wg(const uint64_t *sig_addr)
 .. cpp:function:: __device__ uint64_t rocshmem_signal_fetch_wave(const uint64_t *sig_addr)
 
-  :param sig_addr: Signal address; Must be an address on the symmetric heap
-  :returns:        Value at sig_addr
+  :param sig_addr: Signal address. Must be an address on the symmetric heap.
+  :returns:        Value at ``sig_addr``.
 
 **Description:**
-Atomically fetches the value stored at sig_addr.
+This function atomically fetches the value stored at ``sig_addr``.
 
-SIGNAL OPERATORS
+Signal operators
 ----------------
 .. _SIGNAL_OPERATORS:
 
@@ -95,7 +95,7 @@ SIGNAL OPERATORS
     * - Value 
       - Description 
     * - ROCSHMEM_SIGNAL_SET
-      - The signaling operation routines will atomical set our signal value at sig_addr.
+      - The signaling operation routines will atomically set the signal value at ``sig_addr``.
     * - ROCSHMEM_SIGNAL_ADD
-      - The signaling operation routines will atomical add our signal value at sig_addr.
+      - The signaling operation routines will atomically add the signal value at ``sig_addr``.
 
