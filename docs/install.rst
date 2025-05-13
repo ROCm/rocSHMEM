@@ -34,7 +34,7 @@ On Ubuntu, you can install rocSHMEM by running:
 
 .. note::
 
-  This installation method requires ROCm v6.4 or later. You must build dependencies such as Open MPI and UCX manually, because the distribution packaged versions do not include full accelerator support. For more information, see :ref:`install-dependencies`.
+  This installation method requires ROCm 6.4 or later. You must manually build dependencies such as Open MPI and UCX, because the distribution packaged versions don't include full accelerator support. For more information, see :ref:`install-dependencies`.
 
 .. _install-dependencies:
 
