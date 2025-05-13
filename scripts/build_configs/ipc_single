@@ -37,6 +37,7 @@ src_path=$(dirname "$(realpath $0)")/../../
 
 cmake \
     -B${BUILD_DIR:-.} \
+    -DBUILD_CODE_COVERAGE=${CODE_COV:-OFF} \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$install_path \
     -DCMAKE_VERBOSE_MAKEFILE=OFF \
