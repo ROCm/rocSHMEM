@@ -41,7 +41,7 @@ On Ubuntu, you can install rocSHMEM by running:
 Building Dependencies
 ---------------------------
 
-rocSHMEM requires ROCm-Aware Open MPI and UCX. Other MPI implementations, such as MPICH, are not fully tested.
+rocSHMEM requires ROCm-Aware Open MPI and UCX. Other MPI implementations, such as MPICH, have not been fully tested.
 
 To build and configure ROCm-Aware UCX v1.17.0 or later, run:
 
