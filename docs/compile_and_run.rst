@@ -13,12 +13,12 @@ This topic explains how to compile and run rocSHMEM programs.
 Compiling and Linking with rocSHMEM
 -----------------------------------
 
-rocSHMEM is a library that can be statically linked to your application during compilation with ``hipcc``.
+rocSHMEM is a library that can be statically linked to your application during compilation with ``hipcc``. For more information, see :doc:`HIPCC <hipcc:index>`.
 
 When compiling your application with ``hipcc``, you must include the rocSHMEM header files and the rocSHMEM library. 
 Because rocSHMEM depends on MPI, you must manually add the arguments for MPI linkage instead of using ``mpicc``.
 
-When using `hipcc` directly without a build system, it's recommended to perform the compilation and linking steps separately. 
+When using ``hipcc`` directly without a build system, it's recommended to perform the compilation and linking steps separately. 
 
 Example compile and link commands are provided at the top of the example files in the ``examples`` directory:
 
@@ -72,8 +72,8 @@ You can control the behavior of rocSHMEM by using the following environment vari
       - Default Value
       - Description
     * - ROCSHMEM_HEAP_SIZE
-      - 1 GB
-      - Defines the size of the rocSHMEM symmetric heap.
+      - 1
+      - Defines the size of the rocSHMEM symmetric heap in GB.
         Note the heap is on the GPU memory.
     * - ROCSHMEM_MAX_NUM_CONTEXTS
       - 1024
