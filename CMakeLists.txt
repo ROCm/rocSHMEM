@@ -77,6 +77,7 @@ endif()
 
 if (NOT DEFINED CMAKE_CXX_COMPILER)
   set(CMAKE_CXX_COMPILER ${ROCM_PATH}/bin/hipcc)
+  set(CMAKE_C_COMPILER ${ROCM_PATH}/bin/amdclang)
 endif()
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 17)

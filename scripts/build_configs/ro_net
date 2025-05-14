@@ -51,7 +51,6 @@ cmake \
     -DUSE_HOST_SIDE_HDP_FLUSH=OFF\
     -DUSE_MANAGED_HEAP=OFF \
     -DUSE_RO=ON \
-    -DCMAKE_C_COMPILER="/opt/rocm/bin/amdclang" \
     $src_path
 cmake --build ${BUILD_DIR:-.} --parallel 8
 cmake --install ${BUILD_DIR:-.}
