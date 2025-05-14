@@ -2,7 +2,7 @@
 
 set -e
 
-export CODE_COV="-DBUILD_CODE_COVERAGE=ON"
+export CODE_COV="ON"
 
 src_path=$(dirname "$(realpath $0)")
 
