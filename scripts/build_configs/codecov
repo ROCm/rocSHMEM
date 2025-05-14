@@ -6,9 +6,17 @@ export CODE_COV="-DBUILD_CODE_COVERAGE=ON"
 
 src_path=$(dirname "$(realpath $0)")
 
-BUILD_DIR="$PWD/ipc" $src_path/ipc_single
-BUILD_DIR="$PWD/ro_net" $src_path/ro_net
-BUILD_DIR="$PWD/ro_ipc" $src_path/ro_ipc
+mkdir -p ipc && pushd ipc
+$src_path/ipc_single
+popd
+
+mkdir -p ro_net && pushd ro_net
+$src_path/ro_net
+popd
+
+mkdir -p ro_ipc && pushd ro_ipc
+$src_path/ro_ipc
+popd
 
 mkdir -p ./test_output
 export PROFRAW_DIR=./coverage-report/profraw
