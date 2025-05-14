@@ -33,5 +33,9 @@ target_sources(
     gpu_ib_team.cpp
     gda_device.cpp
     queue_pair.cpp
-    segment_builder.cpp
 )
+
+IF (GPUIB_IONIC)
+ELSE ()
+  target_sources(${PROJECT_NAME} PRIVATE segment_builder.cpp)
+ENDIF()

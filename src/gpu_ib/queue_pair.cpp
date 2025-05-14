@@ -27,7 +27,9 @@
 #include "gda_device.hpp"
 #include "endian.hpp"
 #include "gpuib_macros.inl"
+#ifndef GPUIB_IONIC
 #include "segment_builder.hpp"
+#endif
 #include "util.hpp"
 
 namespace rocshmem {
@@ -38,14 +40,22 @@ QueuePair::QueuePair(struct ibv_pd* pd) {
   int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
   ibv_mr *mr = ibv_reg_mr(pd, nonfetching_atomic, 8, access);
   GPUIB_CHECK_NNULL(mr, "ibv_reg_mr");
+#ifdef GPUIB_IONIC
+  nonfetching_atomic_lkey = mr->lkey;
+#else
   nonfetching_atomic_lkey = htobe32(mr->lkey);
+#endif
 
   allocator.allocate((void**)&fetching_atomic, 8 * FETCHING_ATOMIC_CNT);
   CHECK_HIP(hipMemset(fetching_atomic, 0, 8 * FETCHING_ATOMIC_CNT));
   access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
   mr = ibv_reg_mr(pd, fetching_atomic, 8 * FETCHING_ATOMIC_CNT, access);
   GPUIB_CHECK_NNULL(mr, "ibv_reg_mr");
+#ifdef GPUIB_IONIC
+  fetching_atomic_lkey = mr->lkey;
+#else
   fetching_atomic_lkey = htobe32(mr->lkey);
+#endif
 
   allocator.allocate((void**)&fetching_atomic_freelist, sizeof(FreeListT*));
   new (fetching_atomic_freelist) FreeListT();
@@ -54,6 +64,182 @@ QueuePair::QueuePair(struct ibv_pd* pd) {
   }
 }
 
+
+/******************************************************************************
+ ************************ PROVIDER-SPECIFIC HELPERS ***************************
+ *****************************************************************************/
+#ifdef GPUIB_IONIC
+__device__ uint64_t QueuePair::get_same_qp_lane_mask() {
+  uint64_t lane_mask = get_active_lane_mask();
+  uintptr_t this_val = reinterpret_cast<uintptr_t>(this);
+
+  // exclude threads operating on a different qp from this thread lane mask
+  #pragma unroll
+  for (int i = 0; i < 64; ++i) {
+    uint64_t bit_i = 1ull << i;
+    if ((lane_mask & bit_i) && __shfl(this_val, i) != this_val) {
+      lane_mask &= ~bit_i;
+    }
+  }
+
+  return lane_mask;
+}
+
+__device__ bool QueuePair::cq_lock_try_acquire(uint64_t activemask) {
+  uint32_t cq_lock_val = SPIN_LOCK_INVALID;
+
+  if (is_first_active_lane(activemask)) {
+    cq_lock_val = SPIN_LOCK_UNLOCKED;
+    __hip_atomic_compare_exchange_strong(&cq_lock, &cq_lock_val, SPIN_LOCK_LOCKED,
+                                         __ATOMIC_ACQUIRE, __ATOMIC_ACQUIRE, __HIP_MEMORY_SCOPE_AGENT);
+  }
+  cq_lock_val = __shfl(cq_lock_val, get_first_active_lane_id(activemask));
+
+  return (cq_lock_val == SPIN_LOCK_UNLOCKED);
+}
+
+__device__ void QueuePair::cq_lock_release(uint64_t activemask) {
+  if (is_first_active_lane(activemask)) {
+    __hip_atomic_store(&cq_lock, SPIN_LOCK_UNLOCKED, __ATOMIC_RELEASE, __HIP_MEMORY_SCOPE_AGENT);
+  }
+}
+
+__device__ uint32_t QueuePair::reserve_sq(uint64_t activemask, uint32_t num_wqes) {
+  uint32_t my_sq_prod = 0;
+
+  // reserve space for wqes in sq
+  if (is_first_active_lane(activemask)) {
+    my_sq_prod = __hip_atomic_fetch_add(&sq_prod, num_wqes, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+  }
+  my_sq_prod = __shfl(my_sq_prod, get_first_active_lane_id(activemask));
+
+  // wait for that space to be available
+  quiet_internal(activemask, my_sq_prod + num_wqes - sq_mask);
+
+  return my_sq_prod;
+}
+
+__device__ uint32_t QueuePair::commit_sq(bool last, uint32_t my_sq_prod, uint32_t num_wqes, struct ionic_v1_wqe *wqe) {
+  uint32_t dbprod = my_sq_prod + num_wqes;
+
+  if (last) {
+    // signal last wqe before the doorbell
+    wqe->base.flags |= swap_endian_val<uint16_t>(IONIC_V1_FLAG_SIG);
+
+    while (__hip_atomic_load(&sq_dbprod, __ATOMIC_ACQUIRE, __HIP_MEMORY_SCOPE_AGENT) != my_sq_prod) {
+      // spin
+    }
+
+    ring_doorbell(dbprod);
+
+    __hip_atomic_exchange(&sq_dbprod, dbprod, __ATOMIC_RELEASE, __HIP_MEMORY_SCOPE_AGENT);
+  }
+
+  return dbprod;
+}
+
+__device__ void QueuePair::poll_wave_cqes(uint64_t activemask) {
+  uint32_t my_logical_lane_id = get_active_lane_num(activemask);
+  uint32_t my_cq_pos = cq_pos + my_logical_lane_id;
+
+  /* Look at the cqe at the current position in the cq buffer */
+  struct ionic_v1_cqe *cqe = &cq_buf[my_cq_pos & cq_mask];
+
+  /* Determine expected color based on cq wrap count */
+  uint32_t qtf_color_bit = swap_endian_val<uint32_t>(IONIC_V1_CQE_COLOR);
+  uint32_t qtf_color_exp = qtf_color_bit;
+  if (my_cq_pos & (cq_mask + 1)) {
+    qtf_color_exp = 0;
+  }
+
+  /* Wait for at least one thread cqe color == expected color */
+  uint32_t qtf_be;
+  bool ready;
+  uint64_t ballot_ready;
+  do {
+    qtf_be = *(volatile uint32_t *)(&cqe->qid_type_flags);
+    ready = (qtf_be & qtf_color_bit) == qtf_color_exp;
+    ballot_ready = __ballot(ready);
+  } while (!ballot_ready);
+
+  /* Other threads saw a ready cqe, but not this thread */
+  if (!ready) {
+    return;
+  }
+
+  uint32_t msn = swap_endian_val<uint32_t>(cqe->send.msg_msn);
+
+  /* Report if the completion indicates an error. */
+  if (!!(qtf_be & swap_endian_val<uint32_t>(IONIC_V1_CQE_ERROR))) {
+#if 0
+    uint32_t qtf = swap_endian_val<uint32_t>(qtf_be);
+    uint32_t qid = qtf >> IONIC_V1_CQE_QID_SHIFT;
+    uint32_t type = (qtf >> IONIC_V1_CQE_TYPE_SHIFT) & IONIC_V1_CQE_TYPE_MASK;
+    uint32_t flag = qtf & 0xf;
+    uint32_t status = swap_endian_val<uint32_t>(cqe->status_length);
+    uint64_t npg = swap_endian_val<uint64_t>(cqe->send.npg_wqe_id);
+
+    printf("QUIET ERROR: qid %u type %u flag %#x status %u msn %u npg %lu\n",
+        qid, type, flag, status, msn, npg);
+#endif
+    /* No other way to signal an error, so just crash. */
+    abort();
+  }
+
+  /* Only proceed with the furthest ahead cqe to update the sq state */
+  uint64_t my_lane_mask = 1ull << __lane_id();
+  uint64_t lesser_lane_mask = my_lane_mask - 1;
+  if (my_lane_mask != (ballot_ready & ~lesser_lane_mask)) {
+    return;
+  }
+
+  /* update position in the cq */
+  cq_pos = my_cq_pos + 1;
+
+  /*
+   * Ring cq doorbell frequently enough to avoid cq full.
+   *
+   * NB: IONIC_CQ_GRACE is 100
+   */
+  if (((cq_pos - cq_dbpos) & cq_mask) >= 100) {
+    cq_dbpos = cq_pos;
+    __atomic_store_n(cq_dbreg, cq_dbval | (cq_mask & cq_dbpos), __ATOMIC_SEQ_CST);
+  }
+
+  sq_msn = msn;
+}
+
+__device__ void QueuePair::quiet_internal(uint64_t activemask, uint32_t cons) {
+  /* wait for sq_msn to catch up or pass cons. */
+  /* 0x800000 - sign bit for 24-bit fields     */
+  while ((sq_msn - cons) & 0x800000) {
+    if (!cq_lock_try_acquire(activemask)) {
+      continue;
+    }
+
+    /* with lock acquired, this wave polls cqes until caught up */
+    while ((sq_msn - cons) & 0x800000) {
+      poll_wave_cqes(activemask);
+    }
+
+    cq_lock_release(activemask);
+    break;
+  }
+}
+#endif // GPUIB_IONIC
+
+#ifdef GPUIB_IONIC
+__device__ void QueuePair::ring_doorbell(uint32_t pos) {
+  // TODO When threads write at once to the same address, not all writes reach the bus.
+  for (int i = 0; i < 64; ++i) {
+    if (__lane_id() == i) {
+      __threadfence();
+      __atomic_store_n(sq_dbreg, sq_dbval | (sq_mask & pos), __ATOMIC_SEQ_CST);
+    }
+  }
+  __threadfence();
+}
+#else // !GPUIB_IONIC
 __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint64_t my_sq_counter) {
   swap_endian_store(const_cast<uint32_t*>(dbrec), (uint32_t)my_sq_counter);
   __atomic_signal_fence(__ATOMIC_SEQ_CST);
@@ -63,7 +249,13 @@ __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint64_t my_sq_counter
   db_uint ^= 0x100;
   __hip_atomic_store(&db.uint, db_uint, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
 }
+#endif // !GPUIB_IONIC
 
+#ifdef GPUIB_IONIC
+__device__ void QueuePair::quiet() {
+  quiet_internal(get_same_qp_lane_mask(), sq_prod);
+}
+#else // !GPUIB_IONIC
 __device__ void QueuePair::quiet() {
   constexpr size_t BROADCAST_SIZE = 1024 / __AMDGCN_WAVEFRONT_SIZE;
   __shared__ uint64_t wqe_broadcast[BROADCAST_SIZE];
@@ -145,7 +337,53 @@ __device__ void QueuePair::quiet() {
     }
   }
 }
+#endif // !GPUIB_IONIC
 
+#ifdef GPUIB_IONIC
+__device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
+  uint64_t activemask = get_same_qp_lane_mask();
+  uint32_t num_wqes = get_active_lane_count(activemask);
+  uint32_t my_logical_lane_id = get_active_lane_num(activemask);
+  uint32_t my_sq_prod = reserve_sq(activemask, num_wqes);
+  uint32_t my_sq_pos = my_sq_prod + my_logical_lane_id;
+  struct ionic_v1_wqe *wqe = &sq_buf[my_sq_pos & sq_mask];
+
+  // TODO why is this needed?
+  if (size && !laddr && opcode == IONIC_V2_OP_RDMA_WRITE) {
+    size = 1;
+  }
+
+  wqe->base.wqe_id = my_sq_pos;
+  wqe->base.op = opcode;
+  wqe->base.num_sge_key = size ? 1 : 0;
+  wqe->base.flags = swap_endian_val<uint16_t>(0);
+  wqe->base.imm_data_key = swap_endian_val<uint32_t>(0);
+
+  wqe->common.rdma.remote_va_high = swap_endian_val<uint32_t>(reinterpret_cast<uint64_t>(raddr) >> 32);
+  wqe->common.rdma.remote_va_low = swap_endian_val<uint32_t>(reinterpret_cast<uint64_t>(raddr));
+  wqe->common.rdma.remote_rkey = swap_endian_val<uint32_t>(rkey);
+  wqe->common.length = swap_endian_val<uint32_t>(size);
+
+  if (size) {
+    if (opcode == IONIC_V2_OP_RDMA_WRITE && size <= inline_threshold) {
+      wqe->base.flags |= swap_endian_val<uint16_t>(IONIC_V1_FLAG_INL);
+      wqe->base.num_sge_key = 0;
+      if (!laddr) {
+        // TODO why is this needed?
+        wqe->common.pld.data[0] = 1;
+      } else {
+        memcpy(wqe->common.pld.data, laddr, size);
+      }
+    } else {
+      wqe->common.pld.sgl[0].va = swap_endian_val<uint64_t>(reinterpret_cast<uint64_t>(laddr));
+      wqe->common.pld.sgl[0].len = swap_endian_val<uint32_t>(size);
+      wqe->common.pld.sgl[0].lkey = swap_endian_val<uint32_t>(lkey);
+    }
+  }
+
+  commit_sq(is_last_active_lane(activemask), my_sq_prod, num_wqes, wqe);
+}
+#else // !GPUIB_IONIC
 __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
   uint64_t activemask = get_active_lane_mask();
   uint8_t num_active_lanes = get_active_lane_count(activemask);
@@ -197,7 +435,69 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
     __hip_atomic_store(&sq_db_touched, wave_sq_counter + num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
   }
 }
+#endif // !GPUIB_IONIC
 
+#ifdef GPUIB_IONIC
+__device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode,
+                                            int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
+  uint64_t activemask = get_same_qp_lane_mask();
+  uint32_t num_wqes = get_active_lane_count(activemask);
+  uint32_t my_logical_lane_id = get_active_lane_num(activemask);
+  bool is_leader{my_logical_lane_id == 0};
+  const uint64_t leader_phys_lane_id = get_first_active_lane_id(activemask);
+  uint32_t my_sq_prod = reserve_sq(activemask, num_wqes);
+  uint32_t my_sq_pos = my_sq_prod + my_logical_lane_id;
+  struct ionic_v1_wqe *wqe = &sq_buf[my_sq_pos & sq_mask];
+  uint32_t cons;
+
+  uint64_t* wave_fetch_atomic{nullptr};
+  if (fetching) {
+    if (is_leader) {
+      auto res = fetching_atomic_freelist->pop_front();
+      while (!res.success) {
+        res = fetching_atomic_freelist->pop_front();
+      }
+      wave_fetch_atomic = res.value;
+    }
+    wave_fetch_atomic = (uint64_t*)__shfl((uint64_t)wave_fetch_atomic, leader_phys_lane_id);
+  }
+
+  wqe->base.wqe_id = my_sq_pos;
+  wqe->base.op = opcode;
+  wqe->base.num_sge_key = 1;
+  wqe->base.flags = swap_endian_val<uint16_t>(0);
+  wqe->base.imm_data_key = swap_endian_val<uint32_t>(0);
+
+  wqe->atomic_v2.remote_va_high = swap_endian_val<uint32_t>(reinterpret_cast<uint64_t>(raddr) >> 32);
+  wqe->atomic_v2.remote_va_low = swap_endian_val<uint32_t>(reinterpret_cast<uint64_t>(raddr));
+  wqe->atomic_v2.remote_rkey = swap_endian_val<uint32_t>(rkey);
+  wqe->atomic_v2.swap_add_high = swap_endian_val<uint32_t>(atomic_data >> 32);
+  wqe->atomic_v2.swap_add_low = swap_endian_val<uint32_t>(atomic_data);
+  wqe->atomic_v2.compare_high = swap_endian_val<uint32_t>(atomic_cmp >> 32);
+  wqe->atomic_v2.compare_low = swap_endian_val<uint32_t>(atomic_cmp);
+
+  if (fetching) {
+    wqe->atomic_v2.local_va = swap_endian_val<uint64_t>(reinterpret_cast<uint64_t>(wave_fetch_atomic + my_logical_lane_id));
+    wqe->atomic_v2.lkey = swap_endian_val<uint32_t>(fetching_atomic_lkey);
+  } else {
+    wqe->atomic_v2.local_va = swap_endian_val<uint64_t>(reinterpret_cast<uint64_t>(nonfetching_atomic));
+    wqe->atomic_v2.lkey = swap_endian_val<uint32_t>(nonfetching_atomic_lkey);
+  }
+
+  cons = commit_sq(is_last_active_lane(activemask), my_sq_prod, num_wqes, wqe);
+
+  uint64_t ret{0};
+  if (fetching) {
+    quiet_internal(activemask, cons);
+    ret = wave_fetch_atomic[my_logical_lane_id];
+    __atomic_signal_fence(__ATOMIC_SEQ_CST);
+    if (is_leader) {
+      fetching_atomic_freelist->push_back(wave_fetch_atomic);
+    }
+  }
+  return ret;
+}
+#else // !GPUIB_IONIC
 __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode,
                                             int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
   uint64_t activemask = get_active_lane_mask();
@@ -277,6 +577,7 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   }
   return ret;
 }
+#endif // !GPUIB_IONIC
 
 /******************************************************************************
  ****************************** SHMEM INTERFACE *******************************

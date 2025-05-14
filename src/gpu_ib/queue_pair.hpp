@@ -32,16 +32,33 @@
  * class.
  */
 
+#include "rocshmem_config.h"
+#include "endian.h"
+#ifdef GPUIB_IONIC
+extern "C" {
+#include <infiniband/ionic_dv.h>
+#include <infiniband/ionic_fw.h>
+}
+#else
 #include <infiniband/mlx5dv.h>
+#endif
 
 #include "containers/free_list.hpp"
 #include "memory/hip_allocator.hpp"
 
+#ifdef GPUIB_IONIC
+#define GPUIB_DEFAULT_GID    1
+#define GPUIB_MAX_ATOMIC     15
+#define GPUIB_OP_RDMA_WRITE  IONIC_V2_OP_RDMA_WRITE
+#define GPUIB_OP_ATOMIC_FA   IONIC_V2_OP_ATOMIC_FA
+#define GPUIB_OP_ATOMIC_CS   IONIC_V2_OP_ATOMIC_CS
+#else
 #define GPUIB_DEFAULT_GID    0
 #define GPUIB_MAX_ATOMIC     1
 #define GPUIB_OP_RDMA_WRITE  MLX5_OPCODE_RDMA_WRITE
 #define GPUIB_OP_ATOMIC_FA   MLX5_OPCODE_ATOMIC_FA
 #define GPUIB_OP_ATOMIC_CS   MLX5_OPCODE_ATOMIC_CS
+#endif
 
 namespace rocshmem {
 
@@ -51,6 +68,10 @@ typedef union db_reg {
   uint64_t *ptr;
   uintptr_t uint;
 } db_reg_t;
+
+#define SPIN_LOCK_INVALID  0xdead
+#define SPIN_LOCK_UNLOCKED 0x1234
+#define SPIN_LOCK_LOCKED   0xabcd
 
 class QueuePair {
  public:
@@ -132,7 +153,66 @@ class QueuePair {
    *
    * @param[in] db_val Doorbell value is written by method.
    */
+#ifdef GPUIB_IONIC
+  __device__ void ring_doorbell(uint32_t pos);
+#else
   __device__ void ring_doorbell(uint64_t db_val, uint64_t my_sq_counter);
+#endif
+
+#ifdef GPUIB_IONIC
+  __device__ uint64_t get_same_qp_lane_mask();
+
+  __device__ bool cq_lock_try_acquire(uint64_t active_lane_mask);
+  __device__ void cq_lock_release(uint64_t active_lane_mask);
+
+  /**
+   * @brief Reserve space in the sq to post this many wqes.
+   * @param my_tid my logical thread id.
+   * @param num_wqes number of sq wqes to reserve for this wave.
+   * @return position of my_tid=0's wqe.
+   */
+  __device__ uint32_t reserve_sq(uint64_t active_lane_mask, uint32_t num_wqes);
+
+  /**
+   * @brief Ring the sq doorbell maintaining order between waves.
+   * @param last this is the last wqe posted in this wave.
+   * @param my_sq_prod position of my_tid=0's wqe.
+   * @param num_wqes number of sq wqes posted in this wave.
+   * @param wqe this thread's wqe.
+   * @return doorbell producer index.
+   */
+  __device__ uint32_t commit_sq(bool last, uint32_t my_sq_prod, uint32_t num_wqes, struct ionic_v1_wqe *wqe);
+
+  /**
+   * @brief Helper method to poll the next completion queue entry.
+   */
+  __device__ __attribute__((noinline)) void poll_wave_cqes(uint64_t active_lane_mask);
+
+  /**
+   * @brief Helper method to drain completion queue entries.
+   * @param cons wait for sq_msn to catch up to this position.
+   */
+  __device__ __attribute__((noinline)) void quiet_internal(uint64_t active_lane_mask, uint32_t cons);
+
+  uint64_t *cq_dbreg{nullptr};
+  uint64_t cq_dbval{0};
+  uint64_t cq_mask{0};
+  struct ionic_v1_cqe *cq_buf{nullptr};
+  uint32_t cq_lock{SPIN_LOCK_UNLOCKED};
+  uint32_t cq_pos{0};
+  uint32_t cq_dbpos{0};
+
+  uint64_t *sq_dbreg{nullptr};
+  uint64_t sq_dbval{0};
+  uint64_t sq_mask{0};
+  struct ionic_v1_wqe *sq_buf{nullptr};
+  uint32_t sq_dbprod{0};
+  uint32_t sq_prod{0};
+  uint32_t sq_msn{0};
+
+  uint32_t inline_threshold{0};
+
+#else // GPUIB_IONIC
 
   db_reg_t db{};
 
@@ -192,6 +272,8 @@ class QueuePair {
 
   static constexpr size_t OUTSTANDING_TABLE_SIZE = 65536;
   uint64_t outstanding_wqes[OUTSTANDING_TABLE_SIZE]{0};
+
+#endif // GPUIB_IONIC
 
   uint32_t qp_num{0};
   uint32_t rkey{0};

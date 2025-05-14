@@ -28,9 +28,15 @@
 #include <rocshmem/rocshmem.hpp>
 #include <vector>
 
+#include "endian.hpp"
 #include <infiniband/verbs.h>
 extern "C" {
+#ifdef GPUIB_IONIC
+#include <infiniband/ionic_dv.h>
+#include <infiniband/ionic_fw.h>
+#else
 #include <infiniband/mlx5dv.h>
+#endif
 }
 
 #include "context_incl.hpp"
@@ -56,8 +62,17 @@ class GDADevice {
     struct ibv_context* context;
     struct ibv_pd* pd_orig;
     struct ibv_pd* pd_parent;
+#ifdef GPUIB_IONIC
+    struct ibv_pd* pd_uxdma[2];
+#endif
     struct ibv_mr* mr;
     struct ibv_port_attr portinfo;
+
+#ifdef GPUIB_IONIC
+    void *gpu_db_page;
+    uint64_t *gpu_db_cq;
+    uint64_t *gpu_db_sq;
+#endif
   } ib_state_t;
 
   typedef struct dest_info {
