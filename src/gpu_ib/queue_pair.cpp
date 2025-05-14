@@ -70,11 +70,11 @@ __device__ void QueuePair::quiet() {
   uint8_t wavefront_id = get_flat_block_id() / __AMDGCN_WAVEFRONT_SIZE;
   wqe_broadcast[wavefront_id] = 0;
 
-  uint64_t activemask = __ballot(1);
-  uint8_t num_active_lanes = __popcll(activemask);
-  uint8_t my_logical_lane_id = __popcll(activemask & __lanemask_lt());
+  uint64_t activemask = get_active_lane_mask();
+  uint8_t num_active_lanes = get_active_lane_count(activemask);
+  uint8_t my_logical_lane_id = get_active_lane_num(activemask);
   bool is_leader{my_logical_lane_id == 0};
-  const uint64_t leader_phys_lane_id = __ffsll((unsigned long long)activemask) - 1;
+  const uint64_t leader_phys_lane_id = get_first_active_lane_id(activemask);
 
   while (true) {
     bool done{false};
@@ -147,11 +147,11 @@ __device__ void QueuePair::quiet() {
 }
 
 __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
-  uint64_t activemask = __ballot(1);
-  uint8_t num_active_lanes = __popcll(activemask);
-  uint8_t my_logical_lane_id = __popcll(activemask & __lanemask_lt());
+  uint64_t activemask = get_active_lane_mask();
+  uint8_t num_active_lanes = get_active_lane_count(activemask);
+  uint8_t my_logical_lane_id = get_active_lane_num(activemask);
   bool is_leader{my_logical_lane_id == 0};
-  const uint64_t leader_phys_lane_id = __ffsll((unsigned long long)activemask) - 1;
+  const uint64_t leader_phys_lane_id = get_first_active_lane_id(activemask);
   uint8_t num_wqes{num_active_lanes};
   uint64_t wave_sq_counter{0};
 
@@ -198,12 +198,13 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   }
 }
 
-__device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
-  uint64_t activemask = __ballot(1);
-  uint8_t num_active_lanes = __popcll(activemask);
-  uint8_t my_logical_lane_id = __popcll(activemask & __lanemask_lt());
+__device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode,
+                                            int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
+  uint64_t activemask = get_active_lane_mask();
+  uint8_t num_active_lanes = get_active_lane_count(activemask);
+  uint8_t my_logical_lane_id = get_active_lane_num(activemask);
   bool is_leader{my_logical_lane_id == 0};
-  const uint64_t leader_phys_lane_id = __ffsll((unsigned long long)activemask) - 1;
+  const uint64_t leader_phys_lane_id = get_first_active_lane_id(activemask);
   uint8_t num_wqes{num_active_lanes};
   uint64_t wave_sq_counter{0};
 
@@ -283,7 +284,7 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
 __device__ void QueuePair::put_nbi(void *dest, const void *source, size_t nelems, int pe) {
   uintptr_t *src = reinterpret_cast<uintptr_t*>(const_cast<void*>(source));
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
-  post_wqe_rma(pe, nelems, src, dst, MLX5_OPCODE_RDMA_WRITE);
+  post_wqe_rma(pe, nelems, src, dst, GPUIB_OP_RDMA_WRITE);
 }
 
 __device__ int64_t QueuePair::atomic_fetch(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe, uint8_t atomic_op) {

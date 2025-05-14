@@ -114,8 +114,6 @@ class GPUIBContext : public Context {
 
   __device__ void internal_sync_wg(int pe, int PE_start, int stride, int PE_size, int64_t *pSync);
 
-  __device__ void quiet_single(int cq_num);
-
  public:
   QueuePair *qps{nullptr};
 

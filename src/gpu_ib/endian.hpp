@@ -48,6 +48,13 @@ __device__ void swap_endian_store(uint16_t *dst, const uint16_t val);
 template <>
 __device__ void swap_endian_store(int16_t *dst, const int16_t val);
 
+template <typename T>
+__device__ T swap_endian_val(const T val) {
+  T dst;
+  swap_endian_store(&dst, val);
+  return dst;
+}
+
 }  // namespace rocshmem
 
 #endif  // LIBRARY_SRC_GPU_IB_ENDIAN_HPP_
