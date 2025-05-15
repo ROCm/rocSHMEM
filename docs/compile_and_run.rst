@@ -1,14 +1,14 @@
 .. meta::
-   :description: Information on how to compile and run rocSHMEM programs.
+   :description: Information on how to compile and run rocSHMEM applications.
    :keywords: rocSHMEM, ROCm, library, API, compile, link, hipcc
 
-.. _running-programs:
+.. _running-applications:
 
 --------------------------------------------------
-Compiling and running rocSHMEM programs
+Compiling and running rocSHMEM applications
 --------------------------------------------------
 
-This topic explains how to compile and run rocSHMEM programs.
+This topic explains how to compile and run rocSHMEM applications.
 
 Compiling and linking with rocSHMEM
 -----------------------------------
@@ -39,10 +39,10 @@ Example compile and link commands are provided at the top of the example files i
 If your project uses CMake, see 
 `Using CMake with AMD ROCm <https://rocmdocs.amd.com/en/latest/conceptual/cmake-packages.html>`_.
 
-Running a rocSHMEM program
+Running a rocSHMEM application
 --------------------------
 
-Programs using rocSHMEM typically deploy multiple processes, usually one per GPU.  
+Applications using rocSHMEM typically deploy multiple processes, usually one per GPU.  
 The MPI launcher, for example, ``mpiexec`` with Open MPI, is used to start the required number
 of processes. For example, to launch two ``getmem`` example processes (available when compiled from source):
 

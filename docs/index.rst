@@ -19,7 +19,7 @@ The code is open and hosted at `<https://github.com/ROCm/rocSHMEM>`_.
 
   .. grid-item-card:: How to
 
-      * :doc:`Compile and run rocSHMEM programs <./compile_and_run>`
+      * :doc:`Compile and run applications <./compile_and_run>`
 
   .. grid-item-card:: API reference
 
