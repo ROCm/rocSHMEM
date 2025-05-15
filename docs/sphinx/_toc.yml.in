@@ -16,30 +16,30 @@ subtrees:
 - caption: How to
   entries:
   - file: compile_and_run.rst
-    title: Compile and Run rocSHMEM Programs
+    title: Compile and run rocSHMEM programs
 
-- caption: API Reference
+- caption: API reference
   entries:
   - file: api/init.rst
-    title: Library Setup, Exit, and Query Routines
+    title: Library setup, exit, and query routines
   - file: api/memory_management.rst
-    title: Memory Management Routines
+    title: Memory management routines
   - file: api/teams.rst
-    title: Team Management Routines
+    title: Team management routines
   - file: api/ctx.rst
-    title: Context Management Routines
+    title: Context management routines
   - file: api/rma.rst
-    title: Remote Memory Access Routines
+    title: Remote memory access routines
   - file: api/amo.rst
-    title: Atomic Memory Operations
+    title: Atomic memory operations
   - file: api/sigops.rst
-    title: Signaling Operations
+    title: Signaling operations
   - file: api/coll.rst
-    title: Collective Routines
+    title: Collective routines
   - file: api/pt2pt_sync.rst
-    title: Point-to-Point Synchronization Routines
+    title: Point-to-point synchronization routines
   - file: api/memory_ordering.rst
-    title: Memory Ordering Routines
+    title: Memory ordering routines
 
 - caption: About
   entries:

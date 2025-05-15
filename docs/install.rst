@@ -1,6 +1,6 @@
 .. meta::
-  :description: rocSHMEM intra-kernel networking runtime for AMD dGPUs on the ROCm platform.
-  :keywords: rocSHMEM, API, ROCm, documentation, HIP, Networking, Communication
+  :description: Instruction on how to install rocSHMEM.
+  :keywords: rocSHMEM, ROCm, install, build, dependencies, MPI, UCX, Open MPI
 
 .. _install-rocshmem:
 
@@ -10,27 +10,23 @@ Installing rocSHMEM
 
 This topic describes how to install rocSHMEM.
 
-The file `README.md <https://github.com/ROCm/rocSHMEM/blob/rocm-6.4.0/README.md>`_ in the rocSHMEM sources may contain additional information.
-
 Requirements
 ---------------------------
 
-1. ROCm stack installed on the system (HIP runtime)
+* ROCm 6.4.0 or later, including the :doc:`HIP runtime <hip:index>`.
 
-  * ROCm v6.4.0 or later
-
-2. AMD GPUs
+* AMD GPUs
 
   * MI250X
 
   * MI300X
 
-3. ROCm-aware Open MPI and UCX as described in Building Dependencies
+* ROCm-aware Open MPI and UCX. For more information, see :ref:`install-dependencies`.
 
-Installing from a Package Manager
+Installing from a package manager
 ---------------------------------
 
-On Ubuntu, rocSHMEM can be installed with the following command:
+On Ubuntu, you can install rocSHMEM by running:
 
 .. code-block:: bash
 
@@ -38,22 +34,16 @@ On Ubuntu, rocSHMEM can be installed with the following command:
 
 .. note::
 
-  This installation method requires ROCm 6.4 or newer. Dependencies
-  (open MPI and UCX) still need to be built following the instructions
-  in the next paragraph, as the distribution packaged versions do not
-  include full accelerator support.
+  This installation method requires ROCm 6.4 or later. You must manually build dependencies such as Open MPI and UCX, because the distribution packaged versions don't include full accelerator support. For more information, see :ref:`install-dependencies`.
 
 .. _install-dependencies:
 
-Building Dependencies
+Building dependencies
 ---------------------------
 
-rocSHMEM requires a ROCm-Aware Open MPI and UCX.
-Other MPI implementations, such as MPICH,
-*should* be compatible, if rocSHMEM is built from source,
-but it has not been thoroughly tested.
+rocSHMEM requires ROCm-Aware Open MPI and UCX. Other MPI implementations, such as MPICH, have not been fully tested.
 
-To build and configure ROCm-Aware UCX (1.17.0 or later), you need to:
+To build and configure ROCm-Aware UCX 1.17.0 or later, run:
 
 .. code-block:: bash
 
@@ -64,7 +54,7 @@ To build and configure ROCm-Aware UCX (1.17.0 or later), you need to:
   make -j 8
   make -j 8 install
 
-Then, you need to build Open MPI (5.0.7 or later) with UCX support.
+To build Open MPI 5.0.7 or later with UCX support, run:
 
 .. code-block:: bash
 
@@ -75,23 +65,24 @@ Then, you need to build Open MPI (5.0.7 or later) with UCX support.
   make -j 8
   make -j 8 install
 
-Alternatively, we have script to install dependencies.
-Configuration options are platform dependent, so please review the script to
-check for fitness with your system.
+Alternatively, you can use a script to install dependencies:
 
 .. code-block:: bash
 
   export BUILD_DIR=/path/to/not_rocshmem_src_or_build/dependencies
   /path/to/rocshmem_src/scripts/install_dependencies.sh
 
-For more information on OpenMPI-UCX support, please visit:
-`GPU-enabled Message Passing Interface <https://rocm.docs.amd.com/en/latest/how-to/gpu-enabled-mpi.html>`_
+.. note::
 
-Installing rocSHMEM from Source
+  Configuration options vary by platform. Review the script to ensure it is compatible with your system.
+
+For more information about OpenMPI-UCX support, see
+`GPU-enabled Message Passing Interface <https://rocm.docs.amd.com/en/latest/how-to/gpu-enabled-mpi.html>`_.
+
+Installing rocSHMEM from source
 --------------------------------
 
-The following method can be used to build and install rocSHMEM with the IPC
-on-node, GPU-to-GPU backend:
+To build and install rocSHMEM with the IPC on-node, GPU-to-GPU backend, run:
 
 .. code-block:: bash
 
@@ -101,14 +92,14 @@ on-node, GPU-to-GPU backend:
   cd build
   ../scripts/build_configs/ipc_single
 
-The build script passes configuration options to CMake to setup a canonical
-build.
-There are other scripts for experimental configurations in the
-`./scripts/build_configs` directory, but currently, only `ipc_single`
-is supported.
+The build script passes configuration options to CMake to setup a canonical build. 
 
-By default, the library is installed in `~/rocshmem`. You may provide a
-custom install path by supplying it as an argument. For example:
+.. note::
+
+  Other experimental configuration scripts are available in ``./scripts/build_configs``, but only ``ipc_single`` is currently supported.
+
+
+By default, the library is installed in ``~/rocshmem``. You can customize the installation path by running:
 
 .. code-block:: bash
 

@@ -5,7 +5,7 @@
 .. _rocshmem-api-coll:
 
 ---------------------------
-Collective Routines
+Collective routines
 ---------------------------
 
 ROCSHMEM_BARRIER_ALL
@@ -29,11 +29,11 @@ ROCSHMEM_BARRIER
 .. cpp:function:: __device__ void rocshmem_ctx_barrier_wave(rocshmem_ctx_t ctx, rocshmem_team_t team)
 .. cpp:function:: __device__ void rocshmem_ctx_barrier_wg(rocshmem_ctx_t ctx, rocshmem_team_t team)
 
-  :param ctx: Context with which to perform this operation
-  :returns:   None
+  :param ctx: Context with which to perform this operation.
+  :returns:   None.
 
 **Description:**
-Perform a collective barrier between all PEs in the system.
+This routine performs a collective barrier between all PEs in the system.
 The caller is blocked until the barrier is resolved.
 
 ROCSHMEM_TEAM_SYNC
@@ -43,17 +43,17 @@ ROCSHMEM_TEAM_SYNC
 .. cpp:function:: __device__ void rocshmem_ctx_sync_wave(rocshmem_ctx_t ctx, rocshmem_team_t team)
 .. cpp:function:: __device__ void rocshmem_ctx_sync_wg(rocshmem_ctx_t ctx, rocshmem_team_t team)
 
-  :param ctx:  Context with which to perform this operation
-  :param team: Team with which to perform this operation
-  :returns:    None
+  :param ctx:  Context with which to perform this operation.
+  :param team: Team with which to perform this operation.
+  :returns:    None.
 
 **Description:**
-Registers the arrival of a PE at a barrier.
+This routine registers the arrival of a PE at a barrier.
 The caller is blocked until the synchronization is resolved.
 
-In contrast with the shmem_barrier_all routine, shmem_team_sync only ensures
-completion and visibility of previously issued memory stores and does not
-ensure completion of remote memory updates issued via OpenSHMEM routines.
+Unlike the ``shmem_barrier_all`` routine, ``shmem_team_sync`` only ensures the
+completion and visibility of previously issued memory stores, but does not
+ensure the completion of remote memory updates issued via OpenSHMEM routines.
 
 ROCSHMEM_SYNC_ALL
 -----------------
@@ -62,91 +62,90 @@ ROCSHMEM_SYNC_ALL
 .. cpp:function:: __device__ void rocshmem_ctx_sync_all_wave(rocshmem_ctx_t ctx)
 .. cpp:function:: __device__ void rocshmem_ctx_sync_all_wg(rocshmem_ctx_t ctx)
 
-  :param ctx:  Context with which to perform this operation
-  :returns:    None
+  :param ctx:  Context with which to perform this operation.
+  :returns:    None.
 
 **Description:**
-This routine is the same as ``rocshmem_team_sync_wg`` if were to be called on the world team.
-
+This routine behaves the same as ``rocshmem_team_sync_wg`` when called on the world team.
 
 ROSHMEM_ALLTOALL
 ----------------
 
 .. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_alltoall_wg(rocshmem_ctx_t ctx, rocshmem_team_t team, TYPE *dest, const TYPE *source, int nelems)
 
-  :param team:   The team participating in the collective
-  :param dest:   Destination address; Must be an address on the
-                 symmetric heap
-  :param source: Source address; Must be an address on the symmetric
-                 heap
-  :param nelems: Number of data blocks transferred per pair of PEs
-  :returns:      None
+  :param team:   The team participating in the collective.
+  :param dest:   Destination address. Must be an address on the
+                 symmetric heap.
+  :param source: Source address. Must be an address on the symmetric
+                 heap.
+  :param nelems: Number of data blocks transferred per pair of PEs.
+  :returns:      None.
 
 **Description:**
-Exchanges a fixed amount of contiguous data blocks between all pairs
+This routine exchanges a fixed amount of contiguous data blocks between all pairs
 of PEs participating in the collective routine.
 This function must be called as a work-group collective.
 
-Valid ``TYPENAME`` and ``TYPE`` values can be seen at :ref:`RMA_TYPES`.
+Valid ``TYPENAME`` and ``TYPE`` values are listed in :ref:`RMA_TYPES`.
 
 ROCSHMEM_BROADCAST
 ------------------
 
 .. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_broadcast_wg(rocshmem_ctx_t ctx, rocshmem_team_t team, TYPE *dest, const TYPE *source, int nelems, int pe_root)
 
-  :param ctx:    Context with which to perform this collective
-  :param team:   The team participating in the collective
-  :param dest:   Destination address; Must be an address on the
-                 symmetric heap
-  :param source: Source address; Must be an address on the symmetric
-                 heap
-  :param nelems: Number of data blocks transferred per pair of PEs
-  :returns:      None
+  :param ctx:    Context with which to perform this collective.
+  :param team:   The team participating in the collective.
+  :param dest:   Destination address. Must be an address on the
+                 symmetric heap.
+  :param source: Source address. Must be an address on the symmetric
+                 heap.
+  :param nelems: Number of data blocks transferred per pair of PEs.
+  :returns:      None.
 
 **Description:**
-Perform a broadcast between PEs in the team.
+This routine performs a broadcast across PEs in the team.
 The caller is blocked until the broadcast completes.
 
-Valid ``TYPENAME`` and ``TYPE`` values can be seen at :ref:`RMA_TYPES`.
+Valid ``TYPENAME`` and ``TYPE`` values are listed in :ref:`RMA_TYPES`.
 
 ROCSHMEM_FCOLLECT
 -----------------
 
 .. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_fcollect_wg(rocshmem_ctx_t ctx, rocshmem_team_t team, TYPE *dest, const TYPE *source, int nelems)
 
-  :param ctx:    Context with which to perform this collective
-  :param team:   The team participating in the collective
-  :param dest:   Destination address; Must be an address on the
-                 symmetric heap
-  :param source: Source address; Must be an address on the symmetric
-                 heap
+  :param ctx:    Context with which to perform this collective.
+  :param team:   The team participating in the collective.
+  :param dest:   Destination address. Must be an address on the
+                 symmetric heap.
+  :param source: Source address. Must be an address on the symmetric
+                 heap.
   :param nelems: Number of data blocks transferred per pair of PEs.
-  :returns:      None
+  :returns:      None.
 
 **Description:**
-Concatenates blocks of data from multiple PEs to an array in every
+This routine concatenates blocks of data from multiple PEs to an array in every
 PE participating in the collective routine.
 
 ROCSHMEM_REDUCTION
 ------------------
 .. cpp:function:: __device__ int rocshmem_ctx_TYPENAME_OPNAME_reduce_wg(rocshmem_ctx_t ctx, rocshmem_team_t team, TYPE *dest, const TYPE *source, int nreduce)
 
-  :param ctx:     Context with which to perform this collective
-  :param team:    The team participating in the collective
-  :param dest:    Destination address; Must be an address on the
-                  symmetric heap
-  :param source:  Source address; Must be an address on the symmetric
-                  heap
-  :param nreduce: Number of data blocks transferred per pair of PEs
-  :returns:       Zero on successful local completion; Nonzero otherwise
+  :param ctx:     Context with which to perform this collective.
+  :param team:    The team participating in the collective.
+  :param dest:    Destination address. Must be an address on the
+                  symmetric heap.
+  :param source:  Source address. Must be an address on the symmetric
+                  heap.
+  :param nreduce: Number of data blocks transferred per pair of PEs.
+  :returns:       Zero on successful local completion. Nonzero otherwise.
 
 
 **Description:**
-Perform an allreduce between PEs in the team.
+This routine  performs an allreduce operation across PEs in the team.
 
-Valid ``TYPENAME``, ``TYPE``, and ``OPNAME`` values can be seen at :ref:`REDUCE_TYPES`.
+Valid ``TYPENAME``, ``TYPE``, and ``OPNAME`` values are listed in :ref:`REDUCE_TYPES`.
 
-SUPPORTED REDUCTION TYPES AND OPERATIONS
+Supported reduction types and operations
 ----------------------------------------
 
 .. _REDUCE_TYPES:
