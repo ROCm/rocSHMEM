@@ -38,17 +38,23 @@ LLVM_PROFILE_FILE="$PROFRAW_DIR/ro_ipc-functional-%p.profraw" ../scripts/functio
 /opt/rocm/llvm/bin/llvm-profdata merge -sparse $PROFRAW_DIR/*.profraw -o ./coverage-report/rocshmem.profdata
 /opt/rocm/llvm/bin/llvm-cov report \
 	-object ./ipc/tests/unit_tests/rocshmem_unit_tests \
+	-object ./ipc/tests/functional_tests/rocshmem_example_driver \
 	-object ./ro_net/tests/unit_tests/rocshmem_unit_tests \
+	-object ./ro_net/tests/functional_tests/rocshmem_example_driver \
 	-object ./ro_ipc/tests/unit_tests/rocshmem_unit_tests \
+	-object ./ro_ipc/tests/functional_tests/rocshmem_example_driver \
 	-instr-profile=./coverage-report/rocshmem.profdata \
 	--ignore-filename-regex=".*test.*"
 
 /opt/rocm/llvm/bin/llvm-cov show \
-        -object ./ipc/tests/unit_tests/rocshmem_unit_tests \
-        -object ./ro_net/tests/unit_tests/rocshmem_unit_tests \
-        -object ./ro_ipc/tests/unit_tests/rocshmem_unit_tests \
-        -instr-profile=./coverage-report/rocshmem.profdata \
-        --ignore-filename-regex=".*test.*" \
+	-object ./ipc/tests/unit_tests/rocshmem_unit_tests \
+	-object ./ipc/tests/functional_tests/rocshmem_example_driver \
+	-object ./ro_net/tests/unit_tests/rocshmem_unit_tests \
+	-object ./ro_net/tests/functional_tests/rocshmem_example_driver \
+	-object ./ro_ipc/tests/unit_tests/rocshmem_unit_tests \
+	-object ./ro_ipc/tests/functional_tests/rocshmem_example_driver \
+	-instr-profile=./coverage-report/rocshmem.profdata \
+	--ignore-filename-regex=".*test.*"
 	-format=html \
 	-output-dir=coverage-report
 cd coverage-report && python3 -m http.server 
