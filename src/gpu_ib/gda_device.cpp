@@ -35,6 +35,7 @@
 #include "gpu_ib_team.hpp"
 #include "host/host.hpp"
 #include "queue_pair.hpp"
+#include "topology.hpp"
 
 namespace rocshmem {
 
@@ -281,7 +282,12 @@ GDADevice::GDADevice(MPI_Comm _comm) : comm(_comm), heap(_comm) {
   }
   char* value{nullptr};
   if ((value = getenv("ROCSHMEM_USE_IB_HCA"))) {
-    requested_dev = value;
+    requested_dev = strdup(value);
+  } else {
+    int gpu_dev = 0;
+    CHECK_HIP(hipGetDevice(&gpu_dev));
+    int nic_dev = rocshmem::GetClosestNicToGpu(gpu_dev, &requested_dev);
+    assert (nic_dev != -1);
   }
   if ((value = getenv("ROCSHMEM_SQ_SIZE"))) {
     sq_size = atoi(value);
@@ -373,6 +379,8 @@ GDADevice::~GDADevice() {
   heap.free(reinterpret_cast<void**>(&barrier_sync));
 
   delete ib_state;
+  if (requested_dev != nullptr)
+    free (requested_dev);
 }
 
 __device__ bool GDADevice::create_ctx(rocshmem_ctx_t *ctx) {
