@@ -62,9 +62,9 @@ namespace rocshmem {
 #endif
 
 #ifdef DEBUG
-#define GPU_DPRINTF(...)      \
-  do {                        \
-    gpu_dprintf(__VA_ARGS__); \
+#define GPU_DPRINTF(...)                                         \
+  do {                                                           \
+    gpu_dprintf("WG (%u, %u, %u) TH (%u, %u, %u) " __VA_ARGS__); \
   } while (0);
 #else
 #define GPU_DPRINTF(...) \
@@ -159,10 +159,9 @@ __device__ void gpu_dprintf(const char* fmt, const Args&... args) {
       while (atomicCAS(print_lock, 0, 1) == 1) {
       }
 
-      printf("WG (%u, %u, %u) TH (%u, %u, %u) ", hipBlockIdx_x,
-             hipBlockIdx_y, hipBlockIdx_z, hipThreadIdx_x, hipThreadIdx_y,
-             hipThreadIdx_z);
-      printf(fmt, args...);
+      printf(fmt, hipBlockIdx_x, hipBlockIdx_y, hipBlockIdx_z,
+                  hipThreadIdx_x, hipThreadIdx_y, hipThreadIdx_z,
+                  args...);
 
       *print_lock = 0;
     }
