@@ -123,9 +123,9 @@ class CommunicatorTCP {
    * @brief Primary constructor
    */
   CommunicatorTCP(char* heap_base, size_t heap_size,
-                  TcpBootstrap& bootstrap) : bootstrap_{bootstrap} {
-    my_pe_ = bootstrap_.getRank();
-    num_pes_ = bootstrap_.getNranks();
+                  TcpBootstrap* bootstrap) : bootstrap_{bootstrap} {
+    my_pe_ = bootstrap_->getRank();
+    num_pes_ = bootstrap_->getNranks();
 
     heap_window_info_ = WindowInfo(heap_base, heap_size);
   }
@@ -148,13 +148,13 @@ class CommunicatorTCP {
   /**
    * @brief Performs MPI_Barrier
    */
-  void barrier() {bootstrap_.barrier(); }
+  void barrier() {bootstrap_->barrier(); }
 
   /**
    * @brief Performs MPI_Allgather on recvbuf
    */
   void allgather(void* recvbuf) {
-    bootstrap_.allGather(recvbuf, sizeof(void*));
+    bootstrap_->allGather(recvbuf, sizeof(void*));
   }
 
   /**
@@ -166,7 +166,7 @@ class CommunicatorTCP {
   /**
    * @brief Identifier for this processing element
    */
-  TcpBootstrap& bootstrap_;
+  TcpBootstrap* bootstrap_;
 
   /**
    * @brief Identifier for this processing element
@@ -212,7 +212,7 @@ class RemoteHeapInfo {
   }
 
   RemoteHeapInfo(char* heap_ptr, size_t heap_size,
-                 TcpBootstrap& bootstrap)
+                 TcpBootstrap* bootstrap)
     : communicator_{heap_ptr, heap_size, bootstrap} {
     init(heap_ptr, heap_size);
   }

@@ -44,6 +44,7 @@
 #include "memory/symmetric_heap.hpp"
 #include "stats.hpp"
 #include "team_tracker.hpp"
+#include "bootstrap/bootstrap.hpp"
 
 namespace rocshmem {
 
@@ -71,6 +72,7 @@ class Backend {
    */
   explicit Backend(MPI_Comm comm);
 
+  explicit Backend(TcpBootstrap* bootstrap);
   /**
    * @brief Destructor.
    */
@@ -229,7 +231,7 @@ class Backend {
    * @brief Object contains the interface and internal data structures
    * needed to allocate/free memory on the symmetric heap.
    */
-  SymmetricHeap heap{};
+  SymmetricHeap heap;
 
   /**
    * @brief Determines which device to launch device kernels onto.
@@ -293,6 +295,12 @@ class Backend {
   virtual void reset_backend_stats() = 0;
 
  private:
+  /**
+   * @brief initialization code used by all constructors
+   */
+  void init (void);
+
+
   /**
    * @brief List of ctxs created by the user.
    */

@@ -41,25 +41,58 @@
  * which needs to be shared across the network (to access the memory
  * region).
  */
-
 #include <hip/hip_runtime_api.h>
 
 #include "remote_heap_info.hpp"
 #include "single_heap.hpp"
+#include "../bootstrap/bootstrap.hpp"
 
 namespace rocshmem {
 
+class RemoteHeapInfoAbstract {
+public:
+  virtual WindowInfo* get_window_info() = 0;
+  __host__ virtual const std::vector<char*, StdAllocatorHIP<char*>>& get_heap_bases() = 0;
+  __device__ char** get_heap_bases() { return nullptr; }
+};
+
+class RemoteHeapInfoMPI : public RemoteHeapInfoAbstract {
+public:
+  RemoteHeapInfoMPI(char *base_ptr, size_t size, MPI_Comm comm) : rheap(base_ptr, size, comm) {};
+
+  WindowInfo* get_window_info() override { return rheap.get_window_info(); };
+  __host__ const std::vector<char*, StdAllocatorHIP<char*>>& get_heap_bases() override { return rheap.get_heap_bases(); };
+  __device__ char** get_heap_bases() { return rheap.get_heap_bases(); };
+
+private:
+  RemoteHeapInfo<CommunicatorMPI> rheap;
+};
+
+class RemoteHeapInfoTCP : public RemoteHeapInfoAbstract {
+public:
+  RemoteHeapInfoTCP(char *base_ptr, size_t size, TcpBootstrap *bootstrap) : rheap(base_ptr, size, bootstrap) {};
+
+  WindowInfo* get_window_info() override { return rheap.get_window_info(); };
+  __host__ const std::vector<char*, StdAllocatorHIP<char*>>&  get_heap_bases() override { return rheap.get_heap_bases(); };
+  __device__ char**  get_heap_bases() { return rheap.get_heap_bases(); };
+
+private:
+  RemoteHeapInfo<CommunicatorTCP> rheap;
+};
+
 class SymmetricHeap {
-  /**
-   * @brief Helper type for RemoteHeapInfo with MPI
-   */
-  using RemoteHeapInfoType = RemoteHeapInfo<CommunicatorMPI>;
 
  public:
-  SymmetricHeap(MPI_Comm comm = MPI_COMM_WORLD)
-    : remote_heap_info_{single_heap_.get_base_ptr(),
-                        single_heap_.get_size(),
-                        comm} {}
+  SymmetricHeap(MPI_Comm comm = MPI_COMM_NULL, TcpBootstrap* bootstrap  = nullptr) {
+
+    if (comm != MPI_COMM_NULL) {
+      remote_heap_info_ = new RemoteHeapInfoMPI(single_heap_.get_base_ptr(),
+						single_heap_.get_size(), comm);
+    } else  {
+      remote_heap_info_ = new RemoteHeapInfoTCP(single_heap_.get_base_ptr(),
+						single_heap_.get_size(), bootstrap);
+    }
+  }
   /**
    * @brief Allocates heap memory and returns ptr to caller
    *
@@ -88,9 +121,16 @@ class SymmetricHeap {
   auto get_size() { return single_heap_.get_size(); }
 
   /**
+   * @brief Returns is the heap is allocated with managed memory
+   *
+   * @return bool
+   */
+  bool is_managed() { return single_heap_.is_managed(); }
+
+  /**
    * @brief Accessor method for heap_window_info_
    */
-  auto get_window_info() { return remote_heap_info_.get_window_info(); }
+  auto get_window_info() { return remote_heap_info_->get_window_info(); }
 
   /**
    * @brief Accessor for heap bases
@@ -98,7 +138,7 @@ class SymmetricHeap {
    * @return Vector containing the addresses of the symmetric heap bases
    */
   __host__ const auto& get_heap_bases() {
-    return remote_heap_info_.get_heap_bases();
+    return remote_heap_info_->get_heap_bases();
   }
 
   /**
@@ -107,15 +147,8 @@ class SymmetricHeap {
    * @return Vector containing the addresses of the symmetric heap bases
    */
   __device__ auto get_heap_bases() {
-    return remote_heap_info_.get_heap_bases();
+    return remote_heap_info_->get_heap_bases();
   }
-
-  /**
-   * @brief Returns is the heap is allocated with managed memory
-   *
-   * @return bool
-   */
-  bool is_managed() { return single_heap_.is_managed(); }
 
  private:
   /**
@@ -126,7 +159,7 @@ class SymmetricHeap {
   /**
    * @brief Implementation of remote heaps
    */
-  RemoteHeapInfoType remote_heap_info_{};
+  RemoteHeapInfoAbstract *remote_heap_info_{nullptr};
 };
 
 }  // namespace rocshmem
