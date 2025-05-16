@@ -105,7 +105,7 @@ __host__ int rocshmem_init_attr(unsigned int flags, rocshmem_init_attr_t *attr);
 __host__ int rocshmem_get_uniqueid(rocshmem_uniqueid_t *uid);
 
 /**
- * @brief Query the thread mode used by the runtime.
+ * @brief Initalizes the rocshmem_init_attr_t struct
  *
  * @param[in] rank     rank of the calling process
  * @param[in] nranks   number of pes

@@ -11,8 +11,23 @@ Collective routines
 ROCSHMEM_BARRIER_ALL
 --------------------
 
-.. cpp:function:: __device__ void rocshmem_ctx_wg_barrier_all(rocshmem_ctx_t ctx)
-.. cpp:function:: __device__ void rocshmem_wg_barrier_all()
+.. cpp:function:: __device__ void rocshmem_ctx_barrier_all(rocshmem_ctx_t ctx)
+.. cpp:function:: __device__ void rocshmem_ctx_barrier_all_wave(rocshmem_ctx_t ctx)
+.. cpp:function:: __device__ void rocshmem_ctx_barrier_all_wg(rocshmem_ctx_t ctx)
+
+  :param ctx: Context with which to perform this operation.
+  :returns:   None.
+
+**Description:**
+This routine performs a collective barrier across all PEs in the system.
+The caller is blocked until the barrier is resolved and all updates local and remote are completed.
+
+ROCSHMEM_BARRIER
+----------------
+
+.. cpp:function:: __device__ void rocshmem_ctx_barrier(rocshmem_ctx_t ctx, rocshmem_team_t team)
+.. cpp:function:: __device__ void rocshmem_ctx_barrier_wave(rocshmem_ctx_t ctx, rocshmem_team_t team)
+.. cpp:function:: __device__ void rocshmem_ctx_barrier_wg(rocshmem_ctx_t ctx, rocshmem_team_t team)
 
   :param ctx: Context with which to perform this operation.
   :returns:   None.
@@ -24,8 +39,9 @@ The caller is blocked until the barrier is resolved.
 ROCSHMEM_TEAM_SYNC
 ------------------
 
-.. cpp:function:: __device__ void rocshmem_ctx_wg_team_sync(rocshmem_ctx_t ctx, rocshmem_team_t team)
-.. cpp:function:: __device__ void rocshmem_wg_team_sync(rocshmem_team_t team)
+.. cpp:function:: __device__ void rocshmem_ctx_sync(rocshmem_ctx_t ctx, rocshmem_team_t team)
+.. cpp:function:: __device__ void rocshmem_ctx_sync_wave(rocshmem_ctx_t ctx, rocshmem_team_t team)
+.. cpp:function:: __device__ void rocshmem_ctx_sync_wg(rocshmem_ctx_t ctx, rocshmem_team_t team)
 
   :param ctx:  Context with which to perform this operation.
   :param team: Team with which to perform this operation.
@@ -42,20 +58,20 @@ ensure the completion of remote memory updates issued via OpenSHMEM routines.
 ROCSHMEM_SYNC_ALL
 -----------------
 
-.. cpp:function:: __device__ void rocshmem_ctx_wg_sync_all(rocshmem_ctx_t ctx)
-.. cpp:function:: __device__ void rocshmem_wg_sync_all()
+.. cpp:function:: __device__ void rocshmem_ctx_sync_all(rocshmem_ctx_t ctx)
+.. cpp:function:: __device__ void rocshmem_ctx_sync_all_wave(rocshmem_ctx_t ctx)
+.. cpp:function:: __device__ void rocshmem_ctx_sync_all_wg(rocshmem_ctx_t ctx)
 
   :param ctx:  Context with which to perform this operation.
   :returns:    None.
 
 **Description:**
-This routine behaves the same as ``rocshmem_wg_team_sync`` when called on the world team.
-
+This routine behaves the same as ``rocshmem_team_sync_wg`` when called on the world team.
 
 ROSHMEM_ALLTOALL
 ----------------
 
-.. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_wg_alltoall(rocshmem_ctx_t ctx, rocshmem_team_t team, TYPE *dest, const TYPE *source, int nelems)
+.. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_alltoall_wg(rocshmem_ctx_t ctx, rocshmem_team_t team, TYPE *dest, const TYPE *source, int nelems)
 
   :param team:   The team participating in the collective.
   :param dest:   Destination address. Must be an address on the
@@ -75,7 +91,7 @@ Valid ``TYPENAME`` and ``TYPE`` values are listed in :ref:`RMA_TYPES`.
 ROCSHMEM_BROADCAST
 ------------------
 
-.. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_wg_broadcast(rocshmem_ctx_t ctx, rocshmem_team_t team, TYPE *dest, const TYPE *source, int nelems, int pe_root)
+.. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_broadcast_wg(rocshmem_ctx_t ctx, rocshmem_team_t team, TYPE *dest, const TYPE *source, int nelems, int pe_root)
 
   :param ctx:    Context with which to perform this collective.
   :param team:   The team participating in the collective.
@@ -95,7 +111,7 @@ Valid ``TYPENAME`` and ``TYPE`` values are listed in :ref:`RMA_TYPES`.
 ROCSHMEM_FCOLLECT
 -----------------
 
-.. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_wg_fcollect(rocshmem_ctx_t ctx, rocshmem_team_t team, TYPE *dest, const TYPE *source, int nelems)
+.. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_fcollect_wg(rocshmem_ctx_t ctx, rocshmem_team_t team, TYPE *dest, const TYPE *source, int nelems)
 
   :param ctx:    Context with which to perform this collective.
   :param team:   The team participating in the collective.
@@ -112,7 +128,7 @@ PE participating in the collective routine.
 
 ROCSHMEM_REDUCTION
 ------------------
-.. cpp:function:: __device__ int rocshmem_ctx_TYPENAME_OPNAME_wg_reduce(rocshmem_ctx_t ctx, rocshmem_team_t team, TYPE *dest, const TYPE *source, int nreduce)
+.. cpp:function:: __device__ int rocshmem_ctx_TYPENAME_OPNAME_reduce_wg(rocshmem_ctx_t ctx, rocshmem_team_t team, TYPE *dest, const TYPE *source, int nreduce)
 
   :param ctx:     Context with which to perform this collective.
   :param team:    The team participating in the collective.
