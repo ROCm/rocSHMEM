@@ -42,15 +42,18 @@ target_sources(
     ipc_policy.cpp
 )
 
-target_compile_options(
-  ${PROJECT_NAME}
-  PUBLIC
-    -fgpu-rdc
-#   xnack allows address translation fault recovery
-#   required option for managed heap configs
-#    -mxnack
+set(
+  ROCSHMEM_COMPILE_FLAGS
+  -fgpu-rdc
+  #   xnack allows address translation fault recovery
+  #   required option for managed heap configs
+  # -mxnack
 )
-
+if (BUILD_CODE_COVERAGE)
+  set(ROCSHMEM_COMPILE_FLAGS ${ROCSHMEM_COMPILE_FLAGS} -fprofile-instr-generate -fcoverage-mapping)
+  target_link_options(${PROJECT_NAME} PUBLIC -fprofile-instr-generate)
+endif()
+target_compile_options(${PROJECT_NAME} PUBLIC ${ROCSHMEM_COMPILE_FLAGS})
 #target_link_options(
   #${PROJECT_NAME}
   #PUBLIC

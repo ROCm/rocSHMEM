@@ -154,6 +154,20 @@ To run the tests, you may use the driver scripts provided in the `./scripts/` di
 ./scripts/unit_tests/driver.sh ./build/tests/unit_tests/rocshmem_unit_tests all
 ```
 
+## Code Coverage
+rocSHMEM targets 80% code coverage in both unit and functional tests.  To check the coverage report for your
+changes, we have a helper script you can use to build, test and generate the coverage report in a single step.
+
+Because we need to build all 3 of `ipc`, `ro_net` and `ro_ipc`, the `codecov` script is run from the context of
+the `build/` directory and will create and build to the 3 directories, with instrumented code. It will then start
+a python http server where you can navigate to the link to view the coverage report.
+
+```
+cd rocSHMEM
+mkdir build && cd build
+../scripts/build_configs/codecov
+```
+
 ## Building the Dependencies
 
 rocSHMEM requires a ROCm-Aware Open MPI and UCX.
