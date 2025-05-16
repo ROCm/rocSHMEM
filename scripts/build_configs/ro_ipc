@@ -33,6 +33,8 @@ else
   install_path=$1
 fi
 
+hip_cmake_path="/opt/rocm/lib/cmake/hip;/opt/rocm/lib/cmake/rocprim;/opt/rocm/lib/cmake/rocthrust"
+
 src_path=$(dirname "$(realpath $0)")/../../
 
 cmake \
@@ -49,6 +51,7 @@ cmake \
     -DUSE_HOST_SIDE_HDP_FLUSH=OFF\
     -DUSE_MANAGED_HEAP=OFF \
     -DUSE_RO=ON \
+    -DCMAKE_PREFIX_PATH="$hip_cmake_path" \
     $src_path
 cmake --build . --parallel 8
 cmake --install .

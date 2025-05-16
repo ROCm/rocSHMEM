@@ -38,6 +38,8 @@ then
   export ROCSHMEM_HOME=/opt/rocm/
 fi
 
+hip_cmake_path="/opt/rocm/lib/cmake/hip;/opt/rocm/lib/cmake/rocprim;/opt/rocm/lib/cmake/rocthrust"
+
 src_path=$(dirname "$(realpath $0)")/../../
 
 cmake \
@@ -58,5 +60,6 @@ cmake \
     -DBUILD_FUNCTIONAL_TESTS=ON \
     -DBUILD_EXAMPLES=ON \
     -DBUILD_UNIT_TESTS=OFF \
+    -DCMAKE_PREFIX_PATH="$hip_cmake_path" \
     $src_path
 cmake --build . --parallel 8
