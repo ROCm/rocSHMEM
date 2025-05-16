@@ -129,7 +129,11 @@ void Backend::destroy_remaining_ctxs() {
   }
 }
 
-Backend::~Backend() { CHECK_HIP(hipFree(print_lock)); }
+Backend::~Backend() {
+  CHECK_HIP(hipFree(print_lock));
+  if (backend_comm != MPI_COMM_NULL)
+    NET_CHECK(MPI_Comm_free(&backend_comm));
+}
 
 void Backend::dump_stats() {
   printf("PE %d\n", my_pe);

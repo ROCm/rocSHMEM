@@ -169,7 +169,7 @@ private:
 
   std::vector<int> outstanding{};
 
-  MPI_Comm ro_net_comm_world{};
+  MPI_Comm ro_net_comm_world{MPI_COMM_NULL};
 
   std::map<CommKey, MPI_Comm> comm_map{};
 
