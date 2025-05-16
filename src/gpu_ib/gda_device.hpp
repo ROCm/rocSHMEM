@@ -54,7 +54,8 @@ class GDADevice {
  private:
   typedef struct ib_state {
     struct ibv_context* context;
-    struct ibv_pd* pd;
+    struct ibv_pd* pd_orig;
+    struct ibv_pd* pd_parent;
     struct ibv_mr* mr;
     struct ibv_port_attr portinfo;
   } ib_state_t;
@@ -87,7 +88,7 @@ class GDADevice {
       exp_qp_attr.qp_state = IBV_QPS_RTR;
       exp_qp_attr.path_mtu = IBV_MTU_4096;
       exp_qp_attr.ah_attr.sl = 1;
-      exp_qp_attr.max_dest_rd_atomic = 1;
+      exp_qp_attr.max_dest_rd_atomic = GPUIB_MAX_ATOMIC;
       exp_qp_attr.min_rnr_timer = 12;
       exp_attr_mask = IBV_QP_STATE | IBV_QP_AV | IBV_QP_PATH_MTU;
     }
@@ -100,7 +101,7 @@ class GDADevice {
       exp_qp_attr.timeout = 14;
       exp_qp_attr.retry_cnt = 7;
       exp_qp_attr.rnr_retry = 7;
-      exp_qp_attr.max_rd_atomic = 1;
+      exp_qp_attr.max_rd_atomic = GPUIB_MAX_ATOMIC;
       exp_attr_mask = IBV_QP_STATE | IBV_QP_TIMEOUT | IBV_QP_RETRY_CNT | IBV_QP_RNR_RETRY | IBV_QP_MAX_QP_RD_ATOMIC;
     }
   };

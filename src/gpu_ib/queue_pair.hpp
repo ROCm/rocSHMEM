@@ -37,6 +37,12 @@
 #include "containers/free_list.hpp"
 #include "memory/hip_allocator.hpp"
 
+#define GPUIB_DEFAULT_GID    0
+#define GPUIB_MAX_ATOMIC     1
+#define GPUIB_OP_RDMA_WRITE  MLX5_OPCODE_RDMA_WRITE
+#define GPUIB_OP_ATOMIC_FA   MLX5_OPCODE_ATOMIC_FA
+#define GPUIB_OP_ATOMIC_CS   MLX5_OPCODE_ATOMIC_CS
+
 namespace rocshmem {
 
 class GDADevice;
@@ -102,9 +108,11 @@ class QueuePair {
    *
    * @param[in] pe Destination processing element of data transmission.
    * @param[in] size Size in bytes of data transmission.
-   * @param[in] laddr Local address.
    * @param[in] raddr Remote address.
    * @param[in] opcode Operation to be performed.
+   * @param[in] atomic_data An atomic data value to be used.
+   * @param[in] atomic_cmp An atomic comparison operation to be performed.
+   * @param[in] fetching True if the operation returns a value.
    */
   __device__ __attribute__((noinline)) uint64_t post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
 

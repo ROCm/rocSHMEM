@@ -133,6 +133,50 @@ __device__ __forceinline__ bool is_thread_zero_in_wave() {
   return (get_flat_block_id() % __AMDGCN_WAVEFRONT_SIZE) == 0;
 }
 
+__device__ __forceinline__ uint64_t get_active_lane_mask() {
+  return __ballot(true);
+}
+
+__device__ __forceinline__ unsigned int get_active_lane_count(uint64_t active_lane_mask) {
+  return __popcll(active_lane_mask);
+}
+
+__device__ __forceinline__ unsigned int get_active_lane_count() {
+  return get_active_lane_count(get_active_lane_mask());
+}
+
+__device__ __forceinline__ unsigned int get_active_lane_num(uint64_t active_lane_mask) {
+  return __popcll(active_lane_mask & __lanemask_lt());
+}
+
+__device__ __forceinline__ unsigned int get_active_lane_num() {
+  return get_active_lane_num(get_active_lane_mask());
+}
+
+__device__ __forceinline__ int get_first_active_lane_id(uint64_t active_lane_mask) {
+  return __ffsll((unsigned long long int)active_lane_mask) - 1;
+}
+
+__device__ __forceinline__ int get_first_active_lane_id() {
+  return get_first_active_lane_id(get_active_lane_mask());
+}
+
+__device__ __forceinline__ bool is_first_active_lane(uint64_t active_lane_mask) {
+  return get_active_lane_num(active_lane_mask) == 0;
+}
+
+__device__ __forceinline__ bool is_first_active_lane() {
+  return is_first_active_lane(get_active_lane_mask());
+}
+
+__device__ __forceinline__ bool is_last_active_lane(uint64_t active_lane_mask) {
+  return get_active_lane_num(active_lane_mask) == get_active_lane_count(active_lane_mask) - 1;
+}
+
+__device__ __forceinline__ bool is_last_active_lane() {
+  return is_last_active_lane(get_active_lane_mask());
+}
+
 extern __constant__ int* print_lock;
 
 template <typename... Args>

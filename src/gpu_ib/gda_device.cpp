@@ -79,7 +79,7 @@ static void dump_ibv_context(struct ibv_context* x) {
    */
   DPRINTF("\n"
          "===============================================\n"
-         "                MLX IBV_CONTEXT\n"
+         "                IBV_CONTEXT\n"
          "===============================================\n"
          "  (ibv_device*)        device              = %p\n"
          "  (int)                cmd_fd              = %d\n"
@@ -103,7 +103,7 @@ static void dump_ibv_device(struct ibv_device* x) {
    */
   DPRINTF("\n"
          "===============================================\n"
-         "               MLX IBV_DEVICE\n"
+         "               IBV_DEVICE\n"
          "===============================================\n"
          "  (enum ibv_node_type)      node_type      = %d\n"
          "  (enum ibv_transport_type) transport_type = %d\n"
@@ -123,7 +123,7 @@ static void dump_ibv_pd(struct ibv_pd* x) {
    */
   DPRINTF("\n"
          "===============================================\n"
-         "               MLX IBV_PD\n"
+         "               IBV_PD\n"
          "===============================================\n"
          "  (ibv_context*) context = %p\n"
          "  (uint32_t)     handle  = 0x%x\n",
@@ -159,7 +159,7 @@ static void dump_ibv_port_attr(struct ibv_port_attr* x) {
    */
   DPRINTF("\n"
          "===============================================\n"
-         "               MLX IBV_PORT_ATTR\n"
+         "               IBV_PORT_ATTR\n"
          "===============================================\n"
          "  (enum ibv_port_state) state           = %u\n"
          "  (enum ibv_mtu)        max_mtu         = %u\n"
@@ -547,7 +547,7 @@ void GDADevice::destroy_teams() {
 void GDADevice::heap_memory_rkey() {
   auto *base_heap = heap.get_local_heap_base();
   int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
-  heap_mr = ibv_reg_mr(ib_state->pd, base_heap, heap.get_size(), access);
+  heap_mr = ibv_reg_mr(ib_state->pd_orig, base_heap, heap.get_size(), access);
   GPUIB_CHECK_NNULL(heap_mr, "ibv_reg_mr");
 
   const size_t rkeys_size = sizeof(uint32_t) * num_pes;
@@ -574,7 +574,7 @@ void GDADevice::heap_memory_rkey() {
 void GDADevice::setup_gpu_qps() {
   CHECK_HIP(hipMalloc(&gpu_qps, sizeof(QueuePair) * (maximum_num_contexts_ + 1) * num_pes));
   for (int i{0}; i < (maximum_num_contexts_ + 1) * num_pes; i++) {
-    QueuePair qp(ib_state->pd);
+    QueuePair qp(ib_state->pd_orig);
     CHECK_HIP(hipMemcpy(&gpu_qps[i], &qp, sizeof(QueuePair), hipMemcpyDefault));
     initialize_gpu_qp(&gpu_qps[i], i);
   }
@@ -599,15 +599,15 @@ void GDADevice::ib_init(struct ibv_device* ib_dev, uint8_t port) {
   dump_ibv_context(ib_state->context);
   dump_ibv_device(ib_state->context->device);
 
-  ib_state->pd = ibv_alloc_pd(ib_state->context);
-  GPUIB_CHECK_NNULL(ib_state->pd, "ib allocate pd");
-  dump_ibv_pd(ib_state->pd);
+  ib_state->pd_orig = ibv_alloc_pd(ib_state->context);
+  GPUIB_CHECK_NNULL(ib_state->pd_orig, "ib allocate pd");
+  dump_ibv_pd(ib_state->pd_orig);
 
-  ibv_parent_domain_init_attr pattr;
+  ibv_parent_domain_init_attr pattr{};
   init_parent_domain_attr(&pattr);
-  ib_state->pd = ibv_alloc_parent_domain(ib_state->context, &pattr);
-  GPUIB_CHECK_NNULL(ib_state->pd, "ibv_alloc_parent_domain");
-  dump_ibv_pd(ib_state->pd);
+  ib_state->pd_parent = ibv_alloc_parent_domain(ib_state->context, &pattr);
+  GPUIB_CHECK_NNULL(ib_state->pd_parent, "ibv_alloc_parent_domain");
+  dump_ibv_pd(ib_state->pd_parent);
 
   int err = ibv_query_port(ib_state->context, port, &ib_state->portinfo);
   GPUIB_CHECK_ZERO(err, "ibv_query_port");
@@ -641,19 +641,17 @@ void GDADevice::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
   cqs.resize((maximum_num_contexts_ + 1) * num_pes);
   qps.resize((maximum_num_contexts_ + 1) * num_pes);
   int max_num_cqe = qp_init_attr.attr.cap.max_send_wr;
-  for (auto& entry : cqs) {
-    entry = create_cq(ib_state->context, ib_state->pd, max_num_cqe);
-    GPUIB_CHECK_NNULL(entry, "create_cq");
-  }
   for (int i{0}; i < qps.size(); i++) {
-    qps[i] = create_qp(ib_state->pd, ib_state->context, &qp_init_attr.attr, cqs[i]);
+    cqs[i] = create_cq(ib_state->context, ib_state->pd_parent, max_num_cqe);
+    GPUIB_CHECK_NNULL(cqs[i], "create_cq");
+    qps[i] = create_qp(ib_state->pd_parent, ib_state->context, &qp_init_attr.attr, cqs[i]);
     GPUIB_CHECK_NNULL(qps[i], "create_qp");
     init_qp_status(qps[i], port);
     dest_info[i].lid = ib_port_att->lid;
     dest_info[i].qpn = qps[i]->qp_num;
     dest_info[i].psn = 0;
     union ibv_gid gid;
-    int err = ibv_query_gid(ib_state->context, port, 0, &gid);
+    int err = ibv_query_gid(ib_state->context, port, GPUIB_DEFAULT_GID, &gid);
     GPUIB_CHECK_ZERO(err, "ibv_query_gid");
     dest_info[i].gid = gid;
   }
@@ -671,7 +669,7 @@ void GDADevice::buf_release(struct ibv_pd* pd, void* pd_context, void* ptr, uint
 }
 
 void GDADevice::init_parent_domain_attr(ibv_parent_domain_init_attr* attr1) {
-  attr1->pd = ib_state->pd;
+  attr1->pd = ib_state->pd_orig;
   attr1->td = nullptr;
   attr1->comp_mask = IBV_PARENT_DOMAIN_INIT_ATTR_ALLOCATORS;
   attr1->alloc = GDADevice::buf_alloc;
@@ -697,6 +695,9 @@ ibv_cq* GDADevice::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
 }
 
 void GDADevice::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
+  int hip_dev_id{-1};
+  CHECK_HIP(hipGetDevice(&hip_dev_id));
+
   mlx5dv_cq cq_out;
   mlx5dv_obj mlx_obj;
   mlx_obj.cq.in = cqs[conn_num];
@@ -761,8 +762,6 @@ void GDADevice::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   gpu_qp->lkey = htobe32(heap_mr->lkey);
   gpu_qp->qp_num = qps[conn_num]->qp_num;
   // The 2 in qp_out.bf.size * 2 below facilitates the switching between blue flame registers
-  int hip_dev_id{-1};
-  CHECK_HIP(hipGetDevice(&hip_dev_id));
   void* gpu_ptr{nullptr};
   rocm_memory_lock_to_fine_grain(qp_out.bf.reg, qp_out.bf.size * 2, &gpu_ptr, hip_dev_id);
   gpu_qp->db.ptr = reinterpret_cast<uint64_t*>(gpu_ptr);
@@ -800,7 +799,7 @@ GDADevice::RtrState GDADevice::rtr(dest_info_t* dest, uint8_t port) {
   } else {
     rtr.exp_qp_attr.ah_attr.is_global = 1;
     rtr.exp_qp_attr.ah_attr.grh.dgid = dest->gid;
-    rtr.exp_qp_attr.ah_attr.grh.sgid_index = 0;
+    rtr.exp_qp_attr.ah_attr.grh.sgid_index = GPUIB_DEFAULT_GID;
     rtr.exp_qp_attr.ah_attr.grh.hop_limit = 1;
   }
   rtr.exp_attr_mask |= IBV_QP_DEST_QPN | IBV_QP_RQ_PSN | IBV_QP_MAX_DEST_RD_ATOMIC | IBV_QP_MIN_RNR_TIMER;
