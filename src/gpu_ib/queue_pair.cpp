@@ -171,7 +171,7 @@ __device__ void QueuePair::poll_wave_cqes(uint64_t activemask) {
 
   /* Report if the completion indicates an error. */
   if (!!(qtf_be & swap_endian_val<uint32_t>(IONIC_V1_CQE_ERROR))) {
-#if 0
+#ifdef DEBUG
     uint32_t qtf = swap_endian_val<uint32_t>(qtf_be);
     uint32_t qid = qtf >> IONIC_V1_CQE_QID_SHIFT;
     uint32_t type = (qtf >> IONIC_V1_CQE_TYPE_SHIFT) & IONIC_V1_CQE_TYPE_MASK;
