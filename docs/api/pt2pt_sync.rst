@@ -96,11 +96,10 @@ ROCSHMEM_TEST
 **Description:**
 This routine tests if the condition ``(*ivars cmp val)`` is true.
 
+.. _CMP_VALUES:
 
 Supported comparisons
 ---------------------
-
-.. _CMP_VALUES:
 
 The following table lists the point-to-point comparison constants:
 
