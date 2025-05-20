@@ -128,15 +128,13 @@ int main (int argc, char **argv)
         nelem = atoi(argv[1]);
     }
 
-    int my_pe = rocshmem_my_pe();
-    int npes =  rocshmem_n_pes();
-
-    int ndevices, my_device = 0;
-    CHECK_HIP(hipGetDeviceCount(&ndevices));
-    my_device = my_pe % ndevices;
-    CHECK_HIP(hipSetDevice(my_device));
+    char* ompi_local_rank = getenv("OMPI_COMM_WORLD_LOCAL_RANK");
+    CHECK_HIP(hipSetDevice(atoi(ompi_local_rank)));
 
     rocshmem_init();
+
+    int my_pe = rocshmem_my_pe();
+    int npes =  rocshmem_n_pes();
 
     int *source = (int *)rocshmem_malloc(nelem * npes * sizeof(int));
     int *dest = (int *)rocshmem_malloc(nelem * npes * sizeof(int));

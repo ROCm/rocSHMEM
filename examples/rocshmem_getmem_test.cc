@@ -76,8 +76,8 @@ __global__ void simple_getmem_test(int *src, int *dst, size_t nelem)
 
     int threadId = blockIdx.x * blockDim.x + threadIdx.x;
     if (threadId == 0) {
-        int rank = rocshmem_my_pe();
-        int peer =  rank ? 0 : 1;
+        int my_pe = rocshmem_my_pe();
+        int peer =  my_pe ? 0 : 1;
         rocshmem_getmem(dst, src, nelem * sizeof(int), peer);
         rocshmem_quiet();
     }
@@ -90,19 +90,20 @@ __global__ void simple_getmem_test(int *src, int *dst, size_t nelem)
 
 int main (int argc, char **argv)
 {
-    int rank = rocshmem_my_pe();
-    int ndevices, my_device = 0;
-    CHECK_HIP(hipGetDeviceCount(&ndevices));
-    my_device = rank % ndevices;
-    CHECK_HIP(hipSetDevice(my_device));
     int nelem = MAX_ELEM;
 
     if (argc > 1) {
         nelem = atoi(argv[1]);
     }
 
+    char* ompi_local_rank = getenv("OMPI_COMM_WORLD_LOCAL_RANK");
+    CHECK_HIP(hipSetDevice(atoi(ompi_local_rank)));
+
     rocshmem_init();
+
+    int my_pe = rocshmem_my_pe();
     int npes =  rocshmem_n_pes();
+
     int *src = (int *)rocshmem_malloc(nelem * sizeof(int));
     int *dst = (int *)rocshmem_malloc(nelem * sizeof(int));
     if (NULL == src || NULL == dst) {
@@ -128,7 +129,7 @@ int main (int argc, char **argv)
         if (dst[i] != 0) {
             pass = false;
 #if VERBOSE
-            printf("[%d] Error in element %d expected 0 got %d\n", rank, i, dst[i]);
+            printf("[%d] Error in element %d expected 0 got %d\n", my_pe, i, dst[i]);
 #endif
         }
     }

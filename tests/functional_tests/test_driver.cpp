@@ -39,11 +39,8 @@ int main(int argc, char *argv[]) {
   /***
    * Select a GPU
    */
-  int rank = rocshmem_my_pe();
-  int ndevices, my_device = 0;
-  CHECK_HIP(hipGetDeviceCount(&ndevices));
-  my_device = rank % ndevices;
-  CHECK_HIP(hipSetDevice(my_device));
+  char* ompi_local_rank = getenv("OMPI_COMM_WORLD_LOCAL_RANK");
+  CHECK_HIP(hipSetDevice(atoi(ompi_local_rank)));
 
   /**
    * Must initialize rocshmem to access arguments needed by the tester.

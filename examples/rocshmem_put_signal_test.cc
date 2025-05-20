@@ -95,20 +95,21 @@ __global__ void simple_put_signal_test(uint64_t *data, uint64_t *message, size_t
 
 int main (int argc, char **argv)
 {
-    int rank = rocshmem_my_pe();
-    int ndevices, my_device = 0;
-    CHECK_HIP(hipGetDeviceCount(&ndevices));
-    my_device = rank % ndevices;
-    CHECK_HIP(hipSetDevice(my_device));
     int nelem = MAX_ELEM;
 
     if (argc > 1) {
         nelem = atoi(argv[1]);
     }
 
+    char* ompi_local_rank = getenv("OMPI_COMM_WORLD_LOCAL_RANK");
+    CHECK_HIP(hipSetDevice(atoi(ompi_local_rank)));
+
     rocshmem_init();
+
+    int my_pe = rocshmem_my_pe();
     int npes =  rocshmem_n_pes();
-    int dst_pe = (rank + 1) % npes;
+
+    int dst_pe = (my_pe + 1) % npes;
     uint64_t *message = (uint64_t*)rocshmem_malloc(nelem * sizeof(uint64_t));
     uint64_t *data = (uint64_t*)rocshmem_malloc(nelem * sizeof(uint64_t));
     uint64_t *sig_addr = (uint64_t*)rocshmem_malloc(sizeof(uint64_t));
@@ -123,14 +124,14 @@ int main (int argc, char **argv)
     }
 
     for (int i=0; i<nelem; i++) {
-        message[i] = rank;
+        message[i] = my_pe;
     }
 
     CHECK_HIP(hipMemset(data, 0, (nelem * sizeof(uint64_t))));
     CHECK_HIP(hipDeviceSynchronize());
 
     int threadsPerBlock=256;
-    simple_put_signal_test<<<dim3(1), dim3(threadsPerBlock), 0, 0>>>(data, message, nelem, sig_addr, rank, dst_pe);
+    simple_put_signal_test<<<dim3(1), dim3(threadsPerBlock), 0, 0>>>(data, message, nelem, sig_addr, my_pe, dst_pe);
     rocshmem_barrier_all();
     CHECK_HIP(hipDeviceSynchronize());
 
@@ -139,11 +140,11 @@ int main (int argc, char **argv)
         if (data[i] != 0) {
             pass = false;
 #if VERBOSE
-            printf("[%d] Error in element %d expected 0 got %d\n", rank, i, dst[i]);
+            printf("[%d] Error in element %d expected 0 got %d\n", my_pe, i, dst[i]);
 #endif
         }
     }
-    printf("[%d] Test %s \t %s\n", rank, argv[0], pass ? "[PASS]" : "[FAIL]");
+    printf("[%d] Test %s \t %s\n", my_pe, argv[0], pass ? "[PASS]" : "[FAIL]");
 
     rocshmem_free(data);
     rocshmem_free(message);
