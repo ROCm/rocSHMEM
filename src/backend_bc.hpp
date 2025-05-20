@@ -223,7 +223,7 @@ class Backend {
    * @todo document where this is used and try to coalesce this into another
    * class
    */
-  MPI_Comm backend_comm{};
+  MPI_Comm backend_comm{MPI_COMM_NULL};
 
   /**
    * @brief Object contains the interface and internal data structures

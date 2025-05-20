@@ -422,7 +422,7 @@ __host__ int rocshmem_team_split_strided(
      * not */
     backend->team_tracker.track(*new_team);
   }
-
+  MPI_Comm_free (&team_comm);
   return 0;
 }
 

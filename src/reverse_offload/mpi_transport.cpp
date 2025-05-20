@@ -63,7 +63,10 @@ MPITransport::MPITransport(MPI_Comm comm, Queue* q)
   NET_CHECK(MPI_Comm_rank(ro_net_comm_world, &my_pe));
 }
 
-MPITransport::~MPITransport() {}
+MPITransport::~MPITransport() {
+  if (ro_net_comm_world != MPI_COMM_NULL)
+    NET_CHECK(MPI_Comm_free(&ro_net_comm_world));
+}
 
 void MPITransport::threadProgressEngine() {
   auto *bp{backend_proxy->get()};
