@@ -22,70 +22,21 @@
 # IN THE SOFTWARE.
 ###############################################################################
 
-cmake_minimum_required(VERSION 3.16.3 FATAL_ERROR)
+###############################################################################
+# DEFAULT BUILD TYPE
+###############################################################################
+set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+      "build type: Release, Debug, RelWithDebInfo, MinSizeRel")
 
 ###############################################################################
-# PROJECT
+# GLOBAL COMPILE FLAGS
 ###############################################################################
-include(${CMAKE_SOURCE_DIR}/cmake/setup_project.cmake)
-project(rocshmem_functional_tests VERSION 1.0.0 LANGUAGES CXX)
-
-###############################################################################
-# SOURCES
-###############################################################################
-add_executable(${PROJECT_NAME} "")
-
-target_include_directories(
-  ${PROJECT_NAME}
-  PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-target_sources(
-  ${PROJECT_NAME}
-  PRIVATE
-    barrier_all_tester.cpp
-    sync_tester.cpp
-    test_driver.cpp
-    tester.cpp
-    tester_arguments.cpp
-    ping_pong_tester.cpp
-    ping_all_tester.cpp
-    primitive_tester.cpp
-    primitive_mr_tester.cpp
-    default_ctx_primitive_tester.cpp
-    team_ctx_primitive_tester.cpp
-    team_ctx_infra_tester.cpp
-    amo_bitwise_tester.cpp
-    amo_extended_tester.cpp
-    amo_standard_tester.cpp
-    random_access_tester.cpp
-    shmem_ptr_tester.cpp
-    signaling_operations_tester.cpp
-    signaling_operations_tester.hpp
-    workgroup_primitives.cpp
-    empty_tester.cpp
-    wavefront_primitives.cpp
-)
-
-###############################################################################
-# ROCSHMEM
-###############################################################################
-if (BUILD_TESTS_ONLY)
-  find_package(MPI REQUIRED)
-  find_package(hip REQUIRED HINTS ${ROCM_PATH} $ENV{ROCM_PATH} PATHS /opt/rocm)
-  find_package(rocshmem REQUIRED HINTS $ENV{ROCSHMEM_HOME} ${ROCM_PATH} $ENV{ROCM_PATH} PATHS /opt/rocm)
-
-  target_include_directories(
-    ${PROJECT_NAME}
-    PRIVATE
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
-      $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-  )
+list(APPEND CMAKE_PREFIX_PATH ${ROCM_ROOT} $ENV{ROCM_ROOT} ${ROCM_PATH} $ENV{ROCM_PATH})
+if (NOT DEFINED CMAKE_CXX_COMPILER)
+  find_program(CMAKE_CXX_COMPILER hipcc PATHS /opt/rocm)
 endif()
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -ggdb")
 
-target_link_libraries(
-  ${PROJECT_NAME}
-  PRIVATE
-    roc::rocshmem
-)

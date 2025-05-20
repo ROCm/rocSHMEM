@@ -21,6 +21,23 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 ###############################################################################
+cmake_minimum_required(VERSION 3.21 FATAL_ERROR)
+
+###############################################################################
+# DEFAULT BUILD TYPE
+###############################################################################
+set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+      "build type: Release, Debug, RelWithDebInfo, MinSizeRel")
+
+add_compile_options($<$<CONFIG:Debug>:-ggdb>)
+add_link_options($<$<CONFIG:Debug>:-ggdb>)
+
+set(CMAKE_HIP_ARCHITECTURES OFF)
+
+###############################################################################
+# PROJECT
+###############################################################################
+project(rocshmem_examples VERSION 1.0.0 LANGUAGES HIP CXX)
 
 ###############################################################################
 # SOURCES
@@ -33,57 +50,29 @@ set(EXAMPLE_SOURCES
   rocshmem_put_signal_test.cc
   rocshmem_init_attr_test.cc
 )
+set_source_files_properties(${EXAMPLE_SOURCES} PROPERTIES LANGUAGE HIP)
+
+find_package(MPI REQUIRED)
+#find_package(hip REQUIRED HINTS ${ROCM_PATH} $ENV{ROCM_PATH} PATHS /opt/rocm)
+if(NOT TARGET roc::rocshmem)
+  find_package(rocshmem REQUIRED HINTS ${ROCM_PATH} $ENV{ROCM_PATH} PATHS /opt/rocm)
+endif()
 
 foreach(SOURCE_FILE IN LISTS EXAMPLE_SOURCES)
   get_filename_component(EXECUTABLE_NAME ${SOURCE_FILE} NAME_WE)
 
   add_executable(${EXECUTABLE_NAME} ${SOURCE_FILE})
 
-  if (BUILD_TESTS_ONLY)
-    find_package(MPI REQUIRED)
+  set_target_properties(${EXECUTABLE_NAME} PROPERTIES
+    HIP_STANDARD 20
+    HIP_STANDARD_REQUIRED ON
+    HIP_EXTENSIONS OFF
+  )
 
-    target_include_directories(
-      ${EXECUTABLE_NAME}
-      PRIVATE
-        $<BUILD_INTERFACE:${ROCSHMEM_HOME}/include>
-        $<BUILD_INTERFACE:${MPI_CXX_HEADER_DIR}>
-    )
-
-    foreach (target ${DEFAULT_GPUS})
-      list(APPEND offload_flags --offload-arch=${target})
-    endforeach()
-
-    target_compile_options(
-      ${EXECUTABLE_NAME}
-      PRIVATE
-        ${offload_flags}
-        -fgpu-rdc
-    )
-
-    target_link_libraries(
-      ${EXECUTABLE_NAME}
-      PRIVATE
-        ${MPI_mpi_LIBRARY}
-        ${MPI_mpicxx_LIBRARY}
-        ${offload_flags}
-        -L${ROCSHMEM_HOME}/lib
-        -lamdhip64
-        -lhsa-runtime64
-        -lrocshmem
-        -fgpu-rdc
-    )
-  else()
-    target_include_directories(
-      ${EXECUTABLE_NAME}
-      PRIVATE
-        roc::rocshmem
-    )
-
-    target_link_libraries(
-      ${EXECUTABLE_NAME}
-      PRIVATE
-        roc::rocshmem
-        -fgpu-rdc
-    )
-  endif()
+  target_link_libraries(
+    ${EXECUTABLE_NAME}
+    PRIVATE
+      MPI::MPI_CXX
+      roc::rocshmem
+  )
 endforeach()

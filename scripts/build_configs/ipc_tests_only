@@ -33,13 +33,10 @@ else
   install_path=$1
 fi
 
-if [ -z $1 ] && [ -z $ROCSHMEM_HOME ]
-then
-  export ROCSHMEM_HOME=/opt/rocm/
-fi
-
 src_path=$(dirname "$(realpath $0)")/../../
 
+# If as specific rocSHMEM version is required, the recommended approach
+# is to set environment variable 'rocshmem_ROOT'
 cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$install_path \
