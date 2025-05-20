@@ -21,6 +21,7 @@ cmake \
     -DUSE_FINEGRAINED_HEAP=ON \
     -DUSE_UNCACHED_HEAP=OFF \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    -DGPUIB_IONIC=$GPUIB_IONIC \
     $src_path
 cmake --build . --parallel 8
 cmake --install .
