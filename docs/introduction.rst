@@ -8,7 +8,7 @@
 What is rocSHMEM?
 ---------------------------
 
-The ROCm OpenSHMEM (rocSHMEM) runtime is an intra-kernel networking library that provides GPU-centric networking through an OpenSHMEM-like interface. It simplifies application code complexity and enables finer communication and computation overlap than traditional host-driven networking. rocSHMEM uses a single symmetric heap (SHEAP) allocated on GPU memories.
+The ROCm OpenSHMEM (rocSHMEM) is an intra-kernel networking library that provides GPU-centric networking through an OpenSHMEM-like interface. It simplifies application code complexity and enables finer communication and computation overlap than traditional host-driven networking. rocSHMEM uses a single symmetric heap allocated on GPU memories.
 
 The rocSHMEM programming model
 -------------------------------

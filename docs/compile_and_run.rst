@@ -1,14 +1,14 @@
 .. meta::
-   :description: Information on how to compile and run rocSHMEM programs.
+   :description: Information on how to compile and run rocSHMEM applications.
    :keywords: rocSHMEM, ROCm, library, API, compile, link, hipcc
 
-.. _running-programs:
+.. _running-applications:
 
 --------------------------------------------------
-Compiling and running rocSHMEM programs
+Compiling and running rocSHMEM applications
 --------------------------------------------------
 
-This topic explains how to compile and run rocSHMEM programs.
+This topic explains how to compile and run rocSHMEM applications.
 
 Compiling and linking with rocSHMEM
 -----------------------------------
@@ -16,7 +16,7 @@ Compiling and linking with rocSHMEM
 rocSHMEM is a library that can be statically linked to your application during compilation with ``hipcc``. For more information, see :doc:`HIPCC <hipcc:index>`.
 
 When compiling your application with ``hipcc``, you must include the rocSHMEM header files and the rocSHMEM library. 
-Because rocSHMEM depends on MPI, you must manually add the arguments for MPI linkage instead of using ``mpicc``.
+Because rocSHMEM depends on MPI (Message Passing Interface), you must manually add the arguments for MPI linkage instead of using ``mpicc``.
 
 When using ``hipcc`` directly without a build system, it's recommended to perform the compilation and linking steps separately. 
 
@@ -39,10 +39,10 @@ Example compile and link commands are provided at the top of the example files i
 If your project uses CMake, see 
 `Using CMake with AMD ROCm <https://rocmdocs.amd.com/en/latest/conceptual/cmake-packages.html>`_.
 
-Running a rocSHMEM program
+Running a rocSHMEM application
 --------------------------
 
-Programs using rocSHMEM typically deploy multiple processes, usually one per GPU.  
+Applications using rocSHMEM typically deploy multiple processes, usually one per GPU.  
 The MPI launcher, for example, ``mpiexec`` with Open MPI, is used to start the required number
 of processes. For example, to launch two ``getmem`` example processes (available when compiled from source):
 

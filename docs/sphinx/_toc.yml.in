@@ -2,8 +2,8 @@ defaults:
   numbered: False
 root: index
 subtrees:
-- caption: Introduction
-  entries:
+
+- entries:
   - file: introduction.rst
     title: What is rocSHMEM?
 
@@ -16,7 +16,7 @@ subtrees:
 - caption: How to
   entries:
   - file: compile_and_run.rst
-    title: Compile and run rocSHMEM programs
+    title: Compile and run applications
 
 - caption: API reference
   entries:

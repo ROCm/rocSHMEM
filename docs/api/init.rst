@@ -17,7 +17,7 @@ ROCSHMEM_INIT
   :returns: None.
 
 **Description:**
-This routine initializes the rocSHMEM runtime and underlying transport layer.
+This routine initializes the rocSHMEM library and underlying transport layer.
 Before ``rocshmem_init`` is called,
 you must select the device that this PE is associated to by calling
 `hipSetDevice
@@ -41,7 +41,7 @@ ROCSHMEM_FINALIZE
   :returns: None.
 
 **Description:**
-This routine finalizes the rocSHMEM runtime.
+This routine finalizes the rocSHMEM library.
 
 .. cpp:function:: __device__ void rocshmem_wg_finalize(void)
 
