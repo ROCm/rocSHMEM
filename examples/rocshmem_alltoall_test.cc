@@ -54,19 +54,9 @@
 
  */
 
-#include <iostream>
-
-#include <hip/hip_runtime_api.h>
-#include <hip/hip_runtime.h>
 #include <rocshmem/rocshmem.hpp>
 
-#define CHECK_HIP(condition) {                                            \
-        hipError_t error = condition;                                     \
-        if(error != hipSuccess){                                          \
-            fprintf(stderr,"HIP error: %d line: %d\n", error,  __LINE__); \
-            MPI_Abort(MPI_COMM_WORLD, error);                             \
-        }                                                                 \
-    }
+#include "util.h"
 
 using namespace rocshmem;
 
@@ -128,8 +118,7 @@ int main (int argc, char **argv)
         nelem = atoi(argv[1]);
     }
 
-    char* ompi_local_rank = getenv("OMPI_COMM_WORLD_LOCAL_RANK");
-    CHECK_HIP(hipSetDevice(atoi(ompi_local_rank)));
+    CHECK_HIP(hipSetDevice(get_launcher_local_rank()));
 
     rocshmem_init();
 
