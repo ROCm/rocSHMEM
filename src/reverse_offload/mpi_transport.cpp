@@ -46,16 +46,7 @@ namespace rocshmem {
 
 MPITransport::MPITransport(MPI_Comm comm, Queue* q)
   : queue{q}, Transport{} {
-  int init_done{};
-  NET_CHECK(MPI_Initialized(&init_done));
 
-  int provided{};
-  if (!init_done) {
-    NET_CHECK(MPI_Init_thread(0, 0, MPI_THREAD_MULTIPLE, &provided));
-    if (provided != MPI_THREAD_MULTIPLE) {
-      fprintf(stderr, "MPI_THREAD_MULTIPLE support disabled.\n");
-    }
-  }
   assert(comm != MPI_COMM_NULL);
 
   NET_CHECK(MPI_Comm_dup(comm, &ro_net_comm_world));

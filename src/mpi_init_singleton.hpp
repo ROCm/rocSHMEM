@@ -38,59 +38,46 @@
 namespace rocshmem {
 
 class MPIInitSingleton {
- private:
-  /**
-   * @brief Primary constructor
-   */
-  MPIInitSingleton();
+  public:
+    /**
+     * @brief Primary constructor
+     */
+    MPIInitSingleton(MPI_Comm comm);
 
- public:
-  /**
-   * @brief Destructor
-   */
-  ~MPIInitSingleton();
+    /**
+     * @brief Destructor
+     */
+    ~MPIInitSingleton();
 
-  /**
-   * @brief Invoke singleton construction or return handle
-   *
-   * @return Initialized handle to singleton
-   */
-  static MPIInitSingleton* GetInstance();
+    /**
+     * @brief Accessor for my COMM_WORLD rank identifier
+     *
+     * @return My COMM_WORLD rank identifier
+     */
+    int get_rank();
 
-  /**
-   * @brief Accessor for my COMM_WORLD rank identifier
-   *
-   * @return My COMM_WORLD rank identifier
-   */
-  int get_rank();
+    /**
+     * @brief Accessor for number or processes in COMM_WORLD
+     *
+     * @return Number of processes in COMM_WORLD
+     */
+    int get_nprocs();
 
-  /**
-   * @brief Accessor for number or processes in COMM_WORLD
-   *
-   * @return Number of processes in COMM_WORLD
-   */
-  int get_nprocs();
+  private:
+    /**
+     * @brief My MPI rank identifier
+     */
+    int my_rank_{-1};
 
- private:
-  /**
-   * @brief My MPI rank identifier
-   */
-  int my_rank_{-1};
+    /**
+     * @brief Number of MPI processes
+     */
+    int nprocs_{-1};
 
-  /**
-   * @brief Number of MPI processes
-   */
-  int nprocs_{-1};
-
-  /**
-   * @brief Was MPI initialized before rocshmem_init call
-   */
-  int pre_init_done{0};
-
-  /**
-   * @brief Refers to global variable
-   */
-  static MPIInitSingleton* instance;
+    /**
+     * @brief Was MPI initialized before rocshmem_init call
+     */
+    int pre_init_done{0};
 };
 
 }  // namespace rocshmem

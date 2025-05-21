@@ -67,6 +67,7 @@ namespace rocshmem {
   }
 
 Backend *backend = nullptr;
+MPIInitSingleton *mpi_init_obj = nullptr;
 
 rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
@@ -86,6 +87,8 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
   rocm_init();
 
+  mpi_init_obj = new MPIInitSingleton(comm);
+
 #ifdef USE_RO
   CHECK_HIP(hipHostMalloc(&backend, sizeof(ROBackend)));
   backend = new (backend) ROBackend(comm);
@@ -103,7 +106,7 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 						 rocshmem_init_attr_t *attr) {
   MPI_Comm comm = MPI_COMM_NULL;
 
-  if ((attr == nullptr) || 
+  if ((attr == nullptr) ||
       ((flags != ROCSHMEM_INIT_WITH_UNIQUEID) &&
        (flags != ROCSHMEM_INIT_WITH_MPI_COMM)) ) {
     fprintf(stderr, "ROCSHMEM_ERROR: %s in file '%s' in line %d\n",
@@ -224,24 +227,21 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 }
 
 [[maybe_unused]] __host__ int rocshmem_my_pe() {
-  if(backend == nullptr) {
-    MPIInitSingleton *s = s->GetInstance();
-    return s->get_rank();
+  if (mpi_init_obj != nullptr) {
+    return mpi_init_obj->get_rank();
   }
-  else
-  {
-    return backend->getMyPE();
-  }
+
+  fprintf(stderr, "[WARNING] rocshmem_init() has not been called\n");
+  return -1;
 }
 
 [[maybe_unused]] __host__ int rocshmem_n_pes() {
-  if(backend == nullptr) {
-    MPIInitSingleton *s = s->GetInstance();
-    return s->get_nprocs();
+  if (mpi_init_obj != nullptr) {
+    return mpi_init_obj->get_nprocs();
   }
-  else {
-    return backend->getNumPEs();
-  }
+
+  fprintf(stderr, "[WARNING] rocshmem_init() has not been called\n");
+  return -1;
 }
 
 [[maybe_unused]] __host__ void *rocshmem_malloc(size_t size) {
@@ -294,7 +294,7 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   backend->~Backend();
   CHECK_HIP(hipHostFree(backend));
 
-  delete MPIInitSingleton::GetInstance();
+  delete mpi_init_obj;
 }
 
 __host__ void rocshmem_query_thread(int *provided) {

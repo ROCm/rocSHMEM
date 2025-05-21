@@ -35,7 +35,11 @@ class MPIInitSingletonTestFixture : public ::testing::Test
 {
   public:
     MPIInitSingletonTestFixture() {
-        s_ptr_ = s_ptr_->GetInstance();
+        s_ptr_ = new MPIInitSingleton(MPI_COMM_WORLD);
+    }
+
+    ~MPIInitSingletonTestFixture() {
+        delete s_ptr_;
     }
 
   protected:
