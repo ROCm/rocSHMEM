@@ -13,7 +13,7 @@ This topic describes how to install rocSHMEM.
 Requirements
 ---------------------------
 
-* ROCm 6.4.0 or later, including the :doc:`HIP runtime <hip:index>`.
+* ROCm 6.4.0 or later, including the :doc:`HIP runtime <hip:index>`. For more information, see `ROCm installation for Linux <https://rocm.docs.amd.com/projects/install-on-linux/en/latest/>`_.
 
 * AMD GPUs
 
@@ -79,7 +79,7 @@ Alternatively, you can use a script to install dependencies:
 For more information about OpenMPI-UCX support, see
 `GPU-enabled Message Passing Interface <https://rocm.docs.amd.com/en/latest/how-to/gpu-enabled-mpi.html>`_.
 
-Installing rocSHMEM from source
+Installing from source
 --------------------------------
 
 To build and install rocSHMEM with the IPC on-node, GPU-to-GPU backend, run:
