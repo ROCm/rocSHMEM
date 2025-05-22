@@ -5,7 +5,7 @@
 .. _rocshmem-api-ctx:
 
 -----------------------------------
-Context Management Routines
+Context management routines
 -----------------------------------
 
 ROCSHMEM_CTX_CREATE
@@ -14,27 +14,27 @@ ROCSHMEM_CTX_CREATE
 .. cpp:function:: __device__ int rocshmem_wg_ctx_create(int64_t options, rocshmem_ctx_t *ctx)
 .. cpp:function:: __device__ int rocshmem_wg_team_create_ctx(rocshmem_team_t team, long options, rocshmem_ctx_t *ctx)
         
-  :param team:    Team handle to derive the context from
-  :param options: Options for context creation (Ignored in current design, please use a value of 0)
-  :param ctx:     Context handle
+  :param team:    Team handle to derive the context from.
+  :param options: Options for context creation. Ignored in current design; use the value ``0``.
+  :param ctx:     Context handle.
  
-  :returns:       All threads returns 0 if the context was created successfully;
-                  If any thread returns non-zero value, the operation failed and a higher number of
-                  `ROCSHMEM_MAX_NUM_CONTEXTS` is required
+  :returns:       All threads returns ``0`` if the context was created successfully.
+                  If any thread returns non-zero value, the operation fails and a higher number of
+                  ``ROCSHMEM_MAX_NUM_CONTEXTS`` is required.
 
 **Description:**
-Creates an OpenSHMEM context. By design, the context is private to the calling work-group.
-Must be called collectively by all threads in the work-group.
+This routine creates an OpenSHMEM context. By design, the context is private to the calling work-group.
+It must be called collectively by all threads in the work-group.
 
 ROCSHMEM_CTX_DESTROY
 --------------------
 
 .. cpp:function:: __device__ void rocshmem_wg_ctx_destroy(rocshmem_ctx_t *ctx)
 
-  :param ctx:     Context handle
+  :param ctx:     Context handle.
 
-  :returns:       None
+  :returns:       None.
 
 **Description:**
-Destroys an rocSHMEM context.
-Must be called collectively by all threads in the work-group.
+This routine destroys an rocSHMEM context.
+It must be called collectively by all threads in the work-group.
