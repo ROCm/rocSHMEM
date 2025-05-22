@@ -40,14 +40,16 @@
 
 namespace rocshmem {
 
-#if defined USE_MANAGED_HEAP
-using HEAP_T = HeapMemory<HIPAllocatorManaged>;
-#elif defined USE_COHERENT_HEAP
+#if defined USE_HEAP_DEVICE_COARSEGRAIN
 using HEAP_T = HeapMemory<HIPAllocator>;
-#elif defined USE_HOST_HEAP
-using HEAP_T = HeapMemory<HostAllocator>;
-#elif defined USE_HIP_HOST_HEAP
+#elif defined USE_HEAP_MANAGED
+using HEAP_T = HeapMemory<HIPAllocatorManaged>;
+#elif defined USE_HEAP_HOST_HIP_NONCOHERENT
+using HEAP_T = HeapMemory<HIPHostAllocatorNonCoherent>;
+#elif defined USE_HEAP_HOST_HIP
 using HEAP_T = HeapMemory<HIPHostAllocator>;
+#elif defined USE_HEAP_HOST
+using HEAP_T = HeapMemory<HostAllocator>;
 #else
 using HEAP_T = HeapMemory<HIPDefaultFinegrainedAllocator>;
 #endif

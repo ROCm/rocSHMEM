@@ -48,7 +48,6 @@ cmake \
     -DPROFILE=OFF \
     -DUSE_RO=OFF \
     -DUSE_IPC=ON \
-    -DUSE_COHERENT_HEAP=ON \
     -DUSE_THREADS=OFF \
     -DUSE_WF_COAL=OFF \
     -DUSE_SINGLE_NODE=ON \

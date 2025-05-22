@@ -64,6 +64,9 @@ class HIPAllocatorUncached : public MemoryAllocator {
       : MemoryAllocator(hipExtMallocWithFlags, hipFree,
                         hipDeviceMallocUncached) {}
 };
+#endif
+
+#if defined HIP_SUPPORTS_MALLOC_UNCACHED && defined DEBUG_HIPMALLOC_FINEGRAIN_DEFAULT_UNCACHED
 // The default fine-grained coherence allocator is the uncached allocator
 using HIPDefaultFinegrainedAllocator = HIPAllocatorUncached;
 #else
@@ -83,6 +86,12 @@ class HIPHostAllocator : public MemoryAllocator {
  public:
   HIPHostAllocator()
       : MemoryAllocator(hipHostMalloc, hipFree, hipHostMallocCoherent) {}
+};
+
+class HIPHostAllocatorNonCoherent : public MemoryAllocator {
+ public:
+  HIPHostAllocatorNonCoherent()
+      : MemoryAllocator(hipHostMalloc, hipFree, hipHostMallocNonCoherent) {}
 };
 
 class HostAllocator : public MemoryAllocator {
