@@ -5,15 +5,14 @@
 .. _rocshmem-api-rma:
 
 -----------------------------------------
-Remote Memory Access Routines
+Remote memory access routines
 -----------------------------------------
 
-- Routines with the ``_wave`` and ``_wg`` suffixes,
-  require all threads in a wavefront and workgroup, respectively,
-  to call into the routine with the same parameters.
+- Routines with the ``_wave`` and ``_wg`` suffixes require all threads in a wavefront and workgroup, respectively,
+  to call the routine with the same parameters.
 - Routines with the ``_nbi`` substring will return as soon as the request is posted.
-- Routines without the ``_nbi`` substring block until the operation completes locally.
-- Valid ``TYPENAME`` and ``TYPE`` values can be seen in RMA_TYPES_.
+- Routines without the ``_nbi`` substring will block until the operation completes locally.
+- Valid ``TYPENAME`` and ``TYPE`` values can be found in RMA_TYPES_.
 
 ROCSHMEM_PUT
 ------------
@@ -31,15 +30,15 @@ ROCSHMEM_PUT
 .. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_put_nbi_wave(rocshmem_ctx_t ctx, TYPE *dest, const TYPE *source, size_t nelems, int pe)
 .. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_put_nbi_wg(rocshmem_ctx_t ctx, TYPE *dest, const TYPE *source, size_t nelems, int pe)
 
-  :param ctx:    Context with which to perform this operation
-  :param dest:   Destination address; Must be an address on the symmetric heap
-  :param source: Source address; Must be an address on the symmetric heap
-  :param nelems: The number of elements to transfer
-  :param pe:     PE of the remote process
-  :returns:      None
+  :param ctx:    Context with which to perform this operation.
+  :param dest:   Destination address. Must be an address on the symmetric heap.
+  :param source: Source address. Must be an address on the symmetric heap.
+  :param nelems: The number of elements to transfer.
+  :param pe:     PE of the remote process.
+  :returns:      None.
 
 **Description:**
-Writes contiguous data of nelems elements from source on the calling PE to dest at pe.
+This routine writes contiguous data of ``nelems`` elements from source on the calling PE to ``dest`` at ``pe``.
 
 ROCSHMEM_PUTMEM
 ---------------
@@ -57,16 +56,16 @@ ROCSHMEM_PUTMEM
 .. cpp:function:: __device__ void rocshmem_ctx_putmem_nbi_wave(rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe)
 .. cpp:function:: __device__ void rocshmem_ctx_putmem_nbi_wg(rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe)
 
-    :param ctx:    Context with which to perform this operation
-    :param dest:   Destination address; Must be an address on the symmetric heap
-    :param source: Source address; Must be an address on the symmetric heap
-    :param nelems: Size of the transfer in bytes
-    :param pe:     PE of the remote process
+    :param ctx:    Context with which to perform this operation.
+    :param dest:   Destination address. Must be an address on the symmetric heap.
+    :param source: Source address. Must be an address on the symmetric heap.
+    :param nelems: Size of the transfer in bytes.
+    :param pe:     PE of the remote process.
 
-    :returns:      None
+    :returns:      None.
 
 **Description:**
-Writes contiguous data of nelems bytes from source on the calling PE to dest at pe.
+This routine writes contiguous data of ``nelems`` bytes from source on the calling PE to ``dest`` at ``pe``.
 
 ROCSHMEM_P
 ----------
@@ -74,15 +73,15 @@ ROCSHMEM_P
 .. cpp:function::  __device__ void rocshmem_TYPENAME_p(TYPE *dest, TYPE value, int pe)
 .. cpp:function::  __device__ void rocshmem_ctx_TYPENAME_p(rocshmem_ctx_t ctx, TYPE *dest, TYPE value, int pe)
 
-    :param ctx:    Context with which to perform this operation
-    :param dest:   Destination address; Must be an address on the symmetric heap
-    :param value:  Value to write to dest at pe
-    :param pe:     PE of the remote process
+    :param ctx:    Context with which to perform this operation.
+    :param dest:   Destination address. Must be an address on the symmetric heap.
+    :param value:  Value to write to ``dest`` at ``pe``.
+    :param pe:     PE of the remote process.
 
-    :returns:      None
+    :returns:      None.
 
 **Description:**
-Writes a single value to dest at pe PE to dst at pe.
+This routine writes a single value to to ``dest`` at ``pe``.
 
 ROCSHMEM_GET
 ------------
@@ -100,16 +99,16 @@ ROCSHMEM_GET
 .. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_get_nbi_wave(rocshmem_ctx_t ctx, TYPE *dest, const TYPE *source, size_t nelems, int pe)
 .. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_get_nbi_wg(rocshmem_ctx_t ctx, TYPE *dest, const TYPE *source, size_t nelems, int pe)
 
-    :param ctx:     Context with which to perform this operation
-    :param dest:    Destination address; Must be an address on the symmetric heap
-    :param source:  Source address; Must be an address on the symmetric heap
-    :param nelems:  The number of elements to transfer
-    :param pe:      PE of the remote process
+    :param ctx:     Context with which to perform this operation.
+    :param dest:    Destination address; Must be an address on the symmetric heap.
+    :param source:  Source address. Must be an address on the symmetric heap.
+    :param nelems:  The number of elements to transfer.
+    :param pe:      PE of the remote process.
 
-    :returns:       None
+    :returns:       None.
 
 **Description:**
-Reads contiguous data of nelems elements from source on pe to dest on the calling PE.
+This routine reads contiguous data of ``nelems`` elements from source on ``pe`` to ``dest`` on the calling PE.
 
 ROCSHMEM_GETMEM
 ---------------
@@ -127,37 +126,39 @@ ROCSHMEM_GETMEM
 .. cpp:function:: __device__ void rocshmem_ctx_getmem_nbi_wave(rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe)
 .. cpp:function:: __device__ void rocshmem_ctx_getmem_nbi_wg(rocshmem_ctx_t ctx, void *dest, const void *source, size_t nelems, int pe)
 
-    :param ctx:     Context with which to perform this operation
-    :param dest:    Destination address; Must be an address on the symmetric heap
-    :param source:  Source address; Must be an address on the symmetric heap
-    :param nelems:  Size of the transfer in bytes
-    :param pe:      PE of the remote process
+    :param ctx:     Context with which to perform this operation.
+    :param dest:    Destination address. Must be an address on the symmetric heap.
+    :param source:  Source address. Must be an address on the symmetric heap.
+    :param nelems:  Size of the transfer in bytes.
+    :param pe:      PE of the remote process.
 
-    :returns:       None
+    :returns:       None.
 
 **Description:**
-Reads contiguous data of nelems bytes from source on pe to dest on the calling PE.
+This routine reads contiguous data of ``nelems`` bytes from source on ``pe`` to ``dest`` on the calling PE.
 
 ROCSHMEM_G
 ----------
 .. cpp:function:: __device__ float rocshmem_ctx_float_g(rocshmem_ctx_t ctx, const float *source, int pe)
 .. cpp:function:: __device__ float rocshmem_float_g(const float *source, int pe)
 
-    :param ctx:     Context with which to perform this operation
-    :param source:  Source address; Must be an address on the symmetric heap
-    :param pe:      PE of the remote process
+    :param ctx:     Context with which to perform this operation.
+    :param source:  Source address. Must be an address on the symmetric heap.
+    :param pe:      PE of the remote process.
 
-    :returns:       The value read from source at pe
+    :returns:       The value read from source at ``pe``.
 
 **Description:**
-Reads and returns single value from source at pe.
+This routine reads and returns single value from source at ``pe``.
 
-SUPPORTED RMA DATA TYPES
+Supported RMA data types
 ------------------------
+
+The following table lists the supported RMA data types:
 
 .. _RMA_TYPES:
 
-.. list-table:: RMA Datatypes
+.. list-table:: RMA Data Types
     :widths: 10 20 20
     :header-rows: 1
 
