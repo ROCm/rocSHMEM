@@ -56,9 +56,9 @@ option(USE_SHARED_CTX "Request support for shared ctx between WG" OFF)
 option(USE_SINGLE_NODE "Enable single node support only." OFF)
 option(USE_HOST_SIDE_HDP_FLUSH "Use a polling thread to flush the HDP cache on the host." OFF)
 
-option(BUILD_FUNCTIONAL_TESTS "Build the functional tests" ON)
+option(BUILD_FUNCTIONAL_TESTS "Build the functional tests" OFF)
 option(BUILD_EXAMPLES "Build the examples" ON)
-option(BUILD_UNIT_TESTS "Build the unit tests" ON)
+option(BUILD_UNIT_TESTS "Build the unit tests" OFF)
 option(BUILD_TESTS_ONLY "Build only tests. Used to link agains rocSHMEM in a ROCm Release" OFF)
 
 option(BUILD_LOCAL_GPU_TARGET_ONLY "Build only for GPUs detected on this machine" OFF)

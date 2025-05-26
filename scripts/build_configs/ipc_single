@@ -51,6 +51,8 @@ cmake \
     -DUSE_SINGLE_NODE=ON \
     -DUSE_HOST_SIDE_HDP_FLUSH=OFF \
     -DBUILD_LOCAL_GPU_TARGET_ONLY=OFF \
+    -DBUILD_FUNCTIONAL_TESTS=ON \
+    -DBUILD_UNIT_TESTS=ON \
     $src_path
 cmake --build . --parallel 8
 cmake --install .
