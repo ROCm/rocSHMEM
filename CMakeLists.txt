@@ -112,8 +112,17 @@ include(ROCMCreatePackage)
 include(ROCMInstallTargets)
 include(ROCMCheckTargetIds)
 
-rocm_setup_version(VERSION 2.0.0)
-project(rocshmem VERSION 2.0.0 LANGUAGES CXX)
+## Setup VERSION
+file(READ include/rocshmem/rocshmem.hpp header_text)
+if("${header_text}" MATCHES "constexpr char VERSION\\[\\] *= \"([0-9]+)\\.([0-9]+)\\.([0-9]+)\";")
+  set(VERSION_STRING ${CMAKE_MATCH_1}.${CMAKE_MATCH_2}.${CMAKE_MATCH_3})
+else()
+  message(FATAL_ERROR "Failed to parse Version")
+endif()
+message(STATUS "rocSHMEM Version: " "${VERSION_STRING}")
+
+rocm_setup_version(VERSION ${VERSION_STRING})
+project(rocshmem VERSION ${VERSION_STRING} LANGUAGES CXX)
 
 ###############################################################################
 # CREATE ROCSHMEM LIBRARY
