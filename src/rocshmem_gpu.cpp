@@ -606,7 +606,8 @@ __device__ void rocshmem_wg_team_sync(rocshmem_team_t team) {
 __device__ int rocshmem_ctx_n_pes(rocshmem_ctx_t ctx) {
   GPU_DPRINTF("Function: rocshmem_n_pes\n");
 
-  return get_internal_ctx(ctx)->num_pes;
+  TeamInfo *tinfo = reinterpret_cast<TeamInfo *>(ctx.team_opaque);
+  return tinfo->size;
 }
 
 __device__ int rocshmem_n_pes() {
@@ -616,7 +617,21 @@ __device__ int rocshmem_n_pes() {
 __device__ int rocshmem_ctx_my_pe(rocshmem_ctx_t ctx) {
   GPU_DPRINTF("Function: rocshmem_ctx_my_pe\n");
 
-  return get_internal_ctx(ctx)->my_pe;
+  TeamInfo *tinfo = reinterpret_cast<TeamInfo *>(ctx.team_opaque);
+  int my_pe{get_internal_ctx(ctx)->my_pe};
+  int pe_start{tinfo->pe_start};
+  int stride{tinfo->stride};
+  int size{tinfo->size};
+
+  int translated_pe = (my_pe - pe_start) / stride;
+
+  if ((my_pe < pe_start) ||
+     ((my_pe - pe_start) % stride) ||
+     (translated_pe >= size)) {
+    translated_pe = -1;
+  }
+
+  return translated_pe;
 }
 
 __device__ int rocshmem_my_pe() {
