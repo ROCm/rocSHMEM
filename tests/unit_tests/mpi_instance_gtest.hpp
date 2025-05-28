@@ -22,33 +22,33 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef ROCSHMEM_MPI_INIT_SINGLETON_GTEST_HPP
-#define ROCSHMEM_MPI_INIT_SINGLETON_GTEST_HPP
+#ifndef ROCSHMEM_MPI_INSTANCE_GTEST_HPP
+#define ROCSHMEM_MPI_INSTANCE_GTEST_HPP
 
 #include "gtest/gtest.h"
 
-#include "../src/mpi_init_singleton.hpp"
+#include "../src/mpi_instance.hpp"
 
 namespace rocshmem {
 
-class MPIInitSingletonTestFixture : public ::testing::Test
+class MPIInstanceTestFixture : public ::testing::Test
 {
   public:
-    MPIInitSingletonTestFixture() {
-        s_ptr_ = new MPIInitSingleton(MPI_COMM_WORLD);
+    MPIInstanceTestFixture() {
+        s_ptr_ = new MPIInstance(MPI_COMM_WORLD);
     }
 
-    ~MPIInitSingletonTestFixture() {
+    ~MPIInstanceTestFixture() {
         delete s_ptr_;
     }
 
   protected:
     /**
-     * @brief A singleton object used to initialize MPI
+     * @brief A MPI instance object used to initialize MPI
      */
-    MPIInitSingleton* s_ptr_ {nullptr};
+    MPIInstance* s_ptr_ {nullptr};
 };
 
 } // namespace rocshmem
 
-#endif  // ROCSHMEM_MPI_INIT_SINGLETON_GTEST_HPP
+#endif  // ROCSHMEM_MPI_INSTANCE_GTEST_HPP

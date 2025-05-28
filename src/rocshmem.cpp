@@ -47,7 +47,7 @@
 #include "ipc/backend_ipc.hpp"
 #include "ipc/context_ipc_tmpl_host.hpp"
 #endif
-#include "mpi_init_singleton.hpp"
+#include "mpi_instance.hpp"
 #include "team.hpp"
 #include "templates_host.hpp"
 #include "util.hpp"
@@ -67,7 +67,7 @@ namespace rocshmem {
   }
 
 Backend *backend = nullptr;
-MPIInitSingleton *mpi_init_obj = nullptr;
+MPIInstance *mpi_instance = nullptr;
 
 rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
@@ -87,7 +87,7 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
   rocm_init();
 
-  mpi_init_obj = new MPIInitSingleton(comm);
+  mpi_instance = new MPIInstance(comm);
 
 #ifdef USE_RO
   CHECK_HIP(hipHostMalloc(&backend, sizeof(ROBackend)));
@@ -227,8 +227,8 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 }
 
 [[maybe_unused]] __host__ int rocshmem_my_pe() {
-  if (mpi_init_obj != nullptr) {
-    return mpi_init_obj->get_rank();
+  if (mpi_instance != nullptr) {
+    return mpi_instance->get_rank();
   }
 
   fprintf(stderr, "[WARNING] rocshmem_init() has not been called\n");
@@ -236,8 +236,8 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 }
 
 [[maybe_unused]] __host__ int rocshmem_n_pes() {
-  if (mpi_init_obj != nullptr) {
-    return mpi_init_obj->get_nprocs();
+  if (mpi_instance != nullptr) {
+    return mpi_instance->get_nprocs();
   }
 
   fprintf(stderr, "[WARNING] rocshmem_init() has not been called\n");
@@ -294,7 +294,7 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   backend->~Backend();
   CHECK_HIP(hipHostFree(backend));
 
-  delete mpi_init_obj;
+  delete mpi_instance;
 }
 
 __host__ void rocshmem_query_thread(int *provided) {

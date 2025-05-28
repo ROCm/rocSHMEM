@@ -32,7 +32,7 @@ target_sources(
     backend_bc.cpp
     context_host.cpp
     context_device.cpp
-    mpi_init_singleton.cpp
+    mpi_instance.cpp
     rocshmem_gpu.cpp
     rocshmem.cpp
     team.cpp

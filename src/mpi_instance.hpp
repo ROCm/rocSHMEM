@@ -22,36 +22,64 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "mpi_init_singleton.hpp"
+#ifndef LIBRARY_SRC_MPI_INSTANCE_HPP_
+#define LIBRARY_SRC_MPI_INSTANCE_HPP_
+
+#include <mpi.h>
+
+#include <memory>
+
+/**
+ * @file mpi_instance.hpp
+ *
+ * @brief Contains MPI library initialization code
+ */
 
 namespace rocshmem {
 
-MPIInitSingleton::MPIInitSingleton(MPI_Comm comm) {
-  MPI_Initialized(&pre_init_done);
+class MPIInstance {
+  public:
+    /**
+     * @brief Primary constructor
+     */
+    MPIInstance(MPI_Comm comm);
 
-  if (!pre_init_done) {
-    int provided;
-    MPI_Init_thread(nullptr, nullptr, MPI_THREAD_MULTIPLE, &provided);
-  }
+    /**
+     * @brief Destructor
+     */
+    ~MPIInstance();
 
-  if (comm == MPI_COMM_NULL) {
-    comm = MPI_COMM_WORLD;
-  }
+    /**
+     * @brief Accessor for my COMM_WORLD rank identifier
+     *
+     * @return My COMM_WORLD rank identifier
+     */
+    int get_rank();
 
-  MPI_Comm_size(comm, &nprocs_);
-  MPI_Comm_rank(comm, &my_rank_);
-}
+    /**
+     * @brief Accessor for number or processes in COMM_WORLD
+     *
+     * @return Number of processes in COMM_WORLD
+     */
+    int get_nprocs();
 
-MPIInitSingleton::~MPIInitSingleton() {
-  int finalized{0};
-  MPI_Finalized(&finalized);
-  if (!finalized && !pre_init_done) {
-    MPI_Finalize();
-  }
-}
+  private:
+    /**
+     * @brief My MPI rank identifier
+     */
+    int my_rank_{-1};
 
-int MPIInitSingleton::get_rank() { return my_rank_; }
+    /**
+     * @brief Number of MPI processes
+     */
+    int nprocs_{-1};
 
-int MPIInitSingleton::get_nprocs() { return nprocs_; }
+    /**
+     * @brief Was MPI initialized before rocshmem_init call
+     */
+    int pre_init_done{0};
+};
 
 }  // namespace rocshmem
+
+#endif  // LIBRARY_SRC_MPI_INSTANCE_HPP_

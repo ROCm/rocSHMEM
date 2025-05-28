@@ -22,16 +22,36 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "mpi_init_singleton_gtest.hpp"
+#include "mpi_instance.hpp"
 
-using namespace rocshmem;
+namespace rocshmem {
 
-TEST_F(MPIInitSingletonTestFixture, library_initialize_destroy) {}
+MPIInstance::MPIInstance(MPI_Comm comm) {
+  MPI_Initialized(&pre_init_done);
 
-TEST_F(MPIInitSingletonTestFixture, rank) {
-  ASSERT_NO_FATAL_FAILURE(s_ptr_->get_rank());
+  if (!pre_init_done) {
+    int provided;
+    MPI_Init_thread(nullptr, nullptr, MPI_THREAD_MULTIPLE, &provided);
+  }
+
+  if (comm == MPI_COMM_NULL) {
+    comm = MPI_COMM_WORLD;
+  }
+
+  MPI_Comm_size(comm, &nprocs_);
+  MPI_Comm_rank(comm, &my_rank_);
 }
 
-TEST_F(MPIInitSingletonTestFixture, nprocs) {
-  ASSERT_EQ(s_ptr_->get_nprocs(), 4);
+MPIInstance::~MPIInstance() {
+  int finalized{0};
+  MPI_Finalized(&finalized);
+  if (!finalized && !pre_init_done) {
+    MPI_Finalize();
+  }
 }
+
+int MPIInstance::get_rank() { return my_rank_; }
+
+int MPIInstance::get_nprocs() { return nprocs_; }
+
+}  // namespace rocshmem
