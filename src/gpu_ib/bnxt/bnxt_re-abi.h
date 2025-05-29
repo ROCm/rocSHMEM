@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2015-2024, Broadcom. All rights reserved.  The term
  * Broadcom refers to Broadcom Inc. and/or its subsidiaries.
+ * Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -39,6 +40,21 @@
 
 #define BNXT_RE_ABI_VERSION			7
 #define BNXT_RE_ABI_VERSION_UVERBS_IOCTL	8
+
+enum bnxt_re_wr_opcode {
+    BNXT_RE_WR_OPCD_SEND           = 0x00,
+    BNXT_RE_WR_OPCD_SEND_IMM       = 0x01,
+    BNXT_RE_WR_OPCD_SEND_INVAL     = 0x02,
+    BNXT_RE_WR_OPCD_RDMA_WRITE     = 0x04,
+    BNXT_RE_WR_OPCD_RDMA_WRITE_IMM = 0x05,
+    BNXT_RE_WR_OPCD_RDMA_READ      = 0x06,
+    BNXT_RE_WR_OPCD_ATOMIC_CS      = 0x08,
+    BNXT_RE_WR_OPCD_ATOMIC_FA      = 0x0B,
+    BNXT_RE_WR_OPCD_LOC_INVAL      = 0x0C,
+    BNXT_RE_WR_OPCD_BIND           = 0x0E,
+    BNXT_RE_WR_OPCD_RECV           = 0x80,
+    BNXT_RE_WR_OPCD_INVAL          = 0xFF
+};
 
 /* TBD - Syncup done with upstream */
 enum {
@@ -106,7 +122,7 @@ struct bnxt_re_packet_pacing_caps {
 	 */
 	__u32 supported_qpts;
 	__u32 reserved;
-} __packed;
+} __attribute__((packed));
 
 struct bnxt_re_ah_resp {
 	__u32 ah_id;
@@ -115,7 +131,7 @@ struct bnxt_re_ah_resp {
 
 struct bnxt_re_query_device_ex_resp {
 	struct bnxt_re_packet_pacing_caps packet_pacing_caps;
-} __packed;
+} __attribute__((packed));
 
 enum {
 	BNXT_RE_COMP_MASK_CQ_REQ_CAP_DBR_RECOVERY = 0x1,
@@ -204,13 +220,13 @@ struct bnxt_re_modify_qp_ex_req {
 	__aligned_u64 comp_mask;
 	__u32 dpi;
 	__u32 rsvd;
-} __packed;
+} __attribute__((packed));
 
 struct bnxt_re_modify_qp_ex_resp {
 	__aligned_u64 comp_mask;
 	__u32 ppp_st_idx;
 	__u32 path_mtu;
-} __packed;
+} __attribute__((packed));
 
 enum bnxt_re_shpg_offt {
 	BNXT_RE_BEG_RESV_OFFT	= 0x00,
