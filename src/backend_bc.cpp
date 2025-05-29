@@ -56,6 +56,7 @@ Backend::Backend(MPI_Comm comm) : heap(comm, nullptr) {
 
 Backend::Backend(TcpBootstrap* bootstrap) : heap(MPI_COMM_NULL, bootstrap) {
   init();
+  backend_bootstr = bootstrap;
   /*
    * Notify other threads that Backend has been initialized.
    */

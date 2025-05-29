@@ -32,6 +32,7 @@
 #include "../context_incl.hpp"
 #include "ipc_context_proxy.hpp"
 #include "../ipc_policy.hpp"
+#include "../bootstrap/bootstrap.hpp"
 
 namespace rocshmem {
 
@@ -43,6 +44,7 @@ class IPCBackend : public Backend {
    * @copydoc Backend::Backend(unsigned)
    */
   explicit IPCBackend(MPI_Comm comm);
+  explicit IPCBackend(TcpBootstrap *bootstr);
 
   /**
    * @copydoc Backend::~Backend()
@@ -207,6 +209,11 @@ class IPCBackend : public Backend {
   void setup_fence_buffer();
 
  private:
+  /**
+   * @brief Common code invoked from the different constructors
+   */
+  void init();
+
   /**
    * @brief Proxy for the default context
    *

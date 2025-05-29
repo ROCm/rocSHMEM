@@ -228,6 +228,11 @@ class Backend {
   MPI_Comm backend_comm{MPI_COMM_NULL};
 
   /**
+   * @todo document where this is used
+   */
+  TcpBootstrap *backend_bootstr{nullptr};
+
+  /**
    * @brief Object contains the interface and internal data structures
    * needed to allocate/free memory on the symmetric heap.
    */

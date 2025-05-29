@@ -63,12 +63,23 @@ IPCBackend::IPCBackend(MPI_Comm comm)
     :  Backend(comm) {
   type = BackendType::IPC_BACKEND;
 
+  init();
+}
+
+IPCBackend::IPCBackend(TcpBootstrap *bootstrap)
+    :  Backend(bootstrap) {
+  type = BackendType::IPC_BACKEND;
+
+  init();
+}
+
+void IPCBackend::init() {
   if (auto maximum_num_contexts_str = getenv("ROCSHMEM_MAX_NUM_CONTEXTS")) {
     std::stringstream sstream(maximum_num_contexts_str);
     sstream >> maximum_num_contexts_;
   }
 
-  initIPC();
+  initIPC(); // no MPI involved
 
   /**
    * Check if num_pes == ipcImpl.shm_size)
@@ -85,15 +96,15 @@ IPCBackend::IPCBackend(MPI_Comm comm)
 
   ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque = default_host_ctx.get();
 
-  setup_team_world();
+  setup_team_world(); // creates IPCTeam, no MPI
 
-  init_wrk_sync_buffer();
+  init_wrk_sync_buffer(); // uses MPI_Allgather
 
-  rocshmem_collective_init();
+  rocshmem_collective_init(); // has an MPI_Barrier
 
-  setup_fence_buffer();
+  setup_fence_buffer(); // no MPI
 
-  teams_init();
+  teams_init(); // no MPI
 
   TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
 
@@ -190,8 +201,13 @@ void IPCBackend::create_new_team([[maybe_unused]] Team *parent_team,
    * Read the bit mask and find out a common index into
    * the pool of available work arrays.
    */
-  NET_CHECK(MPI_Allreduce(pool_bitmask_, reduced_bitmask_, bitmask_size_,
-                          MPI_CHAR, MPI_BAND, team_comm));
+  if (team_comm != MPI_COMM_NULL) {
+    NET_CHECK(MPI_Allreduce(pool_bitmask_, reduced_bitmask_, bitmask_size_,
+			    MPI_CHAR, MPI_BAND, team_comm));
+  } else {
+    printf("IPCBackend::create_new_team: need non-mpi implementation. Aborting.\n");
+    abort();
+  }
 
   /* Pick the least significant non-zero bit (logical layout) in the reduced
    * bitmask */
@@ -315,8 +331,12 @@ void IPCBackend::init_wrk_sync_buffer() {
   /*
    * all-to-all exchange with each PE to share the IPC handles.
    */
-  MPI_Allgather(MPI_IN_PLACE, sizeof(hipIpcMemHandle_t), MPI_CHAR,
-                ipc_handle, sizeof(hipIpcMemHandle_t), MPI_CHAR, backend_comm);
+  if (backend_comm == MPI_COMM_NULL) {
+    MPI_Allgather(MPI_IN_PLACE, sizeof(hipIpcMemHandle_t), MPI_CHAR,
+		  ipc_handle, sizeof(hipIpcMemHandle_t), MPI_CHAR, backend_comm);
+  } else {
+    backend_bootstr->allGather(ipc_handle, sizeof(hipIpcMemHandle_t));
+  }
 
   /*
    * Allocate device-side fine grained memory to hold IPC addresses of
@@ -382,7 +402,11 @@ void IPCBackend::rocshmem_collective_init() {
    * Make sure that all processing elements have done this before
    * continuing.
    */
-  NET_CHECK(MPI_Barrier(backend_comm));
+  if (backend_comm != MPI_COMM_NULL) {
+    NET_CHECK(MPI_Barrier(backend_comm));
+  } else {
+    backend_bootstr->barrier();
+  }
 }
 
 void IPCBackend::teams_init() {
@@ -474,7 +498,11 @@ void IPCBackend::teams_init() {
    * Make sure that all processing elements have done this before
    * continuing.
    */
-  NET_CHECK(MPI_Barrier(backend_comm));
+  if (backend_comm != MPI_COMM_NULL) {
+    NET_CHECK(MPI_Barrier(backend_comm));
+  } else {
+    backend_bootstr->barrier();
+  }
 }
 
 }  // namespace rocshmem
