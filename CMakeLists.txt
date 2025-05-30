@@ -53,6 +53,7 @@ option(BUILD_TESTS_ONLY "Build only tests. Used to link agains rocSHMEM in a ROC
 
 option(BUILD_LOCAL_GPU_TARGET_ONLY "Build only for GPUs detected on this machine" OFF)
 option(GPUIB_IONIC "Build for AMD Pensando IONIC RDMA provider" OFF)
+option(GPUIB_BNXT "Build for Broadcom" OFF)
 
 configure_file(cmake/rocshmem_config.h.in rocshmem_config.h)
 
@@ -71,6 +72,7 @@ endif()
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS "-Wno-deprecated-pragma")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -ggdb")
 
 if (BUILD_TESTS_ONLY)

@@ -39,6 +39,8 @@ extern "C" {
 #include <infiniband/ionic_dv.h>
 #include <infiniband/ionic_fw.h>
 }
+#elif defined(GPUIB_BNXT)
+#include "bnxt/gda_provider_bnxt.hpp"
 #else
 #include <infiniband/mlx5dv.h>
 #endif
@@ -52,7 +54,7 @@ extern "C" {
 #define GPUIB_OP_RDMA_WRITE  IONIC_V2_OP_RDMA_WRITE
 #define GPUIB_OP_ATOMIC_FA   IONIC_V2_OP_ATOMIC_FA
 #define GPUIB_OP_ATOMIC_CS   IONIC_V2_OP_ATOMIC_CS
-#else
+#elif !defined(GPUIB_BNXT)
 #define GPUIB_DEFAULT_GID    0
 #define GPUIB_MAX_ATOMIC     1
 #define GPUIB_OP_RDMA_WRITE  MLX5_OPCODE_RDMA_WRITE
@@ -155,6 +157,8 @@ class QueuePair {
    */
 #ifdef GPUIB_IONIC
   __device__ void ring_doorbell(uint32_t pos);
+#elif defined(GPUIB_BNXT)
+  __device__ void ring_doorbell(uint32_t pos);
 #else
   __device__ void ring_doorbell(uint64_t db_val, uint64_t my_sq_counter);
 #endif
@@ -212,7 +216,9 @@ class QueuePair {
 
   uint32_t inline_threshold{0};
 
-#else // GPUIB_IONIC
+#elif defined(GPUIB_BNXT)
+#warning "Implement variables for QPs"
+#else // !GPUIB_IONIC && !GPUIB_BNXT
 
   db_reg_t db{};
 

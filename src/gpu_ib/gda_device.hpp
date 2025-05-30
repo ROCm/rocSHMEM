@@ -61,7 +61,9 @@ class GDADevice {
   typedef struct ib_state {
     struct ibv_context* context;
     struct ibv_pd* pd_orig;
+#ifndef GPUIB_BNXT
     struct ibv_pd* pd_parent;
+#endif
 #ifdef GPUIB_IONIC
     struct ibv_pd* pd_uxdma[2];
 #endif
@@ -82,6 +84,7 @@ class GDADevice {
     union ibv_gid gid;
   } dest_info_t;
 
+#ifndef GPUIB_BNXT
   class State {
    public:
     ibv_qp_attr exp_qp_attr{};
@@ -129,6 +132,7 @@ class GDADevice {
     }
     ibv_qp_init_attr_ex attr{};
   };
+#endif
 
  public:
   explicit GDADevice(MPI_Comm comm_in);
@@ -169,6 +173,7 @@ class GDADevice {
 
   void initialize_gpu_qp(QueuePair* qp, int conn_num);
 
+#ifndef GPUIB_BNXT
   InitQPState initqp(uint8_t port);
 
   RtrState rtr(dest_info_t* dest, uint8_t port);
@@ -176,6 +181,7 @@ class GDADevice {
   RtsState rts(dest_info_t* dest);
 
   QPInitAttr qpattr(ibv_qp_cap cap);
+#endif
 
   void init_qp_status(ibv_qp* qp, uint8_t port);
 
@@ -196,7 +202,11 @@ class GDADevice {
 
   ibv_cq* create_cq(ibv_context* context, ibv_pd* pd, int cqe);
 
+#ifdef GPUIB_BNXT
+  struct ibv_qp* create_qp(struct ibv_pd *pd, struct ibv_qp_cap qp_cap, struct ibv_cq *cq);
+#else
   ibv_qp* create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr_ex* qp_attr, ibv_cq* rcq);
+#endif
 
   void ib_init(ibv_device* ib_dev, uint8_t port);
 

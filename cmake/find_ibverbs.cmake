@@ -43,6 +43,13 @@ find_library(
     HINTS ${PC_IBVERBS_LIBDIR} ${PC_IBVERBS_LIBRARY_DIRS}
     PATH_SUFFIXES lib lib64
 )
+ELSEIF(GPUIB_BNXT)
+find_library(
+    PROVIDER_LIBRARY
+    NAMES bnxt_re libbnxt_re
+    HINTS ${PC_IBVERBS_LIBDIR} ${PC_IBVERBS_LIBRARY_DIRS}
+    PATH_SUFFIXES lib lib64
+)
 ELSE()
 find_library(
     PROVIDER_LIBRARY

@@ -42,8 +42,10 @@ inline MPI_Aint HostInterface::compute_offset(const void* dest, void* win_start,
 }
 
 inline void HostInterface::complete_all(MPI_Win win) {
+#ifndef GPUIB_BNXT
   MPI_Win_flush_all(win); /* RMA operations */
   MPI_Win_sync(win);      /* memory stores */
+#endif
 }
 
 inline void HostInterface::initiate_put(void* dest, const void* source, size_t nelems, int pe, WindowInfo* window_info) {

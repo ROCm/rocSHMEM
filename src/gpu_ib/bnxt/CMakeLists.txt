@@ -1,5 +1,5 @@
 ###############################################################################
-# Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
+# Copyright (c) 2025 Advanced Micro Devices, Inc. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -19,25 +19,9 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 ###############################################################################
-
-###############################################################################
-# ADD ROCSHMEM TARGET FOR FILES IN CURRENT DIRECTORY
-###############################################################################
 target_sources(
   ${PROJECT_NAME}
   PRIVATE
-    context_ib_device.cpp
-    context_ib_device_coll.cpp
-    context_ib_host.cpp
-    endian.cpp
-    gpu_ib_team.cpp
-    gda_device.cpp
-    queue_pair.cpp
+    gda_device_bnxt.cpp
+    queue_pair_bnxt.cpp
 )
-
-IF (GPUIB_IONIC)
-ELSEIF (GPUIB_BNXT)
-add_subdirectory(bnxt)
-ELSE ()
-  target_sources(${PROJECT_NAME} PRIVATE segment_builder.cpp)
-ENDIF()
