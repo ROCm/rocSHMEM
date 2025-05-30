@@ -42,6 +42,7 @@
 #include "../hdp_policy.hpp"
 #include "../memory/symmetric_heap.hpp"
 #include "../memory/window_info.hpp"
+#include "../bootstrap/bootstrap.hpp"
 
 namespace rocshmem {
 
@@ -104,9 +105,12 @@ class HostContextWindowInfo {
 class HostInterface {
  public:
   /**
-   * @brief Primary constructor
+   * @brief Primary constructors
    */
   __host__ HostInterface(HdpPolicy* hdp_policy, MPI_Comm rocshmem_comm,
+                         SymmetricHeap* heap);
+
+  __host__ HostInterface(HdpPolicy* hdp_policy, TcpBootstrap *bootstrap,
                          SymmetricHeap* heap);
 
   /**
@@ -321,7 +325,12 @@ class HostInterface {
   /**
    * @brief Global MPI communicator for those host API
    */
-  MPI_Comm host_comm_world_{};
+  MPI_Comm host_comm_world_{MPI_COMM_NULL};
+
+  /**
+   * @brief Bootstrap object used in the non-mpi workloads
+   */
+  TcpBootstrap *host_bootstrap_{nullptr};
 
   /**
    * @brief Duplicate of this processing element's id within global rank

@@ -63,22 +63,6 @@ IPCBackend::IPCBackend(MPI_Comm comm)
     :  Backend(comm) {
   type = BackendType::IPC_BACKEND;
 
-  init();
-}
-
-IPCBackend::IPCBackend(TcpBootstrap *bootstrap)
-    :  Backend(bootstrap) {
-  type = BackendType::IPC_BACKEND;
-
-  init();
-}
-
-void IPCBackend::init() {
-  if (auto maximum_num_contexts_str = getenv("ROCSHMEM_MAX_NUM_CONTEXTS")) {
-    std::stringstream sstream(maximum_num_contexts_str);
-    sstream >> maximum_num_contexts_;
-  }
-
   initIPC(); // no MPI involved
 
   /**
@@ -93,6 +77,37 @@ void IPCBackend::init() {
                                                    &heap);
 
   default_host_ctx = std::make_unique<IPCHostContext>(this, 0);
+
+  init();
+}
+
+IPCBackend::IPCBackend(TcpBootstrap *bootstrap)
+    :  Backend(bootstrap) {
+  type = BackendType::IPC_BACKEND;
+
+  initIPC(); // no MPI involved
+
+  /**
+   * Check if num_pes == ipcImpl.shm_size)
+   * All the PEs must be with in a node for IPC conduit
+   */
+  assert(num_pes == ipcImpl.shm_size);
+
+  /* Initialize the host interface */
+  host_interface = std::make_shared<HostInterface>(hdp_proxy_.get(),
+                                                   bootstrap,
+                                                   &heap);
+
+  default_host_ctx = std::make_unique<IPCHostContext>(this, 0);
+
+  init();
+}
+
+void IPCBackend::init() {
+  if (auto maximum_num_contexts_str = getenv("ROCSHMEM_MAX_NUM_CONTEXTS")) {
+    std::stringstream sstream(maximum_num_contexts_str);
+    sstream >> maximum_num_contexts_;
+  }
 
   ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque = default_host_ctx.get();
 
@@ -335,6 +350,7 @@ void IPCBackend::init_wrk_sync_buffer() {
     MPI_Allgather(MPI_IN_PLACE, sizeof(hipIpcMemHandle_t), MPI_CHAR,
 		  ipc_handle, sizeof(hipIpcMemHandle_t), MPI_CHAR, backend_comm);
   } else {
+    assert (backend_bootstr != nullptr);
     backend_bootstr->allGather(ipc_handle, sizeof(hipIpcMemHandle_t));
   }
 

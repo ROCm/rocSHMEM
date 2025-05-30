@@ -146,6 +146,32 @@ __host__ void HostInterface::create_hdp_window() {
 }
 #endif  // USE_HDP_FLUSH
 
+__host__ HostInterface::HostInterface(HdpPolicy* hdp_policy,
+                                      TcpBootstrap *bootstr,
+                                      SymmetricHeap* heap) {
+  host_bootstrap_ = bootstr;
+  my_pe_ = bootstr->getRank();
+  num_pes_ = bootstr->getNranks();
+
+  /*
+   * Not sure we need this.
+   */
+  hdp_policy_ = hdp_policy;
+
+  /*
+   * Allocate and initialize pool of windows for contexts
+   */
+  char* value{nullptr};
+  if ((value = getenv("ROCSHMEM_MAX_NUM_HOST_CONTEXTS"))) {
+    max_num_ctxs_ = atoi(value);
+  }
+
+#if !defined(USE_COHERENT_HEAP) && !defined(USE_SINGLE_NODE)
+  printf("Non-mpi use-cases only supported with coherent heap at the moment. Aborting.\n");
+  abort();
+#endif
+}
+
 __host__ HostInterface::~HostInterface() {
 #if defined USE_HDP_FLUSH
   MPI_Win_unlock_all(hdp_win);
@@ -154,13 +180,17 @@ __host__ HostInterface::~HostInterface() {
 #endif  // USE_HDP_FLUSH
 
   /* Detroy the pool of contexts */
-  for (int ctx_i = 0; ctx_i < max_num_ctxs_; ctx_i++) {
-    delete host_window_context_pool_[ctx_i];
+
+  if (host_window_context_pool_ != nullptr) {
+    for (int ctx_i = 0; ctx_i < max_num_ctxs_; ctx_i++) {
+      delete host_window_context_pool_[ctx_i];
+    }
+    free(host_window_context_pool_);
   }
 
-  free(host_window_context_pool_);
-
-  MPI_Comm_free(&host_comm_world_);
+  if (host_comm_world_ != MPI_COMM_NULL) {
+    MPI_Comm_free(&host_comm_world_);
+  }
 }
 
 __host__ void HostInterface::putmem_nbi(void* dest, const void* source,
@@ -252,40 +282,51 @@ __host__ void HostInterface::quiet(WindowInfo* window_info) {
 __host__ void HostInterface::sync_all(WindowInfo* window_info) {
   WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
   if (!window_info_mpi) {
-    abort();
+    MPI_Win_sync(window_info_mpi->get_win());
+
+    hdp_policy_->hdp_flush();
+    /*
+     * No need to flush remote
+     * HDPs here since all PEs are
+     * participating.
+     */
+
+    MPI_Barrier(host_comm_world_);
+  } else {
+    hdp_policy_->hdp_flush();
+    host_bootstrap_->barrier();
   }
-  MPI_Win_sync(window_info_mpi->get_win());
-
-  hdp_policy_->hdp_flush();
-  /*
-   * No need to flush remote
-   * HDPs here since all PEs are
-   * participating.
-   */
-
-  MPI_Barrier(host_comm_world_);
 
   return;
 }
 
 __host__ void HostInterface::barrier_all(WindowInfo* window_info) {
   WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
-  if (!window_info_mpi) {
-    abort();
+  if (window_info_mpi) {
+    complete_all(window_info_mpi->get_win());
+
+    /*
+     * Flush my HDP cache so remote NICs will
+     * see the latest values in device memory
+     */
+    hdp_policy_->hdp_flush();
+
+    MPI_Barrier(host_comm_world_);
+  } else {
+    // Probably not required
+    hdp_policy_->hdp_flush();
+    host_bootstrap_->barrier();
   }
-  complete_all(window_info_mpi->get_win());
 
-  /*
-   * Flush my HDP cache so remote NICs will
-   * see the latest values in device memory
-   */
-  hdp_policy_->hdp_flush();
-
-  MPI_Barrier(host_comm_world_);
+  return;
 }
 
 __host__ void HostInterface::barrier_for_sync() {
-  MPI_Barrier(host_comm_world_);
+  if (host_comm_world_ != MPI_COMM_NULL) {
+    MPI_Barrier(host_comm_world_);
+  } else {
+    host_bootstrap_->barrier();
+  }
 }
 
 }  // namespace rocshmem
