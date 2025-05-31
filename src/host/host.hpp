@@ -60,6 +60,7 @@ class HostContextWindowInfo {
    * @param[in] team_info information about participating PEs
    */
   HostContextWindowInfo(MPI_Comm comm_world, SymmetricHeap* heap);
+  HostContextWindowInfo(SymmetricHeap* heap);
 
   /**
    * @brief Destructor

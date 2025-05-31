@@ -41,6 +41,11 @@ __host__ HostContextWindowInfo::HostContextWindowInfo(MPI_Comm comm_world,
       new WindowInfoMPI(comm_world, heap->get_local_heap_base(), heap->get_size());
 }
 
+__host__ HostContextWindowInfo::HostContextWindowInfo(SymmetricHeap* heap) {
+  window_info_ =
+      new WindowInfo(heap->get_local_heap_base(), heap->get_size());
+}
+
 __host__ HostContextWindowInfo::~HostContextWindowInfo() {
   delete window_info_;
 }
@@ -164,6 +169,15 @@ __host__ HostInterface::HostInterface(HdpPolicy* hdp_policy,
   char* value{nullptr};
   if ((value = getenv("ROCSHMEM_MAX_NUM_HOST_CONTEXTS"))) {
     max_num_ctxs_ = atoi(value);
+  }
+
+  size_t pool_size = max_num_ctxs_ * sizeof(HostContextWindowInfo*);
+  host_window_context_pool_ =
+      reinterpret_cast<HostContextWindowInfo**>(malloc(pool_size));
+
+  for (int ctx_i = 0; ctx_i < max_num_ctxs_; ctx_i++) {
+    host_window_context_pool_[ctx_i] =
+        new HostContextWindowInfo(heap);
   }
 
 #if !defined(USE_COHERENT_HEAP) && !defined(USE_SINGLE_NODE)

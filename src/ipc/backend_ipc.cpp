@@ -63,7 +63,7 @@ IPCBackend::IPCBackend(MPI_Comm comm)
     :  Backend(comm) {
   type = BackendType::IPC_BACKEND;
 
-  initIPC(); // no MPI involved
+  initIPC();
 
   /**
    * Check if num_pes == ipcImpl.shm_size)
@@ -85,7 +85,7 @@ IPCBackend::IPCBackend(TcpBootstrap *bootstrap)
     :  Backend(bootstrap) {
   type = BackendType::IPC_BACKEND;
 
-  initIPC(); // no MPI involved
+  initIPC(bootstrap); // no MPI involved
 
   /**
    * Check if num_pes == ipcImpl.shm_size)
@@ -280,6 +280,13 @@ void IPCBackend::initIPC() {
                       backend_comm);
 }
 
+void IPCBackend::initIPC(TcpBootstrap *bootstr) {
+  const auto &heap_bases{heap.get_heap_bases()};
+
+  ipcImpl.ipcHostInit(my_pe, heap_bases,
+                      bootstr);
+}
+
 void IPCBackend::global_exit(int status) {
   MPI_Abort(backend_comm, status);
 }
@@ -346,7 +353,7 @@ void IPCBackend::init_wrk_sync_buffer() {
   /*
    * all-to-all exchange with each PE to share the IPC handles.
    */
-  if (backend_comm == MPI_COMM_NULL) {
+  if (backend_comm != MPI_COMM_NULL) {
     MPI_Allgather(MPI_IN_PLACE, sizeof(hipIpcMemHandle_t), MPI_CHAR,
 		  ipc_handle, sizeof(hipIpcMemHandle_t), MPI_CHAR, backend_comm);
   } else {

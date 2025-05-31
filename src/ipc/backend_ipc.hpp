@@ -75,6 +75,11 @@ class IPCBackend : public Backend {
   void initIPC();
 
   /**
+   * @brief Helper to initialize IPC interface, non-MPI based version.
+   */
+  void initIPC(TcpBootstrap *bootstrap);
+
+  /**
    * @brief Allocation and initialization of backend contexts.
    */
   void setup_ctxs();
