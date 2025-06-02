@@ -30,8 +30,12 @@
 * Changed collective APIs to use `_wg` suffix rather than `_wg_` infix
 
 ### Resolved Issues
+* Resolved segfault in `rocshmem_wg_ctx_create`, now provides nullptr if ctx cannot be created
+
+## rocSHMEM 2.0.1 for ROCm 6.4.2
+
+### Resolved Issues
 
 * Resolved incorrect output for `rocshmem_ctx_my_pe` and `rocshmem_ctx_n_pes`
 * Resolved multi-team errors by providing team specific buffers in `rocshmem_ctx_wg_team_sync`
-* Resolved segfault in `rocshmem_wg_ctx_create`, now provides nullptr if ctx cannot be created
 * Resolved missing implementation of `rocshmem_g` for IPC conduit
