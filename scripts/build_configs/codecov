@@ -54,7 +54,7 @@ LLVM_PROFILE_FILE="$PROFRAW_DIR/ro_ipc-functional-%p.profraw" ../scripts/functio
 	-object ./ro_ipc/tests/unit_tests/rocshmem_unit_tests \
 	-object ./ro_ipc/tests/functional_tests/rocshmem_example_driver \
 	-instr-profile=./coverage-report/rocshmem.profdata \
-	--ignore-filename-regex=".*test.*"
+	--ignore-filename-regex=".*test.*" \
 	-format=html \
 	-output-dir=coverage-report
 cd coverage-report && python3 -m http.server 
