@@ -300,6 +300,11 @@ class IPCBackend : public Backend {
   */
   void cleanup_wrk_sync_buffer();
 
+  /**
+   * @brief
+   */
+  void Allreduce_char_BAND (char* inbuf, char *outbuf, size_t num_bytes, Team *team);
+
 };
 
 }  // namespace rocshmem

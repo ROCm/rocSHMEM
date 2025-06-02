@@ -434,22 +434,24 @@ __host__ int rocshmem_team_split_strided(
   new (team_info_wrt_world)
       TeamInfo(team_world, pe_start_in_world, stride_in_world, size);
 
-  /* Create a new MPI communicator for this team */
-  int color;
-  if (my_pe_in_new_team < 0) {
-    color = MPI_UNDEFINED;
-  } else {
-    color = 1;
+  MPI_Comm team_comm{MPI_COMM_NULL};
+  if (parent_team_obj->mpi_comm != MPI_COMM_NULL) {
+    /* Create a new MPI communicator for this team */
+    int color;
+    if (my_pe_in_new_team < 0) {
+      color = MPI_UNDEFINED;
+    } else {
+      color = 1;
+    }
+
+    MPI_Comm_split(parent_team_obj->mpi_comm, color, my_pe_in_world, &team_comm);
   }
-
-  MPI_Comm team_comm;
-  MPI_Comm_split(parent_team_obj->mpi_comm, color, my_pe_in_world, &team_comm);
-
   /**
    * Allocate new team for GPU-inittiated communication with backend-specific
    * objects
    * TODO: are there any backend specific objects?
    */
+
   if (my_pe_in_new_team < 0) {
     *new_team = ROCSHMEM_TEAM_INVALID;
   } else {
@@ -461,7 +463,10 @@ __host__ int rocshmem_team_split_strided(
      * not */
     backend->team_tracker.track(*new_team);
   }
-  MPI_Comm_free (&team_comm);
+
+  if (team_comm != MPI_COMM_NULL) {
+    MPI_Comm_free (&team_comm);
+  }
   return 0;
 }
 

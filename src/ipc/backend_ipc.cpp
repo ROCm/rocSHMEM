@@ -22,6 +22,8 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
+#include <cstring>
+
 #include "backend_ipc.hpp"
 #include "ipc_team.hpp"
 
@@ -111,15 +113,15 @@ void IPCBackend::init() {
 
   ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque = default_host_ctx.get();
 
-  setup_team_world(); // creates IPCTeam, no MPI
+  setup_team_world();
 
-  init_wrk_sync_buffer(); // uses MPI_Allgather
+  init_wrk_sync_buffer();
 
-  rocshmem_collective_init(); // has an MPI_Barrier
+  rocshmem_collective_init();
 
-  setup_fence_buffer(); // no MPI
+  setup_fence_buffer();
 
-  teams_init(); // no MPI
+  teams_init();
 
   TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
 
@@ -207,6 +209,38 @@ void IPCBackend::team_destroy(rocshmem_team_t team) {
   CHECK_HIP(hipFree(team_obj));
 }
 
+
+void IPCBackend::Allreduce_char_BAND (char* inbuf, char *outbuf, size_t num_bytes,
+				      Team *team) {
+
+  // Implement an Allreduce outside of MPI. This is specialized for the scenario
+  // required for the team creation, i.e. assuming bytes and using BAND operation.
+  // Implementation uses an Allgather operation followed a local reduction.
+
+  IPCTeam *team_obj = reinterpret_cast<IPCTeam *>(team);
+  int num_pes = team_obj->num_pes;
+  int my_pe = team_obj->my_pe;
+
+  char *tmp_buffer = new char[num_pes * num_bytes];
+  std::memcpy (&tmp_buffer[my_pe * num_bytes], inbuf, num_bytes);
+
+  if (num_pes == backend_bootstr->getNranks() ) {
+    backend_bootstr->allGather(tmp_buffer, num_bytes);
+  } else {
+    printf("IPCBackend::create_new_team: non-mpi version only supports parent_teams that contain all processes. Aborting.\n");
+    abort();
+  }
+
+  for (int i = 0; i < num_bytes; i++) {
+    outbuf[i] = tmp_buffer[i];
+    for (int j = 1; j < num_pes; j++) {
+      outbuf[i] &= tmp_buffer[i * num_bytes + j];
+    }
+  }
+
+  delete[] tmp_buffer;
+}
+
 void IPCBackend::create_new_team([[maybe_unused]] Team *parent_team,
                                 TeamInfo *team_info_wrt_parent,
                                 TeamInfo *team_info_wrt_world, int num_pes,
@@ -220,8 +254,7 @@ void IPCBackend::create_new_team([[maybe_unused]] Team *parent_team,
     NET_CHECK(MPI_Allreduce(pool_bitmask_, reduced_bitmask_, bitmask_size_,
 			    MPI_CHAR, MPI_BAND, team_comm));
   } else {
-    printf("IPCBackend::create_new_team: need non-mpi implementation. Aborting.\n");
-    abort();
+    Allreduce_char_BAND (pool_bitmask_, reduced_bitmask_, bitmask_size_, parent_team);
   }
 
   /* Pick the least significant non-zero bit (logical layout) in the reduced
