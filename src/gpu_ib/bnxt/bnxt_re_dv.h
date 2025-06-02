@@ -41,8 +41,6 @@
 #include <infiniband/verbs.h>
 
 int bnxt_re_dv_modify_qp_udp_sport(struct ibv_qp *qp, uint16_t udp_sport);
-int bnxt_re_dv_modify_qp(void *qp_handle, struct ib_uverbs_qp_attr *attr,
-			 uint32_t type, uint32_t value);
 
 #ifdef EXPERIMENTAL_APIS
 struct bnxt_re_dv_dpi_attr {
@@ -69,6 +67,13 @@ struct bnxt_re_dv_umem_reg_attr {
 	int dmabuf_fd;
 };
 
+struct bnxt_re_dv_cq_init_attr {
+	uint64_t cq_handle;
+	void *umem_handle; /* umem_handle from umem_reg */
+	uint64_t cq_umem_offset;	/* offset into umem */
+	uint32_t ncqe;
+};
+
 struct bnxt_re_dv_qp_init_attr {
 	/* Standard ibv params */
 	enum ibv_qp_type qp_type;
@@ -77,32 +82,32 @@ struct bnxt_re_dv_qp_init_attr {
 	uint32_t max_send_sge;
 	uint32_t max_recv_sge;
 	uint32_t max_inline_data;
-	uint32_t pdid;
-	void *send_cq;
-	void *recv_cq;
+	struct ibv_cq *send_cq;
+	struct ibv_cq *recv_cq;
 
 	/* DV params */
 	uint64_t qp_handle;	/* to match with cqe */
-	uint64_t sq_va;         /* Peer-mem sq-va (not dma mapped) */
-	uint32_t sq_len;        /* sq length including MSN area */
-	uint32_t sq_slots;      /* sq length in slots */
-	uint32_t sq_wqe_sz;	/* sq wqe size */
-	uint32_t sq_psn_sz;	/* sq psn size */
-	uint32_t sq_npsn;	/* sq num psn entries */
-	uint64_t rq_va;         /* Peer-mem rq-va (not dma mapped) */
-	uint32_t rq_len;        /* rq length */
-	uint32_t rq_slots;      /* rq length in slots */
-	uint32_t rq_wqe_sz;	/* rq wqe size */
-	uint64_t comp_mask;     /* compatibility bit mask */
+	void *sq_umem_handle;	/* umem_handle from umem_reg */
+	uint64_t sq_umem_offset;	/* offset into umem */
+	uint32_t sq_len;	/* sq length including MSN area */
+	uint32_t sq_slots;	/* sq length in slots */
+	void *rq_umem_handle;	/* umem_handle from umem_reg */
+	uint64_t rq_umem_offset;	/* offset into umem */
+	uint32_t rq_len;	/* rq length */
+	uint32_t rq_slots;	/* rq length in slots */
+	uint64_t comp_mask;	/* compatibility mask for future updates */
 };
 
 void *bnxt_re_dv_umem_reg(struct ibv_context *ibvctx,
 			  struct bnxt_re_dv_umem_reg_attr *in);
-int bnxt_re_dv_umem_dereg(void *umem_id);
-struct ibv_cq *bnxt_re_dv_create_cq(struct ibv_context *ibvctx, int ncqe);
-int bnxt_re_dv_destroy_cq(struct ibv_cq *cq);
-struct ibv_qp *bnxt_re_dv_create_qp(struct ibv_pd *ibvpd,
-				    struct ibv_qp_init_attr *attr);
+int bnxt_re_dv_umem_dereg(void *umem_handle);
+struct ibv_cq *bnxt_re_dv_create_cq(struct ibv_context *ibvctx,
+			   struct bnxt_re_dv_cq_init_attr *cq_attr);
+int bnxt_re_dv_destroy_cq(struct ibv_cq *ibv_cq);
+struct ibv_qp *bnxt_re_dv_create_qp(struct ibv_pd *pd,
+				    struct bnxt_re_dv_qp_init_attr *qp_attr);
 int bnxt_re_dv_destroy_qp(struct ibv_qp *ibvqp);
+int bnxt_re_dv_modify_qp(struct ibv_qp *ibv_qp, struct ib_uverbs_qp_attr *attr,
+                         uint32_t type, uint32_t value);
 int bnxt_re_dv_query_qp(void *qp_handle, struct ib_uverbs_qp_attr *attr);
 #endif /* __BNXT_RE_DV_H__ */
