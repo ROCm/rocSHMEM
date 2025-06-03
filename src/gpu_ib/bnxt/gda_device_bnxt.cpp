@@ -22,24 +22,30 @@
 
 #include "../gda_device.hpp"
 #include "../gpuib_macros.inl"
+#include <unistd.h> // getpagesize()
 
 namespace rocshmem {
 
 void GDADevice::ib_init(struct ibv_device* ib_dev, uint8_t port) {
+  int err;
+
   ib_state = new ib_state_t;
   GPUIB_CHECK_NNULL(ib_state, "ib_state object create");
 
   ib_state->context = ibv_open_device(ib_dev);
-  GPUIB_CHECK_NNULL(ib_state->context, "ib open device");
+  GPUIB_CHECK_NNULL(ib_state->context, "ibv_open_device");
 
   ib_state->pd_orig = ibv_alloc_pd(ib_state->context);
-  GPUIB_CHECK_NNULL(ib_state->pd_orig, "ib allocate pd");
+  GPUIB_CHECK_NNULL(ib_state->pd_orig, "ibv_alloc_pd");
 
-  int err = ibv_query_port(ib_state->context, port, &ib_state->portinfo);
+  err = ibv_query_port(ib_state->context, port, &ib_state->portinfo);
   GPUIB_CHECK_ZERO(err, "ibv_query_port");
+
+  err = ibv_query_gid(ib_state->context, port, GPUIB_DEFAULT_GID, &gid);
+  GPUIB_CHECK_ZERO(err, "ibv_query_gid");
 }
 
-void GDADevice::init_qp_status(ibv_qp *qp, uint8_t port) {
+void GDADevice::init_qp_status(uint8_t port) {
   int err;
   struct ib_uverbs_qp_attr attr;
 
@@ -60,8 +66,10 @@ void GDADevice::init_qp_status(ibv_qp *qp, uint8_t port) {
                     | IBV_QP_ACCESS_FLAGS;
 
 
-  err = bnxt_re_dv_modify_qp(qp, &attr, 0, 0);
-  GPUIB_CHECK_ZERO(err, "bnxt_re_dv_modify_qp");
+  for (int i =0; i < qps.size() ; i++) {
+    err = bnxt_re_dv_modify_qp(qps[i], &attr, 0, 0);
+    GPUIB_CHECK_ZERO(err, "bnxt_re_dv_modify_qp");
+  }
 }
 
 void GDADevice::change_status_rtr(ibv_qp *qp, dest_info_t *dest, uint8_t port) {
@@ -120,49 +128,140 @@ void GDADevice::change_status_rts(ibv_qp* qp, dest_info_t* dest) {
 }
 
 void GDADevice::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
-  ibv_qp_cap cap{};
-  cap.max_send_wr = sq_size;
-  cap.max_send_sge = 1;
-  cap.max_inline_data = 0;
   cqs.resize((maximum_num_contexts_ + 1) * num_pes);
   qps.resize((maximum_num_contexts_ + 1) * num_pes);
+
+  create_cqs(qps.size(), sq_size);
+  create_qps_impl(qps.size());
+  init_qp_status(port);
+
   for (int i{0}; i < qps.size(); i++) {
-    cqs[i] = bnxt_re_dv_create_cq(ib_state->context, sq_size);
-    GPUIB_CHECK_NNULL(cqs[i], "bnxt_re_dv_create_cq");
-    qps[i] = create_qp(ib_state->pd_orig, cap, cqs[i]);
-    GPUIB_CHECK_NNULL(qps[i], "create_qp");
-    init_qp_status(qps[i], port);
     dest_info[i].lid = ib_port_att->lid;
     dest_info[i].qpn = qps[i]->qp_num;
     dest_info[i].psn = 0;
-    union ibv_gid gid;
-    int err = ibv_query_gid(ib_state->context, port, GPUIB_DEFAULT_GID, &gid);
-    GPUIB_CHECK_ZERO(err, "ibv_query_gid");
     dest_info[i].gid = gid;
   }
 }
 
 void GDADevice::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
-  fprintf(stderr, "%s is not implemented\n", __func__);
+  fprintf(stderr, "\n\n%s is not fully implemented\n\n", __func__);
+
+  int err;
+  uint64_t db_addr = 0;
+
+  gpu_qp->dpi = nullptr; /* TODO */
+  gpu_qp->cq_buf = (void*) ((char*) cq_buf + (conn_num * cq_buf_offset));
+  gpu_qp->sq_buf = (void*) ((char*) qp_buf + (conn_num * qp_buf_offset));
+  gpu_qp->rq_buf = (void*) ((char*) qp_buf + (conn_num * qp_buf_offset) + sq_buf_offset);
+
+  err = bnxt_re_dv_query_dpi(ib_state->context, &db_addr);
+  GPUIB_CHECK_ZERO(err, "bnxt_re_dv_query_dpi");
+
+  host_dpi_ptr = (uint64_t*) db_addr;
 }
 
-struct ibv_qp* GDADevice::create_qp(struct ibv_pd *pd,
-                                    struct ibv_qp_cap qp_cap,
-                                    struct ibv_cq *cq) {
-  struct ibv_qp_init_attr attr;
-  struct ibv_qp *qp = nullptr;
+void GDADevice::create_cqs(int ncqs, int cqe) {
+  struct bnxt_re_dv_cq_init_attr cq_attr;
+  struct bnxt_re_dv_umem_reg_attr umem_attr;
+  struct ibv_context *context;
 
-  memset(&attr, 0, sizeof(struct ibv_qp_init_attr));
+  int dmabuf_fd = 0;
+  uint64_t offset = 0;
 
-  attr.send_cq    = cq;
-  attr.recv_cq    = cq;
-  attr.cap        = qp_cap;
-  attr.sq_sig_all = 0;
-  attr.qp_type    = IBV_QPT_RC;
+  context = ib_state->context;
 
-  qp = bnxt_re_dv_create_qp(pd, &attr);
-  GPUIB_CHECK_NNULL(qp, "bnxt_re_dv_create_qp");
-  return qp;
+  /* From Thor 2 docs:
+   * nqce = (max_send_wr + max_recv_wr) * num_qps associated to this cq
+   * cq_slots = align(ncqe + 1) * 2
+   * total_bytes = cq_slots * 16
+   *
+   * TODO: Adjust to use the correct amount. We currently use `cqe`.
+   */
+
+  cq_buf_offset = next_pow((cqe + 1), 2) * BNXT_CQE_SIZE;
+
+  cq_buf = calloc(ncqs, cq_buf_offset);
+  GPUIB_CHECK_NNULL(cq_buf, "calloc(cq_buf)");
+
+  CHECK_HIP(hipHostRegister(cq_buf, (ncqs * cq_buf_offset), hipHostRegisterMapped));
+  CHECK_HIP(hipHostGetDevicePointer((void**) &gpu_cq_buf, cq_buf, 0));
+
+  memset(&umem_attr, 0, sizeof(struct bnxt_re_dv_umem_reg_attr));
+  umem_attr.addr = cq_buf;
+  umem_attr.size = ncqs * cq_buf_offset;
+  umem_attr.dmabuf_fd = dmabuf_fd;
+
+  cq_umem_handle = bnxt_re_dv_umem_reg(context, &umem_attr);
+  GPUIB_CHECK_NNULL(cq_umem_handle, "bnxt_re_dv_umem_reg(cq_buf)");
+
+  memset(&cq_attr, 0, sizeof(struct bnxt_re_dv_cq_init_attr));
+  cq_attr.umem_handle    = cq_umem_handle;
+  cq_attr.ncqe           = cqe;
+
+  for (int i = 0; i < ncqs; i++) {
+    cq_attr.cq_umem_offset = i * cq_buf_offset;
+
+    cqs[i] = bnxt_re_dv_create_cq(context, &cq_attr);
+    GPUIB_CHECK_NNULL(cqs[i], "bnxt_re_dv_create_cq");
+  }
+}
+
+void GDADevice::create_qps_impl(int nqps) {
+  struct ibv_pd *pd;
+  struct ibv_context *context;
+  struct bnxt_re_dv_qp_init_attr attr;
+  struct bnxt_re_dv_umem_reg_attr umem_attr;
+  int q_slots;
+  int msn_table_slots;
+
+  pd = ib_state->pd_orig;
+  context = ib_state->context;
+
+  /* From Thor 2 docs:
+   * SQ_slots = align((max_send_wr + 1) * (2 + max sge per wqe), num_slots_per_4K_page)
+   * MSN_tbl_slots = pow-of-2((max_send_wr + 1) * 8)
+   * total_bytes = (SQ_slots + MSN tbl slots) * 16 bytes/slot
+   */
+  q_slots = next_pow((sq_size + 1) * (2 + 13), 256);
+  msn_table_slots = (int) pow(2, ((sq_size + 1) * 8));
+  sq_buf_offset = (q_slots + msn_table_slots) * 16;
+
+  q_slots = next_pow((0 + 1) * (2 + 13), 256);
+  msn_table_slots = (int) pow(2, ((0 + 1) * 8));
+  rq_buf_offset = (q_slots + msn_table_slots) * 16;
+
+  qp_buf_offset = sq_buf_offset + rq_buf_offset;
+
+  qp_buf = calloc(nqps, qp_buf_offset);
+  GPUIB_CHECK_NNULL(qp_buf, "calloc(qp_buf)");
+
+  CHECK_HIP(hipHostRegister(qp_buf, (nqps * qp_buf_offset), hipHostRegisterMapped));
+  CHECK_HIP(hipHostGetDevicePointer((void**) &gpu_qp_buf, qp_buf, 0));
+
+  memset(&umem_attr, 0, sizeof(struct bnxt_re_dv_umem_reg_attr));
+  umem_attr.addr = qp_buf;
+  umem_attr.size = nqps * qp_buf_offset;
+
+  qp_umem_handle = bnxt_re_dv_umem_reg(context, &umem_attr);
+  GPUIB_CHECK_NNULL(qp_umem_handle, "bnxt_re_dv_umem_reg(qp_umem_handle)");
+
+  memset(&attr, 0, sizeof(struct bnxt_re_dv_qp_init_attr));
+  attr.qp_type        = IBV_QPT_RC;
+  attr.max_send_wr    = sq_size;
+  attr.max_send_sge   = 1;
+  attr.sq_umem_handle = qp_umem_handle;
+  attr.rq_umem_handle = qp_umem_handle;
+
+  for (int i = 0; i < nqps; i++) {
+    int base_offset = i * qp_buf_offset;
+    attr.sq_umem_offset = base_offset;
+    attr.rq_umem_offset = base_offset + sq_buf_offset;
+    attr.send_cq        = cqs[i];
+    attr.recv_cq        = cqs[i];
+
+    qps[i] = bnxt_re_dv_create_qp(pd, &attr);
+    GPUIB_CHECK_NNULL(qps[i], "bnxt_re_dv_create_qp");
+  }
 }
 
 }  // namespace rocshmem

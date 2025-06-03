@@ -28,6 +28,18 @@
 
 #include <sys/utsname.h> // utsname
 
+/*
+ * Finds the next power of two
+ * TODO: find a faster solution
+ */
+static inline int next_pow(int value, int base) {
+  int new_value = 1;
+  while (new_value <= value) {
+    new_value = new_value * base;
+  }
+  return new_value;
+}
+
 static inline bool rocm_has_dmabuf_support() {
   // Note: The contents of the function is from perftest. Specificly ./src/rocm_memory.c
   int dmabuf_supported = 0;
@@ -41,7 +53,7 @@ static inline bool rocm_has_dmabuf_support() {
   char buf[256];
 
   if (uname(&utsname) == -1) {
-    printf("could not get kernel name");
+    fprintf(stderr, "Could not get kernel name.\n");
     return false;
   }
 
@@ -49,8 +61,8 @@ static inline bool rocm_has_dmabuf_support() {
            "/boot/config-%s", utsname.release);
   fp = fopen(kernel_conf_file, "r");
   if (fp == NULL) {
-    printf("could not open kernel conf file %s error: %m",
-           kernel_conf_file);
+    fprintf(stderr, "Could not open kernel conf file %s error: %m\n",
+            kernel_conf_file);
     return false;
   }
 
@@ -82,10 +94,15 @@ static inline struct ibv_mr *bnxt_re_dv_reg_mr(struct ibv_pd *pd, void *addr,
   int dmabuf_fd = 0;
   uint64_t offset = 0;
 
+  if (false == rocm_has_dmabuf_support()) {
+    fprintf(stderr, "DMABUF not supported on this machine.\n");
+    return nullptr;
+  }
+
   status = hsa_amd_portable_export_dmabuf(addr, length, &dmabuf_fd, &offset);
   if (status != HSA_STATUS_SUCCESS) {
-      printf("Failed to export dmabuf handle for addr %p / %zu", addr, length);
-      abort();
+    fprintf(stderr, "Failed to export dmabuf handle for addr %p / %zu\n", addr, length);
+    abort();
   }
 
   mr = ibv_reg_dmabuf_mr(pd, offset, length, (uint64_t) addr, dmabuf_fd, access);

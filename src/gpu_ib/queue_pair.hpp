@@ -217,7 +217,10 @@ class QueuePair {
   uint32_t inline_threshold{0};
 
 #elif defined(GPUIB_BNXT)
-#warning "Implement variables for QPs"
+  uint64_t *dpi;
+  void *cq_buf;
+  void *sq_buf;
+  void *rq_buf;
 #else // !GPUIB_IONIC && !GPUIB_BNXT
 
   db_reg_t db{};

@@ -711,7 +711,6 @@ void GDADevice::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
     dest_info[i].gid = gid;
   }
 }
-#endif
 
 void* GDADevice::buf_alloc(struct ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type) {
   void* dev_ptr{nullptr};
@@ -728,7 +727,6 @@ void GDADevice::buf_release(struct ibv_pd* pd, void* pd_context, void* ptr, uint
   CHECK_HIP(hipFree(ptr));
 }
 
-#ifndef GPUIB_BNXT
 void GDADevice::init_parent_domain_attr(ibv_parent_domain_init_attr* attr1) {
   attr1->pd = ib_state->pd_orig;
   attr1->td = nullptr;

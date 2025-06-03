@@ -26,6 +26,8 @@
 extern "C" {
 #include <linux/types.h>
 #include "bnxt_re-abi.h"
+
+#define EXPERIMENTAL_APIS
 #include "bnxt_re_dv.h"
 }
 
@@ -36,5 +38,8 @@ extern "C" {
 #define GPUIB_OP_RDMA_WRITE  BNXT_RE_WR_OPCD_RDMA_WRITE
 #define GPUIB_OP_ATOMIC_FA   BNXT_RE_WR_OPCD_ATOMIC_FA
 #define GPUIB_OP_ATOMIC_CS   BNXT_RE_WR_OPCD_ATOMIC_CS
+
+// Should this be in bnxt_re-abi or _dv.h?
+#define BNXT_CQE_SIZE       32
 
 #endif  //LIBRARY_SRC_GPU_IB_BNXT_GDA_PROVIDER_HPP_

@@ -181,9 +181,9 @@ class GDADevice {
   RtsState rts(dest_info_t* dest);
 
   QPInitAttr qpattr(ibv_qp_cap cap);
-#endif
 
   void init_qp_status(ibv_qp* qp, uint8_t port);
+#endif
 
   void change_status_rtr(ibv_qp* qp, dest_info_t* dest, uint8_t port);
 
@@ -191,6 +191,13 @@ class GDADevice {
 
   void create_qps(uint8_t port, ibv_port_attr* ib_port_att);
 
+#ifdef GPUIB_BNXT
+  void init_qp_status(uint8_t port);
+
+  void create_cqs(int ncqs, int cqe);
+
+  void create_qps_impl(int nqps);
+#else
   template <typename T>
   void try_to_modify_qp(ibv_qp* qp, T state);
 
@@ -202,9 +209,6 @@ class GDADevice {
 
   ibv_cq* create_cq(ibv_context* context, ibv_pd* pd, int cqe);
 
-#ifdef GPUIB_BNXT
-  struct ibv_qp* create_qp(struct ibv_pd *pd, struct ibv_qp_cap qp_cap, struct ibv_cq *cq);
-#else
   ibv_qp* create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr_ex* qp_attr, ibv_cq* rcq);
 #endif
 
@@ -265,6 +269,25 @@ class GDADevice {
   MPI_Comm comm{};
 
   SymmetricHeap heap;
+
+#ifdef GPUIB_BNXT
+  union ibv_gid gid;
+
+  uint64_t *host_dpi_ptr;
+  uint64_t *gpu_dpi_ptr;
+
+  int cq_buf_offset;    /* Length of a single queue */
+  void *cq_buf;         /* Host ptr */
+  void *gpu_cq_buf;     /* Device ptr */
+  void *cq_umem_handle;
+
+  int sq_buf_offset;    /* Length of QP sq */
+  int rq_buf_offset;    /* Length of QP rq */
+  int qp_buf_offset;    /* Length of QP buf (sq + rq) */
+  void *qp_buf;         /* Host ptr */
+  void *gpu_qp_buf;     /* Device ptr */
+  void *qp_umem_handle;
+#endif
 };
 
 /**
