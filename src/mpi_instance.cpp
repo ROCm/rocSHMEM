@@ -22,29 +22,36 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef ROCSHMEM_MPI_INIT_SINGLETON_GTEST_HPP
-#define ROCSHMEM_MPI_INIT_SINGLETON_GTEST_HPP
-
-#include "gtest/gtest.h"
-
-#include "../src/mpi_init_singleton.hpp"
+#include "mpi_instance.hpp"
 
 namespace rocshmem {
 
-class MPIInitSingletonTestFixture : public ::testing::Test
-{
-  public:
-    MPIInitSingletonTestFixture() {
-        s_ptr_ = s_ptr_->GetInstance();
-    }
+MPIInstance::MPIInstance(MPI_Comm comm) {
+  MPI_Initialized(&pre_init_done);
 
-  protected:
-    /**
-     * @brief A singleton object used to initialize MPI
-     */
-    MPIInitSingleton* s_ptr_ {nullptr};
-};
+  if (!pre_init_done) {
+    int provided;
+    MPI_Init_thread(nullptr, nullptr, MPI_THREAD_MULTIPLE, &provided);
+  }
 
-} // namespace rocshmem
+  if (comm == MPI_COMM_NULL) {
+    comm = MPI_COMM_WORLD;
+  }
 
-#endif  // ROCSHMEM_MPI_INIT_SINGLETON_GTEST_HPP
+  MPI_Comm_size(comm, &nprocs_);
+  MPI_Comm_rank(comm, &my_rank_);
+}
+
+MPIInstance::~MPIInstance() {
+  int finalized{0};
+  MPI_Finalized(&finalized);
+  if (!finalized && !pre_init_done) {
+    MPI_Finalize();
+  }
+}
+
+int MPIInstance::get_rank() { return my_rank_; }
+
+int MPIInstance::get_nprocs() { return nprocs_; }
+
+}  // namespace rocshmem

@@ -54,19 +54,9 @@
 
  */
 
-#include <iostream>
-
-#include <hip/hip_runtime_api.h>
-#include <hip/hip_runtime.h>
 #include <rocshmem/rocshmem.hpp>
 
-#define CHECK_HIP(condition) {                                            \
-        hipError_t error = condition;                                     \
-        if(error != hipSuccess){                                          \
-            fprintf(stderr,"HIP error: %d line: %d\n", error,  __LINE__); \
-            MPI_Abort(MPI_COMM_WORLD, error);                             \
-        }                                                                 \
-    }
+#include "util.h"
 
 using namespace rocshmem;
 
@@ -128,15 +118,12 @@ int main (int argc, char **argv)
         nelem = atoi(argv[1]);
     }
 
-    int my_pe = rocshmem_my_pe();
-    int npes =  rocshmem_n_pes();
-
-    int ndevices, my_device = 0;
-    CHECK_HIP(hipGetDeviceCount(&ndevices));
-    my_device = my_pe % ndevices;
-    CHECK_HIP(hipSetDevice(my_device));
+    CHECK_HIP(hipSetDevice(get_launcher_local_rank()));
 
     rocshmem_init();
+
+    int my_pe = rocshmem_my_pe();
+    int npes =  rocshmem_n_pes();
 
     int *source = (int *)rocshmem_malloc(nelem * npes * sizeof(int));
     int *dest = (int *)rocshmem_malloc(nelem * npes * sizeof(int));

@@ -55,15 +55,8 @@ class CommunicatorMPI {
   CommunicatorMPI(char* heap_base, size_t heap_size,
                   MPI_Comm comm = MPI_COMM_WORLD)
     : comm_{comm} {
-    int initialized;
-    MPI_Initialized(&initialized);
-    if (!initialized) {
-      int provided;
-      MPI_Init_thread(nullptr, nullptr, MPI_THREAD_MULTIPLE, &provided);
-    }
     MPI_Comm_rank(comm_, &my_pe_);
     MPI_Comm_size(comm_, &num_pes_);
-
     heap_window_info_ = WindowInfo(comm_, heap_base, heap_size);
   }
 

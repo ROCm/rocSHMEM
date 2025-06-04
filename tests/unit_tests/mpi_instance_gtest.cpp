@@ -22,77 +22,16 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_MPI_INIT_SINGLETON_HPP_
-#define LIBRARY_SRC_MPI_INIT_SINGLETON_HPP_
+#include "mpi_instance_gtest.hpp"
 
-#include <mpi.h>
+using namespace rocshmem;
 
-#include <memory>
+TEST_F(MPIInstanceTestFixture, library_initialize_destroy) {}
 
-/**
- * @file mpi_init_singleton.hpp
- *
- * @brief Contains MPI library initialization code
- */
+TEST_F(MPIInstanceTestFixture, rank) {
+  ASSERT_NO_FATAL_FAILURE(s_ptr_->get_rank());
+}
 
-namespace rocshmem {
-
-class MPIInitSingleton {
- private:
-  /**
-   * @brief Primary constructor
-   */
-  MPIInitSingleton();
-
- public:
-  /**
-   * @brief Destructor
-   */
-  ~MPIInitSingleton();
-
-  /**
-   * @brief Invoke singleton construction or return handle
-   *
-   * @return Initialized handle to singleton
-   */
-  static MPIInitSingleton* GetInstance();
-
-  /**
-   * @brief Accessor for my COMM_WORLD rank identifier
-   *
-   * @return My COMM_WORLD rank identifier
-   */
-  int get_rank();
-
-  /**
-   * @brief Accessor for number or processes in COMM_WORLD
-   *
-   * @return Number of processes in COMM_WORLD
-   */
-  int get_nprocs();
-
- private:
-  /**
-   * @brief My MPI rank identifier
-   */
-  int my_rank_{-1};
-
-  /**
-   * @brief Number of MPI processes
-   */
-  int nprocs_{-1};
-
-  /**
-   * @brief Was MPI initialized before rocshmem_init call
-   */
-  int pre_init_done{0};
-
-  /**
-   * @brief Refers to global variable
-   */
-  static MPIInitSingleton* instance;
-};
-
-}  // namespace rocshmem
-
-#endif  // LIBRARY_SRC_MPI_INIT_SINGLETON_HPP_
+TEST_F(MPIInstanceTestFixture, nprocs) {
+  ASSERT_EQ(s_ptr_->get_nprocs(), 4);
+}

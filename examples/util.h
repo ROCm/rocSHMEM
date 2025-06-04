@@ -22,16 +22,31 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "mpi_init_singleton_gtest.hpp"
+#ifndef __ROCSHMEM_EXAMPLES_UTIL_H__
+#define __ROCSHMEM_EXAMPLES_UTIL_H__
 
-using namespace rocshmem;
+#include <iostream>
 
-TEST_F(MPIInitSingletonTestFixture, library_initialize_destroy) {}
+#include <hip/hip_runtime_api.h>
+#include <hip/hip_runtime.h>
 
-TEST_F(MPIInitSingletonTestFixture, rank) {
-  ASSERT_NO_FATAL_FAILURE(s_ptr_->get_rank());
+#define CHECK_HIP(condition) {                                            \
+        hipError_t error = condition;                                     \
+        if(error != hipSuccess){                                          \
+            fprintf(stderr,"HIP error: %d line: %d\n", error,  __LINE__); \
+            MPI_Abort(MPI_COMM_WORLD, error);                             \
+        }                                                                 \
+    }
+
+static int get_launcher_local_rank() {
+    char *local_rank_str = nullptr;
+
+    local_rank_str = getenv("OMPI_COMM_WORLD_LOCAL_RANK");
+    if (nullptr != local_rank_str) {
+        return atoi(local_rank_str);
+    }
+
+    return -1;
 }
 
-TEST_F(MPIInitSingletonTestFixture, nprocs) {
-  ASSERT_EQ(s_ptr_->get_nprocs(), 4);
-}
+#endif /* __ROCSHMEM_EXAMPLES_UTIL_H__ */

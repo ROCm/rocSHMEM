@@ -22,60 +22,33 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include <rocshmem/rocshmem.hpp>
-#include <vector>
+#ifndef ROCSHMEM_MPI_INSTANCE_GTEST_HPP
+#define ROCSHMEM_MPI_INSTANCE_GTEST_HPP
 
-#include "tester.hpp"
-#include "tester_arguments.hpp"
+#include "gtest/gtest.h"
 
-using namespace rocshmem;
+#include "../src/mpi_instance.hpp"
 
-int main(int argc, char *argv[]) {
-  /**
-   * Setup the tester arguments.
-   */
-  TesterArguments args(argc, argv);
+namespace rocshmem {
 
-  /***
-   * Select a GPU
-   */
-  char* ompi_local_rank = getenv("OMPI_COMM_WORLD_LOCAL_RANK");
-  CHECK_HIP(hipSetDevice(atoi(ompi_local_rank)));
+class MPIInstanceTestFixture : public ::testing::Test
+{
+  public:
+    MPIInstanceTestFixture() {
+        s_ptr_ = new MPIInstance(MPI_COMM_WORLD);
+    }
 
-  /**
-   * Must initialize rocshmem to access arguments needed by the tester.
-   */
-  rocshmem_init();
+    ~MPIInstanceTestFixture() {
+        delete s_ptr_;
+    }
 
-  /**
-   * Now grab the arguments from rocshmem.
-   */
-  args.get_rocshmem_arguments();
-
-  /**
-   * Using the arguments we just constructed, call the tester factory
-   * method to get the tester (specified by the arguments).
-   */
-  std::vector<Tester *> tests = Tester::create(args);
-
-  /**
-   * Run the tests
-   */
-  for (auto test : tests) {
-    test->execute();
-
+  protected:
     /**
-     * The tester factory method news the tester to create it so we clean
-     * up the memory here.
+     * @brief A MPI instance object used to initialize MPI
      */
-    delete test;
-  }
+    MPIInstance* s_ptr_ {nullptr};
+};
 
-  /**
-   * The rocshmem library needs to be cleaned up with this call. It pairs
-   * with the init function above.
-   */
-  rocshmem_finalize();
+} // namespace rocshmem
 
-  return 0;
-}
+#endif  // ROCSHMEM_MPI_INSTANCE_GTEST_HPP

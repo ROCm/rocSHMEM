@@ -54,19 +54,9 @@
 
  */
 
-#include <iostream>
-
-#include <hip/hip_runtime_api.h>
-#include <hip/hip_runtime.h>
 #include <rocshmem/rocshmem.hpp>
 
-#define CHECK_HIP(condition) {                                            \
-        hipError_t error = condition;                                     \
-        if(error != hipSuccess){                                          \
-            fprintf(stderr,"HIP error: %d line: %d\n", error,  __LINE__); \
-            MPI_Abort(MPI_COMM_WORLD, error);                             \
-        }                                                                 \
-    }
+#include "util.h"
 
 using namespace rocshmem;
 
@@ -76,8 +66,8 @@ __global__ void simple_getmem_test(int *src, int *dst, size_t nelem)
 
     int threadId = blockIdx.x * blockDim.x + threadIdx.x;
     if (threadId == 0) {
-        int rank = rocshmem_my_pe();
-        int peer =  rank ? 0 : 1;
+        int my_pe = rocshmem_my_pe();
+        int peer =  my_pe ? 0 : 1;
         rocshmem_getmem(dst, src, nelem * sizeof(int), peer);
         rocshmem_quiet();
     }
@@ -90,19 +80,19 @@ __global__ void simple_getmem_test(int *src, int *dst, size_t nelem)
 
 int main (int argc, char **argv)
 {
-    int rank = rocshmem_my_pe();
-    int ndevices, my_device = 0;
-    CHECK_HIP(hipGetDeviceCount(&ndevices));
-    my_device = rank % ndevices;
-    CHECK_HIP(hipSetDevice(my_device));
     int nelem = MAX_ELEM;
 
     if (argc > 1) {
         nelem = atoi(argv[1]);
     }
 
+    CHECK_HIP(hipSetDevice(get_launcher_local_rank()));
+
     rocshmem_init();
+
+    int my_pe = rocshmem_my_pe();
     int npes =  rocshmem_n_pes();
+
     int *src = (int *)rocshmem_malloc(nelem * sizeof(int));
     int *dst = (int *)rocshmem_malloc(nelem * sizeof(int));
     if (NULL == src || NULL == dst) {
@@ -128,7 +118,7 @@ int main (int argc, char **argv)
         if (dst[i] != 0) {
             pass = false;
 #if VERBOSE
-            printf("[%d] Error in element %d expected 0 got %d\n", rank, i, dst[i]);
+            printf("[%d] Error in element %d expected 0 got %d\n", my_pe, i, dst[i]);
 #endif
         }
     }
