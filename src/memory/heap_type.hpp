@@ -48,7 +48,7 @@ using HEAP_T = HeapMemory<HIPAllocator>;
 using HEAP_T = HeapMemory<HostAllocator>;
 #elif defined USE_HIP_HOST_HEAP
 using HEAP_T = HeapMemory<HIPHostAllocator>;
-#elif defined USE_UNCACHED_HEAP
+#elif defined(USE_UNCACHED_HEAP) && defined(gfx942)
 using HEAP_T = HeapMemory<HIPAllocatorUncached>;
 #else
 using HEAP_T = HeapMemory<HIPDefaultFinegrainedAllocator>;
