@@ -182,7 +182,7 @@ class NoHdpPolicy {
 /*
  * Select which one of our HDP policies to use at compile time.
  */
-#ifdef USE_COHERENT_HEAP
+#ifdef HEAP_IS_COHERENT
 typedef NoHdpPolicy HdpPolicy;
 #else
 // Only when we are using the IB conduit, we have to use a polling thread to

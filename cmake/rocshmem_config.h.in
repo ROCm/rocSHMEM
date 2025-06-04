@@ -29,12 +29,13 @@
 #cmakedefine USE_THREADS
 #cmakedefine USE_SHARED_CTX
 #cmakedefine USE_WF_COAL
+#cmakedefine USE_HEAP_DEVICE_FINEGRAIN
+#cmakedefine USE_HEAP_DEVICE_UNCACHED
 #cmakedefine USE_HEAP_DEVICE_COARSEGRAIN
 #cmakedefine USE_HEAP_MANAGED
 #cmakedefine USE_HEAP_HOST_HIP
 #cmakedefine USE_HEAP_HOST_HIP_NONCOHERENT
 #cmakedefine USE_HEAP_HOST
-#cmakedefine DEBUG_HIPMALLOC_FINEGRAIN_DEFAULT_UNCACHED
 #cmakedefine USE_ALLOC_DLMALLOC
 #cmakedefine USE_ALLOC_POW2BINS
 #cmakedefine USE_FUNC_CALL
@@ -42,7 +43,7 @@
 #cmakedefine USE_HOST_SIDE_HDP_FLUSH
 
 #define HEAP_IS_COHERENT
-#if defined(USE_HEAP_HOST) || defined(USE_HEAP_HOST_NONCOHERENT) || defined(USE_HEAP_DEVICE_COARSEGRAIN)
+#if defined(USE_HEAP_HOST) || defined(USE_HEAP_HOST_NONCOHERENT) //|| defined(USE_HEAP_DEVICE_COARSEGRAIN)
 /* refer to for why https://rocm.blogs.amd.com/software-tools-optimization/mi200-memory-space/README.html
  */
 #undef HEAP_IS_COHERENT

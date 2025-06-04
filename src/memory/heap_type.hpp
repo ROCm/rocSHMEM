@@ -40,18 +40,28 @@
 
 namespace rocshmem {
 
+// Compilation error 'HEAP_T redefined' indicates that user had more than one
+// USE_HEAP_* ON when configuring. Use ccmake to select only one.
 #if defined USE_HEAP_DEVICE_COARSEGRAIN
 using HEAP_T = HeapMemory<HIPAllocator>;
-#elif defined USE_HEAP_MANAGED
+#endif
+#if defined USE_HEAP_DEVICE_FINEGRAIN
+using HEAP_T = HeapMemory<HIPAllocatorFinegrained>;
+#endif
+#if defined USE_HEAP_DEVICE_UNCACHED
+using HEAP_T = HeapMemory<HIPAllocatorUncached>;
+#endif
+#if defined USE_HEAP_MANAGED
 using HEAP_T = HeapMemory<HIPAllocatorManaged>;
-#elif defined USE_HEAP_HOST_HIP_NONCOHERENT
+#endif
+#if defined USE_HEAP_HOST_HIP_NONCOHERENT
 using HEAP_T = HeapMemory<HIPHostAllocatorNonCoherent>;
-#elif defined USE_HEAP_HOST_HIP
+#endif
+#if defined USE_HEAP_HOST_HIP
 using HEAP_T = HeapMemory<HIPHostAllocator>;
-#elif defined USE_HEAP_HOST
+#endif
+#if defined USE_HEAP_HOST
 using HEAP_T = HeapMemory<HostAllocator>;
-#else
-using HEAP_T = HeapMemory<HIPDefaultFinegrainedAllocator>;
 #endif
 
 }  // namespace rocshmem
