@@ -321,7 +321,10 @@ void IPCBackend::initIPC(TcpBootstrap *bootstr) {
 }
 
 void IPCBackend::global_exit(int status) {
-  MPI_Abort(backend_comm, status);
+  if (backend_comm != MPI_COMM_NULL)
+    MPI_Abort(backend_comm, status);
+  else
+    abort();
 }
 
 void IPCBackend::teams_destroy() {

@@ -31,6 +31,7 @@ MPIInstance::MPIInstance(MPI_Comm comm) {
 
   if (!pre_init_done) {
     int provided;
+    printf("about to call MPI_Init_thread\n");
     MPI_Init_thread(nullptr, nullptr, MPI_THREAD_MULTIPLE, &provided);
   }
 
@@ -45,7 +46,7 @@ MPIInstance::MPIInstance(MPI_Comm comm) {
 MPIInstance::~MPIInstance() {
   int finalized{0};
   MPI_Finalized(&finalized);
-  if (!finalized && !pre_init_done) {
+  if (!finalized && pre_init_done) {
     MPI_Finalize();
   }
 }

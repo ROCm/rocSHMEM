@@ -331,7 +331,9 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   backend->~Backend();
   CHECK_HIP(hipHostFree(backend));
 
-  delete mpi_instance;
+  if (bootstr == nullptr)
+    delete mpi_instance;
+
   if (bootstr != nullptr)
     delete bootstr;
 }
