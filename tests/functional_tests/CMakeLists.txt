@@ -82,10 +82,12 @@ if (BUILD_TESTS_ONLY)
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
       $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
   )
+
 endif()
 
 target_link_libraries(
   ${PROJECT_NAME}
   PRIVATE
     roc::rocshmem
+    ${PMIX_LIBRARY}  
 )

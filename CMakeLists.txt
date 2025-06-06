@@ -68,7 +68,6 @@ option(BUILD_TOOLS "Build binary tools (e.g., rocshmem_info)" ON)
 option(BUILD_LOCAL_GPU_TARGET_ONLY "Build only for GPUs detected on this machine" OFF)
 option(BUILD_CODE_COVERAGE "Build with code coverage flags (gcc only)" OFF)
 
-configure_file(cmake/rocshmem_config.h.in rocshmem_config.h)
 
 ###############################################################################
 # PROJECT
@@ -150,6 +149,27 @@ if (NOT BUILD_TESTS_ONLY)
   set(THREADS_PREFER_PTHREAD_FLAG TRUE)
   find_package(Threads REQUIRED)
 
+  set(prev_CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES})
+  list(APPEND CMAKE_REQUIRED_INCLUDES "${MPI_CXX_HEADER_DIR}")
+  find_path(PMIX_HEADER pmix.h PATHS ${CMAKE_REQUIRED_INCLUDES})
+  if (PMIX_HEADER)
+    message("-- Found pmix.h at ${PMIX_HEADER}")
+    get_filename_component(mpi_lib_dir ${MPI_mpi_LIBRARY} DIRECTORY)
+    find_library(PMIX_LIBRARY pmix PATHS ${mpi_lib_dir})
+    if (PMIX_LIBRARY)
+      message("-- Found libpmix at ${PMIX_LIBRARY}")
+      set(HAVE_PMIX TRUE)
+      get_filename_component(PMIX_HEADER_DIR ${PMIX_HEADER} DIRECTORY)
+    else()
+      message("-- Could not find libpmix.so")
+    endif()
+  else()
+    message("-- Cound not find pmix.h")
+  endif()
+  set(CMAKE_REQUIRED_INCLUDES ${prev_CMAKE_REQUIRED_INCLUDES})
+
+configure_file(cmake/rocshmem_config.h.in rocshmem_config.h)
+
   #############################################################################
   # LINKING AND INCLUDE DIRECTORIES
   #############################################################################
@@ -166,6 +186,8 @@ if (NOT BUILD_TESTS_ONLY)
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
       $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>               # rocshmem_config.h
       $<INSTALL_INTERFACE:include>
+      ${MPI_CXX_HEADER_DIR}
+      ${PMIX_HEADER_DIR}
   )
 
   target_link_libraries(
