@@ -37,12 +37,6 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR AND
 endif()
 
 ###############################################################################
-# DEFAULT BUILD TYPE
-###############################################################################
-set(CMAKE_BUILD_TYPE "Release" CACHE STRING
-      "build type: Release, Debug, RelWithDebInfo, MinSizeRel")
-
-###############################################################################
 # CONFIGURATION OPTIONS
 ###############################################################################
 option(DEBUG "Enable debug trace" OFF)
@@ -76,7 +70,7 @@ configure_file(cmake/rocshmem_config.h.in rocshmem_config.h)
 # PROJECT
 ###############################################################################
 include(${CMAKE_SOURCE_DIR}/cmake/setup_project.cmake)
-find_package(ROCM 0.8 REQUIRED HINTS ${ROCM_PATH} $ENV{ROCM_PATH} PATHS /opt/rocm)
+find_package(ROCM 0.8 REQUIRED PATHS /opt/rocm)
 set(ROCMCHECKS_WARN_TOOLCHAIN_VAR OFF)
 
 ## Setup VERSION
@@ -147,7 +141,7 @@ if (NOT BUILD_TESTS_ONLY)
   # PACKAGE DEPENDENCIES
   #############################################################################
   find_package(MPI REQUIRED)
-  find_package(hip REQUIRED HINTS ${ROCM_PATH} $ENV{ROCM_PATH} PATHS /opt/rocm)
+  find_package(hip REQUIRED PATHS /opt/rocm)
   find_package(hsa-runtime64 REQUIRED)
 
   set(CMAKE_THREAD_PREFER_PTHREAD TRUE)

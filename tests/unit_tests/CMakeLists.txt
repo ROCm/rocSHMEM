@@ -78,11 +78,11 @@ endif()
 ###############################################################################
 # ROCSHMEM DEPENDENCY
 ###############################################################################
-find_package(hip REQUIRED HINTS ${ROCM_PATH} $ENV{ROCM_PATH} PATHS /opt/rocm)
+find_package(hip REQUIRED PATHS /opt/rocm)
 
 if (BUILD_TESTS_ONLY)
   find_package(MPI REQUIRED)
-  find_package(rocshmem REQUIRED HINTS ${ROCM_PATH} $ENV{ROCM_PATH} PATHS /opt/rocm)
+  find_package(rocshmem REQUIRED PATHS /opt/rocm)
 
   target_include_directories(
     ${PROJECT_NAME}
@@ -102,8 +102,8 @@ target_link_libraries(
 # GTEST DEPENDENCY
 ###############################################################################
 # These packages are required for the unit tests
-find_package(rocprim REQUIRED HINTS ${ROCM_PATH} $ENV{ROCM_PATH} PATHS /opt/rocm)
-find_package(rocthrust REQUIRED HINTS ${ROCM_PATH} $ENV{ROCM_PATH} PATHS /opt/rocm)
+find_package(rocprim REQUIRED PATHS /opt/rocm)
+find_package(rocthrust REQUIRED PATHS /opt/rocm)
 
 include(FetchContent)
 
