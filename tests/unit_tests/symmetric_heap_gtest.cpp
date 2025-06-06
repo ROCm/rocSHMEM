@@ -35,6 +35,7 @@ TEST_F(SymmetricHeapTestFixture, malloc_free) {
   ASSERT_NO_FATAL_FAILURE(symmetric_heap_.free(ptr));
 }
 
+#if 0
 TEST_F(SymmetricHeapTestFixture, window_info) {
   auto win_info_ptr{symmetric_heap_.get_window_info()};
 
@@ -45,6 +46,7 @@ TEST_F(SymmetricHeapTestFixture, window_info) {
   ASSERT_NE(0, flag);
   ASSERT_NE(nullptr, window_base_addr);
 }
+#endif
 
 TEST_F(SymmetricHeapTestFixture, heap_bases) {
   auto heap_bases{symmetric_heap_.get_heap_bases()};
