@@ -34,7 +34,6 @@
 #cmakedefine USE_HEAP_DEVICE_COARSEGRAIN
 #cmakedefine USE_HEAP_MANAGED
 #cmakedefine USE_HEAP_HOST_HIP
-#cmakedefine USE_HEAP_HOST_HIP_NONCOHERENT
 #cmakedefine USE_HEAP_HOST
 #cmakedefine USE_ALLOC_DLMALLOC
 #cmakedefine USE_ALLOC_POW2BINS
@@ -43,8 +42,3 @@
 #cmakedefine USE_HOST_SIDE_HDP_FLUSH
 
 #define HEAP_IS_COHERENT
-#if defined(USE_HEAP_HOST) || defined(USE_HEAP_HOST_NONCOHERENT) //|| defined(USE_HEAP_DEVICE_COARSEGRAIN)
-/* refer to for why https://rocm.blogs.amd.com/software-tools-optimization/mi200-memory-space/README.html
- */
-#undef HEAP_IS_COHERENT
-#endif

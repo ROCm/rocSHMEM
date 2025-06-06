@@ -54,9 +54,6 @@ using HEAP_T = HeapMemory<HIPAllocatorUncached>;
 #if defined USE_HEAP_MANAGED
 using HEAP_T = HeapMemory<HIPAllocatorManaged>;
 #endif
-#if defined USE_HEAP_HOST_HIP_NONCOHERENT
-using HEAP_T = HeapMemory<HIPHostAllocatorNonCoherent>;
-#endif
 #if defined USE_HEAP_HOST_HIP
 using HEAP_T = HeapMemory<HIPHostAllocator>;
 #endif

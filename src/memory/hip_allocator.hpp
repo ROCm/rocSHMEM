@@ -89,12 +89,6 @@ class HIPHostAllocator : public MemoryAllocator {
       : MemoryAllocator(hipHostMalloc, hipFree, hipHostMallocCoherent) {}
 };
 
-class HIPHostAllocatorNonCoherent : public MemoryAllocator {
- public:
-  HIPHostAllocatorNonCoherent()
-      : MemoryAllocator(hipHostMalloc, hipFree, hipHostMallocNonCoherent) {}
-};
-
 class HostAllocator : public MemoryAllocator {
  public:
   HostAllocator() : MemoryAllocator(std::malloc, std::free) {}
