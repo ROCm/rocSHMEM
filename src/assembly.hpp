@@ -166,7 +166,7 @@ NOWARN(-Wdeprecated-volatile,
 // clang-format on
 
 __device__ __forceinline__ void __roc_inv() {
-#if defined HEAP_IS_COHERENT
+#if not defined USE_HDP_FLUSH
 #if defined(__gfx906__)
 #endif
 #if defined(__gfx908__)
@@ -181,7 +181,7 @@ __device__ __forceinline__ void __roc_inv() {
 }
 
 __device__ __forceinline__ void __roc_flush() {
-#if defined HEAP_IS_COHERENT
+#if not defined USE_HDP_FLUSH
 #if defined(__gfx906__)
 #endif
 #if defined(__gfx908__)

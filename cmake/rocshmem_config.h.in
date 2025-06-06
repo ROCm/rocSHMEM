@@ -39,6 +39,5 @@
 #cmakedefine USE_ALLOC_POW2BINS
 #cmakedefine USE_FUNC_CALL
 #cmakedefine USE_SINGLE_NODE
-#cmakedefine USE_HOST_SIDE_HDP_FLUSH
-
-#define HEAP_IS_COHERENT
+#cmakedefine USE_HDP_FLUSH
+#cmakedefine USE_HDP_FLUSH_HOST_SIDE
