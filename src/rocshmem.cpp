@@ -264,8 +264,8 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 }
 
 [[maybe_unused]] __host__ int rocshmem_my_pe() {
-  if (mpi_instance != nullptr) {
-    return mpi_instance->get_rank();
+  if (backend != nullptr) {
+    return backend->getMyPE();
   }
 
   fprintf(stderr, "[WARNING] rocshmem_init() has not been called\n");
@@ -273,8 +273,8 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 }
 
 [[maybe_unused]] __host__ int rocshmem_n_pes() {
-  if (mpi_instance != nullptr) {
-    return mpi_instance->get_nprocs();
+  if (backend != nullptr) {
+    return backend->getNumPEs();
   }
 
   fprintf(stderr, "[WARNING] rocshmem_init() has not been called\n");
