@@ -165,21 +165,6 @@ NOWARN(-Wdeprecated-volatile,
 )
 // clang-format on
 
-__device__ __forceinline__ void __roc_inv() {
-#if not defined USE_HDP_FLUSH
-#if defined(__gfx906__)
-#endif
-#if defined(__gfx908__)
-#endif
-#if defined(__gfx90a__)
-//  asm volatile("buffer_wbinvl1;");
-#endif
-#if defined(__gfx942__)
-//  asm volatile("buffer_inv sc0 sc1;");
-#endif
-#endif
-}
-
 __device__ __forceinline__ void __roc_flush() {
 #if not defined USE_HDP_FLUSH
 #if defined(__gfx906__)
