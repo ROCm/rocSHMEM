@@ -209,7 +209,6 @@ void IPCBackend::team_destroy(rocshmem_team_t team) {
   CHECK_HIP(hipFree(team_obj));
 }
 
-
 void IPCBackend::Allreduce_char_BAND (char* inbuf, char *outbuf, size_t num_bytes,
 				      Team *team) {
 
@@ -222,6 +221,7 @@ void IPCBackend::Allreduce_char_BAND (char* inbuf, char *outbuf, size_t num_byte
   int my_pe = team_obj->my_pe;
 
   char *tmp_buffer = new char[num_pes * num_bytes];
+  std::memset(tmp_buffer, 0, num_pes * num_bytes);
   std::memcpy (&tmp_buffer[my_pe * num_bytes], inbuf, num_bytes);
 
   if (num_pes == backend_bootstr->getNranks() ) {
@@ -234,7 +234,7 @@ void IPCBackend::Allreduce_char_BAND (char* inbuf, char *outbuf, size_t num_byte
   for (int i = 0; i < num_bytes; i++) {
     outbuf[i] = tmp_buffer[i];
     for (int j = 1; j < num_pes; j++) {
-      outbuf[i] &= tmp_buffer[i * num_bytes + j];
+      outbuf[i] &= tmp_buffer[j * num_bytes + i];
     }
   }
 
@@ -263,6 +263,7 @@ void IPCBackend::create_new_team([[maybe_unused]] Team *parent_team,
   int common_index = get_ls_non_zero_bit(reduced_bitmask_, max_num_teams);
   if (common_index < 0) {
     /* No team available */
+    printf("Could not create team, all bits in use. Aborting.\n");
     abort();
   }
 
