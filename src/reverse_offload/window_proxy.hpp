@@ -34,7 +34,7 @@ namespace rocshmem {
 template <typename ALLOCATOR>
 class WindowProxy {
  private:
-  using ProxyT = DeviceProxy<ALLOCATOR, WindowInfo *>;
+  using ProxyT = DeviceProxy<ALLOCATOR, WindowInfoMPI *>;
 
  public:
   /*
@@ -43,11 +43,11 @@ class WindowProxy {
   WindowProxy(SymmetricHeap *heap, MPI_Comm comm, size_t num_windows)
     : num_windows_{num_windows}, proxy_{num_windows} {
 
-    auto *window_info{proxy_.get()};
+    WindowInfoMPI** window_info{proxy_.get()};
 
     for (size_t i{0}; i < num_windows_; i++) {
       window_info[i] =
-          new WindowInfo(comm, heap->get_local_heap_base(), heap->get_size());
+          new WindowInfoMPI(comm, heap->get_local_heap_base(), heap->get_size());
     }
   }
 
@@ -74,7 +74,7 @@ class WindowProxy {
   /*
    * @brief Provide access to the memory referenced by the proxy
    */
-  __host__ __device__ WindowInfo **get() { return proxy_.get(); }
+  __host__ __device__ WindowInfoMPI **get() { return proxy_.get(); }
 
   __host__ size_t get_num_MPI_windows() { return num_windows_; }
  private:
