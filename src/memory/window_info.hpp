@@ -51,8 +51,10 @@ class WindowInfo {
         win_start_{start},
         win_end_{reinterpret_cast<char*>(start) + size} {
     up_win_ = std::unique_ptr<MPI_Win>(new MPI_Win);
+#ifndef GPUIB_BNXT
     MPI_Win_create(win_start_, size, 1, MPI_INFO_NULL, comm_, up_win_.get());
     MPI_Win_lock_all(MPI_MODE_NOCHECK, *up_win_.get());
+#endif
   }
 
   /**
@@ -60,8 +62,10 @@ class WindowInfo {
    */
   ~WindowInfo() {
     if (up_win_) {
+#ifndef GPUIB_BNXT
       MPI_Win_unlock_all(*up_win_.get());
       MPI_Win_free(up_win_.get());
+#endif
     }
   }
 

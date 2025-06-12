@@ -224,7 +224,7 @@ void dump_ibv_qp(struct ibv_qp *qp, int conn_num) {
   DPRINTF("=========== QP_DUMP_END CONNECTION#%d  ========\n", conn_num);
 }
 
-#ifndef GPUIB_IONIC
+#if !defined(GPUIB_IONIC) && !defined(GPUIB_BNXT)
 void dump_mlx5dv_qp(struct mlx5dv_qp *qp_dv, int conn_num) {
   DPRINTF("\n");
   DPRINTF("===============================================\n");
@@ -550,8 +550,14 @@ void GDADevice::destroy_teams() {
 void GDADevice::heap_memory_rkey() {
   auto *base_heap = heap.get_local_heap_base();
   int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
+
+#ifdef GPUIB_BNXT
+  heap_mr = bnxt_re_dv_reg_mr(ib_state->pd_orig, base_heap, heap.get_size(), access);
+  GPUIB_CHECK_NNULL(heap_mr, "bnxt_re_dv_reg_mr");
+#else
   heap_mr = ibv_reg_mr(ib_state->pd_orig, base_heap, heap.get_size(), access);
   GPUIB_CHECK_NNULL(heap_mr, "ibv_reg_mr");
+#endif
 
   const size_t rkeys_size = sizeof(uint32_t) * num_pes;
   uint32_t *host_rkey_cpy = reinterpret_cast<uint32_t*>(malloc(rkeys_size));
@@ -593,6 +599,7 @@ void GDADevice::initialize_context(GPUIBContext *ctx, int context_id) {
   }
 }
 
+#ifndef GPUIB_BNXT
 void GDADevice::ib_init(struct ibv_device* ib_dev, uint8_t port) {
   ib_state = new ib_state_t;
   GPUIB_CHECK_NNULL(ib_state, "ib_state object create");
@@ -896,6 +903,7 @@ GDADevice::QPInitAttr GDADevice::qpattr(ibv_qp_cap cap) {
   qpattr.attr.qp_type = IBV_QPT_RC;
   return qpattr;
 }
+#endif
 
 }  // namespace rocshmem
 

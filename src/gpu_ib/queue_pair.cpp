@@ -27,7 +27,7 @@
 #include "gda_device.hpp"
 #include "endian.hpp"
 #include "gpuib_macros.inl"
-#ifndef GPUIB_IONIC
+#if !defined(GPUIB_IONIC) && !defined(GPUIB_BNXT)
 #include "segment_builder.hpp"
 #endif
 #include "util.hpp"
@@ -38,9 +38,16 @@ QueuePair::QueuePair(struct ibv_pd* pd) {
   allocator.allocate((void**)&nonfetching_atomic, 8);
   CHECK_HIP(hipMemset(nonfetching_atomic, 0, 8));
   int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
+
+#ifdef GPUIB_BNXT
+  ibv_mr *mr = bnxt_re_dv_reg_mr(pd, nonfetching_atomic, 8, access);
+  GPUIB_CHECK_NNULL(mr, "bnxt_re_dv_reg_mr");
+#else
   ibv_mr *mr = ibv_reg_mr(pd, nonfetching_atomic, 8, access);
   GPUIB_CHECK_NNULL(mr, "ibv_reg_mr");
-#ifdef GPUIB_IONIC
+#endif
+
+#if defined(GPUIB_IONIC) || defined(GPUIB_BNXT)
   nonfetching_atomic_lkey = mr->lkey;
 #else
   nonfetching_atomic_lkey = htobe32(mr->lkey);
@@ -49,9 +56,14 @@ QueuePair::QueuePair(struct ibv_pd* pd) {
   allocator.allocate((void**)&fetching_atomic, 8 * FETCHING_ATOMIC_CNT);
   CHECK_HIP(hipMemset(fetching_atomic, 0, 8 * FETCHING_ATOMIC_CNT));
   access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
+#ifdef GPUIB_BNXT
+  mr = bnxt_re_dv_reg_mr(pd, fetching_atomic, 8 * FETCHING_ATOMIC_CNT, access);
+  GPUIB_CHECK_NNULL(mr, "bnxt_re_dv_reg_mr");
+#else
   mr = ibv_reg_mr(pd, fetching_atomic, 8 * FETCHING_ATOMIC_CNT, access);
   GPUIB_CHECK_NNULL(mr, "ibv_reg_mr");
-#ifdef GPUIB_IONIC
+#endif
+#if defined(GPUIB_IONIC) || defined(GPUIB_BNXT)
   fetching_atomic_lkey = mr->lkey;
 #else
   fetching_atomic_lkey = htobe32(mr->lkey);
@@ -228,6 +240,7 @@ __device__ void QueuePair::quiet_internal(uint64_t activemask, uint32_t cons) {
 }
 #endif // GPUIB_IONIC
 
+#ifndef GPUIB_BNXT
 #ifdef GPUIB_IONIC
 __device__ void QueuePair::ring_doorbell(uint32_t pos) {
   // TODO When threads write at once to the same address, not all writes reach the bus.
@@ -250,7 +263,9 @@ __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint64_t my_sq_counter
   __hip_atomic_store(&db.uint, db_uint, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
 }
 #endif // !GPUIB_IONIC
+#endif // !GPUIB_BNXT
 
+#ifndef GPUIB_BNXT
 #ifdef GPUIB_IONIC
 __device__ void QueuePair::quiet() {
   quiet_internal(get_same_qp_lane_mask(), sq_prod);
@@ -338,7 +353,9 @@ __device__ void QueuePair::quiet() {
   }
 }
 #endif // !GPUIB_IONIC
+#endif // !GPUIB_BNXT
 
+#ifndef GPUIB_BNXT
 #ifdef GPUIB_IONIC
 __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
   uint64_t activemask = get_same_qp_lane_mask();
@@ -436,7 +453,9 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   }
 }
 #endif // !GPUIB_IONIC
+#endif // !GPUIB_BNXT
 
+#ifndef GPUIB_BNXT
 #ifdef GPUIB_IONIC
 __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode,
                                             int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
@@ -497,7 +516,7 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   }
   return ret;
 }
-#else // !GPUIB_IONIC
+#else // !GPUIB_IONIC || !GPUIB_BNXT
 __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode,
                                             int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
   uint64_t activemask = get_active_lane_mask();
@@ -578,6 +597,7 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   return ret;
 }
 #endif // !GPUIB_IONIC
+#endif // !GPUIB_BNXT
 
 /******************************************************************************
  ****************************** SHMEM INTERFACE *******************************

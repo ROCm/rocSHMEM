@@ -6,3 +6,4 @@
 #cmakedefine USE_ALLOC_DLMALLOC
 #cmakedefine USE_ALLOC_POW2BINS
 #cmakedefine GPUIB_IONIC
+#cmakedefine GPUIB_BNXT
