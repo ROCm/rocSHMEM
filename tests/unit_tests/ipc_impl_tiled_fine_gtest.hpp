@@ -36,6 +36,9 @@
 #include "../src/memory/symmetric_heap.hpp"
 #include "../src/util.hpp"
 
+#include <hip/hip_runtime.h>
+#include <cassert>
+
 namespace rocshmem {
 
 const int WARP_SIZE = 64;

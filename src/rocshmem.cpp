@@ -33,11 +33,6 @@
 
 #include "rocshmem/rocshmem.hpp"
 
-#include <cstdlib>
-#include <cstring>
-#include <functional>
-#include <random>
-
 #include "backend_bc.hpp"
 #include "context_incl.hpp"
 #ifdef USE_RO
@@ -53,6 +48,11 @@
 #include "util.hpp"
 #include "bootstrap/bootstrap.hpp"
 
+#include <cstdlib>
+#include <cstring>
+#include <functional>
+#include <random>
+#include <cassert>
 #include <unistd.h>
 
 namespace rocshmem {

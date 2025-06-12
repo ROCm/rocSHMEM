@@ -57,7 +57,7 @@ class Notifier {
       return;
     }
     if constexpr (scope == detail::atomic::memory_scope_system) {
-      assert(false);
+      static_assert(false);
       return;
     }
 

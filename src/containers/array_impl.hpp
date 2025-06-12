@@ -25,10 +25,11 @@
 #ifndef LIBRARY_SRC_CONTAINERS_ARRAY_IMPL_HPP_
 #define LIBRARY_SRC_CONTAINERS_ARRAY_IMPL_HPP_
 
-#include <cassert>
-
 #include "array.hpp"
 #include "../constants.hpp"
+
+#include <hip/hip_runtime.h>
+#include <cassert>
 
 namespace rocshmem {
 

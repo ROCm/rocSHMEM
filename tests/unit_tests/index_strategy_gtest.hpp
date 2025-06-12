@@ -27,10 +27,12 @@
 
 #include "gtest/gtest.h"
 
-#include <hip/hip_runtime_api.h>
-
 #include "../src/containers/index_strategy.hpp"
 #include "../src/memory/hip_allocator.hpp"
+#include "../src/util.hpp"
+
+#include <hip/hip_runtime_api.h>
+#include <cassert>
 
 namespace rocshmem {
 
@@ -85,11 +87,7 @@ class IndexStrategyTestFixture : public ::testing::Test
                            _raw_mem,
                            _mem_elements);
 
-        hipError_t return_code = hipStreamSynchronize(nullptr);
-        if (return_code != hipSuccess) {
-            printf("Failed in stream synchronize\n");
-            assert(return_code == hipSuccess);
-        }
+        CHECK_HIP(hipStreamSynchronize(nullptr));
 
         for(size_t i = 0; i < _mem_elements; i++) {
             EXPECT_EQ(_raw_mem[i], 1);

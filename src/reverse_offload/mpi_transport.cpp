@@ -28,6 +28,7 @@
 #include <utility>
 #include <vector>
 #include <unistd.h>
+#include <cassert>
 
 #include "../host/host.hpp"
 #include "backend_ro.hpp"

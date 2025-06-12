@@ -31,6 +31,9 @@
 #include "../src/memory/notifier.hpp"
 #include "../src/util.hpp"
 
+#include <hip/hip_runtime.h>
+#include <cassert>
+
 namespace rocshmem {
 
 /**

@@ -28,7 +28,6 @@
 #include <hip/hip_runtime_api.h>
 #include <mpi.h>
 
-#include <cassert>
 #include <vector>
 
 #include "hip_allocator.hpp"

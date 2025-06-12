@@ -29,6 +29,7 @@
 #include <mutex>  // NOLINT
 #include <queue>
 #include <vector>
+#include <thread>
 
 #include "queue.hpp"
 #include "transport.hpp"

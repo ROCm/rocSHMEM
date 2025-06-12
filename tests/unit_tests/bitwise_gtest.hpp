@@ -29,12 +29,13 @@
 
 #include "gtest/gtest.h"
 
-#include <hip/hip_runtime.h>
-
 #include "../src/memory/hip_allocator.hpp"
 #include "containers/matrix.hpp"
 #include "containers/share_strategy.hpp"
 #include "containers/strategies.hpp"
+
+#include <hip/hip_runtime.h>
+#include <cassert>
 
 namespace rocshmem {
 
@@ -328,12 +329,7 @@ class BitwiseTestFixture : public ::testing::Test
                            _warp_matrix,
                            activate_lanes_bitfield);
 
-        hipError_t return_code = hipStreamSynchronize(nullptr);
-        if (return_code != hipSuccess) {
-            printf("Failed in stream synchronize\n");
-            assert(return_code == hipSuccess);
-        }
-
+        CHECK_HIP(hipStreamSynchronize(nullptr));
     }
 
   protected:

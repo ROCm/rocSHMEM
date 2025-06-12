@@ -25,6 +25,7 @@
 #include "random_access_tester.hpp"
 
 #include <rocshmem/rocshmem.hpp>
+#include <cassert>
 
 using namespace rocshmem;
 
