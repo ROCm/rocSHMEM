@@ -25,9 +25,11 @@
 #ifndef LIBRARY_SRC_CONTAINERS_MATRIX_IMPL_HPP_
 #define LIBRARY_SRC_CONTAINERS_MATRIX_IMPL_HPP_
 
-#include <vector>
-
 #include "matrix.hpp"
+
+#include <vector>
+#include <hip/hip_runtime.h>
+#include <cassert>
 
 namespace rocshmem {
 

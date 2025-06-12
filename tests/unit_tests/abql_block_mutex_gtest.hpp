@@ -31,6 +31,9 @@
 #include "../src/sync/abql_block_mutex.hpp"
 #include "../src/util.hpp"
 
+#include <hip/hip_runtime.h>
+#include <cassert>
+
 namespace rocshmem {
 
 inline __device__
@@ -108,11 +111,7 @@ class ABQLBlockMutexTestFixture : public ::testing::Test {
                            mutex_,
                            counter_);
 
-        hipError_t return_code = hipStreamSynchronize(nullptr);
-        if (return_code != hipSuccess) {
-            printf("Failed in stream synchronize\n");
-            assert(return_code == hipSuccess);
-        }
+        CHECK_HIP(hipStreamSynchronize(nullptr));
 
         size_t number_threads {x_block_dim * x_grid_dim};
 

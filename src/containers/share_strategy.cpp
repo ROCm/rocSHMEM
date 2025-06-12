@@ -25,6 +25,8 @@
 #include "share_strategy.hpp"
 #include "../constants.hpp"
 
+#include <hip/hip_runtime.h>
+
 namespace rocshmem {
 
 __device__ uint64_t Block::lane_id() {
@@ -217,10 +219,10 @@ __device__ void ShareStrategy::syncthreads() const {
       __syncthreads();
       return;
     case ShareStrategyEnum::DEVICE:
-      assert(false);
+      abort();
       return;
     case ShareStrategyEnum::UNUSED:
-      assert(false);
+      abort();
       return;
   }
 }

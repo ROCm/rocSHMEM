@@ -25,12 +25,12 @@
 #ifndef LIBRARY_SRC_CONTAINERS_MATRIX_HPP_
 #define LIBRARY_SRC_CONTAINERS_MATRIX_HPP_
 
-#include <hip/hip_runtime.h>
+#include "index_strategy.hpp"
+#include "memory_allocator.hpp"
 
 #include <vector>
 
-#include "index_strategy.hpp"
-#include "memory_allocator.hpp"
+#include <hip/hip_runtime.h>
 
 namespace rocshmem {
 

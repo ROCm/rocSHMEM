@@ -36,6 +36,9 @@
 #include "../src/memory/symmetric_heap.hpp"
 #include "../src/util.hpp"
 
+#include <hip/hip_runtime.h>
+#include <cassert>
+
 namespace rocshmem {
 
 const uint32_t SIGNAL_OFFSET {67108864};

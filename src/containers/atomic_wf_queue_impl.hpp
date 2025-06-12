@@ -25,6 +25,9 @@
 #include "atomic_wf_queue.hpp"
 #include <iostream>
 
+#include <hip/hip_runtime.h>
+#include <cassert>
+
 namespace rocshmem {
 
 /*****************************************************************************

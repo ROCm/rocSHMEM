@@ -24,9 +24,10 @@
 
 #include "team_ctx_infra_tester.hpp"
 
-#include <stdlib.h>
-
 #include <rocshmem/rocshmem.hpp>
+
+#include <cstdlib>
+#include <cassert>
 
 using namespace rocshmem;
 
