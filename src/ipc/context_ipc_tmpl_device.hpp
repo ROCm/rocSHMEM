@@ -94,40 +94,47 @@ __device__ void IPCContext::amo_set(void *dest, T value, int pe) {
 
 template <typename T>
 __device__ T IPCContext::amo_swap(void *dst, T value, int pe) {
+  printf("IPC amo_swap not implemented\n");
   abort();
   return 0;
 }
 
 template <typename T>
 __device__ T IPCContext::amo_fetch_and(void *dst, T value, int pe) {
+  printf("IPC amo_fetch_and not implemented\n");
   abort();
   return 0;
 }
 
 template <typename T>
 __device__ void IPCContext::amo_and(void *dst, T value, int pe) {
+  printf("IPC amo_and not implemented\n");
   abort();
 }
 
 template <typename T>
 __device__ T IPCContext::amo_fetch_or(void *dst, T value, int pe) {
+  printf("IPC amo_fetch_or not implemented\n");
   abort();
   return 0;
 }
 
 template <typename T>
 __device__ void IPCContext::amo_or(void *dst, T value, int pe) {
+  printf("IPC amo_or not implemented\n");
   abort();
 }
 
 template <typename T>
 __device__ T IPCContext::amo_fetch_xor(void *dst, T value, int pe) {
+  printf("IPC amo_fetch_xor not implemented\n");
   abort();
   return 0;
 }
 
 template <typename T>
 __device__ void IPCContext::amo_xor(void *dst, T value, int pe) {
+  printf("IPC amo_xor not implemented\n");
   abort();
 }
 
