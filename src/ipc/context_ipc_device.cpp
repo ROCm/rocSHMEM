@@ -44,9 +44,7 @@ __host__ IPCContext::IPCContext(Backend *b, unsigned int ctx_id)
   ipcImpl_.ipc_bases = b->ipcImpl.ipc_bases;
   ipcImpl_.shm_size = b->ipcImpl.shm_size;
 
-  size_t barrier_sync_offset = ctx_id * ROCSHMEM_BARRIER_SYNC_SIZE;
-
-  barrier_sync = backend->barrier_sync + barrier_sync_offset;
+  barrier_sync = backend->barrier_sync;
   fence_pool = backend->fence_pool;
   Wrk_Sync_buffer_bases_ = backend->get_wrk_sync_bases();
   ctx_id_ = ctx_id;
