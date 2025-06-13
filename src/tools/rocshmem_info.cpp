@@ -1,7 +1,11 @@
+
+#include "../util.hpp"
+
 #include <stdio.h>
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <sstream>
 
 #include <rocm-core/rocm_version.h>
 #include <rocshmem/rocshmem.hpp>
@@ -64,6 +68,39 @@ void parse_config_file() {
   file.close();
 }
 
+void print_arch_info() {
+  hipDeviceProp_t prop;
+  std::string compiled_arch;
+  std::string system_arch;
+
+  int n_compiled_arch = 1;
+  bool supported_arch = false;
+  std::istringstream compiled_arch_list(ROCSHMEM_DEFAULT_GPUS);
+
+  CHECK_HIP(hipGetDeviceProperties(&prop, 0));
+
+  PRINT_ENTRY("System Arch", prop.gcnArchName);
+
+  system_arch = std::string(prop.gcnArchName, strcspn(prop.gcnArchName, ":"));
+
+  while (compiled_arch_list >> compiled_arch) {
+    if (1 == n_compiled_arch) {
+      PRINT_ENTRY("Compiled Arch(s)",  compiled_arch.c_str());
+    }
+    else {
+      PRINT_ENTRY(" ",  compiled_arch.c_str());
+    }
+
+    if (compiled_arch.find(system_arch) != std::string::npos) {
+      supported_arch = true;
+    }
+
+    n_compiled_arch++;
+  }
+
+  PRINT_ENTRY("Supported System Arch", supported_arch ? "Yes" : "No");
+}
+
 void print_mpi_info() {
 #ifdef OMPI_MAJOR_VERSION
   char mpi_version[8];
@@ -92,6 +129,7 @@ int main (int argc, char **argv) {
   PRINT_ENTRY("Git Hash", ROCSHMEM_GIT_HASH);
   PRINT_ENTRY("Install Prefix", ROCSHMEM_INSTALL_PREFIX);
 
+  print_arch_info();
   print_rocm_info();
   print_mpi_info();
 
