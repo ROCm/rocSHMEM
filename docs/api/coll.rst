@@ -65,7 +65,7 @@ ROCSHMEM_SYNC_ALL
   :returns:    None.
 
 **Description:**
-This routine behaves the same as ``rocshmem_team_sync_*`` when called on the world team.
+These routines behaves the same way as ``rocshmem_team_sync_*`` when called on the world team.
 These APIs should be called from only one thread/wavefront/workgroup within the grid to avoid unintended behavior.
 
 ROSHMEM_ALLTOALL
