@@ -36,12 +36,15 @@
 #include <cstdlib>
 #include <limits>
 
+#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "memory_allocator.hpp"
 
 // `hipDeviceMallocUncached` was introduced at ROCm 5.5
 #if (HIP_VERSION_MAJOR > 5) || \
     (HIP_VERSION_MAJOR == 5 && HIP_VERSION_MINOR >= 5)
 #define HIP_SUPPORTS_MALLOC_UNCACHED
+#elif defined USE_HEAP_DEVICE_UNCACHED
+#error "USE_HEAP_DEVICE_UNCACHED unsupported in this HIP version"
 #endif
 namespace rocshmem {
 
@@ -57,13 +60,14 @@ class HIPAllocatorFinegrained : public MemoryAllocator {
                         hipDeviceMallocFinegrained) {}
 };
 
-#ifdef HIP_SUPPORTS_MALLOC_UNCACHED
+#if defined HIP_SUPPORTS_MALLOC_UNCACHED
 class HIPAllocatorUncached : public MemoryAllocator {
  public:
   HIPAllocatorUncached()
       : MemoryAllocator(hipExtMallocWithFlags, hipFree,
                         hipDeviceMallocUncached) {}
 };
+
 // The default fine-grained coherence allocator is the uncached allocator
 using HIPDefaultFinegrainedAllocator = HIPAllocatorUncached;
 #else

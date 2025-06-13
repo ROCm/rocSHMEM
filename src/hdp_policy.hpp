@@ -182,16 +182,16 @@ class NoHdpPolicy {
 /*
  * Select which one of our HDP policies to use at compile time.
  */
-#ifdef USE_COHERENT_HEAP
-typedef NoHdpPolicy HdpPolicy;
-#else
+#if defined USE_HDP_FLUSH
 // Only when we are using the IB conduit, we have to use a polling thread to
 // flush the HDP cache on the GPU's behalf.
-#ifdef USE_HOST_SIDE_HDP_FLUSH
+#if defined USE_HDP_FLUSH_HOST_SIDE
 typedef HdpHostSideFlushRocmPolicy HdpPolicy;
 #else
 typedef HdpDeviceSideFlushRocmPolicy HdpPolicy;
 #endif
+#else
+typedef NoHdpPolicy HdpPolicy;
 #endif
 
 }  // namespace rocshmem

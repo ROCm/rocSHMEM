@@ -248,16 +248,16 @@ class HostInterface {
   template <typename T>
   __host__ int test(T *ivars, int cmp, T val, WindowInfo* window_info);
 
-#ifndef USE_COHERENT_HEAP
+#if defined USE_HDP_FLUSH
   __host__ void create_hdp_window();
-#endif // USE_COHERENT_HEAP
+#endif // USE_HDP_FLUSH
 
  private:
   /**************************************************************************
    **************************** INTERNAL METHODS ****************************
    *************************************************************************/
   __host__ void flush_remote_hdps() {
-#ifndef USE_COHERENT_HEAP
+#if defined USE_HDP_FLUSH
     unsigned flush_val{HdpPolicy::HDP_FLUSH_VAL};
     for (size_t i{0}; i < num_pes_; i++) {
       if (i == my_pe_) {
@@ -266,15 +266,15 @@ class HostInterface {
       MPI_Put(&flush_val, 1, MPI_UNSIGNED, i, 0, 1, MPI_UNSIGNED, hdp_win);
     }
     MPI_Win_flush_all(hdp_win);
-#endif // USE_COHERENT_HEAP
+#endif // USE_HDP_FLUSH
   }
 
   __host__ void flush_remote_hdp(int pe) {
-#ifndef USE_COHERENT_HEAP
+#if defined USE_HDP_FLUSH
     unsigned flush_val{HdpPolicy::HDP_FLUSH_VAL};
     MPI_Put(&flush_val, 1, MPI_UNSIGNED, pe, 0, 1, MPI_UNSIGNED, hdp_win);
     MPI_Win_flush(pe, hdp_win);
-#endif // USE_COHERENT_HEAP
+#endif // USE_HDP_FLUSH
   }
 
   __host__ void initiate_put(void* dest, const void* source, size_t nelems,
@@ -333,12 +333,12 @@ class HostInterface {
    */
   int num_pes_{0};
 
-#ifndef USE_COHERENT_HEAP
+#if defined USE_HDP_FLUSH
   /**
    * @brief MPI window for hdp flushing
    */
   MPI_Win hdp_win;
-#endif  // USE_COHERENT_HEAP
+#endif  // USE_HDP_FLUSH
 
   /**
    * @brief Max number of contexts for the application
