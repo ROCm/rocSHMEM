@@ -124,6 +124,20 @@ else()
 endif()
 message(STATUS "rocSHMEM Version: " "${VERSION_STRING}")
 
+execute_process (
+  COMMAND bash -c "git rev-parse HEAD;"
+  OUTPUT_VARIABLE GIT_HASH
+)
+
+string(STRIP ${GIT_HASH} GIT_HASH)
+string(REPLACE ";" " " ROCSHMEM_DEFAULT_GPUS "${DEFAULT_GPUS}")
+
+add_compile_definitions(
+  ROCSHMEM_INSTALL_PREFIX="${CMAKE_INSTALL_PREFIX}"
+  ROCSHMEM_GIT_HASH="${GIT_HASH}"
+  ROCSHMEM_DEFAULT_GPUS="${ROCSHMEM_DEFAULT_GPUS}"
+)
+
 rocm_setup_version(VERSION ${VERSION_STRING})
 project(rocshmem VERSION ${VERSION_STRING} LANGUAGES CXX)
 
@@ -227,6 +241,11 @@ if (NOT BUILD_TESTS_ONLY)
   rocm_install(
     FILES "${CMAKE_BINARY_DIR}/rocshmem_config.h"
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rocshmem
+  )
+
+  rocm_install(
+    PROGRAMS "${CMAKE_BINARY_DIR}/src/tools/rocshmem_info"
+    DESTINATION ${CMAKE_INSTALL_BINDIR}
   )
 
   rocm_package_add_dependencies(
