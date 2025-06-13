@@ -31,7 +31,11 @@ set(CMAKE_BUILD_TYPE "Release" CACHE STRING
 ###############################################################################
 # GLOBAL COMPILE FLAGS
 ###############################################################################
-list(PREPEND CMAKE_PREFIX_PATH ${hip_ROOT} $ENV{hip_ROOT} ${ROCM_ROOT} $ENV{ROCM_ROOT} ${ROCM_PATH} $ENV{ROCM_PATH})
+foreach (root ${hip_ROOT} $ENV{hip_ROOT} ${ROCM_ROOT} $ENV{ROCM_ROOT} ${ROCM_PATH} $ENV{ROCM_PATH})
+  if (IS_DIRECTORY ${root})
+    list(PREPEND CMAKE_PREFIX_PATH ${root})
+  endif()
+endforeach()
 if (NOT DEFINED CMAKE_CXX_COMPILER)
   find_program(CMAKE_CXX_COMPILER hipcc PATHS /opt/rocm)
 endif()

@@ -70,8 +70,6 @@ configure_file(cmake/rocshmem_config.h.in rocshmem_config.h)
 # PROJECT
 ###############################################################################
 include(${CMAKE_SOURCE_DIR}/cmake/setup_project.cmake)
-find_package(ROCM 0.8 REQUIRED PATHS /opt/rocm)
-set(ROCMCHECKS_WARN_TOOLCHAIN_VAR OFF)
 
 ## Setup VERSION
 file(READ include/rocshmem/rocshmem.hpp header_text)
@@ -84,7 +82,7 @@ message(STATUS "rocSHMEM Version: " "${VERSION_STRING}")
 
 project(rocshmem VERSION ${VERSION_STRING} LANGUAGES CXX)
 
-find_package(ROCmCMakeBuildTools)
+find_package(ROCmCMakeBuildTools PATHS /opt/rocm)
 include(ROCMCreatePackage)
 include(ROCMInstallTargets)
 include(ROCMCheckTargetIds)
