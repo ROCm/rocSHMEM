@@ -10,8 +10,8 @@
 #include <rocm-core/rocm_version.h>
 #include <rocshmem/rocshmem.hpp>
 
-#define NAME_COLUMN_WIDTH (24)
-#define INFO_COLUMN_WIDTH (51)
+#define NAME_COLUMN_WIDTH (28)
+#define INFO_COLUMN_WIDTH (47)
 
 #define PRINT_ENTRY(NAME, INFO)   \
   printf("# %-*s: %-*s#\n", NAME_COLUMN_WIDTH, NAME, INFO_COLUMN_WIDTH, INFO)
@@ -75,7 +75,7 @@ void print_arch_info() {
 
   int n_compiled_arch = 1;
   bool supported_arch = false;
-  std::istringstream compiled_arch_list(ROCSHMEM_DEFAULT_GPUS);
+  std::istringstream compiled_arch_list(ROCSHMEM_OFFLOAD_TARGETS);
 
   CHECK_HIP(hipGetDeviceProperties(&prop, 0));
 

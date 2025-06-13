@@ -63,6 +63,7 @@ option(BUILD_FUNCTIONAL_TESTS "Build the functional tests" OFF)
 option(BUILD_EXAMPLES "Build the examples" ON)
 option(BUILD_UNIT_TESTS "Build the unit tests" OFF)
 option(BUILD_TESTS_ONLY "Build only tests. Used to link agains rocSHMEM in a ROCm Release" OFF)
+option(BUILD_TOOLS "Build binary tools (e.g., rocshmem_info)" ON)
 
 option(BUILD_LOCAL_GPU_TARGET_ONLY "Build only for GPUs detected on this machine" OFF)
 option(BUILD_CODE_COVERAGE "Build with code coverage flags (gcc only)" OFF)
@@ -123,20 +124,6 @@ else()
   message(FATAL_ERROR "Failed to parse Version")
 endif()
 message(STATUS "rocSHMEM Version: " "${VERSION_STRING}")
-
-execute_process (
-  COMMAND bash -c "git rev-parse HEAD;"
-  OUTPUT_VARIABLE GIT_HASH
-)
-
-string(STRIP ${GIT_HASH} GIT_HASH)
-string(REPLACE ";" " " ROCSHMEM_DEFAULT_GPUS "${DEFAULT_GPUS}")
-
-add_compile_definitions(
-  ROCSHMEM_INSTALL_PREFIX="${CMAKE_INSTALL_PREFIX}"
-  ROCSHMEM_GIT_HASH="${GIT_HASH}"
-  ROCSHMEM_DEFAULT_GPUS="${ROCSHMEM_DEFAULT_GPUS}"
-)
 
 rocm_setup_version(VERSION ${VERSION_STRING})
 project(rocshmem VERSION ${VERSION_STRING} LANGUAGES CXX)
