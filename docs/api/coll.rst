@@ -20,7 +20,7 @@ ROCSHMEM_BARRIER_ALL
 **Description:**
 This routine performs a collective barrier across all PEs in the system.
 The caller is blocked until the barrier is resolved and all updates local and remote are completed.
-These APIs should be called from only one thread/wavefront/workgroup within the grid to avoid unintended behavior.
+These APIs should be called from only one thread/wavefront/workgroup within the grid to avoid undefined behavior.
 
 ROCSHMEM_BARRIER
 ----------------
