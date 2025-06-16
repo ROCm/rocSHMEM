@@ -69,7 +69,7 @@ __global__ void BarrierAllTest(int loop, int skip, long long int *start_time,
         case WGBarrierAllTestType:
           /**
             * The function `rocshmem_barrier_all_wg` should be called from only
-            * one workgroup within the grid to avoid unintended behavior.
+            * one workgroup within the grid to avoid undefined behavior.
             */
           rocshmem_barrier_all_wg();
           break;
