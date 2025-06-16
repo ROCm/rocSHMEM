@@ -52,7 +52,7 @@ __global__ void BarrierAllTest(int loop, int skip, long long int *start_time,
           if(t_id == 0) {
             /**
               * The function `rocshmem_barrier_all` should be called from only
-              * one thread within the grid to avoid unintended behavior.
+              * one thread within the grid to avoid undefined behavior.
               */
             rocshmem_barrier_all();
           }
