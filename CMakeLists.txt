@@ -152,7 +152,7 @@ if (NOT BUILD_TESTS_ONLY)
   include(cmake/find_pmix.cmake)
   check_pmix()
 
-configure_file(cmake/rocshmem_config.h.in rocshmem_config.h)
+  configure_file(cmake/rocshmem_config.h.in rocshmem_config.h)
 
   #############################################################################
   # LINKING AND INCLUDE DIRECTORIES
