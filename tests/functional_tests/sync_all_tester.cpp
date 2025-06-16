@@ -52,7 +52,7 @@ __global__ void SyncAllTest(int loop, int skip, long long int *start_time,
           if(t_id == 0) {
             /**
               * The function `rocshmem_sync_all` should be called from only
-              * one thread within the grid to avoid unintended behavior.
+              * one thread within the grid to avoid undefined behavior.
               */
             rocshmem_sync_all();
           }
