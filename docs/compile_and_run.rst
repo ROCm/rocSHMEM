@@ -81,3 +81,6 @@ You can control the behavior of rocSHMEM by using the following environment vari
     * - ROCSHMEM_MAX_NUM_TEAMS
       - 40
       - Defines the number of teams an application can use.
+    * - ROCSHMEM_UNIQUEID_NO_MPI
+      - 1
+      - Defines whether rocSHMEM is expected to use MPI when using the uniqueId based initialization.
