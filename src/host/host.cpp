@@ -118,16 +118,16 @@ __host__ HostInterface::HostInterface(HdpPolicy* hdp_policy,
         new HostContextWindowInfo(host_comm_world_, heap);
   }
 
-#if !defined(USE_COHERENT_HEAP) && !defined(USE_SINGLE_NODE)
+#if defined(USE_HDP_FLUSH) && !defined(USE_SINGLE_NODE)
   // The single node implementation needs a different path since
   // the HDP flush pointers are allocated on the symmetric heap
   // and we need to wait for other initialization to happen before
   // calling `get_hdp_flush_ptr`.
   create_hdp_window();
-#endif  // defined(USE_COHERENT_HEAP) && !defined(USE_SINGLE_NODE)
+#endif  // defined(USE_HDP_FLUSH) && !defined(USE_SINGLE_NODE)
 }
 
-#ifndef USE_COHERENT_HEAP
+#if defined USE_HDP_FLUSH
 __host__ void HostInterface::create_hdp_window() {
   MPI_Win_create(hdp_policy_->get_hdp_flush_ptr(),
                  sizeof(unsigned int), /* size of window */
@@ -142,14 +142,14 @@ __host__ void HostInterface::create_hdp_window() {
    */
   MPI_Win_lock_all(MPI_MODE_NOCHECK, hdp_win);
 }
-#endif  // USE_COHERENT_HEAP
+#endif  // USE_HDP_FLUSH
 
 __host__ HostInterface::~HostInterface() {
-#ifndef USE_COHERENT_HEAP
+#if defined USE_HDP_FLUSH
   MPI_Win_unlock_all(hdp_win);
 
   MPI_Win_free(&hdp_win);
-#endif  // USE_COHERENT_HEAP
+#endif  // USE_HDP_FLUSH
 
   /* Detroy the pool of contexts */
   for (int ctx_i = 0; ctx_i < max_num_ctxs_; ctx_i++) {

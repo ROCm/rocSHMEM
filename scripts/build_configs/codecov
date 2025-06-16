@@ -29,6 +29,12 @@ LLVM_PROFILE_FILE="$PROFRAW_DIR/ro_net-unit-%p.profraw" ../scripts/unit_tests/dr
 
 LLVM_PROFILE_FILE="$PROFRAW_DIR/ro_ipc-unit-%p.profraw" ../scripts/unit_tests/driver.sh ./ro_ipc/tests/unit_tests/rocshmem_unit_tests all
 
+# Examples coverage
+LLVM_PROFILE_FILE="$PROFRAW_DIR/init_test-%m.profraw"  mpirun -np 4 ./ipc/examples/rocshmem_init_attr_test
+LLVM_PROFILE_FILE="$PROFRAW_DIR/allreduce_test-%m.profraw"  mpirun -np 4 ./ipc/examples/rocshmem_allreduce_test
+
+
+
 # Functional Tests
 LLVM_PROFILE_FILE="$PROFRAW_DIR/ipc-functional-%p.profraw" ../scripts/functional_tests/driver.sh ./ipc/tests/functional_tests/rocshmem_example_driver all ./test_output/
 LLVM_PROFILE_FILE="$PROFRAW_DIR/ro_net-functional-%p.profraw" ../scripts/functional_tests/driver.sh ./ro_net/tests/functional_tests/rocshmem_example_driver all ./test_output/
@@ -57,5 +63,5 @@ LLVM_PROFILE_FILE="$PROFRAW_DIR/ro_ipc-functional-%p.profraw" ../scripts/functio
 	--ignore-filename-regex=".*test.*" \
 	-format=html \
 	-output-dir=coverage-report
-cd coverage-report && python3 -m http.server 
+cd coverage-report && python3 -m http.server
 

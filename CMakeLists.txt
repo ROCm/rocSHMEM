@@ -45,21 +45,25 @@ option(USE_RO "Enable RO conduit." ON)
 option(USE_IPC "Enable IPC support (using HIP)" OFF)
 option(USE_THREADS "Enable workgroup threads to share network queues" OFF)
 option(USE_WF_COAL "Enable wavefront message coalescing" OFF)
-option(USE_COHERENT_HEAP "Enable support for coherent systems" OFF)
-option(USE_MANAGED_HEAP "Enable managed memory" OFF)
-option(USE_HOST_HEAP "Enable host memory using malloc/free" OFF)
-option(USE_HIP_HOST_HEAP "Enable host memory using hip api" OFF)
+option(USE_HEAP_DEVICE_FINEGRAIN "Heap uses GPU memory in finegrain mode" ON)
+option(USE_HEAP_DEVICE_UNCACHED "Heap uses GPU memory in uncached mode" OFF)
+option(USE_HEAP_DEVICE_COARSEGRAIN "Heap uses GPU memory in coarsegrain mode" OFF)
+option(USE_HEAP_MANAGED "Heap uses managed memory" OFF)
+option(USE_HEAP_HOST_HIP "Heap uses pinned host memory allocated with hip api" OFF)
+option(USE_HEAP_HOST "Heap uses host memory allocated with malloc/free" OFF)
 option(USE_ALLOC_DLMALLOC "Enable dlmalloc device memory allocator" ON)
 option(USE_ALLOC_POW2BINS "Enable legacy Pow2Bins device memory allocator" OFF)
 option(USE_FUNC_CALL "Force compiler to use function calls on library API" OFF)
 option(USE_SHARED_CTX "Request support for shared ctx between WG" OFF)
 option(USE_SINGLE_NODE "Enable single node support only." OFF)
-option(USE_HOST_SIDE_HDP_FLUSH "Use a polling thread to flush the HDP cache on the host." OFF)
+option(USE_HDP_FLUSH "Force flush the HDP cache." OFF)
+option(USE_HDP_FLUSH_HOST_SIDE "Use a polling thread to flush the HDP cache on the host." OFF)
 
 option(BUILD_FUNCTIONAL_TESTS "Build the functional tests" OFF)
 option(BUILD_EXAMPLES "Build the examples" ON)
 option(BUILD_UNIT_TESTS "Build the unit tests" OFF)
 option(BUILD_TESTS_ONLY "Build only tests. Used to link agains rocSHMEM in a ROCm Release" OFF)
+option(BUILD_TOOLS "Build binary tools (e.g., rocshmem_info)" ON)
 
 option(BUILD_LOCAL_GPU_TARGET_ONLY "Build only for GPUs detected on this machine" OFF)
 option(BUILD_CODE_COVERAGE "Build with code coverage flags (gcc only)" OFF)
@@ -191,6 +195,11 @@ if (NOT BUILD_TESTS_ONLY)
   rocm_install(
     FILES "${CMAKE_BINARY_DIR}/rocshmem_config.h"
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rocshmem
+  )
+
+  rocm_install(
+    PROGRAMS "${CMAKE_BINARY_DIR}/src/tools/rocshmem_info"
+    DESTINATION ${CMAKE_INSTALL_BINDIR}
   )
 
   rocm_package_add_dependencies(

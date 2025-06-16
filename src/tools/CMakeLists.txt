@@ -21,39 +21,35 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 ###############################################################################
+# SOURCES
+###############################################################################
 
-#!/bin/bash
+execute_process (
+  COMMAND bash -c "git -C ${PROJECT_SOURCE_DIR} rev-parse HEAD;"
+  OUTPUT_VARIABLE GIT_HASH
+)
 
-set -e
+string(STRIP "${GIT_HASH}" GIT_HASH)
+string(REPLACE ";" " " ROCSHMEM_OFFLOAD_TARGETS "${COMPILING_TARGETS}")
 
-if [ -z $1 ]
-then
-  install_path=~/rocshmem
-else
-  install_path=$1
-fi
+add_executable(rocshmem_info rocshmem_info.cpp)
 
-src_path=$(dirname "$(realpath $0)")/../../
+target_compile_definitions(
+  rocshmem_info
+  PRIVATE
+  ROCSHMEM_INSTALL_PREFIX="${CMAKE_INSTALL_PREFIX}"
+  ROCSHMEM_GIT_HASH="${GIT_HASH}"
+  ROCSHMEM_OFFLOAD_TARGETS="${ROCSHMEM_OFFLOAD_TARGETS}"
+)
 
-# If as specific rocSHMEM version is required, the recommended approach
-# is to set environment variable 'rocshmem_ROOT'
-cmake \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=$install_path \
-    -DCMAKE_VERBOSE_MAKEFILE=OFF \
-    -DDEBUG=OFF \
-    -DPROFILE=OFF \
-    -DUSE_RO=OFF \
-    -DUSE_IPC=ON \
-    -DUSE_THREADS=OFF \
-    -DUSE_WF_COAL=OFF \
-    -DUSE_SINGLE_NODE=ON \
-    -DUSE_HDP_FLUSH=OFF \
-    -DUSE_HDP_FLUSH_HOST_SIDE=OFF \
-    -DBUILD_LOCAL_GPU_TARGET_ONLY=OFF \
-    -DBUILD_TESTS_ONLY=ON \
-    -DBUILD_FUNCTIONAL_TESTS=ON \
-    -DBUILD_EXAMPLES=ON \
-    -DBUILD_UNIT_TESTS=OFF \
-    $src_path
-cmake --build . --parallel 8
+target_include_directories(
+  rocshmem_info
+  PRIVATE
+    roc::rocshmem
+)
+
+target_link_libraries(
+  rocshmem_info
+  PRIVATE
+    roc::rocshmem
+)
