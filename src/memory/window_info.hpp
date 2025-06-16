@@ -248,7 +248,6 @@ class WindowInfoMPI: public WindowInfo {
 
 };
 
-
 }  // namespace rocshmem
 
 #endif  // LIBRARY_SRC_MEMORY_WINDOW_INFO_HPP_
