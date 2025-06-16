@@ -61,7 +61,7 @@ __global__ void BarrierAllTest(int loop, int skip, long long int *start_time,
           if(wf_id == 0) {
             /**
               * The function `rocshmem_barrier_all_wave` should be called from only
-              * one wavefront within the grid to avoid unintended behavior.
+              * one wavefront within the grid to avoid undefined behavior.
               */
             rocshmem_barrier_all_wave();
           }
