@@ -651,7 +651,7 @@ __device__ void rocshmem_sync_all_wave() {
 }
 
 __device__ void rocshmem_sync_all_wg() {
-  GPU_DPRINTF("Function: rocshmem_ctx_sync_all_wg (ctx=%zd)\n",
+  GPU_DPRINTF("Function: rocshmem_sync_all_wg (ctx=%zd)\n",
     get_internal_ctx(ROCSHMEM_CTX_DEFAULT));
 
   get_internal_ctx(ROCSHMEM_CTX_DEFAULT)->sync_all_wg();
