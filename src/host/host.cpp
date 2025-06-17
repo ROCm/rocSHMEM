@@ -32,7 +32,7 @@
 #include "../util.hpp"
 
 #include <cassert>
-
+// ADDING RANDOM TEXT JUST TO TEST CI
 namespace rocshmem {
 
 __host__ HostContextWindowInfo::HostContextWindowInfo(MPI_Comm comm_world,
