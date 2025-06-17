@@ -28,6 +28,7 @@
 #include <smmintrin.h>
 #include <unistd.h>
 
+#include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <memory>

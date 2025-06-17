@@ -26,9 +26,10 @@
 #define LIBRARY_SRC_DEVICE_PROXY_HPP_
 
 #include <hip/hip_runtime.h>
-
 #include <memory>
 #include <utility>
+#include <cstring>
+#include <cassert>
 
 namespace rocshmem {
 

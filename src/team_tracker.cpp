@@ -23,8 +23,9 @@
  *****************************************************************************/
 
 #include "team_tracker.hpp"
-#include <cassert>
+
 #include <cstdlib>
+#include <cassert>
 
 namespace rocshmem {
 

@@ -31,6 +31,8 @@
 #include "../memory/window_info.hpp"
 #include "../util.hpp"
 
+#include <cassert>
+
 namespace rocshmem {
 
 __host__ HostContextWindowInfo::HostContextWindowInfo(MPI_Comm comm_world,
@@ -45,6 +47,8 @@ __host__ HostContextWindowInfo::~HostContextWindowInfo() {
 
 WindowInfo* HostInterface::acquire_window_context() {
   auto index{find_avail_pool_entry()};
+  /* Entry should have been available; consider this as an error. */
+  assert(index >= 0);
 
   HostContextWindowInfo* acquired_win_info = host_window_context_pool_[index];
 
@@ -55,6 +59,8 @@ WindowInfo* HostInterface::acquire_window_context() {
 
 __host__ void HostInterface::release_window_context(WindowInfo* window_info) {
   auto index{find_win_info_in_pool(window_info)};
+  /* Entry should have been present; consider this as an error. */
+  assert(index >= 0);
 
   host_window_context_pool_[index]->mark_avail();
 }
@@ -65,8 +71,6 @@ int HostInterface::find_avail_pool_entry() {
       return i;
     }
   }
-  /* Entry should have been available; consider this as an error. */
-  assert(false);
   return -1;
 }
 
@@ -79,8 +83,6 @@ int HostInterface::find_win_info_in_pool(WindowInfo* window_info) {
       return i;
     }
   }
-  /* Entry should have been present; consider this as an error. */
-  assert(false);
   return -1;
 }
 

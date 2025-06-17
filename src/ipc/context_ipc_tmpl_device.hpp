@@ -32,6 +32,8 @@
 #include "ipc_team.hpp"
 #include "../rocshmem_calc.hpp"
 
+#include <hip/hip_runtime.h>
+
 namespace rocshmem {
 
 /******************************************************************************
@@ -44,13 +46,13 @@ __device__ void IPCContext::p(T *dest, T value, int pe) {
 
 template <typename T>
 __device__ void IPCContext::put(T *dest, const T *source, size_t nelems,
-				int pe) {
+                                int pe) {
   putmem(dest, source, nelems * sizeof(T), pe);
 }
 
 template <typename T>
 __device__ void IPCContext::put_nbi(T *dest, const T *source, size_t nelems,
-				    int pe) {
+                                    int pe) {
   putmem_nbi(dest, source, sizeof(T) * nelems, pe);
 }
 
@@ -63,13 +65,13 @@ __device__ T IPCContext::g(const T *source, int pe) {
 
 template <typename T>
 __device__ void IPCContext::get(T *dest, const T *source, size_t nelems,
-				int pe) {
+                                int pe) {
   getmem(dest, source, sizeof(T) * nelems, pe);
 }
 
 template <typename T>
 __device__ void IPCContext::get_nbi(T *dest, const T *source, size_t nelems,
-				    int pe) {
+                                    int pe) {
   getmem_nbi(dest, source, sizeof(T) * nelems, pe);
 }
 
@@ -92,41 +94,48 @@ __device__ void IPCContext::amo_set(void *dest, T value, int pe) {
 
 template <typename T>
 __device__ T IPCContext::amo_swap(void *dst, T value, int pe) {
-  assert(false);
+  printf("IPC amo_swap not implemented\n");
+  abort();
   return 0;
 }
 
 template <typename T>
 __device__ T IPCContext::amo_fetch_and(void *dst, T value, int pe) {
-  assert(false);
+  printf("IPC amo_fetch_and not implemented\n");
+  abort();
   return 0;
 }
 
 template <typename T>
 __device__ void IPCContext::amo_and(void *dst, T value, int pe) {
-  assert(false);
+  printf("IPC amo_and not implemented\n");
+  abort();
 }
 
 template <typename T>
 __device__ T IPCContext::amo_fetch_or(void *dst, T value, int pe) {
-  assert(false);
+  printf("IPC amo_fetch_or not implemented\n");
+  abort();
   return 0;
 }
 
 template <typename T>
 __device__ void IPCContext::amo_or(void *dst, T value, int pe) {
-  assert(false);
+  printf("IPC amo_or not implemented\n");
+  abort();
 }
 
 template <typename T>
 __device__ T IPCContext::amo_fetch_xor(void *dst, T value, int pe) {
-  assert(false);
+  printf("IPC amo_fetch_xor not implemented\n");
+  abort();
   return 0;
 }
 
 template <typename T>
 __device__ void IPCContext::amo_xor(void *dst, T value, int pe) {
-  assert(false);
+  printf("IPC amo_xor not implemented\n");
+  abort();
 }
 
 template <typename T>
@@ -443,7 +452,7 @@ __device__ void IPCContext::internal_get_broadcast(
 
 template <typename T>
 __device__ void IPCContext::broadcast(rocshmem_team_t team, T *dst,
-				      const T *src, int nelems, int pe_root) {
+                                      const T *src, int nelems, int pe_root) {
   IPCTeam *team_obj = reinterpret_cast<IPCTeam *>(team);
 
   int stride = team_obj->tinfo_wrt_world->stride;
@@ -459,9 +468,9 @@ __device__ void IPCContext::broadcast(rocshmem_team_t team, T *dst,
 
 template <typename T>
 __device__ void IPCContext::internal_broadcast(T *dst, const T *src, int nelems,
-				      int pe_root, int pe_start,
-				      int stride, int pe_size,
-				      long *p_sync) {  // NOLINT(runtime/int)
+                                      int pe_root, int pe_start,
+                                      int stride, int pe_size,
+                                      long *p_sync) {  // NOLINT(runtime/int)
   if (num_pes < 4) {
     internal_put_broadcast(dst, src, nelems, pe_root, pe_start, stride,
                            pe_size);
@@ -475,7 +484,7 @@ __device__ void IPCContext::internal_broadcast(T *dst, const T *src, int nelems,
 
 template <typename T>
 __device__ void IPCContext::alltoall(rocshmem_team_t team, T *dst,
-				     const T *src, int nelems) {
+                                     const T *src, int nelems) {
   alltoall_linear(team, dst, src, nelems);
 }
 
@@ -504,7 +513,7 @@ __device__ void IPCContext::alltoall_linear(rocshmem_team_t team, T *dst,
 
 template <typename T>
 __device__ void IPCContext::fcollect(rocshmem_team_t team, T *dst,
-				     const T *src, int nelems) {
+                                     const T *src, int nelems) {
   fcollect_linear(team, dst, src, nelems);
 }
 
@@ -535,49 +544,49 @@ __device__ void IPCContext::fcollect_linear(rocshmem_team_t team, T *dst,
 // Block/wave functions
 template <typename T>
 __device__ void IPCContext::put_wg(T *dest, const T *source, size_t nelems,
-				   int pe) {
+                                   int pe) {
   putmem_wg(dest, source, nelems * sizeof(T), pe);
 }
 
 template <typename T>
 __device__ void IPCContext::put_nbi_wg(T *dest, const T *source,
-				       size_t nelems, int pe) {
+                                       size_t nelems, int pe) {
   putmem_nbi_wg(dest, source, nelems * sizeof(T), pe);
 }
 
   template <typename T>
 __device__ void IPCContext::put_wave(T *dest, const T *source, size_t nelems,
-				     int pe) {
+                                     int pe) {
   putmem_wave(dest, source, nelems * sizeof(T), pe);
 }
 
 template <typename T>
 __device__ void IPCContext::put_nbi_wave(T *dest, const T *source,
-					 size_t nelems, int pe) {
+                                         size_t nelems, int pe) {
   putmem_nbi_wave(dest, source, nelems * sizeof(T), pe);
 }
 
 template <typename T>
 __device__ void IPCContext::get_wg(T *dest, const T *source, size_t nelems,
-				   int pe) {
+                                   int pe) {
   getmem_wg(dest, source, nelems * sizeof(T), pe);
 }
 
 template <typename T>
 __device__ void IPCContext::get_nbi_wg(T *dest, const T *source,
-				       size_t nelems, int pe) {
+                                       size_t nelems, int pe) {
   getmem_nbi_wg(dest, source, nelems * sizeof(T), pe);
 }
 
 template <typename T>
 __device__ void IPCContext::get_wave(T *dest, const T *source, size_t nelems,
-				     int pe) {
+                                     int pe) {
   getmem_wave(dest, source, nelems * sizeof(T), pe);
 }
 
 template <typename T>
 __device__ void IPCContext::get_nbi_wave(T *dest, const T *source,
-					 size_t nelems, int pe) {
+                                         size_t nelems, int pe) {
   getmem_nbi_wave(dest, source, nelems * sizeof(T), pe);
 }
 

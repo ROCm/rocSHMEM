@@ -179,10 +179,10 @@ class ShareStrategy {
         }
         return value;
       case ShareStrategyEnum::DEVICE:
-        assert(false);
+        abort();
         return 0;
       case ShareStrategyEnum::UNUSED:
-        assert(false);
+        abort();
         return 0;
     }
   }
@@ -199,10 +199,10 @@ class ShareStrategy {
       case ShareStrategyEnum::BLOCK:
         return true;
       case ShareStrategyEnum::DEVICE:
-        assert(false);
+        abort();
         return false;
       case ShareStrategyEnum::UNUSED:
-        assert(false);
+        abort();
         return false;
     }
   }

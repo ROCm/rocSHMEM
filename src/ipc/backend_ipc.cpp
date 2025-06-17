@@ -25,6 +25,10 @@
 #include "backend_ipc.hpp"
 #include "ipc_team.hpp"
 
+#include <hip/hip_runtime.h>
+#include <cstdlib>
+#include <cassert>
+
 namespace rocshmem {
 
 #define NET_CHECK(cmd)                                       \

@@ -34,6 +34,10 @@
 #include "../src/memory/symmetric_heap.hpp"
 #include "../src/ipc_policy.hpp"
 
+#include <hip/hip_runtime.h>
+#include <cassert>
+
+
 namespace rocshmem {
 
 __global__

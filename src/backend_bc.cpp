@@ -33,6 +33,8 @@
 #include "ipc/backend_ipc.hpp"
 #endif
 
+#include <cassert>
+
 namespace rocshmem {
 
 #define NET_CHECK(cmd)                                       \

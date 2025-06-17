@@ -31,13 +31,13 @@
  * @brief Contains HIP wrapper class for memory allocator
  */
 
+#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
+#include "memory_allocator.hpp"
+
 #include <hip/hip_runtime_api.h>
 
 #include <cstdlib>
 #include <limits>
-
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
-#include "memory_allocator.hpp"
 
 // `hipDeviceMallocUncached` was introduced at ROCm 5.5
 #if (HIP_VERSION_MAJOR > 5) || \

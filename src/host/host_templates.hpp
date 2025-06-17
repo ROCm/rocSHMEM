@@ -25,12 +25,13 @@
 #ifndef LIBRARY_SRC_HOST_HOST_TEMPLATES_HPP_
 #define LIBRARY_SRC_HOST_HOST_TEMPLATES_HPP_
 
-#include <utility>
-
 #include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "host_helpers.hpp"
 #include "../memory/window_info.hpp"
 #include "../team.hpp"
+
+#include <utility>
+#include <cassert>
 
 namespace rocshmem {
 

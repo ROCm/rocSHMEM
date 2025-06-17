@@ -28,6 +28,8 @@
 #include "host.hpp"
 #include "../memory/window_info.hpp"
 
+#include <cassert>
+
 namespace rocshmem {
 
 __host__ inline MPI_Aint HostInterface::compute_offset(
