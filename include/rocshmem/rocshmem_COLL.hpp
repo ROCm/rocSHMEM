@@ -605,12 +605,9 @@ __host__ int rocshmem_ctx_double_prod_reduce(
  *
  * This function must be invoked by a single thread within the PE.
  *
- * @param[in] handle GPU side handle.
- *
  * @return void
  */
-__device__ ATTR_NO_INLINE void rocshmem_ctx_barrier_all(
-    rocshmem_ctx_t ctx);
+__device__ ATTR_NO_INLINE void rocshmem_barrier_all();
 
 /**
  * @brief perform a collective barrier between all PEs in the system.
@@ -618,12 +615,9 @@ __device__ ATTR_NO_INLINE void rocshmem_ctx_barrier_all(
  *
  * This function must be called as a wave-front collective.
  *
- * @param[in] handle GPU side handle.
- *
  * @return void
  */
-__device__ ATTR_NO_INLINE void rocshmem_ctx_barrier_all_wave(
-    rocshmem_ctx_t ctx);
+__device__ ATTR_NO_INLINE void rocshmem_barrier_all_wave();
 
 /**
  * @brief perform a collective barrier between all PEs in the system.
@@ -631,12 +625,9 @@ __device__ ATTR_NO_INLINE void rocshmem_ctx_barrier_all_wave(
  *
  * This function must be called as a work-group collective.
  *
- * @param[in] handle GPU side handle.
- *
  * @return void
  */
-__device__ ATTR_NO_INLINE void rocshmem_ctx_barrier_all_wg(
-    rocshmem_ctx_t ctx);
+__device__ ATTR_NO_INLINE void rocshmem_barrier_all_wg();
 
 /**
  * @brief perform a collective barrier between all PEs in the team.
@@ -690,11 +681,9 @@ __device__ void rocshmem_ctx_barrier_wg(rocshmem_ctx_t ctx, rocshmem_team_t team
  *
  * This function must be invoked by a single thread within the PE.
  *
- * @param[in] handle GPU side handle.
- *
  * @return void
  */
-__device__ ATTR_NO_INLINE void rocshmem_ctx_sync_all(rocshmem_ctx_t ctx);
+__device__ ATTR_NO_INLINE void rocshmem_sync_all();
 
 /**
  * @brief registers the arrival of a PE at a barrier.
@@ -706,11 +695,9 @@ __device__ ATTR_NO_INLINE void rocshmem_ctx_sync_all(rocshmem_ctx_t ctx);
  *
  * This function must be called as a wave-front collective.
  *
- * @param[in] handle GPU side handle.
- *
  * @return void
  */
-__device__ ATTR_NO_INLINE void rocshmem_ctx_sync_all_wave(rocshmem_ctx_t ctx);
+__device__ ATTR_NO_INLINE void rocshmem_sync_all_wave();
 
 /**
  * @brief registers the arrival of a PE at a barrier.
@@ -722,11 +709,9 @@ __device__ ATTR_NO_INLINE void rocshmem_ctx_sync_all_wave(rocshmem_ctx_t ctx);
  *
  * This function must be called as a work-group collective.
  *
- * @param[in] handle GPU side handle.
- *
  * @return void
  */
-__device__ ATTR_NO_INLINE void rocshmem_ctx_sync_all_wg(rocshmem_ctx_t ctx);
+__device__ ATTR_NO_INLINE void rocshmem_sync_all_wg();
 
 /**
  * @brief registers the arrival of a PE at a barrier.

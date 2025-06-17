@@ -11,16 +11,16 @@ Collective routines
 ROCSHMEM_BARRIER_ALL
 --------------------
 
-.. cpp:function:: __device__ void rocshmem_ctx_barrier_all(rocshmem_ctx_t ctx)
-.. cpp:function:: __device__ void rocshmem_ctx_barrier_all_wave(rocshmem_ctx_t ctx)
-.. cpp:function:: __device__ void rocshmem_ctx_barrier_all_wg(rocshmem_ctx_t ctx)
+.. cpp:function:: __device__ void rocshmem_barrier_all()
+.. cpp:function:: __device__ void rocshmem_barrier_all_wave()
+.. cpp:function:: __device__ void rocshmem_barrier_all_wg()
 
-  :param ctx: Context with which to perform this operation.
   :returns:   None.
 
 **Description:**
 This routine performs a collective barrier across all PEs in the system.
 The caller is blocked until the barrier is resolved and all updates local and remote are completed.
+These APIs should be called from only one thread/wavefront/workgroup within the grid to avoid undefined behavior.
 
 ROCSHMEM_BARRIER
 ----------------
@@ -58,15 +58,15 @@ ensure the completion of remote memory updates issued via OpenSHMEM routines.
 ROCSHMEM_SYNC_ALL
 -----------------
 
-.. cpp:function:: __device__ void rocshmem_ctx_sync_all(rocshmem_ctx_t ctx)
-.. cpp:function:: __device__ void rocshmem_ctx_sync_all_wave(rocshmem_ctx_t ctx)
-.. cpp:function:: __device__ void rocshmem_ctx_sync_all_wg(rocshmem_ctx_t ctx)
+.. cpp:function:: __device__ void rocshmem_sync_all()
+.. cpp:function:: __device__ void rocshmem_sync_all_wave()
+.. cpp:function:: __device__ void rocshmem_sync_all_wg()
 
-  :param ctx:  Context with which to perform this operation.
   :returns:    None.
 
 **Description:**
-This routine behaves the same as ``rocshmem_team_sync_wg`` when called on the world team.
+These routines behaves the same way as ``rocshmem_team_sync_*`` when called on the world team.
+These APIs should be called from only one thread/wavefront/workgroup within the grid to avoid undefined behavior.
 
 ROSHMEM_ALLTOALL
 ----------------

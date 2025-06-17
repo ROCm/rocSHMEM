@@ -265,10 +265,9 @@ void IPCBackend::init_wrk_sync_buffer() {
   auto max_num_teams{team_tracker.get_max_num_teams()};
 
   /**
-   * size of barrier sync for all the contexts
+   * size of barrier sync
    */
-  Wrk_Sync_buffer_size_ += sizeof(*barrier_sync) * ROCSHMEM_BARRIER_SYNC_SIZE *
-                           (maximum_num_contexts_ + 1);
+  Wrk_Sync_buffer_size_ += sizeof(*barrier_sync) * ROCSHMEM_BARRIER_SYNC_SIZE;
 
   /**
    * Size of sync arrays for the teams
@@ -367,9 +366,7 @@ void IPCBackend::rocshmem_collective_init() {
    * Allocate heap space for barrier_sync
    */
   size_t one_sync_size_bytes {sizeof(*barrier_sync)};
-  size_t total_sync_elems {
-    ROCSHMEM_BARRIER_SYNC_SIZE * (maximum_num_contexts_ + 1)};
-  size_t sync_size_bytes {one_sync_size_bytes * total_sync_elems};
+  size_t sync_size_bytes {one_sync_size_bytes * ROCSHMEM_BARRIER_SYNC_SIZE};
 
   barrier_sync = reinterpret_cast<int64_t*>(temp_Wrk_Sync_buff_ptr_);
   temp_Wrk_Sync_buff_ptr_ += sync_size_bytes;
@@ -377,7 +374,7 @@ void IPCBackend::rocshmem_collective_init() {
   /*
    * Initialize the barrier synchronization array with default values.
    */
-  for (int i = 0; i < total_sync_elems; i++) {
+  for (int i = 0; i < num_pes; i++) {
     barrier_sync[i] = ROCSHMEM_SYNC_VALUE;
   }
 

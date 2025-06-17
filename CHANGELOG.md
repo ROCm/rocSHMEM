@@ -9,15 +9,15 @@
    * `rocshmem_ctx_barrier`
    * `rocshmem_ctx_barrier_wave`
    * `rocshmem_ctx_barrier_wg`
-   * `rocshmem_ctx_barrier_all`
-   * `rocshmem_ctx_barrier_all_wave`
-   * `rocshmem_ctx_barrier_all_wg`
+   * `rocshmem_barrier_all`
+   * `rocshmem_barrier_all_wave`
+   * `rocshmem_barrier_all_wg`
    * `rocshmem_ctx_sync`
    * `rocshmem_ctx_sync_wave`
    * `rocshmem_ctx_sync_wg`
-   * `rocshmem_ctx_sync_all`
-   * `rocshmem_ctx_sync_all_wave`
-   * `rocshmem_ctx_sync_all_wg`
+   * `rocshmem_sync_all`
+   * `rocshmem_sync_all_wave`
+   * `rocshmem_sync_all_wg`
    * `rocshmem_init_attr`
    * `rocshmem_get_uniqueid`
    * `rocshmem_set_attr_uniqueid_args`

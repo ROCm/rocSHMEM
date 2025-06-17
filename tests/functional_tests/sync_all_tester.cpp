@@ -40,38 +40,50 @@ __global__ void SyncAllTest(int loop, int skip, long long int *start_time,
   int wf_id = t_id / wf_size;
 
   rocshmem_wg_init();
-  rocshmem_wg_ctx_create(ROCSHMEM_CTX_WG_PRIVATE, &ctx);
 
   for (int i = 0; i < loop + skip; i++) {
     if (hipThreadIdx_x == 0 && i == skip) {
       start_time[wg_id] = wall_clock64();
     }
 
-    switch (type) {
-      case SyncAllTestType:
-        if(t_id == 0) {
-          rocshmem_ctx_sync_all(ctx);
-        }
-        break;
-      case WAVESyncAllTestType:
-        if(wf_id == 0) {
-          rocshmem_ctx_sync_all_wave(ctx);
-        }
-        break;
-      case WGSyncAllTestType:
-        rocshmem_ctx_sync_all_wg(ctx);
-        break;
-      default:
-        break;
+    if (is_block_zero_in_grid()) {
+      switch (type) {
+        case SyncAllTestType:
+          if(t_id == 0) {
+            /**
+              * The function `rocshmem_sync_all` should be called from only
+              * one thread within the grid to avoid undefined behavior.
+              */
+            rocshmem_sync_all();
+          }
+          break;
+        case WAVESyncAllTestType:
+          if(wf_id == 0) {
+            /**
+              * The function `rocshmem_sync_all_wave` should be called from only
+              * one thread within the grid to avoid undefined behavior.
+              */
+            rocshmem_sync_all_wave();
+          }
+          break;
+        case WGSyncAllTestType:
+          /**
+            * The function `rocshmem_sync_all_wg` should be called from only
+            * one thread within the grid to avoid undefined behavior.
+            */
+          rocshmem_sync_all_wg();
+          break;
+        default:
+          break;
+      }
+      __syncthreads();
     }
-    __syncthreads();
   }
 
   if (hipThreadIdx_x == 0) {
     end_time[wg_id] = wall_clock64();
   }
 
-  rocshmem_wg_ctx_destroy(&ctx);
   rocshmem_wg_finalize();
 }
 
@@ -89,8 +101,8 @@ void SyncAllTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
   hipLaunchKernelGGL(SyncAllTest, gridSize, blockSize, shared_bytes, stream,
                      loop, args.skip, start_time, end_time, _type, wf_size);
 
-  num_msgs = (loop + args.skip) * gridSize.x;
-  num_timed_msgs = loop * gridSize.x;
+  num_msgs = (loop + args.skip);
+  num_timed_msgs = loop;
 }
 
 void SyncAllTester::resetBuffers(uint64_t size) {}

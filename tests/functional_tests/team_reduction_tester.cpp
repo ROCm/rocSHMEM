@@ -95,7 +95,6 @@ __global__ void TeamReductionTest(int loop, int skip, long long int *start_time,
       start_time[wg_id] = wall_clock64();
     }
     wg_team_reduce<T1, T2>(ctx, team, r_buf, s_buf, size);
-    rocshmem_ctx_barrier_all_wg(ctx);
   }
 
   __syncthreads();

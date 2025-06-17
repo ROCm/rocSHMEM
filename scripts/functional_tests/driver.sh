@@ -350,19 +350,10 @@ TestColl() {
   #       | Name             | Ranks | Workgroups | Threads | Max Message Size #
   ##############################################################################
   ExecTest  "barrierall"       2       1            1
-  ExecTest  "barrierall"       2       16           64
-  ExecTest  "barrierall"       2       32           256
-  ExecTest  "barrierall"       2       64           1024
 
   ExecTest  "wavebarrierall"   2       1            1
-  ExecTest  "wavebarrierall"   2       16           64
-  ExecTest  "wavebarrierall"   2       32           256
-  ExecTest  "wavebarrierall"   2       64           1024
 
   ExecTest  "wgbarrierall"     2       1            1
-  ExecTest  "wgbarrierall"     2       16           64
-  ExecTest  "wgbarrierall"     2       32           256
-  ExecTest  "wgbarrierall"     2       64           1024
 
   ExecTest  "teambarrier"      2       1            1
   ExecTest  "teambarrier"      2       16           64
@@ -395,19 +386,10 @@ TestColl() {
   ExecTest  "wgsync"           2       39           1024
 
   ExecTest  "syncall"          2       1            1
-  ExecTest  "syncall"          2       16           64
-  ExecTest  "syncall"          2       32           256
-  ExecTest  "syncall"          2       64           1024
 
   ExecTest  "wavesyncall"      2       1            1
-  ExecTest  "wavesyncall"      2       16           64
-  ExecTest  "wavesyncall"      2       32           256
-  ExecTest  "wavesyncall"      2       64           1024
 
   ExecTest  "wgsyncall"        2       1            1
-  ExecTest  "wgsyncall"        2       16           64
-  ExecTest  "wgsyncall"        2       32           256
-  ExecTest  "wgsyncall"        2       64           1024
 
   ExecTest  "alltoall"         2       1            1         512
 
