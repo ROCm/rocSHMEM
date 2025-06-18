@@ -24,38 +24,10 @@
 
 cmake_minimum_required(VERSION 3.16.3 FATAL_ERROR)
 
-set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
-
-###############################################################################
-# GLOBAL COMPILE FLAGS
-###############################################################################
-if (NOT DEFINED CMAKE_CXX_COMPILER)
-    set(CMAKE_CXX_COMPILER /opt/rocm/bin/hipcc)
-endif()
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -ggdb")
-
-###############################################################################
-# DEFAULT BUILD TYPE
-###############################################################################
-if(NOT CMAKE_BUILD_TYPE)
-  message(STATUS "CMAKE_BUILD_TYPE unspecified: generating Release build")
-
-  set(
-    CMAKE_BUILD_TYPE
-    "Release"
-    CACHE
-      STRING
-        "build type: Release, Debug, RelWithDebInfo, MinSizeRel"
-    FORCE
-  )
-endif()
-
 ###############################################################################
 # PROJECT
 ###############################################################################
+include(${CMAKE_SOURCE_DIR}/cmake/setup_project.cmake)
 project(rocshmem_unit_tests VERSION 1.0.0 LANGUAGES CXX)
 
 ###############################################################################
@@ -67,7 +39,6 @@ target_include_directories(
   ${PROJECT_NAME}
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/../../library
 )
 
 target_sources(
@@ -78,7 +49,7 @@ target_sources(
     hipmalloc_gtest.cpp
     bin_gtest.cpp
     binner_gtest.cpp
-    #bitwise_gtest.cpp # Test is disabled becasue of compilation errors
+    #bitwise_gtest.cpp # Test is disabled because of compilation errors
     address_record_gtest.cpp
     index_strategy_gtest.cpp
     single_heap_gtest.cpp
@@ -107,65 +78,32 @@ endif()
 ###############################################################################
 # ROCSHMEM DEPENDENCY
 ###############################################################################
-find_package(hip REQUIRED)
+find_package(hip REQUIRED PATHS /opt/rocm)
 
 if (BUILD_TESTS_ONLY)
   find_package(MPI REQUIRED)
+  find_package(rocshmem REQUIRED PATHS /opt/rocm)
 
   target_include_directories(
     ${PROJECT_NAME}
     PRIVATE
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
       $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-      $<BUILD_INTERFACE:${ROCSHMEM_HOME}/include>
-      $<BUILD_INTERFACE:${MPI_CXX_HEADER_DIR}>
-  )
-
-  foreach (target ${DEFAULT_GPUS})
-    list(APPEND offload_flags --offload-arch=${target})
-  endforeach()
-
-  target_compile_options(
-    ${PROJECT_NAME}
-    PRIVATE
-      ${offload_flags}
-      -fgpu-rdc
-  )
-
-  target_link_libraries(
-    ${PROJECT_NAME}
-    PRIVATE
-      ${MPI_mpi_LIBRARY}
-      ${MPI_mpicxx_LIBRARY}
-      ${offload_flags}
-      -L${ROCSHMEM_HOME}/lib
-      -lamdhip64
-      -lhsa-runtime64
-      -lrocshmem
-      -fgpu-rdc
-  )
-else()
-  target_include_directories(
-    ${PROJECT_NAME}
-    PRIVATE
-      roc::rocshmem
-  )
-
-  target_link_libraries(
-    ${PROJECT_NAME}
-    PRIVATE
-      roc::rocshmem
-      hip::host
-      -fgpu-rdc
   )
 endif()
+
+target_link_libraries(
+  ${PROJECT_NAME}
+  PRIVATE
+    roc::rocshmem
+)
 
 ###############################################################################
 # GTEST DEPENDENCY
 ###############################################################################
 # These packages are required for the unit tests
-find_package(rocprim REQUIRED CONFIG PATHS "${ROCM_PATH}/include/rocprim")
-find_package(rocthrust REQUIRED CONFIG PATHS "${ROCM_PATH}/include/rocthrust")
+find_package(rocprim REQUIRED PATHS /opt/rocm)
+find_package(rocthrust REQUIRED PATHS /opt/rocm)
 
 include(FetchContent)
 
@@ -179,6 +117,7 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
 set(BUILD_GTEST ON CACHE BOOL "" FORCE)
+set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(googletest)
 

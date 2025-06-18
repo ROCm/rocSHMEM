@@ -71,50 +71,9 @@ option(BUILD_CODE_COVERAGE "Build with code coverage flags (gcc only)" OFF)
 configure_file(cmake/rocshmem_config.h.in rocshmem_config.h)
 
 ###############################################################################
-# GLOBAL COMPILE FLAGS
-###############################################################################
-if (DEFINED ENV{ROCM_PATH})
-  set(ROCM_PATH "$ENV{ROCM_PATH}" CACHE STRING "ROCm install directory")
-else()
-  set(ROCM_PATH "/opt/rocm" CACHE STRING "ROCm install directory")
-endif()
-
-if (NOT DEFINED CMAKE_CXX_COMPILER)
-  set(CMAKE_CXX_COMPILER ${ROCM_PATH}/bin/hipcc)
-endif()
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -ggdb")
-
-if (BUILD_TESTS_ONLY)
-  if (DEFINED ENV{ROCSHMEM_HOME})
-    set(ROCSHMEM_HOME "$ENV{ROCSHMEM_HOME}")
-  else()
-    message("Environment variable ROCSHMEM_HOME is not set.")
-    message("Assuming that rocSHMEM is installed at ${ROCM_PATH}.")
-    set(ROCSHMEM_HOME "${ROCM_PATH}")
-  endif()
-endif()
-
-find_package(ROCM 0.8 REQUIRED PATHS ${ROCM_PATH})
-set(ROCMCHECKS_WARN_TOOLCHAIN_VAR OFF)
-
-include(cmake/rocm_local_targets.cmake)
-
-set(DEFAULT_GPUS
-      gfx90a:xnack-;
-      gfx90a:xnack+;
-      gfx942:xnack-;
-      gfx942:xnack+)
-
-###############################################################################
 # PROJECT
 ###############################################################################
-find_package(ROCmCMakeBuildTools)
-include(ROCMCreatePackage)
-include(ROCMInstallTargets)
-include(ROCMCheckTargetIds)
+include(${CMAKE_SOURCE_DIR}/cmake/setup_project.cmake)
 
 ## Setup VERSION
 file(READ include/rocshmem/rocshmem.hpp header_text)
@@ -125,8 +84,14 @@ else()
 endif()
 message(STATUS "rocSHMEM Version: " "${VERSION_STRING}")
 
-rocm_setup_version(VERSION ${VERSION_STRING})
 project(rocshmem VERSION ${VERSION_STRING} LANGUAGES CXX)
+
+find_package(ROCmCMakeBuildTools PATHS /opt/rocm)
+include(ROCMCreatePackage)
+include(ROCMInstallTargets)
+include(ROCMCheckTargetIds)
+
+rocm_setup_version(VERSION ${VERSION_STRING})
 
 ###############################################################################
 # CREATE ROCSHMEM LIBRARY
@@ -139,6 +104,14 @@ if (NOT BUILD_TESTS_ONLY)
   #############################################################################
   # SET GPU ARCHITECTURES
   #############################################################################
+  include(cmake/rocm_local_targets.cmake)
+
+  set(DEFAULT_GPUS
+      gfx90a:xnack-;
+      gfx90a:xnack+;
+      gfx942:xnack-;
+      gfx942:xnack+)
+
   if (BUILD_LOCAL_GPU_TARGET_ONLY)
     message(STATUS "Building only for local GPU target")
     if (COMMAND rocm_local_targets)
@@ -155,8 +128,8 @@ if (NOT BUILD_TESTS_ONLY)
     message(STATUS "Checking for ROCm support for GPU targets: " "${GPU_TARGETS}")
     rocm_check_target_ids(SUPPORTED_GPUS TARGETS ${GPU_TARGETS})
   else()
-    message(WARNING "Unable to check for supported GPU targets. Falling back to default GPUs.")
-    set(SUPPORTED_GPUS ${DEFAULT_GPUS})
+    message(WARNING "Unable to check for supported GPU targets.")
+    set(SUPPORTED_GPUS ${GPU_TARGETS})
   endif()
 
   set(COMPILING_TARGETS "${SUPPORTED_GPUS}" CACHE STRING "GPU targets to compile for.")
@@ -165,13 +138,12 @@ if (NOT BUILD_TESTS_ONLY)
   foreach (target ${COMPILING_TARGETS})
     list(APPEND offload_flags --offload-arch=${target})
   endforeach()
-  add_compile_options(${offload_flags})
 
   #############################################################################
   # PACKAGE DEPENDENCIES
   #############################################################################
   find_package(MPI REQUIRED)
-  find_package(hip REQUIRED)
+  find_package(hip REQUIRED PATHS /opt/rocm)
   find_package(hsa-runtime64 REQUIRED)
 
   set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
@@ -181,37 +153,32 @@ if (NOT BUILD_TESTS_ONLY)
   #############################################################################
   # LINKING AND INCLUDE DIRECTORIES
   #############################################################################
+  target_compile_options(
+    ${PROJECT_NAME}
+    PUBLIC
+      ${offload_flags}
+      -fgpu-rdc
+  )
+
   target_include_directories(
     ${PROJECT_NAME}
     PUBLIC
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
       $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>               # rocshmem_config.h
       $<INSTALL_INTERFACE:include>
-      ${MPI_CXX_HEADER_DIR}
   )
 
   target_link_libraries(
     ${PROJECT_NAME}
     PUBLIC
       Threads::Threads
-      ${MPI_mpi_LIBRARY}
-      ${MPI_mpicxx_LIBRARY}
+      MPI::MPI_CXX
       hip::device
       hip::host
       hsa-runtime64::hsa-runtime64
+      -fgpu-rdc
   )
-endif()
 
-###############################################################################
-# TEST SUBDIRECTORIES
-###############################################################################
-add_subdirectory(tests)
-
-if (BUILD_EXAMPLES)
-  add_subdirectory(examples)
-endif()
-
-if (NOT BUILD_TESTS_ONLY)
   #############################################################################
   # INSTALL
   #############################################################################
@@ -252,4 +219,14 @@ if (NOT BUILD_TESTS_ONLY)
     DESCRIPTION "ROCm OpenSHMEM (rocSHMEM)"
     MAINTAINER "rocSHMEM Maintainer <rocshmem-maintainer@amd.com>"
   )
+endif (NOT BUILD_TESTS_ONLY)
+
+###############################################################################
+# TEST SUBDIRECTORIES
+###############################################################################
+add_subdirectory(tests)
+
+if (BUILD_EXAMPLES)
+  add_subdirectory(examples)
 endif()
+

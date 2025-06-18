@@ -22,38 +22,25 @@
 # IN THE SOFTWARE.
 ###############################################################################
 
-#!/bin/bash
+###############################################################################
+# DEFAULT BUILD TYPE
+###############################################################################
+set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+      "build type: Release, Debug, RelWithDebInfo, MinSizeRel")
 
-set -e
+###############################################################################
+# GLOBAL COMPILE FLAGS
+###############################################################################
+foreach (root ${hip_ROOT} $ENV{hip_ROOT} ${ROCM_ROOT} $ENV{ROCM_ROOT} ${ROCM_PATH} $ENV{ROCM_PATH})
+  if (IS_DIRECTORY ${root})
+    list(PREPEND CMAKE_PREFIX_PATH ${root})
+  endif()
+endforeach()
+if (NOT DEFINED CMAKE_CXX_COMPILER)
+  find_program(CMAKE_CXX_COMPILER hipcc PATHS /opt/rocm)
+endif()
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -ggdb")
 
-if [ -z $1 ]
-then
-  install_path=~/rocshmem
-else
-  install_path=$1
-fi
-
-src_path=$(dirname "$(realpath $0)")/../../
-
-# If as specific rocSHMEM version is required, the recommended approach
-# is to set environment variable 'rocshmem_ROOT'
-cmake \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=$install_path \
-    -DCMAKE_VERBOSE_MAKEFILE=OFF \
-    -DDEBUG=OFF \
-    -DPROFILE=OFF \
-    -DUSE_RO=OFF \
-    -DUSE_IPC=ON \
-    -DUSE_THREADS=OFF \
-    -DUSE_WF_COAL=OFF \
-    -DUSE_SINGLE_NODE=ON \
-    -DUSE_HDP_FLUSH=OFF \
-    -DUSE_HDP_FLUSH_HOST_SIDE=OFF \
-    -DBUILD_LOCAL_GPU_TARGET_ONLY=OFF \
-    -DBUILD_TESTS_ONLY=ON \
-    -DBUILD_FUNCTIONAL_TESTS=ON \
-    -DBUILD_EXAMPLES=ON \
-    -DBUILD_UNIT_TESTS=OFF \
-    $src_path
-cmake --build . --parallel 8

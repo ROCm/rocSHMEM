@@ -22,21 +22,27 @@
 # IN THE SOFTWARE.
 ###############################################################################
 
-set(TESTS_NAME rocshmem_example_driver)
+cmake_minimum_required(VERSION 3.16.3 FATAL_ERROR)
+
+###############################################################################
+# PROJECT
+###############################################################################
+include(${CMAKE_SOURCE_DIR}/cmake/setup_project.cmake)
+project(rocshmem_functional_tests VERSION 1.0.0 LANGUAGES CXX)
 
 ###############################################################################
 # SOURCES
 ###############################################################################
-add_executable(${TESTS_NAME} "")
+add_executable(${PROJECT_NAME} "")
 
 target_include_directories(
-  ${TESTS_NAME}
+  ${PROJECT_NAME}
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 target_sources(
-  ${TESTS_NAME}
+  ${PROJECT_NAME}
   PRIVATE
     barrier_all_tester.cpp
     sync_tester.cpp
@@ -67,50 +73,19 @@ target_sources(
 ###############################################################################
 if (BUILD_TESTS_ONLY)
   find_package(MPI REQUIRED)
+  find_package(hip REQUIRED PATHS /opt/rocm)
+  find_package(rocshmem REQUIRED PATHS /opt/rocm)
 
   target_include_directories(
-    ${TESTS_NAME}
+    ${PROJECT_NAME}
     PRIVATE
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
       $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-      $<BUILD_INTERFACE:${ROCSHMEM_HOME}/include>
-      $<BUILD_INTERFACE:${MPI_CXX_HEADER_DIR}>
-  )
-
-  foreach (target ${DEFAULT_GPUS})
-    list(APPEND offload_flags --offload-arch=${target})
-  endforeach()
-
-  target_compile_options(
-    ${TESTS_NAME}
-    PRIVATE
-      ${offload_flags}
-      -fgpu-rdc
-  )
-
-  target_link_libraries(
-    ${TESTS_NAME}
-    PRIVATE
-      ${MPI_mpi_LIBRARY}
-      ${MPI_mpicxx_LIBRARY}
-      ${offload_flags}
-      -L${ROCSHMEM_HOME}/lib
-      -lamdhip64
-      -lhsa-runtime64
-      -lrocshmem
-      -fgpu-rdc
-  )
-else()
-  target_include_directories(
-    ${TESTS_NAME}
-    PRIVATE
-      roc::rocshmem
-  )
-
-  target_link_libraries(
-    ${TESTS_NAME}
-    PRIVATE
-      roc::rocshmem
-      -fgpu-rdc
   )
 endif()
+
+target_link_libraries(
+  ${PROJECT_NAME}
+  PRIVATE
+    roc::rocshmem
+)
