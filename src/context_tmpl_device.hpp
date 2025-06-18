@@ -24,6 +24,7 @@
 #define LIBRARY_SRC_CONTEXT_TMPL_DEVICE_HPP_
 
 #include "gpu_ib/context_ib_device.hpp"
+#include "assembly.hpp"
 
 namespace rocshmem {
 
@@ -163,32 +164,32 @@ int Context::test(T *ivars, int cmp, T val) {
   volatile T *vol_ivars = reinterpret_cast<T *>(ivars);
   switch (cmp) {
     case ROCSHMEM_CMP_EQ:
-      if (*vol_ivars == val) {
+      if (uncached_load(vol_ivars) == val) {
         ret = 1;
       }
       break;
     case ROCSHMEM_CMP_NE:
-      if (*vol_ivars != val) {
+      if (uncached_load(vol_ivars) != val) {
         ret = 1;
       }
       break;
     case ROCSHMEM_CMP_GT:
-      if (*vol_ivars > val) {
+      if (uncached_load(vol_ivars) > val) {
         ret = 1;
       }
       break;
     case ROCSHMEM_CMP_GE:
-      if (*vol_ivars >= val) {
+      if (uncached_load(vol_ivars) >= val) {
         ret = 1;
       }
       break;
     case ROCSHMEM_CMP_LT:
-      if (*vol_ivars < val) {
+      if (uncached_load(vol_ivars) < val) {
         ret = 1;
       }
       break;
     case ROCSHMEM_CMP_LE:
-      if (*vol_ivars <= val) {
+      if (uncached_load(vol_ivars) <= val) {
         ret = 1;
       }
       break;
