@@ -137,9 +137,9 @@ rocshmem_env_config::rocshmem_env_config() {
     ro_progress_delay = atoi(env_value);
   }
 
-  env_value = getenv("ROCSHMEM_UNIQUEID_NO_MPI");
+  env_value = getenv("ROCSHMEM_UNIQUEID_WITH_MPI");
   if (nullptr != env_value) {
-    uniqueid_no_mpi = atoi(env_value);
+    uniqueid_with_mpi = atoi(env_value);
   }
 
   env_value = getenv("ROCSHMEM_BOOTSTRAP_TIMEOUT");
@@ -171,8 +171,8 @@ int rocshmem_env_config::get_ro_progress_delay() {
   return ro_progress_delay;
 }
 
-int rocshmem_env_config::get_uniqueid_no_mpi() {
-  return uniqueid_no_mpi;
+int rocshmem_env_config::get_uniqueid_with_mpi() {
+  return uniqueid_with_mpi;
 }
 
 int rocshmem_env_config::get_bootstrap_timeout() {
