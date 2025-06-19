@@ -137,7 +137,7 @@ const rocshmem_team_t ROCSHMEM_TEAM_INVALID = nullptr;
 using rocshmem_uniqueid_t = std::array<uint8_t, ROCSHMEM_UNIQUE_ID_BYTES>;
 
 /**
- * @brief Data structure used for attribute based
+ * @brief Data structure used for attribute based 
  *        initialization
  */
 struct rocshmem_init_attr_t  {

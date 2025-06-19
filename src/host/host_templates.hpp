@@ -21,6 +21,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  *****************************************************************************/
+
 #ifndef LIBRARY_SRC_HOST_HOST_TEMPLATES_HPP_
 #define LIBRARY_SRC_HOST_HOST_TEMPLATES_HPP_
 
