@@ -143,6 +143,13 @@ class SymmetricHeap {
     return remote_heap_info_->get_heap_bases();
   }
 
+  /**
+   * @brief Returns is the heap is allocated with managed memory
+   *
+   * @return bool
+   */
+  bool is_managed() { return single_heap_.is_managed(); }
+
  private:
   /**
    * @brief Processing element's implementation of heap

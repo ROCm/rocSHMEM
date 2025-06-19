@@ -1,5 +1,7 @@
 /******************************************************************************
- * Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) Advanced Micro Devices, Inc. All rights reserved.
+ *
+ * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -13,7 +15,7 @@
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
@@ -52,64 +54,64 @@ void Context::put_nbi(T *dest, const T *source, size_t nelems, int pe) {
 }
 
 template <typename T>
-__host__ 
+__host__
 T Context::amo_fetch_add(void *dst, T value, int pe) {
   auto ret_val = static_cast<GPUIBHostContext*>(this)->amo_fetch_add(dst, value, pe);
   return ret_val;
 }
 
 template <typename T>
-__host__ 
+__host__
 void Context::amo_add(void *dst, T value, int pe) {
   static_cast<GPUIBHostContext*>(this)->amo_add(dst, value, pe);
 }
 
 template <typename T>
-__host__ 
+__host__
 void Context::amo_set(void *dst, T value, int pe) {
   static_cast<GPUIBHostContext*>(this)->amo_set(dst, value, pe);
 }
 
 template <typename T>
-__host__ 
+__host__
 T Context::amo_swap(void *dst, T value, int pe) {
   auto ret_val = static_cast<GPUIBHostContext*>(this)->amo_swap(dst, value, pe);
   return ret_val;
 }
 
 template <typename T>
-__host__ 
+__host__
 T Context::amo_fetch_cas(void *dst, T value, T cond, int pe) {
   auto ret_val = static_cast<GPUIBHostContext*>(this)->amo_fetch_cas(dst, value, cond, pe);
   return ret_val;
 }
 
 template <typename T>
-__host__ 
+__host__
 void Context::amo_cas(void *dst, T value, T cond, int pe) {
   static_cast<GPUIBHostContext*>(this)->amo_cas(dst, value, cond, pe);
 }
 
 template <typename T>
-__host__ 
+__host__
 void Context::wait_until(T *ivars, int cmp, T val) {
   static_cast<GPUIBHostContext*>(this)->wait_until<T>(ivars, cmp, val);
 }
 
 template <typename T>
-__host__ 
+__host__
 size_t Context::wait_until_any(T *ivars, size_t nelems, const int* status, int cmp, T val) {
   return static_cast<GPUIBHostContext*>(this)->wait_until_any<T>(ivars, nelems, status, cmp, val);
 }
 
 template <typename T>
-__host__ 
+__host__
 void Context::wait_until_all(T *ivars, size_t nelems, const int* status, int cmp, T val) {
   static_cast<GPUIBHostContext*>(this)->wait_until_all<T>(ivars, nelems, status, cmp, val);
 }
 
 template <typename T>
-__host__ 
+__host__
 size_t Context::wait_until_some(T *ivars, size_t nelems, size_t* indices, const int* status, int cmp, T val) {
   auto ret_val = static_cast<GPUIBHostContext*>(this)->wait_until_some<T>(ivars, nelems, indices, status, cmp, val);
   return ret_val;

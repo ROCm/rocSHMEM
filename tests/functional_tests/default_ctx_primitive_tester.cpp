@@ -1,5 +1,7 @@
 /******************************************************************************
- * Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) Advanced Micro Devices, Inc. All rights reserved.
+ *
+ * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -13,7 +15,7 @@
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
@@ -23,9 +25,9 @@
  #include "default_ctx_primitive_tester.hpp"
 
  #include <rocshmem/rocshmem.hpp>
- 
+
  using namespace rocshmem;
- 
+
  /******************************************************************************
   * DEVICE TEST KERNEL
   *****************************************************************************/
@@ -37,21 +39,21 @@
    int wg_id = get_flat_grid_id();
    int t_id  = get_flat_block_id();
    int wf_id = t_id / wf_size;
- 
+
    /**
     * Shared array to capture the start time for each wavefront
     * Max threads per block = 1024, wavefront size = 64 (in most GPUs)
     * Maximum array size required = 1024/64 = 16
     */
    __shared__ long long int wf_start_time[16];
- 
+
    /**
     * Calculate start index for each thread within the grid
     */
    uint64_t offset = size * get_flat_id();
    source += offset;
    dest += offset;
- 
+
    for (int i = 0; i < loop + skip; i++) {
      if (i == skip) {
        __syncthreads();
@@ -63,7 +65,7 @@
        // Capture the start time of each wavefront to identify the earliest one
        wf_start_time[wf_id] = wall_clock64();
      }
- 
+
      switch (type) {
        case DefaultCTXPutTestType:
          rocshmem_putmem(dest, source, size, 1);
@@ -81,18 +83,18 @@
          break;
      }
    }
- 
+
    __syncthreads();
    if(is_thread_zero_in_block()) {
      rocshmem_quiet();
    }
- 
+
    /**
     * End time of the last wavefront is recorded by overwriting
     * the value previously set by earlier wavefronts.
     */
    end_time[wg_id] = wall_clock64();
- 
+
    // Find the earliest start time
    int num_wfs = (get_flat_block_size() - 1 ) / wf_size + 1;
    for (int i = num_wfs / 2; i > 0; i >>= 1 ) {
@@ -101,12 +103,12 @@
      }
    }
    __syncthreads();
- 
+
    if (t_id == 0) {
      start_time[wg_id] = wf_start_time[0];
    }
  }
- 
+
  /******************************************************************************
   * HOST TESTER CLASS METHODS
   *****************************************************************************/
@@ -115,7 +117,7 @@
    size_t buff_size = args.max_msg_size * args.wg_size * args.num_wgs;
    source = (char *)rocshmem_malloc(buff_size);
    dest = (char *)rocshmem_malloc(buff_size);
- 
+
    if (source == nullptr || dest == nullptr) {
      std::cerr << "Error allocating memory from symmetric heap" << std::endl;
      std::cerr << "source: " << source << ", dest: " << dest << std::endl;
@@ -127,42 +129,42 @@
      }
      rocshmem_global_exit(1);
    }
- 
+
    for(size_t i = 0; i < buff_size; i++) {
      source[i] = static_cast<char>('a' + i % 26);
    }
  }
- 
+
  DefaultCTXPrimitiveTester::~DefaultCTXPrimitiveTester() {
    rocshmem_free(source);
    rocshmem_free(dest);
  }
- 
+
  void DefaultCTXPrimitiveTester::resetBuffers(uint64_t size) {
    size_t buff_size = size * args.wg_size * args.num_wgs;
    memset(dest, '1', buff_size);
  }
- 
+
  void DefaultCTXPrimitiveTester::launchKernel(dim3 gridSize, dim3 blockSize,
                                               int loop, uint64_t size) {
    size_t shared_bytes = 0;
- 
+
    hipLaunchKernelGGL(DefaultCTXPrimitiveTest, gridSize, blockSize,
                       shared_bytes, stream, loop, args.skip, start_time,
                       end_time, source, dest, size, _type, _shmem_context,
                       wf_size);
- 
+
    num_msgs = (loop + args.skip) * gridSize.x * blockSize.x;
    num_timed_msgs = loop * gridSize.x * blockSize.x;
  }
- 
+
  void DefaultCTXPrimitiveTester::verifyResults(uint64_t size) {
    int check_id =
        (_type == DefaultCTXGetTestType ||
         _type == DefaultCTXGetNBITestType || _type == DefaultCTXGTestType)
            ? 0
            : 1;
- 
+
    if (args.myid == check_id) {
      size_t buff_size = size * args.wg_size * args.num_wgs;
      for (uint64_t i = 0; i < buff_size; i++) {
@@ -175,4 +177,4 @@
      }
    }
  }
- 
+

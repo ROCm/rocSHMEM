@@ -7,8 +7,8 @@ code complexity and enables more fine-grained communication/computation
 overlap than traditional host-driven networking.
 rocSHMEM uses a single symmetric heap (SHEAP) that is allocated on GPU memories.
 
-There are currently three backends for rocSHMEM;
-IPC, Reverse Offload (RO), and GPU-IB.
+There are currently two backends for rocSHMEM;
+IPC and Reverse Offload (RO).
 The backends primarily differ in their implementations of intra-kernel networking.
 
 The IPC backend implements communication primitives using load/store operations issued from the GPU.
@@ -152,6 +152,20 @@ To run the tests, you may use the driver scripts provided in the `./scripts/` di
 
 # Run Unit Tests
 ./scripts/unit_tests/driver.sh ./build/tests/unit_tests/rocshmem_unit_tests all
+```
+
+## Code Coverage
+rocSHMEM targets 80% code coverage in both unit and functional tests.  To check the coverage report for your
+changes, we have a helper script you can use to build, test and generate the coverage report in a single step.
+
+Because we need to build all 3 of `ipc`, `ro_net` and `ro_ipc`, the `codecov` script is run from the context of
+the `build/` directory and will create and build to the 3 directories, with instrumented code. It will then start
+a python http server where you can navigate to the link to view the coverage report.
+
+```
+cd rocSHMEM
+mkdir build && cd build
+../scripts/build_configs/codecov
 ```
 
 ## Building the Dependencies

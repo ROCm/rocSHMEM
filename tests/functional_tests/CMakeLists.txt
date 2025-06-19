@@ -1,5 +1,5 @@
 ###############################################################################
-#Copyright (c) Advanced Micro Devices, Inc. All rights reserved.
+# Copyright (c) Advanced Micro Devices, Inc. All rights reserved.
 #
 # SPDX-License-Identifier: MIT
 #
@@ -86,7 +86,7 @@ if (BUILD_TESTS_ONLY)
     ${TESTS_NAME}
     PRIVATE
       ${flags_str}
-      $<$<BOOL:${HAVE_PMIX}>:HAVE_PMIX=1>      
+      $<$<BOOL:${HAVE_PMIX}>:HAVE_PMIX=1>
        -fgpu-rdc
   )
 
