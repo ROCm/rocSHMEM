@@ -28,6 +28,7 @@
 #include "tester.hpp"
 #include "tester_arguments.hpp"
 
+#define HAVE_PMIX
 #if defined(HAVE_PMIX)
 #include <pmix.h>
 
