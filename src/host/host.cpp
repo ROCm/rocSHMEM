@@ -180,7 +180,7 @@ __host__ HostInterface::HostInterface(HdpPolicy* hdp_policy,
         new HostContextWindowInfo(heap);
   }
 
-#if !defined(USE_COHERENT_HEAP) && !defined(USE_SINGLE_NODE)
+#if defined USE_HDP_FLUSH &&  not defined USE_SINGLE_NODE
   printf("Non-mpi use-cases only supported with coherent heap at the moment. Aborting.\n");
   abort();
 #endif
