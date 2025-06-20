@@ -549,6 +549,11 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   uint64_t* wave_fetch_atomic{nullptr};
   if (fetching) {
     if (is_leader) {
+      uint64_t db_touched {0};
+      do {
+        db_touched = __hip_atomic_load(&sq_db_touched, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+      } while (db_touched != wave_sq_counter);
+
       auto res = fetching_atomic_freelist->pop_front();
       while (!res.success) {
         res = fetching_atomic_freelist->pop_front();
