@@ -149,9 +149,6 @@ if (NOT BUILD_TESTS_ONLY)
   set(THREADS_PREFER_PTHREAD_FLAG TRUE)
   find_package(Threads REQUIRED)
 
-  include(cmake/find_pmix.cmake)
-  check_pmix()
-
   configure_file(cmake/rocshmem_config.h.in rocshmem_config.h)
 
   #############################################################################
@@ -170,8 +167,6 @@ if (NOT BUILD_TESTS_ONLY)
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
       $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>               # rocshmem_config.h
       $<INSTALL_INTERFACE:include>
-      ${MPI_CXX_HEADER_DIR}
-      ${PMIX_HEADER_DIR}
   )
 
   target_link_libraries(

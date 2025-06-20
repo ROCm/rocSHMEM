@@ -28,7 +28,7 @@
 #include "tester.hpp"
 #include "tester_arguments.hpp"
 
-#ifdef HAVE_PMIX
+#if defined(HAVE_PMIX)
 #include <pmix.h>
 
 static pmix_proc_t pmix_myproc;
@@ -138,6 +138,10 @@ int main(int argc, char *argv[]) {
    * Select a GPU
    */
   char* ompi_local_rank = getenv("OMPI_COMM_WORLD_LOCAL_RANK");
+  if (nullptr == ompi_local_rank) {
+    printf("Could not determine local rank, use Open MPI `mpiexec`\n");
+    abort();
+  }
   CHECK_HIP(hipSetDevice(atoi(ompi_local_rank)));
 
   /**
@@ -149,7 +153,7 @@ int main(int argc, char *argv[]) {
   if (rocshmem_test_uuid != nullptr) {
     test_uuid = atoi(rocshmem_test_uuid);
   }
-    
+
   if (test_uuid) {
     int ret;
     int rank, nranks;
@@ -225,6 +229,6 @@ int main(int argc, char *argv[]) {
     PMIx_Finalize(NULL, 0);
   }
 #endif
-  
+
   return 0;
 }
