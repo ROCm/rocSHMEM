@@ -88,16 +88,26 @@ void AMOSelfTester<T>::verifyResults(uint64_t size) {
 
   int fetch_op = (_type == AMO_FAddSelfTestType) ? 1 : 0;
 
-  if (fetch_op == 1) {
-    ret = *std::max_element(_ret_val, _ret_val + args.num_wgs);
-  } else {
-    ret = *(T*)_r_buf;
-  }
-
-  if (ret != expected_val) {
+  auto validate = [&]() {
+    if (ret != expected_val) {
     std::cerr << "data validation error\n";
     std::cerr << "got " << ret << ", expected " << expected_val << std::endl;
     exit(-1);
+    }
+  };
+
+  if (fetch_op == 1) {
+    // validate through max on return values from kernel
+    ret = *std::max_element(_ret_val, _ret_val + args.num_wgs);
+    validate();
+
+    // validate by directly reading the variable from host
+    expected_val += 1; // the return values from kernel will be off-by-one
+    ret = *(T*)_r_buf;
+    validate();
+  } else {
+    ret = *(T*)_r_buf;
+    validate();
   }
 }
 
