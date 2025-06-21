@@ -32,6 +32,7 @@
 #include "../context_incl.hpp"
 #include "ipc_context_proxy.hpp"
 #include "../ipc_policy.hpp"
+#include "../bootstrap/bootstrap.hpp"
 
 namespace rocshmem {
 
@@ -43,6 +44,7 @@ class IPCBackend : public Backend {
    * @copydoc Backend::Backend(unsigned)
    */
   explicit IPCBackend(MPI_Comm comm);
+  explicit IPCBackend(TcpBootstrap *bootstr);
 
   /**
    * @copydoc Backend::~Backend()
@@ -71,6 +73,11 @@ class IPCBackend : public Backend {
    * @brief Helper to initialize IPC interface.
    */
   void initIPC();
+
+  /**
+   * @brief Helper to initialize IPC interface, non-MPI based version.
+   */
+  void initIPC(TcpBootstrap *bootstrap);
 
   /**
    * @brief Allocation and initialization of backend contexts.
@@ -208,6 +215,11 @@ class IPCBackend : public Backend {
 
  private:
   /**
+   * @brief Common code invoked from the different constructors
+   */
+  void init();
+
+  /**
    * @brief Proxy for the default context
    *
    * @note Internal data ownership is managed by the proxy
@@ -287,6 +299,11 @@ class IPCBackend : public Backend {
    * work/sync buffer.
   */
   void cleanup_wrk_sync_buffer();
+
+  /**
+   * @brief
+   */
+  void Allreduce_char_BAND (char* inbuf, char *outbuf, size_t num_bytes, Team *team);
 
 };
 

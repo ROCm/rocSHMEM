@@ -40,7 +40,7 @@ __host__ ROHostContext::ROHostContext(Backend *backend, long options)
 
   host_interface = b->host_interface;
 
-  context_window_info = host_interface->acquire_window_context();
+  context_window_info = dynamic_cast<WindowInfoMPI*>(host_interface->acquire_window_context());
 }
 
 __host__ ROHostContext::~ROHostContext() {

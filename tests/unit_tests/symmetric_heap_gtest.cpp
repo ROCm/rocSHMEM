@@ -38,12 +38,15 @@ TEST_F(SymmetricHeapTestFixture, malloc_free) {
 TEST_F(SymmetricHeapTestFixture, window_info) {
   auto win_info_ptr{symmetric_heap_.get_window_info()};
 
-  void *window_base_addr{nullptr};
-  int flag{0};
-  MPI_Win_get_attr(win_info_ptr->get_win(), MPI_WIN_BASE, &window_base_addr,
-                   &flag);
-  ASSERT_NE(0, flag);
-  ASSERT_NE(nullptr, window_base_addr);
+  WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(win_info_ptr);
+  if (window_info_mpi) {
+    void *window_base_addr{nullptr};
+    int flag{0};
+    MPI_Win_get_attr(window_info_mpi->get_win(), MPI_WIN_BASE, &window_base_addr,
+		     &flag);
+    ASSERT_NE(0, flag);
+    ASSERT_NE(nullptr, window_base_addr);
+  }
 }
 
 TEST_F(SymmetricHeapTestFixture, heap_bases) {

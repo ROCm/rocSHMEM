@@ -54,14 +54,14 @@ class ROContextWindowInfo {
    *
    * @return WindowInfo pointer
    */
-  WindowInfo *get() { return window_info_; }
+  WindowInfoMPI *get() { return window_info_; }
 
  private:
   /**
    * @brief Pointer to the WindowInfo object that manages the MPI Window for
    * this context
    */
-  WindowInfo *window_info_{nullptr};
+  WindowInfoMPI *window_info_{nullptr};
 };
 
 class ROHostContext : public Context {
@@ -79,7 +79,7 @@ class ROHostContext : public Context {
   HostInterface *host_interface = nullptr;
 
   /* An MPI Window implements a context */
-  WindowInfo *context_window_info = nullptr;
+  WindowInfoMPI *context_window_info = nullptr;
 
   /**************************************************************************
    ****************************** HOST METHODS ******************************

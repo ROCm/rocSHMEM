@@ -22,6 +22,8 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
+#include <cstring>
+
 #include "backend_ipc.hpp"
 #include "ipc_team.hpp"
 
@@ -63,11 +65,6 @@ IPCBackend::IPCBackend(MPI_Comm comm)
     :  Backend(comm) {
   type = BackendType::IPC_BACKEND;
 
-  if (auto maximum_num_contexts_str = getenv("ROCSHMEM_MAX_NUM_CONTEXTS")) {
-    std::stringstream sstream(maximum_num_contexts_str);
-    sstream >> maximum_num_contexts_;
-  }
-
   initIPC();
 
   /**
@@ -82,6 +79,37 @@ IPCBackend::IPCBackend(MPI_Comm comm)
                                                    &heap);
 
   default_host_ctx = std::make_unique<IPCHostContext>(this, 0);
+
+  init();
+}
+
+IPCBackend::IPCBackend(TcpBootstrap *bootstrap)
+    :  Backend(bootstrap) {
+  type = BackendType::IPC_BACKEND;
+
+  initIPC(bootstrap); // no MPI involved
+
+  /**
+   * Check if num_pes == ipcImpl.shm_size)
+   * All the PEs must be with in a node for IPC conduit
+   */
+  assert(num_pes == ipcImpl.shm_size);
+
+  /* Initialize the host interface */
+  host_interface = std::make_shared<HostInterface>(hdp_proxy_.get(),
+                                                   bootstrap,
+                                                   &heap);
+
+  default_host_ctx = std::make_unique<IPCHostContext>(this, 0);
+
+  init();
+}
+
+void IPCBackend::init() {
+  if (auto maximum_num_contexts_str = getenv("ROCSHMEM_MAX_NUM_CONTEXTS")) {
+    std::stringstream sstream(maximum_num_contexts_str);
+    sstream >> maximum_num_contexts_;
+  }
 
   ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque = default_host_ctx.get();
 
@@ -181,6 +209,38 @@ void IPCBackend::team_destroy(rocshmem_team_t team) {
   CHECK_HIP(hipFree(team_obj));
 }
 
+void IPCBackend::Allreduce_char_BAND (char* inbuf, char *outbuf, size_t num_bytes,
+				      Team *team) {
+
+  // Implement an Allreduce outside of MPI. This is specialized for the scenario
+  // required for the team creation, i.e. assuming bytes and using BAND operation.
+  // Implementation uses an Allgather operation followed a local reduction.
+
+  IPCTeam *team_obj = reinterpret_cast<IPCTeam *>(team);
+  int num_pes = team_obj->num_pes;
+  int my_pe = team_obj->my_pe;
+
+  char *tmp_buffer = new char[num_pes * num_bytes];
+  std::memset(tmp_buffer, 0, num_pes * num_bytes);
+  std::memcpy (&tmp_buffer[my_pe * num_bytes], inbuf, num_bytes);
+
+  if (num_pes == backend_bootstr->getNranks() ) {
+    backend_bootstr->allGather(tmp_buffer, num_bytes);
+  } else {
+    printf("IPCBackend::create_new_team: non-mpi version only supports parent_teams that contain all processes. Aborting.\n");
+    abort();
+  }
+
+  for (int i = 0; i < num_bytes; i++) {
+    outbuf[i] = tmp_buffer[i];
+    for (int j = 1; j < num_pes; j++) {
+      outbuf[i] &= tmp_buffer[j * num_bytes + i];
+    }
+  }
+
+  delete[] tmp_buffer;
+}
+
 void IPCBackend::create_new_team([[maybe_unused]] Team *parent_team,
                                 TeamInfo *team_info_wrt_parent,
                                 TeamInfo *team_info_wrt_world, int num_pes,
@@ -190,8 +250,12 @@ void IPCBackend::create_new_team([[maybe_unused]] Team *parent_team,
    * Read the bit mask and find out a common index into
    * the pool of available work arrays.
    */
-  NET_CHECK(MPI_Allreduce(pool_bitmask_, reduced_bitmask_, bitmask_size_,
-                          MPI_CHAR, MPI_BAND, team_comm));
+  if (team_comm != MPI_COMM_NULL) {
+    NET_CHECK(MPI_Allreduce(pool_bitmask_, reduced_bitmask_, bitmask_size_,
+			    MPI_CHAR, MPI_BAND, team_comm));
+  } else {
+    Allreduce_char_BAND (pool_bitmask_, reduced_bitmask_, bitmask_size_, parent_team);
+  }
 
   /* Pick the least significant non-zero bit (logical layout) in the reduced
    * bitmask */
@@ -199,6 +263,7 @@ void IPCBackend::create_new_team([[maybe_unused]] Team *parent_team,
   int common_index = get_ls_non_zero_bit(reduced_bitmask_, max_num_teams);
   if (common_index < 0) {
     /* No team available */
+    printf("Could not create team, all bits in use. Aborting.\n");
     abort();
   }
 
@@ -249,8 +314,18 @@ void IPCBackend::initIPC() {
                       backend_comm);
 }
 
+void IPCBackend::initIPC(TcpBootstrap *bootstr) {
+  const auto &heap_bases{heap.get_heap_bases()};
+
+  ipcImpl.ipcHostInit(my_pe, heap_bases,
+                      bootstr);
+}
+
 void IPCBackend::global_exit(int status) {
-  MPI_Abort(backend_comm, status);
+  if (backend_comm != MPI_COMM_NULL)
+    MPI_Abort(backend_comm, status);
+  else
+    abort();
 }
 
 void IPCBackend::teams_destroy() {
@@ -315,8 +390,13 @@ void IPCBackend::init_wrk_sync_buffer() {
   /*
    * all-to-all exchange with each PE to share the IPC handles.
    */
-  MPI_Allgather(MPI_IN_PLACE, sizeof(hipIpcMemHandle_t), MPI_CHAR,
-                ipc_handle, sizeof(hipIpcMemHandle_t), MPI_CHAR, backend_comm);
+  if (backend_comm != MPI_COMM_NULL) {
+    MPI_Allgather(MPI_IN_PLACE, sizeof(hipIpcMemHandle_t), MPI_CHAR,
+		  ipc_handle, sizeof(hipIpcMemHandle_t), MPI_CHAR, backend_comm);
+  } else {
+    assert (backend_bootstr != nullptr);
+    backend_bootstr->allGather(ipc_handle, sizeof(hipIpcMemHandle_t));
+  }
 
   /*
    * Allocate device-side fine grained memory to hold IPC addresses of
@@ -382,7 +462,11 @@ void IPCBackend::rocshmem_collective_init() {
    * Make sure that all processing elements have done this before
    * continuing.
    */
-  NET_CHECK(MPI_Barrier(backend_comm));
+  if (backend_comm != MPI_COMM_NULL) {
+    NET_CHECK(MPI_Barrier(backend_comm));
+  } else {
+    backend_bootstr->barrier();
+  }
 }
 
 void IPCBackend::teams_init() {
@@ -474,7 +558,11 @@ void IPCBackend::teams_init() {
    * Make sure that all processing elements have done this before
    * continuing.
    */
-  NET_CHECK(MPI_Barrier(backend_comm));
+  if (backend_comm != MPI_COMM_NULL) {
+    NET_CHECK(MPI_Barrier(backend_comm));
+  } else {
+    backend_bootstr->barrier();
+  }
 }
 
 }  // namespace rocshmem

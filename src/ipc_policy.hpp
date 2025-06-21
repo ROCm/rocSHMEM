@@ -34,6 +34,7 @@
 #include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "memory/hip_allocator.hpp"
 #include "util.hpp"
+#include "bootstrap/bootstrap.hpp"
 
 namespace rocshmem {
 
@@ -54,6 +55,9 @@ class IpcOnImpl {
 
   __host__ void ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
                             MPI_Comm thread_comm);
+
+  __host__ void ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
+                            TcpBootstrap *bootstrap);
 
   __host__ void ipcHostStop();
 
@@ -136,6 +140,9 @@ class IpcOffImpl {
 
   __host__ void ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
                             MPI_Comm thread_comm) {}
+
+  __host__ void ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
+                            TcpBootstrap *bootstrap){}
 
   __host__ void ipcHostStop() {}
 

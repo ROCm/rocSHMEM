@@ -79,7 +79,9 @@ __host__ Team::Team(Backend* handle, TeamInfo* team_info_wrt_parent,
       tinfo_wrt_world(team_info_wrt_world),
       num_pes(_num_pes),
       my_pe(_my_pe) {
-  MPI_Comm_dup (_mpi_comm, &mpi_comm);
+  if (_mpi_comm != MPI_COMM_NULL) {
+    MPI_Comm_dup (_mpi_comm, &mpi_comm);
+  }
 }
 
 __host__ __device__ int Team::get_pe_in_world(int pe) {

@@ -68,7 +68,6 @@ option(BUILD_TOOLS "Build binary tools (e.g., rocshmem_info)" ON)
 option(BUILD_LOCAL_GPU_TARGET_ONLY "Build only for GPUs detected on this machine" OFF)
 option(BUILD_CODE_COVERAGE "Build with code coverage flags (gcc only)" OFF)
 
-configure_file(cmake/rocshmem_config.h.in rocshmem_config.h)
 
 ###############################################################################
 # PROJECT
@@ -149,6 +148,8 @@ if (NOT BUILD_TESTS_ONLY)
   set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
   set(THREADS_PREFER_PTHREAD_FLAG TRUE)
   find_package(Threads REQUIRED)
+
+  configure_file(cmake/rocshmem_config.h.in rocshmem_config.h)
 
   #############################################################################
   # LINKING AND INCLUDE DIRECTORIES

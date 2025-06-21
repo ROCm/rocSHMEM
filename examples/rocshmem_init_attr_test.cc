@@ -52,6 +52,10 @@
  * To run:
    mpirun -np 8 -x ROCSHMEM_MAX_NUM_CONTEXTS=2 ./rocshmem_init_attr_test
 
+ * Note:
+    running this test with the Reverse Offload (RO) conduit requires setting
+                  ROCSHMEM_UNIQUEID_WITH_MPI=1
+
  */
 
 #include <rocshmem/rocshmem.hpp>

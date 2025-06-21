@@ -617,7 +617,7 @@ void flush_hdp() {
 }
 
 void Tester::barrier() {
-  MPI_Barrier(MPI_COMM_WORLD);
+  rocshmem_barrier_all();
   flush_hdp();
 }
 

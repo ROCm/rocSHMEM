@@ -75,9 +75,9 @@ class MPIInstance {
     int nprocs_{-1};
 
     /**
-     * @brief Was MPI initialized before rocshmem_init call
+     * @brief Was MPI initialized in this class
      */
-    int pre_init_done{0};
+    int init_in_this_class{0};
 };
 
 }  // namespace rocshmem

@@ -68,7 +68,7 @@ namespace rocshmem {
 
 Backend *backend = nullptr;
 MPIInstance *mpi_instance = nullptr;
-
+TcpBootstrap *bootstr = nullptr;
 rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
 /**
@@ -102,8 +102,85 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   }
 }
 
+[[maybe_unused]] __host__ static void inline library_init_subcomm(TcpBootstrap *bootstrap, int nranks, int rank) {
+  int initialized;
+  int world_size = -1;
+  MPI_Initialized(&initialized);
+
+  if (!initialized) {
+    // This is an Open MPI specific solution to retrieve the number of
+    // processes that have been started, value can be checked before MPI_Init
+    char *value = getenv("OMPI_COMM_WORLD_SIZE");
+    if (value != NULL) {
+      world_size = atoi(value);
+    }
+    if (world_size != nranks) {
+      // This solution will require MPI_Sessions. This is planned for the
+      // future, but is not supported in the current version.
+      fprintf (stderr, "Unsupported configuration to initialize rocSHMEM. Please "
+               "initialize the MPI library using MPI_Init first, if you want to "
+               "initialize rocSHMEM with a subset of the processes\n");
+      abort();
+    }
+  } else {
+    MPI_Comm_size (MPI_COMM_WORLD, &world_size);
+  }
+
+  if (world_size == nranks) {
+    library_init(MPI_COMM_WORLD);
+  } else {
+    MPI_Group world_group;
+    int world_rank;
+
+    MPI_Comm_rank (MPI_COMM_WORLD, &world_rank);
+    MPI_Comm_group (MPI_COMM_WORLD, &world_group);
+
+    int *inc_ranks = new int[nranks];
+    inc_ranks[rank] = world_rank;
+
+    bootstr->allGather (inc_ranks, sizeof(int));
+
+    MPI_Group sub_group;
+    MPI_Comm sub_comm;
+    MPI_Group_incl (world_group, nranks, inc_ranks, &sub_group);
+    MPI_Comm_create_group (MPI_COMM_WORLD, sub_group, 1234, &sub_comm);
+
+    library_init(sub_comm);
+
+    MPI_Group_free (&sub_group);
+    MPI_Group_free (&world_group);
+    MPI_Comm_free (&sub_comm);
+    delete[] inc_ranks;
+  }
+}
+
+[[maybe_unused]] __host__ void inline library_init(TcpBootstrap *bootstrap) {
+  assert(!backend);
+  int count = 0;
+  CHECK_HIP(hipGetDeviceCount(&count));
+
+  if (count == 0) {
+    printf("No GPU found! \n");
+    abort();
+  }
+
+  rocm_init();
+
+#ifdef USE_RO
+  printf("RO Backend requires MPI library to be initialized, even when using uniqueId initializations!\n");
+  abort();
+#else
+  CHECK_HIP(hipHostMalloc(&backend, sizeof(IPCBackend)));
+  backend = new (backend) IPCBackend(bootstrap);
+#endif
+
+  if (!backend) {
+    abort();
+  }
+}
+
 [[maybe_unused]] __host__ int rocshmem_init_attr(unsigned int flags,
-						 rocshmem_init_attr_t *attr) {
+                                                 rocshmem_init_attr_t *attr) {
   MPI_Comm comm = MPI_COMM_NULL;
 
   if ((attr == nullptr) ||
@@ -122,57 +199,17 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   }
 
   if (flags == ROCSHMEM_INIT_WITH_UNIQUEID) {
-    int initialized;
-    int world_size = -1;
-    MPI_Initialized(&initialized);
+    assert (attr->nranks > 0);
+    assert (attr->rank >= 0);
+    assert (attr->rank < attr->nranks);
 
-    if (!initialized) {
-      // This is an Open MPI specific solution to retrieve the number of
-      // processes that have been started, value can be checked before MPI_Init
-      char *value = getenv("OMPI_COMM_WORLD_SIZE");
-      if (value != NULL) {
-        world_size = atoi(value);
-      }
-      if (world_size != attr->nranks) {
-        // This solution will require MPI_Sessions. This is planned for the
-        // future, but is not supported in the current version.
-        fprintf (stderr, "Unsupported configuration to initialize rocSHMEM. Please "
-                 "initialize the MPI library using MPI_Init first, if you want to "
-                 "initialize rocSHMEM with a subset of the processes\n");
-        abort();
-      }
+    bootstr = new TcpBootstrap(attr->rank, attr->nranks);
+    bootstr->initialize(attr->uid, rocshmem_env_.get_bootstrap_timeout());
+
+    if (rocshmem_env_.get_uniqueid_with_mpi() ) {
+      library_init_subcomm(bootstr, attr->nranks, attr->rank);
     } else {
-      MPI_Comm_size (MPI_COMM_WORLD, &world_size);
-    }
-
-    if (world_size == attr->nranks) {
-      library_init(MPI_COMM_WORLD);
-    } else {
-      MPI_Group world_group;
-      int world_rank;
-
-      MPI_Comm_rank (MPI_COMM_WORLD, &world_rank);
-      MPI_Comm_group (MPI_COMM_WORLD, &world_group);
-
-      TcpBootstrap bootstr(attr->rank, attr->nranks);
-
-      bootstr.initialize(attr->uid, rocshmem_env_.get_bootstrap_timeout());
-      int *inc_ranks = new int[attr->nranks];
-      inc_ranks[attr->rank] = world_rank;
-
-      bootstr.allGather (inc_ranks, sizeof(int));
-
-      MPI_Group sub_group;
-      MPI_Comm sub_comm;
-      MPI_Group_incl (world_group, attr->nranks, inc_ranks, &sub_group);
-      MPI_Comm_create_group (MPI_COMM_WORLD, sub_group, 1234, &sub_comm);
-
-      library_init(sub_comm);
-
-      MPI_Group_free (&sub_group);
-      MPI_Group_free (&world_group);
-      MPI_Comm_free (&sub_comm);
-      delete[] inc_ranks;
+      library_init (bootstr);
     }
   }
 
@@ -227,8 +264,8 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 }
 
 [[maybe_unused]] __host__ int rocshmem_my_pe() {
-  if (mpi_instance != nullptr) {
-    return mpi_instance->get_rank();
+  if (backend != nullptr) {
+    return backend->getMyPE();
   }
 
   fprintf(stderr, "[WARNING] rocshmem_init() has not been called\n");
@@ -236,8 +273,8 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 }
 
 [[maybe_unused]] __host__ int rocshmem_n_pes() {
-  if (mpi_instance != nullptr) {
-    return mpi_instance->get_nprocs();
+  if (backend != nullptr) {
+    return backend->getNumPEs();
   }
 
   fprintf(stderr, "[WARNING] rocshmem_init() has not been called\n");
@@ -294,7 +331,11 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   backend->~Backend();
   CHECK_HIP(hipHostFree(backend));
 
-  delete mpi_instance;
+  if (bootstr == nullptr)
+    delete mpi_instance;
+
+  if (bootstr != nullptr)
+    delete bootstr;
 }
 
 __host__ void rocshmem_query_thread(int *provided) {
@@ -395,22 +436,24 @@ __host__ int rocshmem_team_split_strided(
   new (team_info_wrt_world)
       TeamInfo(team_world, pe_start_in_world, stride_in_world, size);
 
-  /* Create a new MPI communicator for this team */
-  int color;
-  if (my_pe_in_new_team < 0) {
-    color = MPI_UNDEFINED;
-  } else {
-    color = 1;
+  MPI_Comm team_comm{MPI_COMM_NULL};
+  if (parent_team_obj->mpi_comm != MPI_COMM_NULL) {
+    /* Create a new MPI communicator for this team */
+    int color;
+    if (my_pe_in_new_team < 0) {
+      color = MPI_UNDEFINED;
+    } else {
+      color = 1;
+    }
+
+    MPI_Comm_split(parent_team_obj->mpi_comm, color, my_pe_in_world, &team_comm);
   }
-
-  MPI_Comm team_comm;
-  MPI_Comm_split(parent_team_obj->mpi_comm, color, my_pe_in_world, &team_comm);
-
   /**
    * Allocate new team for GPU-inittiated communication with backend-specific
    * objects
    * TODO: are there any backend specific objects?
    */
+
   if (my_pe_in_new_team < 0) {
     *new_team = ROCSHMEM_TEAM_INVALID;
   } else {
@@ -422,7 +465,10 @@ __host__ int rocshmem_team_split_strided(
      * not */
     backend->team_tracker.track(*new_team);
   }
-  MPI_Comm_free (&team_comm);
+
+  if (team_comm != MPI_COMM_NULL) {
+    MPI_Comm_free (&team_comm);
+  }
   return 0;
 }
 

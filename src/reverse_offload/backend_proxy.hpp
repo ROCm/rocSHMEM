@@ -39,7 +39,7 @@ struct BackendRegister {
   bool *needs_quiet{nullptr};
   bool *needs_blocking{nullptr};
   HdpPolicy *hdp_policy{nullptr};
-  WindowInfo **heap_window_info{nullptr};
+  WindowInfoMPI **heap_window_info{nullptr};
   SymmetricHeap *heap_ptr{nullptr};
 };
 

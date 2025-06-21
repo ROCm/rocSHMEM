@@ -37,7 +37,7 @@ class SymmetricHeapTestFixture : public ::testing::Test
     /**
      * @brief Symmetric heap object
      */
-    SymmetricHeap symmetric_heap_ {};
+    SymmetricHeap symmetric_heap_ {MPI_COMM_WORLD};
 };
 
 } // namespace rocshmem

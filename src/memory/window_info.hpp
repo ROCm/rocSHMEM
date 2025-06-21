@@ -48,29 +48,18 @@ class WindowInfo {
   /**
    * @brief Primary constructor
    */
-  WindowInfo(MPI_Comm comm, void* start, size_t size)
-      : comm_{comm},
-        win_start_{start},
-        win_end_{reinterpret_cast<char*>(start) + size} {
-    up_win_ = std::unique_ptr<MPI_Win>(new MPI_Win);
-    MPI_Win_create(win_start_, size, 1, MPI_INFO_NULL, comm_, up_win_.get());
-    MPI_Win_lock_all(MPI_MODE_NOCHECK, *up_win_.get());
-  }
+  WindowInfo(void* start, size_t size)
+      : win_start_{start},
+        win_end_{reinterpret_cast<char*>(start) + size} {}
 
   /**
    * @brief Destructor
    */
-  ~WindowInfo() {
-    if (up_win_) {
-      MPI_Win_unlock_all(*up_win_.get());
-      MPI_Win_free(up_win_.get());
-    }
-  }
+  ~WindowInfo() = default;
 
   /**
    * @brief Copy constructor
    *
-   * @note Disabled due to up_win_
    */
   WindowInfo(WindowInfo& other) = delete;  // NOLINT
 
@@ -82,13 +71,6 @@ class WindowInfo {
   WindowInfo(const WindowInfo& other) = delete;
 
   /**
-   * @brief Copy assignment
-   *
-   * @note Disabled due to up_win_
-   */
-  WindowInfo& operator=(WindowInfo other) = delete;
-
-  /**
    * @brief Move constructor
    */
   WindowInfo(WindowInfo&& other) = default;
@@ -97,13 +79,6 @@ class WindowInfo {
    * @brief Move assignment
    */
   WindowInfo& operator=(WindowInfo&& other) = default;
-
-  /**
-   * @brief Accessor for object in up_win_
-   *
-   * @return MPI_Win object
-   */
-  MPI_Win get_win() const { return *up_win_.get(); }
 
   /**
    * @brief Accessor for win_start_
@@ -118,13 +93,6 @@ class WindowInfo {
    * @return Raw end pointer
    */
   void* get_end() const { return win_end_; }
-
-  /**
-   * @brief Setter for object in up_win_
-   *
-   * @param[in] An MPI Window object
-   */
-  void set_win(MPI_Win win) { *up_win_.get() = win; }
 
   /**
    * @brief Setter for win_start_
@@ -147,7 +115,105 @@ class WindowInfo {
    *
    * @return Difference between dest and window start
    */
-  MPI_Aint get_offset(const void* dest) {
+  virtual ptrdiff_t get_offset(const void* dest) {
+    assert(reinterpret_cast<char*>(const_cast<void*>(dest)) >=
+           reinterpret_cast<char*>(win_start_));
+    assert(reinterpret_cast<char*>(const_cast<void*>(dest)) >=
+           reinterpret_cast<char*>(win_start_));
+    assert(reinterpret_cast<char*>(const_cast<void*>(dest)) <
+           reinterpret_cast<char*>(win_end_));
+
+    return reinterpret_cast<ptrdiff_t>(reinterpret_cast<char*>(const_cast<void*>(dest)) - reinterpret_cast<char*>(win_start_));
+  }
+
+ protected:
+  /**
+   * @brief Raw pointer marking the start of window
+   */
+  void* win_start_{nullptr};
+
+  /**
+   * @brief Raw pointer marking the end of window
+   */
+  void* win_end_{nullptr};
+};
+
+
+class WindowInfoMPI: public WindowInfo {
+ public:
+  /**
+   * @brief Default constructor
+   */
+  WindowInfoMPI() = default;
+
+  /**
+   * @brief Primary constructor
+   */
+  WindowInfoMPI(MPI_Comm comm, void* start, size_t size)
+      : comm_{comm} {
+    win_start_ = start;
+    win_end_ = reinterpret_cast<char*>(start) + size;
+
+    up_win_ = std::unique_ptr<MPI_Win>(new MPI_Win);
+    MPI_Win_create(win_start_, size, 1, MPI_INFO_NULL, comm_, up_win_.get());
+    MPI_Win_lock_all(MPI_MODE_NOCHECK, *up_win_.get());
+  }
+
+  /**
+   * @brief Destructor
+   */
+  ~WindowInfoMPI() {
+    if (up_win_) {
+      MPI_Win_unlock_all(*up_win_.get());
+      MPI_Win_free(up_win_.get());
+    }
+  }
+
+  /**
+   * @brief Copy constructor
+   *
+   */
+  WindowInfoMPI(WindowInfoMPI& other) = delete;  // NOLINT
+
+  /**
+   * @brief Const copy constructor
+   *
+   * @note Disabled due to up_win_
+   */
+  WindowInfoMPI(const WindowInfoMPI& other) = delete;
+
+  /**
+   * @brief Move constructor
+   */
+  WindowInfoMPI(WindowInfoMPI&& other) = default;
+
+  /**
+   * @brief Move assignment
+   */
+  WindowInfoMPI& operator=(WindowInfoMPI&& other) = default;
+
+  /**
+   * @brief Accessor for object in up_win_
+   *
+   * @return MPI_Win object
+   */
+  MPI_Win get_win() const { return *up_win_.get(); }
+
+  /**
+   * @brief Setter for object in up_win_
+   *
+   * @param[in] An MPI Window object
+   */
+  void set_win(MPI_Win win) { *up_win_.get() = win; }
+
+  /**
+   * @brief Get offset between address and start of window
+   *
+   * @param[in] Address in raw pointer format
+   *
+   * @return Difference between dest and window start
+   */
+  ptrdiff_t get_offset(const void* dest) override {
     assert(reinterpret_cast<char*>(const_cast<void*>(dest)) >=
            reinterpret_cast<char*>(win_start_));
     assert(reinterpret_cast<char*>(const_cast<void*>(dest)) >=
@@ -160,7 +226,7 @@ class WindowInfo {
     MPI_Aint start_disp;
     MPI_Get_address(win_start_, &start_disp);
 
-    return MPI_Aint_diff(dest_disp, start_disp);
+    return static_cast<ptrdiff_t>(MPI_Aint_diff(dest_disp, start_disp));
   }
 
  private:
@@ -180,15 +246,6 @@ class WindowInfo {
    */
   std::unique_ptr<MPI_Win> up_win_{nullptr};
 
-  /**
-   * @brief Raw pointer marking the start of window
-   */
-  void* win_start_{nullptr};
-
-  /**
-   * @brief Raw pointer marking the end of window
-   */
-  void* win_end_{nullptr};
 };
 
 }  // namespace rocshmem

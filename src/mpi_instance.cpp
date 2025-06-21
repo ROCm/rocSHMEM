@@ -27,11 +27,13 @@
 namespace rocshmem {
 
 MPIInstance::MPIInstance(MPI_Comm comm) {
-  MPI_Initialized(&pre_init_done);
+  int is_init{0};
+  MPI_Initialized(&is_init);
 
-  if (!pre_init_done) {
+  if (!is_init) {
     int provided;
     MPI_Init_thread(nullptr, nullptr, MPI_THREAD_MULTIPLE, &provided);
+    init_in_this_class = 1;
   }
 
   if (comm == MPI_COMM_NULL) {
@@ -45,7 +47,7 @@ MPIInstance::MPIInstance(MPI_Comm comm) {
 MPIInstance::~MPIInstance() {
   int finalized{0};
   MPI_Finalized(&finalized);
-  if (!finalized && !pre_init_done) {
+  if (!finalized && init_in_this_class) {
     MPI_Finalize();
   }
 }

@@ -45,7 +45,28 @@ namespace rocshmem {
     }                                                        \
   }
 
-Backend::Backend(MPI_Comm comm) : heap{comm} {
+Backend::Backend(MPI_Comm comm) : heap(comm, nullptr) {
+  init();
+  init_mpi_once(comm);
+  /*
+   * Notify other threads that Backend has been initialized.
+   */
+  *done_init = 0;
+}
+
+Backend::Backend(TcpBootstrap* bootstrap) : heap(MPI_COMM_NULL, bootstrap) {
+  init();
+  backend_bootstr = bootstrap;
+
+  my_pe = bootstrap->getRank();
+  num_pes = bootstrap->getNranks();
+  /*
+   * Notify other threads that Backend has been initialized.
+   */
+  *done_init = 0;
+}
+
+void Backend::init(void) {
   CHECK_HIP(hipGetDevice(&hip_dev_id));
 
   int num_cus{};
@@ -79,12 +100,6 @@ Backend::Backend(MPI_Comm comm) : heap{comm} {
 
   CHECK_HIP(
       hipHostMalloc(reinterpret_cast<void**>(&done_init), sizeof(uint8_t)));
-
-  init_mpi_once(comm);
-  /*
-   * Notify other threads that Backend has been initialized.
-   */
-  *done_init = 0;
 }
 
 void Backend::init_mpi_once(MPI_Comm comm) {
