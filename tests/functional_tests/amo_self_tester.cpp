@@ -142,6 +142,7 @@ void AMOSelfTester<T>::verifyResults(uint64_t size) {
       end_time[wg_id] = wall_clock64();                                                                                   \
       __hip_atomic_fetch_max(&wf_ret_val[wf_id], ret, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_WORKGROUP);                    \
     }                                                                                                                     \
+    rocshmem_quiet();                                                                                                     \
     __syncthreads();                                                                                                      \
     int num_wfs = (get_flat_block_size() - 1 ) / wf_size + 1;                                                             \
     for (int i = num_wfs / 2; i > 0; i >>= 1 ) {                                                                          \
