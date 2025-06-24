@@ -99,6 +99,8 @@ enum TestType {
   PutA2aTestType = 67,
   TeamBarrierTestType = 68,
   TeamWAVEBarrierTestType = 69,
+  AMO_FAddSelfTestType = 70,
+  AMO_AddSelfTestType = 71,
 };
 
 enum OpType { PutType = 0, GetType = 1 };

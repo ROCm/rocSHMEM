@@ -294,8 +294,8 @@ __device__ void QueuePair::quiet() {
       if (!(posted - completed)) {
         return;
       }
-      uint64_t quiet_val = posted - active;
-      if (!quiet_val) {
+      int64_t quiet_val = posted - active;
+      if (quiet_val <= 0) {
         continue;
       }
       quiet_amount = min(num_active_lanes, quiet_val);
@@ -447,8 +447,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
     uint64_t* ctrl_wqe_8B_for_db = reinterpret_cast<uint64_t*>(&base_ptr[64 * ((wave_sq_counter + num_wqes - 1) % sq_wqe_cnt)]);
     ring_doorbell(*ctrl_wqe_8B_for_db, wave_sq_counter + num_wqes);
 
-    uint64_t posted = __hip_atomic_load(&quiet_posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
-    __hip_atomic_store(&quiet_posted, posted + num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+    __hip_atomic_fetch_add(&quiet_posted, num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
     __hip_atomic_store(&sq_db_touched, wave_sq_counter + num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
   }
 }
@@ -549,6 +548,11 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   uint64_t* wave_fetch_atomic{nullptr};
   if (fetching) {
     if (is_leader) {
+      uint64_t db_touched {0};
+      do {
+        db_touched = __hip_atomic_load(&sq_db_touched, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+      } while (db_touched != wave_sq_counter);
+
       auto res = fetching_atomic_freelist->pop_front();
       while (!res.success) {
         res = fetching_atomic_freelist->pop_front();
@@ -585,9 +589,10 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
     __hip_atomic_store(&sq_db_touched, wave_sq_counter + num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
   }
 
+  quiet();
+
   uint64_t ret{0};
   if (fetching) {
-    quiet();
     ret = wave_fetch_atomic[my_logical_lane_id];
     __atomic_signal_fence(__ATOMIC_SEQ_CST);
     if (is_leader) {
