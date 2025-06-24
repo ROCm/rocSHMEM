@@ -320,13 +320,13 @@ __device__ void QueuePair::quiet() {
 
       while (vote_failed) {
         op_own = *((volatile uint8_t*)&cqe_entry->op_own);
-	bool my_ownership_vote = (op_own & 1) == owner_bit;
+        bool my_ownership_vote = (op_own & 1) == owner_bit;
         bool my_opcode_vote = (op_own >> 4) != MLX5_CQE_INVALID;
         uint64_t votes = __ballot(my_ownership_vote && my_opcode_vote);
         vote_failed = __popcll(votes) < quiet_amount;
         if (!vote_failed) {
           be_wqe_counter = *((volatile uint16_t*)&cqe_entry->wqe_counter);
-	}
+        }
       }
 
       uint16_t wqe_counter;
@@ -347,7 +347,7 @@ __device__ void QueuePair::quiet() {
       __atomic_signal_fence(__ATOMIC_SEQ_CST);
 
       uint64_t sunk_wqe_id = wqe_broadcast[wavefront_id];
-      __hip_atomic_store(&sq_sunk, sunk_wqe_id, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+      __hip_atomic_fetch_max(&sq_sunk, sunk_wqe_id, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
       __hip_atomic_fetch_add(&quiet_completed, quiet_amount, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
     }
   }
