@@ -291,11 +291,11 @@ __device__ void QueuePair::quiet() {
       uint64_t posted = __hip_atomic_load(&quiet_posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
       uint64_t active = __hip_atomic_load(&quiet_active, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
       uint64_t completed = __hip_atomic_load(&quiet_completed, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
-      if (!(posted - completed)) { // THINK ABOUT THIS MORE
+      if (!(posted - completed)) {
         return;
       }
-      uint64_t quiet_val = posted - active;
-      if (!quiet_val) {
+      int64_t quiet_val = posted - active;
+      if (quiet_val <= 0) {
         continue;
       }
       quiet_amount = min(num_active_lanes, quiet_val);
@@ -447,8 +447,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
     uint64_t* ctrl_wqe_8B_for_db = reinterpret_cast<uint64_t*>(&base_ptr[64 * ((wave_sq_counter + num_wqes - 1) % sq_wqe_cnt)]);
     ring_doorbell(*ctrl_wqe_8B_for_db, wave_sq_counter + num_wqes);
 
-    uint64_t posted = __hip_atomic_load(&quiet_posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
-    __hip_atomic_store(&quiet_posted, posted + num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+    __hip_atomic_fetch_add(&quiet_posted, num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
     __hip_atomic_store(&sq_db_touched, wave_sq_counter + num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
   }
 }
