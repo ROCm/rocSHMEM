@@ -109,7 +109,9 @@ if (NOT BUILD_TESTS_ONLY)
       gfx90a:xnack-;
       gfx90a:xnack+;
       gfx942:xnack-;
-      gfx942:xnack+)
+      gfx942:xnack+;
+      gfx950:xnack-;
+      gfx950:xnack+)
 
   if (BUILD_LOCAL_GPU_TARGET_ONLY)
     message(STATUS "Building only for local GPU target")
