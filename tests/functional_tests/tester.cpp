@@ -35,6 +35,7 @@
 #include "amo_bitwise_tester.hpp"
 #include "amo_extended_tester.hpp"
 #include "amo_standard_tester.hpp"
+#include "amo_self_tester.hpp"
 #include "default_ctx_primitive_tester.hpp"
 #include "barrier_all_tester.hpp"
 #include "empty_tester.hpp"
@@ -462,6 +463,18 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       if (rank == 0) std::cout << "Wave Signal Fetch ###" << std::endl;
       testers.push_back(new SignalingOperationsTester(args));
       return testers;
+    case AMO_FAddSelfTestType:
+      if (rank == 0) std::cout << "AMO Fetch_Add-to-Self ###" << std::endl;
+      testers.push_back(new AMOSelfTester<long long>(args));
+      testers.push_back(new AMOSelfTester<long>(args));
+      testers.push_back(new AMOSelfTester<int>(args));
+      return testers;
+    case AMO_AddSelfTestType:
+      if (rank == 0) std::cout << "AMO Add-to-Self ###" << std::endl;
+      testers.push_back(new AMOSelfTester<long long>(args));
+      testers.push_back(new AMOSelfTester<long>(args));
+      testers.push_back(new AMOSelfTester<int>(args));
+      return testers;
     default:
       if (rank == 0) std::cout << "Empty Test ###" << std::endl;
       return testers;
@@ -554,7 +567,9 @@ bool Tester::peLaunchesKernel() {
                 (_type == WAVESyncAllTestType) || (_type == WGSyncAllTestType) ||
                 (_type == RandomAccessTestType) || (_type == PingAllTestType) ||
                 (_type == TeamBarrierTestType) || (_type == TeamWAVEBarrierTestType) ||
-                (_type == TeamWGBarrierTestType);
+                (_type == TeamWGBarrierTestType) ||
+                (_type == AMO_FAddSelfTestType) ||
+                (_type == AMO_AddSelfTestType);
 
   return is_launcher;
 }

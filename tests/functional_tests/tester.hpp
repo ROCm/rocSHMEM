@@ -110,6 +110,8 @@ enum TestType {
   TeamWAVEBarrierTestType = 70,
   WAVESyncTestType = 71,
   WGSyncTestType = 72,
+  AMO_FAddSelfTestType = 73,
+  AMO_AddSelfTestType = 74,
 };
 
 enum OpType { PutType = 0, GetType = 1 };

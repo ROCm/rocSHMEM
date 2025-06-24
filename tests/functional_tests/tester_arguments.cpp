@@ -72,6 +72,8 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
 
   switch (type) {
     case AMO_FAddTestType:
+    case AMO_FAddSelfTestType:
+    case AMO_AddSelfTestType:
     case AMO_AddTestType:
     case AMO_SetTestType:
     case AMO_SwapTestType:
@@ -149,7 +151,8 @@ void TesterArguments::get_rocshmem_arguments() {
       (type != TeamFCollectTestType) && (type != TeamReductionTestType) &&
       (type != TeamBroadcastTestType) && (type != PingAllTestType) &&
       (type != TeamBarrierTestType) && (type != TeamWAVEBarrierTestType) &&
-      (type != TeamWGBarrierTestType)) {
+      (type != TeamWGBarrierTestType) &&
+      (type != AMO_AddSelfTestType) && (type != AMO_FAddSelfTestType)) {
     if (numprocs != 2) {
       if (myid == 0) {
         std::cerr << "This test requires exactly two processes, we have "
