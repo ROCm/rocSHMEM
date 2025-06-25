@@ -29,6 +29,6 @@
 set -e
 for i in {1..$2};
 do
-    mpirun -np 2 xterm -e gdb -x gdbscript --args build/rocshmem_example_driver -t 1 -w 1 -s 32768 -a $1  -x 8
+    mpirun -np 2 xterm -e gdb -x gdbscript --args build/rocshmem_functional_tests -t 1 -w 1 -s 32768 -a $1  -x 8
     test $? -eq 0 || exit 1
 done

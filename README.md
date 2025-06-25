@@ -148,7 +148,7 @@ To run the tests, you may use the driver scripts provided in the `./scripts/` di
 
 ```
 # Run Functional Tests
-./scripts/functional_tests/driver.sh ./build/tests/functional_tests/rocshmem_example_driver all <log_directory>
+./scripts/functional_tests/driver.sh ./build/tests/functional_tests/rocshmem_functional_tests all <log_directory>
 
 # Run Unit Tests
 ./scripts/unit_tests/driver.sh ./build/tests/unit_tests/rocshmem_unit_tests all
