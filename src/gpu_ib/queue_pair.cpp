@@ -288,8 +288,8 @@ __device__ void QueuePair::quiet() {
     uint64_t quiet_amount{0};
     uint64_t wave_cq_consumer{0};
     while (!done) {
-      uint64_t posted = __hip_atomic_load(&quiet_posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
       uint64_t active = __hip_atomic_load(&quiet_active, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+      uint64_t posted = __hip_atomic_load(&quiet_posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
       uint64_t completed = __hip_atomic_load(&quiet_completed, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
       if (!(posted - completed)) {
         return;
@@ -420,7 +420,10 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   while (true) {
     uint64_t db_touched = __hip_atomic_load(&sq_db_touched, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
     uint64_t sunk = __hip_atomic_load(&sq_sunk, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
-    uint64_t num_active_sq_entries = db_touched - sunk;
+    int64_t num_active_sq_entries = db_touched - sunk;
+    if (num_active_sq_entries < 0) {
+      continue;
+    }
     uint64_t num_free_entries = min(sq_wqe_cnt, cq_cnt) - num_active_sq_entries;
     uint64_t num_entries_until_wave_last_entry = wave_sq_counter + num_active_lanes - db_touched;
     if (num_free_entries > num_entries_until_wave_last_entry) {
@@ -536,7 +539,10 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   while (true) {
     uint64_t db_touched = __hip_atomic_load(&sq_db_touched, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
     uint64_t sunk = __hip_atomic_load(&sq_sunk, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
-    uint64_t num_active_sq_entries = db_touched - sunk;
+    int64_t num_active_sq_entries = db_touched - sunk;
+    if (num_active_sq_entries < 0) {
+      continue;
+    }
     uint64_t num_free_entries = min(sq_wqe_cnt, cq_cnt) - num_active_sq_entries;
     uint64_t num_entries_until_wave_last_entry = wave_sq_counter + num_active_lanes - db_touched;
     if (num_free_entries > num_entries_until_wave_last_entry) {
