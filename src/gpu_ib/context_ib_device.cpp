@@ -36,8 +36,7 @@ GPUIBContext::GPUIBContext(GDADevice *device, int idx)
   base_heap = device->heap.get_heap_bases().data();
   barrier_sync = device->barrier_sync;
   device->initialize_context(this, idx);
-  size_t barrier_sync_offset = idx * ROCSHMEM_BARRIER_SYNC_SIZE;
-  barrier_sync = device->barrier_sync + barrier_sync_offset;
+  barrier_sync = device->barrier_sync;
 }
 
 __device__ void GPUIBContext::quiet() {
