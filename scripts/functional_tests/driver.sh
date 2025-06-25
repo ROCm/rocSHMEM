@@ -106,6 +106,8 @@ declare -A TEST_NUMBERS=(
   ["teamwavebarrier"]="70"
   ["wavesync"]="71"
   ["wgsync"]="72"
+  ["amo_addself"]="73"
+  ["amo_faddself"]="74"
 )
 
 ExecTest() {
@@ -310,11 +312,13 @@ TestAMO() {
   ExecTest  "amo_fadd"         2       1            1024
   ExecTest  "amo_fadd"         2       8            1
   ExecTest  "amo_fadd"         2       32           128
+  ExecTest  "amo_faddself"     2       8            256
 
   ExecTest  "amo_add"          2       1            1
   ExecTest  "amo_add"          2       1            1024
   ExecTest  "amo_add"          2       8            1
   ExecTest  "amo_add"          2       32           128
+  ExecTest  "amo_addself"      2       8            256
 
   ExecTest  "amo_fetchand"     2       1            1
 
