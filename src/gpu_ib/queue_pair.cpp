@@ -595,10 +595,9 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
     __hip_atomic_store(&sq_db_touched, wave_sq_counter + num_wqes, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
   }
 
-  quiet();
-
   uint64_t ret{0};
   if (fetching) {
+    quiet();
     ret = wave_fetch_atomic[my_logical_lane_id];
     __atomic_signal_fence(__ATOMIC_SEQ_CST);
     if (is_leader) {
