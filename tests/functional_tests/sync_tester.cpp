@@ -42,11 +42,11 @@ __global__ void SyncTest(int loop, int skip, long long int *start_time,
     switch (type) {
       case SyncAllTestType:
         /**
-        * The function `rocshmem_ctx_wg_sync_all` should be called from only
+        * The function `rocshmem_wg_sync_all` should be called from only
         * one group within the grid to avoid unintended behavior.
         */
         if (is_block_zero_in_grid()) {
-          rocshmem_ctx_wg_sync_all(ctx);
+          rocshmem_wg_sync_all();
         }
         break;
       case SyncTestType:

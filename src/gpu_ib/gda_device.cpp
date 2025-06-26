@@ -449,11 +449,10 @@ void GDADevice::destroy_team(rocshmem_team_t team) {
 
 void GDADevice::init_collective() {
   size_t one_sync_size_bytes {sizeof(*barrier_sync)};
-  size_t total_sync_elems {ROCSHMEM_BARRIER_SYNC_SIZE * (maximum_num_contexts_ + 1)};
-  size_t sync_size_bytes {one_sync_size_bytes * total_sync_elems};
+  size_t sync_size_bytes {one_sync_size_bytes * ROCSHMEM_BARRIER_SYNC_SIZE};
 
   heap.malloc(reinterpret_cast<void**>(&barrier_sync), sync_size_bytes);
-  for (int i{0}; i < total_sync_elems; i++) {
+  for (int i{0}; i < ROCSHMEM_BARRIER_SYNC_SIZE; i++) {
     barrier_sync[i] = ROCSHMEM_SYNC_VALUE;
   }
 

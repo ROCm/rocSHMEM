@@ -217,33 +217,18 @@ void *rocshmem_ptr(const void *dest, int pe) {
 }
 
 __device__
-void rocshmem_ctx_barrier_all(rocshmem_ctx_t ctx) {
-  get_internal_ctx(ctx)->barrier_all();
-}
-
-__device__
-void rocshmem_ctx_barrier_all_wave(rocshmem_ctx_t ctx) {
-  get_internal_ctx(ctx)->barrier_all_wave();
-}
-
-__device__
-void rocshmem_ctx_barrier_all_wg(rocshmem_ctx_t ctx) {
-  get_internal_ctx(ctx)->barrier_all_wg();
-}
-
-__device__
 void rocshmem_barrier_all() {
-  rocshmem_ctx_barrier_all(ROCSHMEM_CTX_DEFAULT);
+  get_internal_ctx(ROCSHMEM_CTX_DEFAULT)->barrier_all();
 }
 
 __device__
 void rocshmem_barrier_all_wave() {
-  rocshmem_ctx_barrier_all_wave(ROCSHMEM_CTX_DEFAULT);
+  get_internal_ctx(ROCSHMEM_CTX_DEFAULT)->barrier_all();
 }
 
 __device__
 void rocshmem_barrier_all_wg() {
-  rocshmem_ctx_barrier_all_wg(ROCSHMEM_CTX_DEFAULT);
+  get_internal_ctx(ROCSHMEM_CTX_DEFAULT)->barrier_all();
 }
 
 __device__
@@ -260,13 +245,8 @@ __device__ void rocshmem_ctx_barrier_wg(rocshmem_ctx_t ctx, rocshmem_team_t team
 }
 
 __device__
-void rocshmem_ctx_wg_sync_all(rocshmem_ctx_t ctx) {
-  get_internal_ctx(ctx)->sync_all();
-}
-
-__device__
 void rocshmem_wg_sync_all() {
-  rocshmem_ctx_wg_sync_all(ROCSHMEM_CTX_DEFAULT);
+  get_internal_ctx(ROCSHMEM_CTX_DEFAULT)->sync_all();
 }
 
 __device__
