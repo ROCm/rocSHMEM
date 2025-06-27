@@ -122,23 +122,20 @@ if (NOT BUILD_TESTS_ONLY)
     endif()
   endif()
 
-  set(GPU_TARGETS "${DEFAULT_GPUS}" CACHE STRING
-      "Target default GPUs if GPU_TARGETS is not defined.")
+  set(CURRENT_GPU_TARGETS "${DEFAULT_GPUS}" CACHE STRING
+      "Target default GPUs if CURRENT_GPU_TARGETS is not defined.")
 
   if (COMMAND rocm_check_target_ids)
-    message(STATUS "Checking for ROCm support for GPU targets: " "${GPU_TARGETS}")
-    rocm_check_target_ids(SUPPORTED_GPUS TARGETS ${GPU_TARGETS})
+    message(STATUS "Checking for ROCm support for GPU targets: " "${CURRENT_GPU_TARGETS}")
+    rocm_check_target_ids(SUPPORTED_GPUS TARGETS ${CURRENT_GPU_TARGETS})
   else()
     message(WARNING "Unable to check for supported GPU targets.")
-    set(SUPPORTED_GPUS ${GPU_TARGETS})
+    set(SUPPORTED_GPUS ${CURRENT_GPU_TARGETS})
   endif()
 
-  set(COMPILING_TARGETS "${SUPPORTED_GPUS}" CACHE STRING "GPU targets to compile for.")
-  message(STATUS "Compiling for ${COMPILING_TARGETS}")
+  set(GPU_TARGETS "${SUPPORTED_GPUS}" CACHE STRING "GPU architectures to compile for")
 
-  foreach (target ${COMPILING_TARGETS})
-    list(APPEND offload_flags --offload-arch=${target})
-  endforeach()
+  message(STATUS "Compiling for ${GPU_TARGETS}")
 
   #############################################################################
   # PACKAGE DEPENDENCIES
