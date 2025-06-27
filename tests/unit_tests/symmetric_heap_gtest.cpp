@@ -1,5 +1,7 @@
 /******************************************************************************
- * Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) Advanced Micro Devices, Inc. All rights reserved.
+ *
+ * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -13,7 +15,7 @@
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
@@ -36,12 +38,15 @@ TEST_F(SymmetricHeapTestFixture, malloc_free) {
 TEST_F(SymmetricHeapTestFixture, window_info) {
   auto win_info_ptr{symmetric_heap_.get_window_info()};
 
-  void *window_base_addr{nullptr};
-  int flag{0};
-  MPI_Win_get_attr(win_info_ptr->get_win(), MPI_WIN_BASE, &window_base_addr,
-                   &flag);
-  ASSERT_NE(0, flag);
-  ASSERT_NE(nullptr, window_base_addr);
+  WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(win_info_ptr);
+  if (window_info_mpi) {
+    void *window_base_addr{nullptr};
+    int flag{0};
+    MPI_Win_get_attr(window_info_mpi->get_win(), MPI_WIN_BASE, &window_base_addr,
+		     &flag);
+    ASSERT_NE(0, flag);
+    ASSERT_NE(nullptr, window_base_addr);
+  }
 }
 
 TEST_F(SymmetricHeapTestFixture, heap_bases) {

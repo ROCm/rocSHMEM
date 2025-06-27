@@ -1,5 +1,7 @@
 /******************************************************************************
- * Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) Advanced Micro Devices, Inc. All rights reserved.
+ *
+ * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -13,7 +15,7 @@
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
@@ -26,11 +28,11 @@
 #include <hip/hip_runtime_api.h>
 #include <mpi.h>
 
-#include <cassert>
 #include <vector>
 
 #include "hip_allocator.hpp"
 #include "window_info.hpp"
+#include "../bootstrap/bootstrap.hpp"
 
 /**
  * @file remote_heap_info.hpp
@@ -53,16 +55,9 @@ class CommunicatorMPI {
   CommunicatorMPI(char* heap_base, size_t heap_size,
                   MPI_Comm comm = MPI_COMM_WORLD)
     : comm_{comm} {
-    int initialized;
-    MPI_Initialized(&initialized);
-    if (!initialized) {
-      int provided;
-      MPI_Init_thread(nullptr, nullptr, MPI_THREAD_MULTIPLE, &provided);
-    }
     MPI_Comm_rank(comm_, &my_pe_);
     MPI_Comm_size(comm_, &num_pes_);
-
-    heap_window_info_ = WindowInfo(comm_, heap_base, heap_size);
+    heap_window_info_ = WindowInfoMPI(comm_, heap_base, heap_size);
   }
 
   /**
@@ -96,7 +91,7 @@ class CommunicatorMPI {
   /**
    * @brief Accessor method for heap_window_info_
    */
-  WindowInfo* get_window_info() { return &heap_window_info_; }
+  WindowInfoMPI* get_window_info() { return &heap_window_info_; }
 
  private:
   /**
@@ -116,6 +111,75 @@ class CommunicatorMPI {
 
   /**
    * @brief MPI window on the symmetric GPU heap
+   */
+  WindowInfoMPI heap_window_info_{};
+};
+
+
+class CommunicatorTCP {
+ public:
+
+  /**
+   * @brief Primary constructor
+   */
+  CommunicatorTCP(char* heap_base, size_t heap_size,
+                  TcpBootstrap* bootstrap) : bootstrap_{bootstrap} {
+    my_pe_ = bootstrap_->getRank();
+    num_pes_ = bootstrap_->getNranks();
+
+    heap_window_info_ = WindowInfo(heap_base, heap_size);
+  }
+
+  /**
+   * @brief Destructor
+   */
+  ~CommunicatorTCP() {}
+
+  /**
+   * @brief Returns my processing element ID
+   */
+  int my_pe() { return my_pe_; }
+
+  /**
+   * @brief Returns number of processing elements
+   */
+  int num_pes() { return num_pes_; }
+
+  /**
+   * @brief Performs MPI_Barrier
+   */
+  void barrier() {bootstrap_->barrier(); }
+
+  /**
+   * @brief Performs MPI_Allgather on recvbuf
+   */
+  void allgather(void* recvbuf) {
+    bootstrap_->allGather(recvbuf, sizeof(void*));
+  }
+
+  /**
+   * @brief Accessor method for heap_window_info_
+   */
+  WindowInfo* get_window_info() { return &heap_window_info_; }
+
+ private:
+  /**
+   * @brief Identifier for this processing element
+   */
+  TcpBootstrap* bootstrap_;
+
+  /**
+   * @brief Identifier for this processing element
+   */
+  int my_pe_{-1};
+
+  /**
+   * @brief The total number of processing elements
+   */
+  int num_pes_{-1};
+
+  /**
+   * @brief window on the symmetric GPU heap
    */
   WindowInfo heap_window_info_{};
 };
@@ -144,14 +208,13 @@ class RemoteHeapInfo {
   RemoteHeapInfo(char* heap_ptr, size_t heap_size,
                  MPI_Comm comm = MPI_COMM_WORLD)
     : communicator_{heap_ptr, heap_size, comm} {
-    heap_bases_.resize(communicator_.num_pes());
-    for (auto& base : heap_bases_) {
-      base = nullptr;
-    }
-    heap_bases_[communicator_.my_pe()] = heap_ptr;
-    communicator_.allgather(heap_bases_.data());
+    init(heap_ptr, heap_size);
+  }
 
-    device_heap_bases_ = heap_bases_.data();
+  RemoteHeapInfo(char* heap_ptr, size_t heap_size,
+                 TcpBootstrap* bootstrap)
+    : communicator_{heap_ptr, heap_size, bootstrap} {
+    init(heap_ptr, heap_size);
   }
 
   /**
@@ -195,6 +258,20 @@ class RemoteHeapInfo {
   __device__ auto get_heap_bases() { return device_heap_bases_; }
 
  private:
+  /**
+   ** @brief common initialization code
+   */
+  void init(char* heap_ptr, size_t heap_size)  {
+    heap_bases_.resize(communicator_.num_pes());
+    for (auto& base : heap_bases_) {
+      base = nullptr;
+    }
+    heap_bases_[communicator_.my_pe()] = heap_ptr;
+    communicator_.allgather(heap_bases_.data());
+
+    device_heap_bases_ = heap_bases_.data();
+  }
+
   /**
    * @brief Communicator implementation
    */

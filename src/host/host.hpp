@@ -1,5 +1,7 @@
 /******************************************************************************
- * Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) Advanced Micro Devices, Inc. All rights reserved.
+ *
+ * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -13,7 +15,7 @@
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
@@ -28,7 +30,8 @@
  * Defines the HostInterface class.
  *
  * The file contains the HostInterface class that defines all the
- * host-facing functions that will be used by all host contexts.
+ * host-facing functions that will be used by all host contexts of
+ * any backend type.
  */
 
 #include <mpi.h>
@@ -36,8 +39,9 @@
 #include <map>
 
 #include "rocshmem/rocshmem.hpp"
-#include "memory/symmetric_heap.hpp"
-#include "memory/window_info.hpp"
+#include "../memory/symmetric_heap.hpp"
+#include "../memory/window_info.hpp"
+#include "../bootstrap/bootstrap.hpp"
 
 namespace rocshmem {
 
@@ -55,11 +59,12 @@ class HostContextWindowInfo {
    * @param[in] team_info information about participating PEs
    */
   HostContextWindowInfo(MPI_Comm comm_world, SymmetricHeap* heap);
+  HostContextWindowInfo(SymmetricHeap* heap);
 
   /**
    * @brief Destructor
    */
-  ~HostContextWindowInfo();
+  __host__ ~HostContextWindowInfo();
 
   /**
    * @brief Retrieve a pointer to the internal WindowInfo
@@ -100,14 +105,16 @@ class HostContextWindowInfo {
 class HostInterface {
  public:
   /**
-   * @brief Primary constructor
+   * @brief Primary constructors
    */
-  HostInterface(MPI_Comm rocshmem_comm, SymmetricHeap* heap);
+  __host__ HostInterface(MPI_Comm rocshmem_comm, SymmetricHeap* heap);
+
+  __host__ HostInterface(TcpBootstrap *bootstrap, SymmetricHeap* heap);
 
   /**
    * @brief Destructor
    */
-  ~HostInterface();
+  __host__ ~HostInterface();
 
   /**
    * @brief Accessor for copy of comm world
@@ -132,75 +139,96 @@ class HostInterface {
    ***************************** HOST FUNCTIONS *****************************
    *************************************************************************/
   template <typename T>
-  void p(T* dest, T value, int pe, WindowInfo* window_info);
+  __host__ void p(T* dest, T value, int pe, WindowInfo* window_info);
 
   template <typename T>
-  void put(T* dest, const T* source, size_t nelems, int pe, WindowInfo* window_info);
+  __host__ void put(T* dest, const T* source, size_t nelems, int pe,
+                    WindowInfo* window_info);
 
   template <typename T>
-  void put_nbi(T* dest, const T* source, size_t nelems, int pe, WindowInfo* window_info);
+  __host__ void put_nbi(T* dest, const T* source, size_t nelems, int pe,
+                        WindowInfo* window_info);
 
-  void putmem(void* dest, const void* source, size_t nelems, int pe, WindowInfo* window_info);
+  __host__ void putmem(void* dest, const void* source, size_t nelems, int pe,
+                       WindowInfo* window_info);
 
-  void putmem_nbi(void* dest, const void* source, size_t nelems, int pe, WindowInfo* window_info);
-
-  template <typename T>
-  void amo_add(void* dst, T value, int pe, WindowInfo* window_info);
-
-  template <typename T>
-  void amo_cas(void* dst, T value, T cond, int pe, WindowInfo* window_info);
+  __host__ void putmem_nbi(void* dest, const void* source, size_t nelems,
+                           int pe, WindowInfo* window_info);
 
   template <typename T>
-  T amo_fetch_add(void* dst, T value, int pe, WindowInfo* window_info);
+  __host__ void amo_add(void* dst, T value, int pe, WindowInfo* window_info);
 
   template <typename T>
-  T amo_fetch_cas(void* dst, T value, T cond, int pe, WindowInfo* window_info);
-
-  void quiet(WindowInfo* window_info);
-
-  void barrier_all(WindowInfo* window_info);
-
-  void barrier_for_sync();
-
-  void sync_all(WindowInfo* window_info);
+  __host__ void amo_cas(void* dst, T value, T cond, int pe,
+                        WindowInfo* window_info);
 
   template <typename T>
-  void wait_until(T *ivars, int cmp, T val, WindowInfo* window_info);
+  __host__ T amo_fetch_add(void* dst, T value, int pe, WindowInfo* window_info);
 
   template <typename T>
-  void wait_until_all(T *ivars, size_t nelems, const int* status, int cmp, T val, WindowInfo* window_info);
+  __host__ T amo_fetch_cas(void* dst, T value, T cond, int pe,
+                           WindowInfo* window_info);
+
+  __host__ void quiet(WindowInfo* window_info);
+
+  __host__ void barrier_all(WindowInfo* window_info);
+
+  __host__ void barrier_for_sync();
+
+  __host__ void sync_all(WindowInfo* window_info);
 
   template <typename T>
-  size_t wait_until_any(T *ivars, size_t nelems, const int* status, int cmp, T val, WindowInfo* window_info);
+  __host__ void wait_until(T *ivars, int cmp, T val,
+                           WindowInfo* window_info);
 
   template <typename T>
-  size_t wait_until_some(T *ivars, size_t nelems, size_t* indices, const int* status, int cmp, T val, WindowInfo* window_info);
+  __host__ void wait_until_all(T *ivars, size_t nelems, const int* status,
+                               int cmp, T val,
+                               WindowInfo* window_info);
 
   template <typename T>
-  int test(T *ivars, int cmp, T val, WindowInfo* window_info);
+  __host__ size_t wait_until_any(T *ivars, size_t nelems, const int* status,
+                                 int cmp, T val,
+                                 WindowInfo* window_info);
+
+  template <typename T>
+  __host__ size_t wait_until_some(T *ivars, size_t nelems, size_t* indices,
+                                  const int* status, int cmp, T val,
+                                  WindowInfo* window_info);
+
+  template <typename T>
+  __host__ void wait_until_all_vector(T *ivars, size_t nelems, const int* status,
+                                      int cmp, T* vals,
+                                      WindowInfo* window_info);
+
+  template <typename T>
+  __host__ int test(T *ivars, int cmp, T val, WindowInfo* window_info);
 
  private:
   /**************************************************************************
    **************************** INTERNAL METHODS ****************************
    *************************************************************************/
-  void initiate_put(void* dest, const void* source, size_t nelems, int pe, WindowInfo* window_info);
+  __host__ void initiate_put(void* dest, const void* source, size_t nelems,
+                             int pe, WindowInfoMPI* window_info);
 
-  void complete_all(MPI_Win win);
+  __host__ void complete_all(MPI_Win win);
 
-  MPI_Aint compute_offset(const void* dest, void* win_start, void* win_end);
+  __host__ MPI_Aint compute_offset(const void* dest, void* win_start,
+                                   void* win_end);
 
-  MPI_Comm get_mpi_comm(int pe_start, int log_pe_stride, int pe_size);
+  __host__ MPI_Comm get_mpi_comm(int pe_start, int log_pe_stride, int pe_size);
 
-  MPI_Op get_mpi_op(ROCSHMEM_OP Op);
-
-  template <typename T>
-  MPI_Datatype get_mpi_type();
-
-  template <typename T>
-  int compare(int cmp, T input_val, T target_val);
+  __host__ MPI_Op get_mpi_op(ROCSHMEM_OP Op);
 
   template <typename T>
-  int test_and_compare(MPI_Aint offset, MPI_Datatype mpi_type, int cmp, T val, MPI_Win win);
+  __host__ MPI_Datatype get_mpi_type();
+
+  template <typename T>
+  __host__ int compare(int cmp, T input_val, T target_val);
+
+  template <typename T>
+  __host__ int test_and_compare(MPI_Aint offset, MPI_Datatype mpi_type,
+                                int cmp, T val, MPI_Win win);
 
   /**************************************************************************
    **************************** INTERNAL MEMBERS ****************************
@@ -208,7 +236,12 @@ class HostInterface {
   /**
    * @brief Global MPI communicator for those host API
    */
-  MPI_Comm host_comm_world_{};
+  MPI_Comm host_comm_world_{MPI_COMM_NULL};
+
+  /**
+   * @brief Bootstrap object used in the non-mpi workloads
+   */
+  TcpBootstrap *host_bootstrap_{nullptr};
 
   /**
    * @brief Duplicate of this processing element's id within global rank

@@ -1,5 +1,7 @@
 ###############################################################################
-# Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
+#Copyright (c) Advanced Micro Devices, Inc. All rights reserved.
+#
+# SPDX-License-Identifier: MIT
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to
@@ -13,7 +15,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
@@ -59,6 +61,9 @@ target_sources(
 ###############################################################################
 # ROCSHMEM
 ###############################################################################
+include(${CMAKE_SOURCE_DIR}/cmake/find_pmix.cmake)
+check_pmix()
+
 if (BUILD_TESTS_ONLY)
   find_package(MPI REQUIRED)
 
@@ -69,6 +74,7 @@ if (BUILD_TESTS_ONLY)
       $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
       $<BUILD_INTERFACE:${ROCSHMEM_HOME}/include>
       $<BUILD_INTERFACE:${MPI_CXX_HEADER_DIR}>
+      ${PMIX_INCLUDE_DIRECTORIES}
   )
 
   foreach (target ${DEFAULT_GPUS})
@@ -80,6 +86,7 @@ if (BUILD_TESTS_ONLY)
     ${TESTS_NAME}
     PRIVATE
       ${flags_str}
+      $<$<BOOL:HAVE_PMIX>:HAVE_PMIX=1>      
        -fgpu-rdc
   )
 
@@ -90,6 +97,7 @@ if (BUILD_TESTS_ONLY)
       ${MPI_mpicxx_LIBRARY}
       ${flags_str}
       -L${ROCSHMEM_HOME}/lib
+      ${PMIX_LIBRARIES}
       -lamdhip64
       -lhsa-runtime64
       -lrocshmem
@@ -99,6 +107,7 @@ else()
   target_include_directories(
     ${TESTS_NAME}
     PRIVATE
+      ${PMIX_INCLUDE_DIRECTORIES}
       roc::rocshmem
   )
 
@@ -106,6 +115,7 @@ else()
     ${TESTS_NAME}
     PRIVATE
       roc::rocshmem
+      ${PMIX_LIBRARIES}
       -fgpu-rdc
   )
 endif()
