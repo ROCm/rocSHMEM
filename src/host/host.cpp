@@ -28,45 +28,34 @@
 
 #include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "host_helpers.hpp"
-#include "../memory/window_info.hpp"
+#include "memory/window_info.hpp"
 #include "../util.hpp"
 
 #include <cassert>
 
 namespace rocshmem {
 
-__host__ HostContextWindowInfo::HostContextWindowInfo(MPI_Comm comm_world,
-                                                      SymmetricHeap* heap) {
-  window_info_ =
-      new WindowInfoMPI(comm_world, heap->get_local_heap_base(), heap->get_size());
+HostContextWindowInfo::HostContextWindowInfo(MPI_Comm comm_world, SymmetricHeap* heap) {
+  window_info_ = new WindowInfoMPI(comm_world, heap->get_local_heap_base(), heap->get_size());
 }
 
-__host__ HostContextWindowInfo::HostContextWindowInfo(SymmetricHeap* heap) {
-  window_info_ =
-      new WindowInfo(heap->get_local_heap_base(), heap->get_size());
+HostContextWindowInfo::HostContextWindowInfo(SymmetricHeap* heap) {
+  window_info_ = new WindowInfo(heap->get_local_heap_base(), heap->get_size());
 }
 
-__host__ HostContextWindowInfo::~HostContextWindowInfo() {
+HostContextWindowInfo::~HostContextWindowInfo() {
   delete window_info_;
 }
 
 WindowInfo* HostInterface::acquire_window_context() {
   auto index{find_avail_pool_entry()};
-  /* Entry should have been available; consider this as an error. */
-  assert(index >= 0);
-
   HostContextWindowInfo* acquired_win_info = host_window_context_pool_[index];
-
   acquired_win_info->mark_unavail();
-
   return acquired_win_info->get();
 }
 
-__host__ void HostInterface::release_window_context(WindowInfo* window_info) {
+void HostInterface::release_window_context(WindowInfo* window_info) {
   auto index{find_win_info_in_pool(window_info)};
-  /* Entry should have been present; consider this as an error. */
-  assert(index >= 0);
-
   host_window_context_pool_[index]->mark_avail();
 }
 
@@ -76,6 +65,7 @@ int HostInterface::find_avail_pool_entry() {
       return i;
     }
   }
+  assert(false);
   return -1;
 }
 
@@ -88,39 +78,26 @@ int HostInterface::find_win_info_in_pool(WindowInfo* window_info) {
       return i;
     }
   }
+  assert(false);
   return -1;
 }
 
-__host__ HostInterface::HostInterface(MPI_Comm rocshmem_comm,
-                                      SymmetricHeap* heap) {
-  /*
-   * Duplicate a communicator from roc_shem's comm
-   * world for the host interface
-   */
+HostInterface::HostInterface(MPI_Comm rocshmem_comm, SymmetricHeap* heap) {
   MPI_Comm_dup(rocshmem_comm, &host_comm_world_);
   MPI_Comm_rank(host_comm_world_, &my_pe_);
   MPI_Comm_rank(host_comm_world_, &num_pes_);
-
-  /*
-   * Allocate and initialize pool of windows for contexts
-   */
   char* value{nullptr};
   if ((value = getenv("ROCSHMEM_MAX_NUM_HOST_CONTEXTS"))) {
     max_num_ctxs_ = atoi(value);
   }
-
   size_t pool_size = max_num_ctxs_ * sizeof(HostContextWindowInfo*);
-  host_window_context_pool_ =
-      reinterpret_cast<HostContextWindowInfo**>(malloc(pool_size));
-
+  host_window_context_pool_ = reinterpret_cast<HostContextWindowInfo**>(malloc(pool_size));
   for (int ctx_i = 0; ctx_i < max_num_ctxs_; ctx_i++) {
-    host_window_context_pool_[ctx_i] =
-        new HostContextWindowInfo(host_comm_world_, heap);
+    host_window_context_pool_[ctx_i] = new HostContextWindowInfo(host_comm_world_, heap);
   }
 }
 
-__host__ HostInterface::HostInterface(TcpBootstrap *bootstr,
-                                      SymmetricHeap* heap) {
+HostInterface::HostInterface(TcpBootstrap *bootstr, SymmetricHeap* heap) {
   host_bootstrap_ = bootstr;
   my_pe_ = bootstr->getRank();
   num_pes_ = bootstr->getNranks();
@@ -134,16 +111,14 @@ __host__ HostInterface::HostInterface(TcpBootstrap *bootstr,
   }
 
   size_t pool_size = max_num_ctxs_ * sizeof(HostContextWindowInfo*);
-  host_window_context_pool_ =
-      reinterpret_cast<HostContextWindowInfo**>(malloc(pool_size));
+  host_window_context_pool_ = reinterpret_cast<HostContextWindowInfo**>(malloc(pool_size));
 
   for (int ctx_i = 0; ctx_i < max_num_ctxs_; ctx_i++) {
-    host_window_context_pool_[ctx_i] =
-        new HostContextWindowInfo(heap);
+    host_window_context_pool_[ctx_i] = new HostContextWindowInfo(heap);
   }
 }
 
-__host__ HostInterface::~HostInterface() {
+HostInterface::~HostInterface() {
   /* Detroy the pool of contexts */
 
   if (host_window_context_pool_ != nullptr) {
@@ -158,9 +133,7 @@ __host__ HostInterface::~HostInterface() {
   }
 }
 
-__host__ void HostInterface::putmem_nbi(void* dest, const void* source,
-                                        size_t nelems, int pe,
-                                        WindowInfo* window_info) {
+void HostInterface::putmem_nbi(void* dest, const void* source, size_t nelems, int pe, WindowInfo* window_info) {
   WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
   if (!window_info_mpi) {
     abort();
@@ -168,9 +141,7 @@ __host__ void HostInterface::putmem_nbi(void* dest, const void* source,
   initiate_put(dest, source, nelems, pe, window_info_mpi);
 }
 
-__host__ void HostInterface::putmem(void* dest, const void* source,
-                                    size_t nelems, int pe,
-                                    WindowInfo* window_info) {
+void HostInterface::putmem(void* dest, const void* source, size_t nelems, int pe, WindowInfo* window_info) {
   WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
   if (!window_info_mpi) {
     abort();
@@ -180,7 +151,7 @@ __host__ void HostInterface::putmem(void* dest, const void* source,
   MPI_Win_flush_local(pe, window_info_mpi->get_win());
 }
 
-__host__ void HostInterface::quiet(WindowInfo* window_info) {
+void HostInterface::quiet(WindowInfo* window_info) {
   WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
   if (!window_info_mpi) {
     abort();
@@ -190,7 +161,7 @@ __host__ void HostInterface::quiet(WindowInfo* window_info) {
   return;
 }
 
-__host__ void HostInterface::sync_all(WindowInfo* window_info) {
+void HostInterface::sync_all(WindowInfo* window_info) {
   WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
   if (!window_info_mpi) {
     MPI_Win_sync(window_info_mpi->get_win());
@@ -202,7 +173,7 @@ __host__ void HostInterface::sync_all(WindowInfo* window_info) {
   return;
 }
 
-__host__ void HostInterface::barrier_all(WindowInfo* window_info) {
+void HostInterface::barrier_all(WindowInfo* window_info) {
   WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
   if (window_info_mpi) {
     complete_all(window_info_mpi->get_win());
@@ -214,7 +185,7 @@ __host__ void HostInterface::barrier_all(WindowInfo* window_info) {
   return;
 }
 
-__host__ void HostInterface::barrier_for_sync() {
+void HostInterface::barrier_for_sync() {
   if (host_comm_world_ != MPI_COMM_NULL) {
     MPI_Barrier(host_comm_world_);
   } else {

@@ -287,17 +287,6 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   device->heap.free(ptr);
 }
 
-[[maybe_unused]] __host__ void rocshmem_reset_stats() {
-  VERIFY_DEVICE();
-  device->reset_stats();
-}
-
-[[maybe_unused]] __host__ void rocshmem_dump_stats() {
-  /** TODO: Many stats are device independent! **/
-  VERIFY_DEVICE();
-  device->dump_stats();
-}
-
 [[maybe_unused]] __host__ void rocshmem_finalize() {
   VERIFY_DEVICE();
 
@@ -306,7 +295,7 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
    * created but did not manually destroy
    */
   auto team_destroy{
-      std::bind(&Device::team_destroy, device, std::placeholders::_1)};
+      std::bind(&GDADevice::destroy_team, device, std::placeholders::_1)};
   device->team_tracker.destroy_all(team_destroy);
 
   device->~GDADevice();
@@ -461,7 +450,7 @@ __host__ void rocshmem_team_destroy(rocshmem_team_t team) {
 
   device->team_tracker.untrack(team);
 
-  device->team_destroy(team);
+  device->destroy_team(team);
 }
 
 __host__ int rocshmem_team_translate_pe(rocshmem_team_t src_team, int src_pe,
@@ -542,32 +531,22 @@ __host__ int rocshmem_ctx_create(int64_t options, rocshmem_ctx_t *ctx) {
   DPRINTF("Host function: rocshmem_ctx_create\n");
 
   void *phys_ctx;
-  device->ctx_create(options, &phys_ctx);
-
+  device->create_ctx(&phys_ctx);
   ctx->ctx_opaque = phys_ctx;
-  /* This team in on TEAM_WORLD, no need for team info */
   ctx->team_opaque = nullptr;
-
-  /* Track this context, if needed. */
-  device->track_ctx(reinterpret_cast<Context *>(phys_ctx));
-
   return 0;
 }
 
 __host__ void rocshmem_ctx_destroy(rocshmem_ctx_t ctx) {
   DPRINTF("Host function: rocshmem_ctx_destroy\n");
-
-  /* TODO: Implicit quiet on this context */
-
   Context *phys_ctx = get_internal_ctx(ctx);
-  device->ctx_destroy(phys_ctx);
+  device->destroy_ctx(phys_ctx);
 }
 
 template <typename T>
 __host__ void rocshmem_put(rocshmem_ctx_t ctx, T *dest, const T *source,
                             size_t nelems, int pe) {
   DPRINTF("Host function: rocshmem_put\n");
-
   get_internal_ctx(ctx)->put(dest, source, nelems, pe);
 }
 

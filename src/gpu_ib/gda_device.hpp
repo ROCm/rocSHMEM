@@ -45,6 +45,7 @@ extern "C" {
 #include "memory/symmetric_heap.hpp"
 #include "queue_pair.hpp"
 #include "team_tracker.hpp"
+#include "../bootstrap/bootstrap.hpp"
 
 namespace rocshmem {
 
@@ -136,6 +137,7 @@ class GDADevice {
 
  public:
   explicit GDADevice(MPI_Comm comm_in);
+  expliti GDADevice(TcpBootstrap *bootstr);
 
   ~GDADevice();
 
