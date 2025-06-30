@@ -267,7 +267,30 @@ void dump_mlx5dv_cq(struct mlx5dv_cq *cq_dv, int conn_num) {
 }
 #endif // !GPUIB_IONIC
 
-GDADevice::GDADevice(MPI_Comm _comm) : comm(_comm), heap(_comm) {
+GDADevice::GDADevice(TcpBootstrap* bootstrap):  heap(MPI_COMM_NULL, bootstrap) {
+  init_part1();
+  backend_bootstr = bootstrap;
+
+  my_pe = bootstrap->getRank();
+  num_pes = bootstrap->getNranks();
+
+  host_interface = new HostInterface(bootstrap, &heap);
+  init_part2();
+}
+
+GDADevice::GDADevice(MPI_Comm _comm) : comm(_comm), heap(_comm, nullptr) {
+  init_part1();
+
+  init_mpi_once(_comm);
+  comm = _comm;
+  NET_CHECK(MPI_Comm_size(comm, &num_pes));
+  NET_CHECK(MPI_Comm_rank(comm, &my_pe));
+
+  host_interface = new HostInterface(comm, &heap);
+  init_part2();
+}
+
+void GDADevice::init_part1() {
   CHECK_HIP(hipMalloc(&print_lock, sizeof(*print_lock)));
   *print_lock = 0;
   int* print_lock_addr{nullptr};
@@ -295,20 +318,16 @@ GDADevice::GDADevice(MPI_Comm _comm) : comm(_comm), heap(_comm) {
   if ((value = getenv("ROCSHMEM_SQ_SIZE"))) {
     sq_size = atoi(value);
   }
+}
 
-  init_mpi_once(_comm);
-  comm = _comm;
-  NET_CHECK(MPI_Comm_size(comm, &num_pes));
-  NET_CHECK(MPI_Comm_rank(comm, &my_pe));
-
-  host_interface = new HostInterface(comm, &heap);
+void GDADevice::init_part2() {
   setup_default_host_ctx();
   setup_team_world();
 
   init_teams();
   init_collective();
 
-  NET_CHECK(MPI_Barrier(comm));
+  internal_barrier();
   dest_info.resize(num_pes * (maximum_num_contexts_ + 1));
   int ib_devices{0};
   dev_list = ibv_get_device_list(&ib_devices);
@@ -331,24 +350,28 @@ GDADevice::GDADevice(MPI_Comm _comm) : comm(_comm), heap(_comm) {
   auto npes = num_pes;
   auto dinfo = dest_info.data();
   for (int i{0}; i < maximum_num_contexts_ + 1; i++) {
-    MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t), MPI_CHAR, dinfo + i * npes, sizeof(dest_info_t), MPI_CHAR, comm);
+      if (comm != MPI_COMM_NULL) {
+	  MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t), MPI_CHAR, dinfo + i * npes, sizeof(dest_info_t), MPI_CHAR, comm);
+      } else {
+	  Alltoall_char_inplace(reinterpret_cast<char*>(dinfo + i * npes), sizeof(dest_info_t), ROCSHMEM_TEAM_WORLD);
+      }
   }
 
   for (int i{0}; i < qps.size(); i++) {
     change_status_rtr(qps[i], &dest_info[i], port);
   }
-  MPI_Barrier(comm);
+  internal_barrier();
   for (int i{0}; i < qps.size(); i++) {
     change_status_rts(qps[i], &dest_info[i]);
     dump_ibv_qp(qps[i], i);
   }
-  MPI_Barrier(comm);
+  internal_barrier();
 
   heap_memory_rkey();
   setup_gpu_qps();
   setup_ctxs();
   setup_default_ctx();
-  NET_CHECK(MPI_Barrier(comm));
+  internal_barrier();
 }
 
 GDADevice::~GDADevice() {
@@ -414,11 +437,92 @@ __device__ void GDADevice::destroy_ctx(rocshmem_ctx_t *ctx) {
 }
 
 __host__ void GDADevice::global_exit(int status) {
-  MPI_Abort(comm, status);
+  if (comm != MPI_COMM_NULL)
+    MPI_Abort(comm, status);
+  else
+    abort();
 }
 
-void GDADevice::create_team(Team *parent_team, TeamInfo *team_info_wrt_parent, TeamInfo *team_info_wrt_world, int num_pes, int my_pe_in_new_team, MPI_Comm team_comm, rocshmem_team_t *new_team) {
-  NET_CHECK(MPI_Allreduce(team_pool_bitmask_, team_reduced_bitmask_, team_bitmask_size_, MPI_CHAR, MPI_BAND, team_comm));
+void GDADevice::Alltoall_char_inplace (char *inoutbuf, size_t num_bytes, rocshmem_team_t team) {
+  // Implement an Alltoall outside of MPI assuming in_place communication
+  GPUIBTeam *team_obj = reinterpret_cast<GPUIBTeam *>(team);
+  int num_pes = team_obj->num_pes;
+  int my_pe = team_obj->my_pe;
+  int *pes_in_world = new int[num_pes];
+
+  int my_pe_in_world = team_obj->my_pe_in_world;
+  for (int i = 0; i < num_pes; i++) {
+      pes_in_world[i] = team_obj->get_pe_in_world(i);      
+  }
+
+  // Since this is an in-place algorith, allocate the temporary receive buffer first
+  char *recv_buf = new char[num_bytes * num_pes];
+  std::memset(recv_buf, 0, num_pes * num_bytes);
+
+  // Perform pairwise exchange - local copy is ommitted
+  for (int step = 1; step < num_pes; step++) {
+    int sendto_team  = (my_pe + step) % num_pes;
+    int recvfrom_team = (my_pe + num_pes - step) % num_pes;
+
+    char *tmpsend = (char*)inoutbuf + (ptrdiff_t)sendto_team * num_bytes;
+    char *tmprecv = (char*)recv_buf + (ptrdiff_t)recvfrom_team * num_bytes;
+
+    // similarly to the allGather in the bootstrap code, we do send first
+    // followed by the receive.
+    // There is a chance for deadlock in my opinion for large messages.
+    backend_bootstr->send(tmpsend, num_bytes, pes_in_world[sendto_team], step /* used as tag */);
+    backend_bootstr->recv(tmprecv, num_bytes, pes_in_world[recvfrom_team], step );	
+  }
+  //Since this is an in_place all-to-all, copy data back into the user buffer
+  for (int step = 0; step < num_pes; step++) {
+    if (step == my_pe) continue;
+    std::memcpy(&inoutbuf[step*num_bytes], &recv_buf[step*num_bytes], num_bytes);
+  }
+
+  delete[] recv_buf;
+  delete[] pes_in_world;  
+}
+
+void GDADevice::Allreduce_char_BAND (char* inbuf, char *outbuf, size_t num_bytes,
+	                             Team *team) {
+
+  // Implement an Allreduce outside of MPI. This is specialized for the scenario
+  // required for the team creation, i.e. assuming bytes and using BAND operation.
+  // Implementation uses an Allgather operation followed a local reduction.
+
+  GPUIBTeam *team_obj =  reinterpret_cast<GPUIBTeam *>(team);
+  int num_pes = team_obj->num_pes;
+  int my_pe = team_obj->my_pe;
+
+  char *tmp_buffer = new char[num_pes * num_bytes];
+  std::memset(tmp_buffer, 0, num_pes * num_bytes);
+  std::memcpy (&tmp_buffer[my_pe * num_bytes], inbuf, num_bytes);
+
+  if (num_pes == backend_bootstr->getNranks() ) {
+    backend_bootstr->allGather(tmp_buffer, num_bytes);
+  } else {
+    printf("GPUIBBackend::create_new_team: non-mpi version only supports parent_teams that contain all processes. Aborting.\n");
+    abort();
+  }
+
+  for (int i = 0; i < num_bytes; i++) {
+    outbuf[i] = tmp_buffer[i];
+    for (int j = 1; j < num_pes; j++) {
+      outbuf[i] &= tmp_buffer[j * num_bytes + i];
+    }
+  }
+
+  delete[] tmp_buffer;
+}
+
+void GDADevice::create_team(Team *parent_team, TeamInfo *team_info_wrt_parent, TeamInfo *team_info_wrt_world, int num_pes,
+			    int my_pe_in_new_team, MPI_Comm team_comm, rocshmem_team_t *new_team) {
+
+ if (team_comm != MPI_COMM_NULL) {
+   NET_CHECK(MPI_Allreduce(team_pool_bitmask_, team_reduced_bitmask_, team_bitmask_size_, MPI_CHAR, MPI_BAND, team_comm));
+ } else {
+   Allreduce_char_BAND (team_pool_bitmask_, team_reduced_bitmask_, team_bitmask_size_, parent_team);
+ }
 
   auto max_num_teams{team_tracker.get_max_num_teams()};
 
@@ -456,7 +560,7 @@ void GDADevice::init_collective() {
     barrier_sync[i] = ROCSHMEM_SYNC_VALUE;
   }
 
-  NET_CHECK(MPI_Barrier(comm));
+  internal_barrier();
 }
 
 void GDADevice::setup_default_host_ctx() {
@@ -537,7 +641,15 @@ void GDADevice::init_teams() {
     team_pool_bitmask_[byte_i] |= 1 << (bit_i % CHAR_BIT);
   }
 
-  NET_CHECK(MPI_Barrier(comm));
+  internal_barrier();
+}
+
+void GDADevice::internal_barrier() {
+  if (comm != MPI_COMM_NULL) {
+    NET_CHECK(MPI_Barrier(comm));
+  } else {
+    backend_bootstr->barrier();
+  }
 }
 
 void GDADevice::destroy_teams() {

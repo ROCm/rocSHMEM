@@ -135,9 +135,22 @@ class GDADevice {
   };
 #endif
 
- public:
+ /**
+   * @brief Common code invoked from the different constructors
+   */
+  void init_part1();
+  void init_part2();
+
+ /**
+   * @brief
+   */
+  void Allreduce_char_BAND (char* inbuf, char *outbuf, size_t num_bytes, Team *team);
+  void Alltoall_char_inplace (char* inoutbuf, size_t num_bytes, rocshmem_team_t team);
+  void internal_barrier();
+
+public:
   explicit GDADevice(MPI_Comm comm_in);
-  expliti GDADevice(TcpBootstrap *bootstr);
+  explicit GDADevice(TcpBootstrap *bootstr);
 
   ~GDADevice();
 
@@ -268,7 +281,9 @@ class GDADevice {
 
   int my_pe{-1};
 
-  MPI_Comm comm{};
+  MPI_Comm comm{MPI_COMM_NULL};
+
+  TcpBootstrap *backend_bootstr{nullptr};
 
   SymmetricHeap heap;
 
