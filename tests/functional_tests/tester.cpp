@@ -56,6 +56,7 @@
 #include "team_reduction_tester.hpp"
 #include "wavefront_primitives.hpp"
 #include "workgroup_primitives.hpp"
+#include "workgroup_primitives_a2a.hpp"
 
 Tester::Tester(TesterArguments args) : args(args) {
   _type = (TestType)args.algorithm;
@@ -462,6 +463,22 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       if (rank == 0) std::cout << "Wave Signal Fetch ###" << std::endl;
       testers.push_back(new SignalingOperationsTester(args));
       return testers;
+    case WGPutA2ATestType:
+      if (rank == 0) std::cout << "Workgroup Level Put A2A ###" << std::endl;
+      testers.push_back(new WorkGroupPrimitiveA2ATester(args));
+      return testers;
+    case WGPutNBIA2ATestType:
+      if (rank == 0) std::cout << "Workgroup Level Put NBI A2A ###" << std::endl;
+      testers.push_back(new WorkGroupPrimitiveA2ATester(args));
+      return testers;
+    case WGGetA2ATestType:
+      if (rank == 0) std::cout << "Workgroup Level Get A2A ###" << std::endl;
+      testers.push_back(new WorkGroupPrimitiveA2ATester(args));
+      return testers;
+    case WGGetNBIA2ATestType:
+      if (rank == 0) std::cout << "Workgroup Level Get NBI A2A ###" << std::endl;
+      testers.push_back(new WorkGroupPrimitiveA2ATester(args));
+      return testers;
     default:
       if (rank == 0) std::cout << "Empty Test ###" << std::endl;
       return testers;
@@ -554,7 +571,9 @@ bool Tester::peLaunchesKernel() {
                 (_type == WAVESyncAllTestType) || (_type == WGSyncAllTestType) ||
                 (_type == RandomAccessTestType) || (_type == PingAllTestType) ||
                 (_type == TeamBarrierTestType) || (_type == TeamWAVEBarrierTestType) ||
-                (_type == TeamWGBarrierTestType);
+                (_type == TeamWGBarrierTestType) || (_type == WGPutA2ATestType) ||
+                (_type == WGPutNBIA2ATestType) || (_type == WGGetA2ATestType) ||
+                (_type == WGGetNBIA2ATestType);
 
   return is_launcher;
 }

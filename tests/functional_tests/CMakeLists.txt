@@ -66,6 +66,7 @@ target_sources(
     workgroup_primitives.cpp
     empty_tester.cpp
     wavefront_primitives.cpp
+    workgroup_primitives_a2a.cpp
 )
 
 ###############################################################################
