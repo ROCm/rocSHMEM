@@ -273,7 +273,6 @@ GDADevice::GDADevice(TcpBootstrap* bootstrap):  heap(MPI_COMM_NULL, bootstrap) {
 
   my_pe = bootstrap->getRank();
   num_pes = bootstrap->getNranks();
-
   host_interface = new HostInterface(bootstrap, &heap);
   init_part2();
 }
@@ -682,7 +681,10 @@ void GDADevice::heap_memory_rkey() {
   CHECK_HIP(hipMemcpyAsync(host_rkey_cpy, heap_rkey, rkeys_size, hipMemcpyDeviceToHost, stream));
   CHECK_HIP(hipStreamSynchronize(stream));
 
-  MPI_Allgather(MPI_IN_PLACE, sizeof(uint32_t), MPI_CHAR, host_rkey_cpy, sizeof(uint32_t), MPI_CHAR, comm);
+  if (comm != MPI_COMM_NULL)
+    MPI_Allgather(MPI_IN_PLACE, sizeof(uint32_t), MPI_CHAR, host_rkey_cpy, sizeof(uint32_t), MPI_CHAR, comm);
+   else
+    backend_bootstr->allGather(host_rkey_cpy, sizeof(uint32_t));
 
   CHECK_HIP(hipMemcpyAsync(heap_rkey, host_rkey_cpy, rkeys_size, hipMemcpyHostToDevice, stream));
   CHECK_HIP(hipStreamSynchronize(stream));
