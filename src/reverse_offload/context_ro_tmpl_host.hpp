@@ -25,7 +25,7 @@
 #ifndef LIBRARY_SRC_REVERSE_OFFLOAD_RO_NET_HOST_TEMPLATES_HPP_
 #define LIBRARY_SRC_REVERSE_OFFLOAD_RO_NET_HOST_TEMPLATES_HPP_
 
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "../host/host_templates.hpp"
 
 namespace rocshmem {
