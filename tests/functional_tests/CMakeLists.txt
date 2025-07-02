@@ -84,6 +84,18 @@ if (BUILD_TESTS_ONLY)
   )
 endif()
 
+target_compile_definitions(
+  ${PROJECT_NAME}
+  PRIVATE
+    $<$<BOOL:${PMIx_FOUND}>:HAVE_PMIX=1>
+)
+
+target_include_directories(
+  ${PROJECT_NAME}
+  PRIVATE
+    ${PMIX_INCLUDE_DIRECTORIES}
+)
+
 target_link_libraries(
   ${PROJECT_NAME}
   PRIVATE
