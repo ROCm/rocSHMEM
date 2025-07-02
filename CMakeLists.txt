@@ -114,15 +114,15 @@ if (BUILD_LOCAL_GPU_TARGET_ONLY)
   endif()
 endif()
 
-set(CURRENT_GPU_TARGETS "${DEFAULT_GPUS}" CACHE STRING
-    "Target default GPUs if CURRENT_GPU_TARGETS is not defined.")
+set(DEFAULT_GPU_TARGETS "${DEFAULT_GPUS}" CACHE STRING
+    "Target default GPUs if GPU_TARGETS is not defined.")
 
 if (COMMAND rocm_check_target_ids)
-  message(STATUS "Checking for ROCm support for GPU targets: " "${CURRENT_GPU_TARGETS}")
-  rocm_check_target_ids(SUPPORTED_GPUS TARGETS ${CURRENT_GPU_TARGETS})
+  message(STATUS "Checking for ROCm support for GPU targets: " "${DEFAULT_GPU_TARGETS}")
+  rocm_check_target_ids(SUPPORTED_GPUS TARGETS ${DEFAULT_GPU_TARGETS})
 else()
   message(WARNING "Unable to check for supported GPU targets.")
-  set(SUPPORTED_GPUS ${CURRENT_GPU_TARGETS})
+  set(SUPPORTED_GPUS ${DEFAULT_GPU_TARGETS})
 endif()
 
 set(GPU_TARGETS "${SUPPORTED_GPUS}" CACHE STRING "GPU architectures to compile for")
