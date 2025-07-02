@@ -37,7 +37,7 @@
 
 #include <vector>
 
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "rocshmem/rocshmem.hpp"
 #include "backend_type.hpp"
 #include "ipc_policy.hpp"
