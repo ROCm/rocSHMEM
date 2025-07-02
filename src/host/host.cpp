@@ -26,7 +26,7 @@
 
 #include <mpi.h>
 
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "host_helpers.hpp"
 #include "../memory/window_info.hpp"
 #include "../util.hpp"
