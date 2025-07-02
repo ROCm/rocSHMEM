@@ -36,12 +36,12 @@ class DefaultCTXPrimitiveTester : public Tester {
   virtual ~DefaultCTXPrimitiveTester();
 
  protected:
-  virtual void resetBuffers(uint64_t size) override;
+  virtual void resetBuffers(size_t size) override;
 
   virtual void launchKernel(dim3 gridSize, dim3 blockSize, int loop,
-                            uint64_t size) override;
+                            size_t size) override;
 
-  virtual void verifyResults(uint64_t size) override;
+  virtual void verifyResults(size_t size) override;
 
   char *source = nullptr;
   char *dest = nullptr;

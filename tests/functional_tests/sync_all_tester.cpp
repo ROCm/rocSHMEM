@@ -95,7 +95,7 @@ SyncAllTester::SyncAllTester(TesterArguments args) : Tester(args) {}
 SyncAllTester::~SyncAllTester() {}
 
 void SyncAllTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
-                                    uint64_t size) {
+                                    size_t size) {
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(SyncAllTest, gridSize, blockSize, shared_bytes, stream,
@@ -105,6 +105,6 @@ void SyncAllTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
   num_timed_msgs = loop;
 }
 
-void SyncAllTester::resetBuffers(uint64_t size) {}
+void SyncAllTester::resetBuffers(size_t size) {}
 
-void SyncAllTester::verifyResults(uint64_t size) {}
+void SyncAllTester::verifyResults(size_t size) {}

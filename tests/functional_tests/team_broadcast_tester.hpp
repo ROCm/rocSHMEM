@@ -42,16 +42,16 @@ class TeamBroadcastTester : public Tester {
   virtual ~TeamBroadcastTester();
 
  protected:
-  virtual void resetBuffers(uint64_t size) override;
+  virtual void resetBuffers(size_t size) override;
 
   virtual void preLaunchKernel() override;
 
   virtual void launchKernel(dim3 gridSize, dim3 blockSize, int loop,
-                            uint64_t size) override;
+                            size_t size) override;
 
   virtual void postLaunchKernel() override;
 
-  virtual void verifyResults(uint64_t size) override;
+  virtual void verifyResults(size_t size) override;
 
   T1 *source_buf;
   T1 *dest_buf;

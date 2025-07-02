@@ -54,8 +54,8 @@ class TesterArguments {
   unsigned num_wgs = 1;
   unsigned num_threads = 1;
   unsigned algorithm = 0;
-  uint64_t min_msg_size = 1;
-  uint64_t max_msg_size = 1 << 20;
+  size_t min_msg_size = 1;
+  size_t max_msg_size = 1 << 20;
   unsigned wg_size = 64;
   unsigned thread_access = 64;
   unsigned coal_coef = 64;
@@ -74,7 +74,7 @@ class TesterArguments {
   int loop = 10;
   int skip = 10;
   int loop_large = 10;
-  uint64_t large_message_size = 32768;
+  size_t large_message_size = 32768;
 };
 
 #endif

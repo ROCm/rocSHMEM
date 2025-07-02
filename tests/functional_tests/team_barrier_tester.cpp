@@ -106,7 +106,7 @@ void TeamBarrierTester::preLaunchKernel() {
 }
 
 void TeamBarrierTester::launchKernel(dim3 gridSize, dim3 blockSize,
-                                           int loop, uint64_t size) {
+                                           int loop, size_t size) {
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(TeamBarrierTest, gridSize, blockSize, shared_bytes,
@@ -124,6 +124,6 @@ void TeamBarrierTester::postLaunchKernel() {
   }
 }
 
-void TeamBarrierTester::resetBuffers(uint64_t size) {}
+void TeamBarrierTester::resetBuffers(size_t size) {}
 
-void TeamBarrierTester::verifyResults(uint64_t size) {}
+void TeamBarrierTester::verifyResults(size_t size) {}

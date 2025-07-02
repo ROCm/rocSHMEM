@@ -36,7 +36,7 @@ using namespace rocshmem;
 __global__ void WaveFrontPrimitiveTest(int loop, int skip,
                                        long long int *start_time,
                                        long long int *end_time, char *source,
-                                       char *dest, int size, TestType type,
+                                       char *dest, size_t size, TestType type,
                                        ShmemContextType ctx_type,
                                        int wf_size) {
   __shared__ rocshmem_ctx_t ctx;
@@ -49,7 +49,7 @@ __global__ void WaveFrontPrimitiveTest(int loop, int skip,
   int wf_id = get_flat_block_id() / wf_size;
   int wg_offset = wg_id * ((get_flat_block_size() - 1 ) / wf_size + 1);
   int idx = wf_id + wg_offset;
-  int offset = size * idx;
+  size_t offset = size * idx;
   source += offset;
   dest += offset;
 
@@ -120,13 +120,13 @@ WaveFrontPrimitiveTester::~WaveFrontPrimitiveTester() {
   rocshmem_free(dest);
 }
 
-void WaveFrontPrimitiveTester::resetBuffers(uint64_t size) {
+void WaveFrontPrimitiveTester::resetBuffers(size_t size) {
   size_t buff_size = size * args.num_wgs * num_warps;
   memset(dest, '1', buff_size);
 }
 
 void WaveFrontPrimitiveTester::launchKernel(dim3 gridSize, dim3 blockSize,
-                                           int loop, uint64_t size) {
+                                           int loop, size_t size) {
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(WaveFrontPrimitiveTest, gridSize, blockSize, shared_bytes,
@@ -138,7 +138,7 @@ void WaveFrontPrimitiveTester::launchKernel(dim3 gridSize, dim3 blockSize,
   num_timed_msgs = loop * gridSize.x * num_warps;
 }
 
-void WaveFrontPrimitiveTester::verifyResults(uint64_t size) {
+void WaveFrontPrimitiveTester::verifyResults(size_t size) {
   int check_id = (_type == WAVEGetTestType || _type == WAVEGetNBITestType)
                      ? 0
                      : 1;

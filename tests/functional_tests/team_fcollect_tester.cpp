@@ -168,7 +168,7 @@ void TeamFcollectTester<T1>::preLaunchKernel() {
 
 template <typename T1>
 void TeamFcollectTester<T1>::launchKernel(dim3 gridSize, dim3 blockSize,
-                                          int loop, uint64_t size) {
+                                          int loop, size_t size) {
   size_t shared_bytes = 0;
 
   int num_elems = size / sizeof(T1);
@@ -193,7 +193,7 @@ void TeamFcollectTester<T1>::postLaunchKernel() {
 }
 
 template <typename T1>
-void TeamFcollectTester<T1>::resetBuffers(uint64_t size) {
+void TeamFcollectTester<T1>::resetBuffers(size_t size) {
   int num_elems = (size / sizeof(T1));
   int buff_size = num_elems * sizeof(T1) * args.num_wgs * n_pes;
 
@@ -201,7 +201,7 @@ void TeamFcollectTester<T1>::resetBuffers(uint64_t size) {
 }
 
 template <typename T1>
-void TeamFcollectTester<T1>::verifyResults(uint64_t size) {
+void TeamFcollectTester<T1>::verifyResults(size_t size) {
 
   int num_elems = size / sizeof(T1);
   int idx = 0;

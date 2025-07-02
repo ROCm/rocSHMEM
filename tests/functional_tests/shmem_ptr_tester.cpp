@@ -59,13 +59,13 @@ ShmemPtrTester::~ShmemPtrTester() {
   rocshmem_free(r_buf);
 }
 
-void ShmemPtrTester::resetBuffers(uint64_t size) {
+void ShmemPtrTester::resetBuffers(size_t size) {
   memset(r_buf, '0', args.max_msg_size);
   memset(_available, 0, sizeof(int));
 }
 
 void ShmemPtrTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
-                                  uint64_t size) {
+                                  size_t size) {
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(ShmemPtrTest, gridSize, blockSize, shared_bytes, stream,
@@ -75,7 +75,7 @@ void ShmemPtrTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
   num_timed_msgs = 0;
 }
 
-void ShmemPtrTester::verifyResults(uint64_t size) {
+void ShmemPtrTester::verifyResults(size_t size) {
   if (args.myid == 0) {
     if (*_available == 0) {
       fprintf(stderr, "SHMEM_PTR NOT AVAILBLE \n");

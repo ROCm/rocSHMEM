@@ -33,7 +33,7 @@ using namespace rocshmem;
  *****************************************************************************/
 __global__ void PrimitiveMRTest(int loop, long long int *start_time,
                                 long long int *end_time, char *s_buf,
-                                char *r_buf, int size,
+                                char *r_buf, size_t size,
                                 ShmemContextType ctx_type) {
   __shared__ rocshmem_ctx_t ctx;
   int wg_id = get_flat_grid_id();
@@ -79,7 +79,7 @@ void PrimitiveMRTester::resetBuffers(size_t size) {
 }
 
 void PrimitiveMRTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
-                                     uint64_t size) {
+                                     size_t size) {
   size_t shared_bytes = 0;
 
   /* Warmup */
@@ -98,7 +98,7 @@ void PrimitiveMRTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
   num_timed_msgs = loop * 64;
 }
 
-void PrimitiveMRTester::verifyResults(uint64_t size) {
+void PrimitiveMRTester::verifyResults(size_t size) {
   int check_id =
       (_type == GetTestType || _type == GetNBITestType || _type == GTestType)
           ? 0

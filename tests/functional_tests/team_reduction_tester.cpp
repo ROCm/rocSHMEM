@@ -77,7 +77,7 @@ rocshmem_team_t team_reduce_world_dup;
 template <typename T1, ROCSHMEM_OP T2>
 __global__ void TeamReductionTest(int loop, int skip, long long int *start_time,
                                   long long int *end_time, T1 *s_buf, T1 *r_buf,
-                                  int size, TestType type,
+                                  size_t size, TestType type,
                                   ShmemContextType ctx_type,
                                   rocshmem_team_t team) {
   __shared__ rocshmem_ctx_t ctx;
@@ -136,7 +136,7 @@ void TeamReductionTester<T1, T2>::preLaunchKernel() {
 
 template <typename T1, ROCSHMEM_OP T2>
 void TeamReductionTester<T1, T2>::launchKernel(dim3 gridSize, dim3 blockSize,
-                                               int loop, uint64_t size) {
+                                               int loop, size_t size) {
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(HIP_KERNEL_NAME(TeamReductionTest<T1, T2>), gridSize,
@@ -154,14 +154,14 @@ void TeamReductionTester<T1, T2>::postLaunchKernel() {
 }
 
 template <typename T1, ROCSHMEM_OP T2>
-void TeamReductionTester<T1, T2>::resetBuffers(uint64_t size) {
+void TeamReductionTester<T1, T2>::resetBuffers(size_t size) {
   for (uint64_t i = 0; i < args.max_msg_size; i++) {
     init_buf(s_buf[i], r_buf[i]);
   }
 }
 
 template <typename T1, ROCSHMEM_OP T2>
-void TeamReductionTester<T1, T2>::verifyResults(uint64_t size) {
+void TeamReductionTester<T1, T2>::verifyResults(size_t size) {
   int n_pes = rocshmem_n_pes();
   for (uint64_t i = 0; i < size; i++) {
     auto r = verify_buf(r_buf[i], (T1)n_pes);

@@ -478,7 +478,7 @@ void Tester::execute() {
    * Some tests loop through data sizes in powers of 2 and report the
    * results for those ranges.
    */
-  for (uint64_t size = args.min_msg_size; size <= args.max_msg_size;
+  for (size_t size = args.min_msg_size; size <= args.max_msg_size;
        size <<= 1) {
     resetBuffers(size);
 

@@ -34,7 +34,7 @@
  __global__ void DefaultCTXPrimitiveTest(int loop, int skip,
                                long long int *start_time,
                                long long int *end_time, char *source,
-                               char *dest, int size, TestType type,
+                               char *dest, size_t size, TestType type,
                                ShmemContextType ctx_type, int wf_size) {
    int wg_id = get_flat_grid_id();
    int t_id  = get_flat_block_id();
@@ -51,7 +51,7 @@
    /**
     * Calculate start index for each thread within the grid
     */
-   uint64_t offset = size * get_flat_id();
+   size_t offset = size * get_flat_id();
    source += offset;
    dest += offset;
  
@@ -155,13 +155,13 @@
    rocshmem_free(dest);
  }
  
- void DefaultCTXPrimitiveTester::resetBuffers(uint64_t size) {
+ void DefaultCTXPrimitiveTester::resetBuffers(size_t size) {
    size_t buff_size = size * args.wg_size * args.num_wgs;
    memset(dest, '1', buff_size);
  }
  
  void DefaultCTXPrimitiveTester::launchKernel(dim3 gridSize, dim3 blockSize,
-                                              int loop, uint64_t size) {
+                                              int loop, size_t size) {
    size_t shared_bytes = 0;
  
    hipLaunchKernelGGL(DefaultCTXPrimitiveTest, gridSize, blockSize,
@@ -173,7 +173,7 @@
    num_timed_msgs = loop * gridSize.x * blockSize.x;
  }
  
- void DefaultCTXPrimitiveTester::verifyResults(uint64_t size) {
+ void DefaultCTXPrimitiveTester::verifyResults(size_t size) {
    int check_id =
        (_type == DefaultCTXGetTestType ||
         _type == DefaultCTXGetNBITestType || _type == DefaultCTXGTestType)
@@ -182,7 +182,7 @@
  
    if (args.myid == check_id) {
      size_t buff_size = size * args.wg_size * args.num_wgs;
-     for (uint64_t i = 0; i < buff_size; i++) {
+     for (size_t i = 0; i < buff_size; i++) {
        if (dest[i] != source[i]) {
          std::cerr << "Data validation error at idx " << i << std::endl;
          std::cerr << " Got " << dest[i] << ", Expected "

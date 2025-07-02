@@ -33,7 +33,7 @@ using namespace rocshmem;
  *****************************************************************************/
 __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
                               long long int *end_time, char *source,
-                              char *dest, int size, TestType type,
+                              char *dest, size_t size, TestType type,
                               ShmemContextType ctx_type, int wf_size) {
   __shared__ rocshmem_ctx_t ctx;
   int wg_id = get_flat_grid_id();
@@ -52,7 +52,7 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
   /**
    * Calculate start index for each thread within the grid
    */
-  uint64_t offset = size * get_flat_id();
+  size_t offset = size * get_flat_id();
   source += offset;
   dest += offset;
 
@@ -156,13 +156,13 @@ PrimitiveTester::~PrimitiveTester() {
   rocshmem_free(dest);
 }
 
-void PrimitiveTester::resetBuffers(uint64_t size) {
+void PrimitiveTester::resetBuffers(size_t size) {
   size_t buff_size = size * args.wg_size * args.num_wgs;
   memset(dest, '1', buff_size);
 }
 
 void PrimitiveTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
-                                   uint64_t size) {
+                                   size_t size) {
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(PrimitiveTest, gridSize, blockSize, shared_bytes, stream,
@@ -173,7 +173,7 @@ void PrimitiveTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
   num_timed_msgs = loop * gridSize.x * blockSize.x;
 }
 
-void PrimitiveTester::verifyResults(uint64_t size) {
+void PrimitiveTester::verifyResults(size_t size) {
   int check_id =
       (_type == GetTestType || _type == GetNBITestType || _type == GTestType)
           ? 0
