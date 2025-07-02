@@ -90,7 +90,7 @@ endif()
 target_compile_definitions(
   ${PROJECT_NAME}
   PRIVATE
-    $<$<BOOL:HAVE_PMIX>:HAVE_PMIX=1>
+    $<$<BOOL:${PMIx_FOUND}>:HAVE_PMIX=1>
 )
 
 target_include_directories(
