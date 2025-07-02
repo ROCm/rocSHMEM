@@ -23,6 +23,8 @@ Requirements
 
 * ROCm-aware Open MPI and UCX. For more information, see :ref:`install-dependencies`.
 
+* Inter-node with the Reverse Offload backend is supported only for CX7 Infiniband.
+
 Available network backends
 --------------------------
 
@@ -116,7 +118,7 @@ The build script passes configuration options to CMake to setup a canonical buil
 
 .. note::
 
-  While using an alternative MPI implementation for the RO backend may be possible (when the MPI implementation is thread-safe, and supports GPU buffers), the only supported and tested configuration is when using Open MPI and UCX (see :ref:`install-dependencies`).
+  The only supported and tested configuration for the RO backend is when using Open MPI and UCX with a CX7 Infiniband adapter (see :ref:`install-dependencies`). Using other configurations may be possible (notably when the MPI implementation is thread-safe and supports GPU buffers) but is considered experimental.
 
 
 IPC only backend build
