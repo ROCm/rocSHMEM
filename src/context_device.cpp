@@ -22,7 +22,7 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "backend_bc.hpp"
 #include "context_incl.hpp"
 #include "util.hpp"

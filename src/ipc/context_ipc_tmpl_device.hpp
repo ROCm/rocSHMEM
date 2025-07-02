@@ -25,7 +25,7 @@
 #ifndef LIBRARY_SRC_IPC_CONTEXT_TMPL_DEVICE_HPP_
 #define LIBRARY_SRC_IPC_CONTEXT_TMPL_DEVICE_HPP_
 
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "rocshmem/rocshmem.hpp"
 #include "context_ipc_device.hpp"
 #include "../util.hpp"

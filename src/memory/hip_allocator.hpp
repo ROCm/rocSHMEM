@@ -31,7 +31,7 @@
  * @brief Contains HIP wrapper class for memory allocator
  */
 
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "memory_allocator.hpp"
 
 #include <hip/hip_runtime_api.h>

@@ -32,7 +32,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "rocshmem/rocshmem.hpp"
 #include "../backend_type.hpp"
 #include "../hdp_policy.hpp"
