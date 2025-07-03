@@ -33,8 +33,9 @@ using namespace rocshmem;
  *****************************************************************************/
 __global__ void PutmemSignalTest(int loop, int skip, long long int *start_time,
                                  long long int *end_time, char *s_buf,
-                                 char *r_buf, int size, uint64_t *sig_addr,
-                                 TestType type, ShmemContextType ctx_type, int sig_op) {
+                                 char *r_buf, size_t size, uint64_t *sig_addr,
+                                 TestType type, ShmemContextType ctx_type,
+                                 int sig_op) {
   __shared__ rocshmem_ctx_t ctx;
   int wg_id = get_flat_grid_id();
   rocshmem_wg_init();
@@ -50,22 +51,28 @@ __global__ void PutmemSignalTest(int loop, int skip, long long int *start_time,
 
     switch (type) {
       case PutSignalTestType:
-        rocshmem_ctx_putmem_signal(ctx, r_buf, s_buf, size, sig_addr, signal, sig_op, 1);
+        rocshmem_ctx_putmem_signal(ctx, r_buf, s_buf, size, sig_addr,
+                                   signal, sig_op, 1);
         break;
       case WGPutSignalTestType:
-        rocshmem_ctx_putmem_signal_wg(ctx, r_buf, s_buf, size, sig_addr, signal, sig_op, 1);
+        rocshmem_ctx_putmem_signal_wg(ctx, r_buf, s_buf, size, sig_addr,
+                                      signal, sig_op, 1);
         break;
       case WAVEPutSignalTestType:
-        rocshmem_ctx_putmem_signal_wave(ctx, r_buf, s_buf, size, sig_addr, signal, sig_op, 1);
+        rocshmem_ctx_putmem_signal_wave(ctx, r_buf, s_buf, size, sig_addr,
+                                        signal, sig_op, 1);
         break;
       case PutSignalNBITestType:
-        rocshmem_ctx_putmem_signal_nbi(ctx, r_buf, s_buf, size, sig_addr, signal, sig_op, 1);
+        rocshmem_ctx_putmem_signal_nbi(ctx, r_buf, s_buf, size, sig_addr,
+                                       signal, sig_op, 1);
         break;
       case WGPutSignalNBITestType:
-        rocshmem_ctx_putmem_signal_nbi_wg(ctx, r_buf, s_buf, size, sig_addr, signal, sig_op, 1);
+        rocshmem_ctx_putmem_signal_nbi_wg(ctx, r_buf, s_buf, size, sig_addr,
+                                          signal, sig_op, 1);
         break;
       case WAVEPutSignalNBITestType:
-        rocshmem_ctx_putmem_signal_nbi_wave(ctx, r_buf, s_buf, size, sig_addr, signal, sig_op, 1);
+        rocshmem_ctx_putmem_signal_nbi_wave(ctx, r_buf, s_buf, size, sig_addr,
+                                            signal, sig_op, 1);
         break;
       default:
         break;
@@ -124,15 +131,17 @@ __global__ void SignalFetchTest(int loop, int skip, long long int *start_time,
 /******************************************************************************
  * HOST TESTER CLASS METHODS
  *****************************************************************************/
-SignalingOperationsTester::SignalingOperationsTester(TesterArguments args) : Tester(args) {
+SignalingOperationsTester::SignalingOperationsTester(TesterArguments args)
+  : Tester(args) {
   s_buf = (char *)rocshmem_malloc(args.max_msg_size * args.wg_size);
   r_buf = (char *)rocshmem_malloc(args.max_msg_size * args.wg_size);
   sig_addr = (uint64_t *)rocshmem_malloc(sizeof(uint64_t));
   CHECK_HIP(hipMallocManaged(&fetched_value, sizeof(uint64_t), hipMemAttachHost));
 }
 
-SignalingOperationsTester::SignalingOperationsTester(TesterArguments args, int signal_op)
-                          : SignalingOperationsTester(args) {
+SignalingOperationsTester::SignalingOperationsTester(TesterArguments args,
+                                                     int signal_op)
+  : SignalingOperationsTester(args) {
   sig_op = signal_op;
 }
 
@@ -143,7 +152,7 @@ SignalingOperationsTester::~SignalingOperationsTester() {
   CHECK_HIP(hipFree(fetched_value));
 }
 
-void SignalingOperationsTester::resetBuffers(uint64_t size) {
+void SignalingOperationsTester::resetBuffers(size_t size) {
   memset(s_buf, '0', args.max_msg_size * args.wg_size);
   memset(r_buf, '1', args.max_msg_size * args.wg_size);
   *fetched_value = -1;
@@ -151,7 +160,7 @@ void SignalingOperationsTester::resetBuffers(uint64_t size) {
 }
 
 void SignalingOperationsTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
-                                             uint64_t size) {
+                                             size_t size) {
   size_t shared_bytes = 0;
 
 
@@ -170,7 +179,7 @@ void SignalingOperationsTester::launchKernel(dim3 gridSize, dim3 blockSize, int 
   num_timed_msgs = loop;
 }
 
-void SignalingOperationsTester::verifyResults(uint64_t size) {
+void SignalingOperationsTester::verifyResults(size_t size) {
   if (_type == SignalFetchTestType     ||
       _type == WAVESignalFetchTestType ||
       _type == WGSignalFetchTestType) {

@@ -36,7 +36,7 @@ using namespace rocshmem;
 __global__ void WorkGroupPrimitiveTest(int loop, int skip,
                                       long long int *start_time,
                                       long long int *end_time, char *source,
-                                      char *dest, int size, TestType type,
+                                      char *dest, size_t size, TestType type,
                                       ShmemContextType ctx_type) {
   __shared__ rocshmem_ctx_t ctx;
   int wg_id = get_flat_grid_id();
@@ -44,7 +44,7 @@ __global__ void WorkGroupPrimitiveTest(int loop, int skip,
   rocshmem_wg_ctx_create(ctx_type, &ctx);
 
   // Calculate start index for each work group
-  uint64_t offset = size * wg_id;
+  size_t offset = size * wg_id;
   source += offset;
   dest += offset;
 
@@ -116,13 +116,13 @@ WorkGroupPrimitiveTester::~WorkGroupPrimitiveTester() {
   rocshmem_free(dest);
 }
 
-void WorkGroupPrimitiveTester::resetBuffers(uint64_t size) {
+void WorkGroupPrimitiveTester::resetBuffers(size_t size) {
   size_t buff_size = size * args.num_wgs;
   memset(dest, '1', buff_size);
 }
 
 void WorkGroupPrimitiveTester::launchKernel(dim3 gridSize, dim3 blockSize,
-                                           int loop, uint64_t size) {
+                                           int loop, size_t size) {
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(WorkGroupPrimitiveTest, gridSize, blockSize, shared_bytes,
@@ -133,7 +133,7 @@ void WorkGroupPrimitiveTester::launchKernel(dim3 gridSize, dim3 blockSize,
   num_timed_msgs = loop * gridSize.x;
 }
 
-void WorkGroupPrimitiveTester::verifyResults(uint64_t size) {
+void WorkGroupPrimitiveTester::verifyResults(size_t size) {
   int check_id = (_type == WGGetTestType || _type == WGGetNBITestType)
                      ? 0
                      : 1;

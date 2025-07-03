@@ -36,12 +36,12 @@ class EmptyTester : public Tester {
   virtual ~EmptyTester();
 
  protected:
-  virtual void resetBuffers(uint64_t size) override;
+  virtual void resetBuffers(size_t size) override;
 
   virtual void launchKernel(dim3 gridSize, dim3 blockSize, int loop,
-                            uint64_t size) override;
+                            size_t size) override;
 
-  virtual void verifyResults(uint64_t size) override;
+  virtual void verifyResults(size_t size) override;
 };
 
 #endif  // ROCSHMEM_CLIENTS_FUNCTIONAL_TESTS_EMPTY_TESTER_HPP

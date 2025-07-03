@@ -41,16 +41,16 @@ class TeamBarrierTester : public Tester {
   virtual ~TeamBarrierTester();
 
  protected:
-  virtual void resetBuffers(uint64_t size) override;
+  virtual void resetBuffers(size_t size) override;
 
   virtual void preLaunchKernel() override;
 
   virtual void launchKernel(dim3 gridSize, dim3 blockSize, int loop,
-                            uint64_t size) override;
+                            size_t size) override;
 
   virtual void postLaunchKernel() override;
 
-  virtual void verifyResults(uint64_t size) override;
+  virtual void verifyResults(size_t size) override;
 
  private:
   int my_pe = 0;

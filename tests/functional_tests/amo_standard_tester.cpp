@@ -55,7 +55,7 @@ AMOStandardTester<T>::~AMOStandardTester() {
 }
 
 template <typename T>
-void AMOStandardTester<T>::resetBuffers(uint64_t size) {
+void AMOStandardTester<T>::resetBuffers(size_t size) {
   memset(_r_buf, 0, args.max_msg_size);
   memset(_ret_val, 0, args.max_msg_size * args.num_wgs);
   memset(_s_buf, 0, args.max_msg_size * args.num_wgs);
@@ -63,7 +63,7 @@ void AMOStandardTester<T>::resetBuffers(uint64_t size) {
 
 template <typename T>
 void AMOStandardTester<T>::launchKernel(dim3 gridsize, dim3 blocksize, int loop,
-                                        uint64_t size) {
+                                        size_t size) {
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(AMOStandardTest, gridsize, blocksize, shared_bytes, stream,
@@ -76,7 +76,7 @@ void AMOStandardTester<T>::launchKernel(dim3 gridsize, dim3 blocksize, int loop,
 }
 
 template <typename T>
-void AMOStandardTester<T>::verifyResults(uint64_t size) {
+void AMOStandardTester<T>::verifyResults(size_t size) {
   T ret;
   if (args.myid == 0) {
     T expected_val = 0;

@@ -77,13 +77,13 @@ PingAllTester::PingAllTester(TesterArguments args) : Tester(args) {
 
 PingAllTester::~PingAllTester() { rocshmem_free(r_buf); }
 
-void PingAllTester::resetBuffers(uint64_t size) {
+void PingAllTester::resetBuffers(size_t size) {
   int num_pes {rocshmem_n_pes()};
   memset(r_buf, 0, sizeof(int) * args.num_wgs * num_pes);
 }
 
 void PingAllTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
-                                  uint64_t size) {
+                                  size_t size) {
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(PingAllTest, gridSize, blockSize, shared_bytes, stream,
@@ -94,4 +94,4 @@ void PingAllTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
   num_timed_msgs = loop;
 }
 
-void PingAllTester::verifyResults(uint64_t size) {}
+void PingAllTester::verifyResults(size_t size) {}

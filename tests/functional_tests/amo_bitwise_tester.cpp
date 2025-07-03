@@ -55,7 +55,7 @@ AMOBitwiseTester<T>::~AMOBitwiseTester() {
 }
 
 template <typename T>
-void AMOBitwiseTester<T>::resetBuffers(uint64_t size) {
+void AMOBitwiseTester<T>::resetBuffers(size_t size) {
   memset(_r_buf, 0, args.max_msg_size);
   memset(_ret_val, 0, args.max_msg_size * args.num_wgs);
   memset(_s_buf, 0, args.max_msg_size * args.num_wgs);
@@ -63,7 +63,7 @@ void AMOBitwiseTester<T>::resetBuffers(uint64_t size) {
 
 template <typename T>
 void AMOBitwiseTester<T>::launchKernel(dim3 gridsize, dim3 blocksize, int loop,
-                                       uint64_t size) {
+                                       size_t size) {
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(AMOBitwiseTest, gridsize, blocksize, shared_bytes, stream,
@@ -82,7 +82,7 @@ void AMOBitwiseTester<T>::launchKernel(dim3 gridsize, dim3 blocksize, int loop,
 #endif
 
 template <typename T>
-void AMOBitwiseTester<T>::verifyResults(uint64_t size) {
+void AMOBitwiseTester<T>::verifyResults(size_t size) {
   T ret;
   if(DISABLE_IPC_TEST) {
     printf("AMO binary ops not implemented for IPC: values were not verified\n");

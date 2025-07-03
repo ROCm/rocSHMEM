@@ -95,7 +95,7 @@ BarrierAllTester::BarrierAllTester(TesterArguments args) : Tester(args) {}
 BarrierAllTester::~BarrierAllTester() {}
 
 void BarrierAllTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
-                                    uint64_t size) {
+                                    size_t size) {
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(BarrierAllTest, gridSize, blockSize, shared_bytes, stream,
@@ -105,6 +105,6 @@ void BarrierAllTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
   num_timed_msgs = loop;
 }
 
-void BarrierAllTester::resetBuffers(uint64_t size) {}
+void BarrierAllTester::resetBuffers(size_t size) {}
 
-void BarrierAllTester::verifyResults(uint64_t size) {}
+void BarrierAllTester::verifyResults(size_t size) {}

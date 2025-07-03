@@ -49,10 +49,10 @@ EmptyTester::EmptyTester(TesterArguments args) : Tester(args) {}
 
 EmptyTester::~EmptyTester() {}
 
-void EmptyTester::resetBuffers(uint64_t size) {}
+void EmptyTester::resetBuffers(size_t size) {}
 
 void EmptyTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
-                               uint64_t size) {
+                               size_t size) {
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(EmptyTest, gridSize, blockSize, shared_bytes, stream,
@@ -60,4 +60,4 @@ void EmptyTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
                      _shmem_context);
 }
 
-void EmptyTester::verifyResults(uint64_t size) {}
+void EmptyTester::verifyResults(size_t size) {}

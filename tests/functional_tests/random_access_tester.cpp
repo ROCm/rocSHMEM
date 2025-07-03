@@ -35,7 +35,8 @@ using namespace rocshmem;
 
 __device__ bool thread_passing(int num_bins, uint32_t *bin_threads,
                                uint32_t *off_bins, uint32_t *PE_bins,
-                               int *offset, int *PE, int coal_coef, int size) {
+                               size_t *offset, int *PE, int coal_coef,
+                               size_t size) {
   bool pass = false;
   int wave_id = ((hipThreadIdx_x + hipBlockIdx_x * hipBlockDim_x) /
                  64);  // get_global_wave_id();
@@ -55,7 +56,7 @@ __device__ bool thread_passing(int num_bins, uint32_t *bin_threads,
 
 __global__ void RandomAccessTest(int loop, int skip, long long int *start_time,
                                  long long int *end_time, int *s_buf,
-                                 int *r_buf, int size, OpType type,
+                                 int *r_buf, size_t size, OpType type,
                                  int coal_coef, int num_bins, int num_waves,
                                  uint32_t *threads_bins, uint32_t *off_bins,
                                  uint32_t *PE_bins, ShmemContextType ctx_type) {
@@ -65,7 +66,7 @@ __global__ void RandomAccessTest(int loop, int skip, long long int *start_time,
   rocshmem_wg_ctx_create(ctx_type, &ctx);
 
   int pe = rocshmem_ctx_my_pe(ctx);
-  int offset;
+  size_t offset;
   int PE;
 
   if (thread_passing(num_bins, threads_bins, off_bins, PE_bins, &offset, &PE,
@@ -166,7 +167,7 @@ RandomAccessTester::~RandomAccessTester() {
   CHECK_HIP(hipFree(_PE_bins));
 }
 
-void RandomAccessTester::resetBuffers(uint64_t size) {
+void RandomAccessTester::resetBuffers(size_t size) {
   for (size_t i = 0; i < args.max_msg_size / sizeof(int) * args.wg_size * space;
        i++) {
     s_buf[i] = 1;
@@ -176,7 +177,7 @@ void RandomAccessTester::resetBuffers(uint64_t size) {
 }
 
 void RandomAccessTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
-                                      uint64_t size) {
+                                      size_t size) {
   size_t shared_bytes = 0;
 
   int _thread_access = args.thread_access;
@@ -200,7 +201,7 @@ void RandomAccessTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
   num_timed_msgs = loop * _num_waves * _thread_access;
 }
 
-void RandomAccessTester::verifyResults(uint64_t size) {
+void RandomAccessTester::verifyResults(size_t size) {
   uint64_t offset;
   for (int k = 0; k < _num_waves; k++) {
     for (int i = 0; i < _num_bins; i++) {

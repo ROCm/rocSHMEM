@@ -90,7 +90,7 @@ SyncTester::~SyncTester() {
   CHECK_HIP(hipFree(team_sync_world_dup));
 }
 
-void SyncTester::resetBuffers(uint64_t size) {}
+void SyncTester::resetBuffers(size_t size) {}
 
 void SyncTester::preLaunchKernel() {
   int n_pes = rocshmem_team_n_pes(ROCSHMEM_TEAM_WORLD);
@@ -107,7 +107,7 @@ void SyncTester::preLaunchKernel() {
 }
 
 void SyncTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
-                              uint64_t size) {
+                              size_t size) {
   size_t shared_bytes = 0;
 
   int n_pes = rocshmem_team_n_pes(ROCSHMEM_TEAM_WORLD);
@@ -126,4 +126,4 @@ void SyncTester::postLaunchKernel() {
   }
 }
 
-void SyncTester::verifyResults(uint64_t size) {}
+void SyncTester::verifyResults(size_t size) {}

@@ -35,7 +35,7 @@ rocshmem_team_t team_primitive_world_dup;
  *****************************************************************************/
 __global__ void TeamCtxPrimitiveTest(int loop, int skip, long long int *start_time,
                                      long long int *end_time, char *source,
-                                     char *dest, int size, TestType type,
+                                     char *dest, size_t size, TestType type,
                                      ShmemContextType ctx_type, int wf_size,
                                      rocshmem_team_t team) {
   __shared__ rocshmem_ctx_t ctx;
@@ -56,7 +56,7 @@ __global__ void TeamCtxPrimitiveTest(int loop, int skip, long long int *start_ti
   /**
    * Calculate start index for each thread within the grid
    */
-  uint64_t offset = size * get_flat_id();
+  size_t offset = size * get_flat_id();
   source += offset;
   dest += offset;
 
@@ -148,7 +148,7 @@ TeamCtxPrimitiveTester::~TeamCtxPrimitiveTester() {
   rocshmem_free(dest);
 }
 
-void TeamCtxPrimitiveTester::resetBuffers(uint64_t size) {
+void TeamCtxPrimitiveTester::resetBuffers(size_t size) {
   size_t buff_size = size * args.wg_size * args.num_wgs;
   memset(dest, '1', buff_size);
 }
@@ -162,7 +162,7 @@ void TeamCtxPrimitiveTester::preLaunchKernel() {
 }
 
 void TeamCtxPrimitiveTester::launchKernel(dim3 gridSize, dim3 blockSize,
-                                          int loop, uint64_t size) {
+                                          int loop, size_t size) {
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(TeamCtxPrimitiveTest, gridSize, blockSize, shared_bytes,
@@ -178,7 +178,7 @@ void TeamCtxPrimitiveTester::postLaunchKernel() {
   rocshmem_team_destroy(team_primitive_world_dup);
 }
 
-void TeamCtxPrimitiveTester::verifyResults(uint64_t size) {
+void TeamCtxPrimitiveTester::verifyResults(size_t size) {
   int check_id =
       (_type == TeamCtxGetTestType || _type == TeamCtxGetNBITestType) ? 0 : 1;
 
