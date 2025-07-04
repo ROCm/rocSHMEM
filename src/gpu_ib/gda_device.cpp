@@ -454,7 +454,7 @@ void GDADevice::Alltoall_char_inplace (char *inoutbuf, size_t num_bytes, rocshme
       pes_in_world[i] = team_obj->get_pe_in_world(i);      
   }
 
-  // Since this is an in-place algorith, allocate the temporary receive buffer first
+  // Since this is an in-place algorithm, allocate the temporary receive buffer first
   char *recv_buf = new char[num_bytes * num_pes];
   std::memset(recv_buf, 0, num_pes * num_bytes);
 
