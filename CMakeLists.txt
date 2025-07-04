@@ -88,23 +88,54 @@ endif()
 find_package(ROCM 0.8 REQUIRED PATHS ${ROCM_PATH})
 set(ROCMCHECKS_WARN_TOOLCHAIN_VAR OFF)
 
-include(cmake/rocm_local_targets.cmake)
-
-set(DEFAULT_GPUS
-      gfx90a
-      gfx942
-      gfx950)
-
 ###############################################################################
 # PROJECT
 ###############################################################################
+project(rocshmem VERSION 2.0.0 LANGUAGES CXX)
 find_package(ROCmCMakeBuildTools)
 include(ROCMCreatePackage)
 include(ROCMInstallTargets)
 include(ROCMCheckTargetIds)
+find_package(hip REQUIRED)
 
 rocm_setup_version(VERSION 2.0.0)
-project(rocshmem VERSION 2.0.0 LANGUAGES CXX)
+
+#############################################################################
+# SET GPU ARCHITECTURES
+#############################################################################
+include(cmake/rocm_local_targets.cmake)
+
+set(DEFAULT_GPUS
+    gfx90a;
+    gfx942)
+if (hip_VERSION VERSION_GREATER_EQUAL 7)
+  list(APPEND DEFAULT_GPUS
+    gfx950)
+endif()
+
+if (BUILD_LOCAL_GPU_TARGET_ONLY)
+  message(STATUS "Building only for local GPU target")
+  if (COMMAND rocm_local_targets)
+    rocm_local_targets(DEFAULT_GPUS)
+  else()
+    message(WARNING "Unable to determine local GPU targets. Falling back to default GPUs.")
+  endif()
+endif()
+
+set(DEFAULT_GPU_TARGETS "${DEFAULT_GPUS}" CACHE STRING
+    "Target default GPUs if GPU_TARGETS is not defined.")
+
+if (COMMAND rocm_check_target_ids)
+  message(STATUS "Checking for ROCm support for GPU targets: " "${DEFAULT_GPU_TARGETS}")
+  rocm_check_target_ids(SUPPORTED_GPUS TARGETS ${DEFAULT_GPU_TARGETS})
+else()
+  message(WARNING "Unable to check for supported GPU targets.")
+  set(SUPPORTED_GPUS ${DEFAULT_GPU_TARGETS})
+endif()
+
+set(GPU_TARGETS "${SUPPORTED_GPUS}" CACHE STRING "GPU architectures to compile for")
+
+message(STATUS "Compiling for ${GPU_TARGETS}")
 
 ###############################################################################
 # CREATE ROCSHMEM LIBRARY
@@ -115,42 +146,9 @@ if (NOT BUILD_TESTS_ONLY)
   add_subdirectory(src)
 
   #############################################################################
-  # SET GPU ARCHITECTURES
-  #############################################################################
-  if (BUILD_LOCAL_GPU_TARGET_ONLY)
-    message(STATUS "Building only for local GPU target")
-    if (COMMAND rocm_local_targets)
-      rocm_local_targets(DEFAULT_GPUS)
-    else()
-      message(WARNING "Unable to determine local GPU targets. Falling back to default GPUs.")
-    endif()
-  endif()
-
-  if (GPU_TARGETS)
-    set(DEFAULT_GPUS "${GPU_TARGETS}")
-  endif()
-  if (COMMAND rocm_check_target_ids)
-    message(STATUS "Checking for ROCm support for GPU targets: " "${DEFAULT_GPUS}")
-    rocm_check_target_ids(SUPPORTED_GPUS TARGETS ${DEFAULT_GPUS})
-  else()
-    message(WARNING "Unable to check for supported GPU targets. Falling back to default GPUs.")
-    set(SUPPORTED_GPUS ${DEFAULT_GPUS})
-  endif()
-
-  set(COMPILING_TARGETS "${SUPPORTED_GPUS}" CACHE STRING "GPU targets to compile for.")
-  message(STATUS "Compiling for ${COMPILING_TARGETS}")
-
-  foreach (target ${COMPILING_TARGETS})
-    list(APPEND static_link_flags --offload-arch=${target})
-  endforeach()
-  list(JOIN static_link_flags " " flags_str)
-  add_compile_options(${flags_str})
-
-  #############################################################################
   # PACKAGE DEPENDENCIES
   #############################################################################
   find_package(MPI REQUIRED)
-  find_package(hip REQUIRED)
   find_package(hsa-runtime64 REQUIRED)
 
   include(cmake/find_ibverbs.cmake)
