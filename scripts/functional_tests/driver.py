@@ -118,7 +118,7 @@ def parse_command_line():
     parser.add_argument('--client_binary_path',
                         dest='client_binary_path',
                         type=str,
-                        default=os.getcwd()+'/build/rocshmem_example_driver')
+                        default=os.getcwd()+'/build/rocshmem_functional_tests')
 
     parser.add_argument('--output_directory_path',
                         dest='output_directory_path',

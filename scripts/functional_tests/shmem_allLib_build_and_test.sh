@@ -25,7 +25,7 @@
 #!/bin/bash
 ###############################################
 # Script : shmem_allLib_build_and_test.sh
-# Description : the script is to build and execute test for 
+# Description : the script is to build and execute test for
 #               given libraries as parameter to the script.
 #               the script used in math_ci jenkins pipeline
 # version 1.0 (Version 1)
@@ -91,12 +91,12 @@ do
   esac
 
   if [ "$libnm" != "" ] #process only if libname found
-  then 
+  then
       echo "+-------------------------------------------------------------------------------------------------+"
       echo `date +%Y%m%d%H%M%S`" ==> Start | $threadType - build_configs/$libnm <=="
       echo "starting with params==> $libnm ; $libBuildDir ; $threadType"
       echo
-    
+
       echo "Library build at ==> "$libBuildDir
 
       mkdir $libBuildDir
@@ -110,9 +110,9 @@ do
         ROC_NET_CPU_QUEUE=1
         UCX_TLS=rc
         #echo $ROCSHMEM_RO"--"$ROC_NET_CPU_QUEUE "--"$UCX_TLS
-        ../scripts/functional_tests/driver.sh tests/functional_tests/rocshmem_example_driver $threadType .
+        ../scripts/functional_tests/driver.sh tests/functional_tests/rocshmem_functional_tests $threadType .
       else
-        ../scripts/functional_tests/driver.sh tests/functional_tests/rocshmem_example_driver $threadType .
+        ../scripts/functional_tests/driver.sh tests/functional_tests/rocshmem_functional_tests $threadType .
       fi
 
       if [ $? -ne 0 ]
@@ -133,7 +133,7 @@ do
   libBuildDir=""
   threadType=""
 done
-echo 
+echo
 echo "Script execution ==> $0 <== is done"
-echo 
+echo
 
