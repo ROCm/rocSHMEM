@@ -1,5 +1,7 @@
 /******************************************************************************
- * Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) Advanced Micro Devices, Inc. All rights reserved.
+ *
+ * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -13,7 +15,7 @@
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
@@ -23,7 +25,9 @@
 #define LIBRARY_SRC_HOST_HOST_TEMPLATES_HPP_
 
 #include <utility>
+#include <cassert>
 
+#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "host_helpers.hpp"
 #include "memory/window_info.hpp"
 #include "team.hpp"
@@ -99,7 +103,7 @@ inline MPI_Datatype HostInterface::get_mpi_type() {
 
 #define GET_MPI_TYPE(T, MPI_T)                                    \
   template <>                                                     \
-  inline MPI_Datatype HostInterface::get_mpi_type<T>() {          \
+  inline MPI_Datatype HostInterface::get_mpi_type<T>() { \
     return MPI_T;                                                 \
   }
 
@@ -135,8 +139,13 @@ void HostInterface::amo_cas(void* dst, T value, T cond, int pe, WindowInfo* wind
 
 template <typename T>
 T HostInterface::amo_fetch_add(void* dst, T value, int pe, WindowInfo* window_info) {
+  WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
+  if (!window_info_mpi) {
+    abort();
+  }
+
   MPI_Aint offset{compute_offset(dst, window_info->get_start(), window_info->get_end())};
-  MPI_Win win{window_info->get_win()};
+  MPI_Win win{window_info_mpi->get_win()};
   MPI_Datatype mpi_type{get_mpi_type<T>()};
   T ret{};
   MPI_Fetch_and_op(&value, &ret, mpi_type, pe, offset, MPI_SUM, win);
@@ -146,8 +155,13 @@ T HostInterface::amo_fetch_add(void* dst, T value, int pe, WindowInfo* window_in
 
 template <typename T>
 T HostInterface::amo_fetch_cas(void* dst, T value, T cond, int pe, WindowInfo* window_info) {
+  WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
+  if (!window_info_mpi) {
+    abort();
+  }
+
   MPI_Aint offset{compute_offset(dst, window_info->get_start(), window_info->get_end())};
-  MPI_Win win{window_info->get_win()};
+  MPI_Win win{window_info_mpi->get_win()};
   MPI_Datatype mpi_type{get_mpi_type<T>()};
   T ret{};
   MPI_Compare_and_swap(&value, &cond, &ret, mpi_type, pe, offset, win);
@@ -196,9 +210,16 @@ inline int HostInterface::test_and_compare(MPI_Aint offset, MPI_Datatype mpi_typ
 
 template <typename T>
 void HostInterface::wait_until(T *ivars, int cmp, T val, WindowInfo* window_info) {
+  WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
+  if (!window_info_mpi) {
+    abort();
+  }
+  DPRINTF("Function: host_wait_until\n");
+
   MPI_Aint offset{compute_offset(ivars, window_info->get_start(), window_info->get_end())};
+
   MPI_Datatype mpi_type{get_mpi_type<T>()};
-  MPI_Win win{window_info->get_win()};
+  MPI_Win win{window_info_mpi->get_win()};
 
   while (1) {
     int cond_satisfied{test_and_compare(offset, mpi_type, cmp, val, win)};
@@ -233,7 +254,7 @@ inline size_t status_entry(size_t nelems, const int *status) {
 
 template <typename T>
 size_t HostInterface::wait_until_any(T* ivars, size_t nelems, const int *status, int cmp, T val, WindowInfo* window_info) {
-  if (!nelems) { return SIZE_MAX; }
+  if (!nelems) { return SIZE_MAX;  }
   size_t pos{status_entry(nelems, status)};
   if (pos == nelems) { return SIZE_MAX; }
 
@@ -289,9 +310,14 @@ size_t HostInterface::wait_until_some(T* ivars, size_t nelems, size_t* indices, 
 
 template <typename T>
 int HostInterface::test(T* ivars, int cmp, T val, WindowInfo* window_info) {
+  WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
+  if (!window_info_mpi) {
+    abort();
+  }
+
   MPI_Aint offset{compute_offset(ivars, window_info->get_start(), window_info->get_end())};
   MPI_Datatype mpi_type{get_mpi_type<T>()};
-  return test_and_compare(offset, mpi_type, cmp, val, window_info->get_win());
+  return test_and_compare(offset, mpi_type, cmp, val, window_info_mpi->get_win());
 }
 
 }  // namespace rocshmem

@@ -87,7 +87,7 @@ class Team {
   /**
    * @brief Destructor.
    */
-  virtual ~Team() {};
+  virtual ~Team();
 
   /**
    * @brief Returns the corresponding PE in team world.

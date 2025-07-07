@@ -1,5 +1,7 @@
 /******************************************************************************
- * Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) Advanced Micro Devices, Inc. All rights reserved.
+ *
+ * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -13,7 +15,7 @@
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
@@ -25,6 +27,8 @@
 
 #include "host.hpp"
 #include "memory/window_info.hpp"
+
+#include <cassert>
 
 namespace rocshmem {
 
@@ -42,13 +46,11 @@ inline MPI_Aint HostInterface::compute_offset(const void* dest, void* win_start,
 }
 
 inline void HostInterface::complete_all(MPI_Win win) {
-#ifndef GPUIB_BNXT
   MPI_Win_flush_all(win); /* RMA operations */
   MPI_Win_sync(win);      /* memory stores */
-#endif
 }
 
-inline void HostInterface::initiate_put(void* dest, const void* source, size_t nelems, int pe, WindowInfo* window_info) {
+inline void HostInterface::initiate_put(void* dest, const void* source, size_t nelems, int pe, WindowInfoMPI* window_info) {
   MPI_Win win{window_info->get_win()};
   void* win_start{window_info->get_start()};
   void* win_end{window_info->get_end()};

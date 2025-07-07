@@ -1,5 +1,7 @@
 /******************************************************************************
- * Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) Advanced Micro Devices, Inc. All rights reserved.
+ *
+ * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -13,7 +15,7 @@
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
@@ -28,7 +30,8 @@
  * Defines the HostInterface class.
  *
  * The file contains the HostInterface class that defines all the
- * host-facing functions that will be used by all host contexts.
+ * host-facing functions that will be used by all host contexts of
+ * any backend type.
  */
 
 #include <mpi.h>
@@ -38,6 +41,7 @@
 #include "rocshmem/rocshmem.hpp"
 #include "memory/symmetric_heap.hpp"
 #include "memory/window_info.hpp"
+#include "../bootstrap/bootstrap.hpp"
 
 namespace rocshmem {
 
@@ -55,6 +59,7 @@ class HostContextWindowInfo {
    * @param[in] team_info information about participating PEs
    */
   HostContextWindowInfo(MPI_Comm comm_world, SymmetricHeap* heap);
+  HostContextWindowInfo(SymmetricHeap* heap);
 
   /**
    * @brief Destructor
@@ -100,9 +105,11 @@ class HostContextWindowInfo {
 class HostInterface {
  public:
   /**
-   * @brief Primary constructor
+   * @brief Primary constructors
    */
   HostInterface(MPI_Comm rocshmem_comm, SymmetricHeap* heap);
+
+  HostInterface(TcpBootstrap *bootstrap, SymmetricHeap* heap);
 
   /**
    * @brief Destructor
@@ -183,7 +190,7 @@ class HostInterface {
   /**************************************************************************
    **************************** INTERNAL METHODS ****************************
    *************************************************************************/
-  void initiate_put(void* dest, const void* source, size_t nelems, int pe, WindowInfo* window_info);
+  void initiate_put(void* dest, const void* source, size_t nelems, int pe, WindowInfoMPI* window_info);
 
   void complete_all(MPI_Win win);
 
@@ -208,7 +215,12 @@ class HostInterface {
   /**
    * @brief Global MPI communicator for those host API
    */
-  MPI_Comm host_comm_world_{};
+  MPI_Comm host_comm_world_{MPI_COMM_NULL};
+
+  /**
+   * @brief Bootstrap object used in the non-mpi workloads
+   */
+  TcpBootstrap *host_bootstrap_{nullptr};
 
   /**
    * @brief Duplicate of this processing element's id within global rank
