@@ -215,7 +215,7 @@ __device__ void QueuePair::poll_wave_cqes(uint64_t activemask) {
    */
   if (((cq_pos - cq_dbpos) & cq_mask) >= 100) {
     cq_dbpos = cq_pos;
-    __atomic_store_n(cq_dbreg, cq_dbval | (cq_mask & cq_dbpos), __ATOMIC_RELAXED);
+    __atomic_store_n(cq_dbreg, cq_dbval | (cq_mask & cq_dbpos), __ATOMIC_SEQ_CST); //TODO:maybe relaxed?
   }
 
   sq_msn = msn;
@@ -255,7 +255,7 @@ __device__ void QueuePair::ring_doorbell(uint32_t pos) {
 #else // !GPUIB_IONIC
 __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint64_t my_sq_counter) {
   swap_endian_store(const_cast<uint32_t*>(dbrec), (uint32_t)my_sq_counter);
-  __atomic_signal_fence(__ATOMIC_RELAXED);
+  __atomic_signal_fence(__ATOMIC_SEQ_CST);
 
   __hip_atomic_store(db.ptr, db_val, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
   uint64_t db_uint = __hip_atomic_load(&db.uint, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
@@ -335,7 +335,7 @@ __device__ void QueuePair::quiet() {
       __hip_atomic_fetch_max(&wqe_broadcast[wavefront_id], wqe_id, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_WORKGROUP);
       uint8_t mlx5_invld_bits = MLX5_CQE_INVALID << 4 | owner_bit;
       *((volatile uint8_t*)&cqe_entry->op_own) = mlx5_invld_bits;
-      __atomic_signal_fence(__ATOMIC_RELAXED);
+      __atomic_signal_fence(__ATOMIC_SEQ_CST);
     }
     if (is_leader) {
       uint64_t completed {0};
@@ -344,7 +344,7 @@ __device__ void QueuePair::quiet() {
       } while (completed != wave_cq_consumer);
 
       swap_endian_store(const_cast<uint32_t*>(cq_dbrec), (uint32_t)(wave_cq_consumer + quiet_amount));
-      __atomic_signal_fence(__ATOMIC_RELAXED);
+      __atomic_signal_fence(__ATOMIC_SEQ_CST);
 
       uint64_t sunk_wqe_id = wqe_broadcast[wavefront_id];
       __hip_atomic_fetch_max(&sq_sunk, sunk_wqe_id, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
@@ -438,7 +438,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   seg_build.update_ctrl_seg(my_sq_counter, opcode, 0, qp_num, MLX5_WQE_CTRL_CQ_UPDATE, 3, 0, 0);
   seg_build.update_raddr_seg(raddr, rkey);
   seg_build.update_data_seg(laddr, size, lkey);
-  __atomic_signal_fence(__ATOMIC_RELAXED);
+  __atomic_signal_fence(__ATOMIC_SEQ_CST);
 
   if (is_leader) {
     uint64_t db_touched {0};
@@ -511,7 +511,7 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   if (fetching) {
     quiet_internal(activemask, cons);
     ret = wave_fetch_atomic[my_logical_lane_id];
-    __atomic_signal_fence(__ATOMIC_RELAXED);
+    __atomic_signal_fence(__ATOMIC_SEQ_CST);
     if (is_leader) {
       fetching_atomic_freelist->push_back(wave_fetch_atomic);
     }
@@ -579,7 +579,7 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   } else {
     seg_build.update_data_seg(nonfetching_atomic, 8, nonfetching_atomic_lkey);
   }
-  __atomic_signal_fence(__ATOMIC_RELAXED);
+  __atomic_signal_fence(__ATOMIC_SEQ_CST);
 
   if (is_leader) {
     uint64_t db_touched {0};
@@ -600,7 +600,7 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   uint64_t ret{0};
   if (fetching) {
     ret = wave_fetch_atomic[my_logical_lane_id];
-    __atomic_signal_fence(__ATOMIC_RELAXED);
+    __atomic_signal_fence(__ATOMIC_SEQ_CST);
     if (is_leader) {
       fetching_atomic_freelist->push_back(wave_fetch_atomic);
     }
