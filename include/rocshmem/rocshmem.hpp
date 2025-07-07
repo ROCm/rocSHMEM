@@ -65,17 +65,6 @@ constexpr char VERSION[] = "3.0.0";
  */
 __host__ void rocshmem_init(MPI_Comm comm = MPI_COMM_WORLD);
 
-
-/**
- * @brief Query rocSHMEM context from host API
- *
- * @param[out] ctx      Returns ROCSHMEM_CTX_DEFAULT device pointer that users 
- *                      can query from one instance of rocshmem host library and
- *                      use use later for dynamic module initialization in 
- *                      kernel bitcode device library in the same application
- */
-__host__ void * rocshmem_get_device_ctx();
-
 /**
  * @brief Initialize the rocSHMEM runtime and underlying transport layer
  *        with an attempt to enable the requested thread support.
