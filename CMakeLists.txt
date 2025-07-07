@@ -68,7 +68,6 @@ option(BUILD_TOOLS "Build binary tools (e.g., rocshmem_info)" ON)
 option(BUILD_LOCAL_GPU_TARGET_ONLY "Build only for GPUs detected on this machine" OFF)
 option(BUILD_CODE_COVERAGE "Build with code coverage flags (gcc only)" OFF)
 
-configure_file(cmake/rocshmem_config.h.in rocshmem_config.h)
 
 ###############################################################################
 # PROJECT
@@ -93,6 +92,43 @@ include(ROCMCheckTargetIds)
 
 rocm_setup_version(VERSION ${VERSION_STRING})
 
+#############################################################################
+# SET GPU ARCHITECTURES
+#############################################################################
+include(cmake/rocm_local_targets.cmake)
+
+set(DEFAULT_GPUS
+    gfx90a:xnack-;
+    gfx90a:xnack+;
+    gfx942:xnack-;
+    gfx942:xnack+;
+    gfx950:xnack-;
+    gfx950:xnack+)
+
+if (BUILD_LOCAL_GPU_TARGET_ONLY)
+  message(STATUS "Building only for local GPU target")
+  if (COMMAND rocm_local_targets)
+    rocm_local_targets(DEFAULT_GPUS)
+  else()
+    message(WARNING "Unable to determine local GPU targets. Falling back to default GPUs.")
+  endif()
+endif()
+
+set(DEFAULT_GPU_TARGETS "${DEFAULT_GPUS}" CACHE STRING
+    "Target default GPUs if GPU_TARGETS is not defined.")
+
+if (COMMAND rocm_check_target_ids)
+  message(STATUS "Checking for ROCm support for GPU targets: " "${DEFAULT_GPU_TARGETS}")
+  rocm_check_target_ids(SUPPORTED_GPUS TARGETS ${DEFAULT_GPU_TARGETS})
+else()
+  message(WARNING "Unable to check for supported GPU targets.")
+  set(SUPPORTED_GPUS ${DEFAULT_GPU_TARGETS})
+endif()
+
+set(GPU_TARGETS "${SUPPORTED_GPUS}" CACHE STRING "GPU architectures to compile for")
+
+message(STATUS "Compiling for ${GPU_TARGETS}")
+
 ###############################################################################
 # CREATE ROCSHMEM LIBRARY
 ###############################################################################
@@ -100,44 +136,6 @@ if (NOT BUILD_TESTS_ONLY)
   add_library(${PROJECT_NAME})
   add_library(roc::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
   add_subdirectory(src)
-
-  #############################################################################
-  # SET GPU ARCHITECTURES
-  #############################################################################
-  include(cmake/rocm_local_targets.cmake)
-
-  set(DEFAULT_GPUS
-      gfx90a:xnack-;
-      gfx90a:xnack+;
-      gfx942:xnack-;
-      gfx942:xnack+)
-
-  if (BUILD_LOCAL_GPU_TARGET_ONLY)
-    message(STATUS "Building only for local GPU target")
-    if (COMMAND rocm_local_targets)
-      rocm_local_targets(DEFAULT_GPUS)
-    else()
-      message(WARNING "Unable to determine local GPU targets. Falling back to default GPUs.")
-    endif()
-  endif()
-
-  set(GPU_TARGETS "${DEFAULT_GPUS}" CACHE STRING
-      "Target default GPUs if GPU_TARGETS is not defined.")
-
-  if (COMMAND rocm_check_target_ids)
-    message(STATUS "Checking for ROCm support for GPU targets: " "${GPU_TARGETS}")
-    rocm_check_target_ids(SUPPORTED_GPUS TARGETS ${GPU_TARGETS})
-  else()
-    message(WARNING "Unable to check for supported GPU targets.")
-    set(SUPPORTED_GPUS ${GPU_TARGETS})
-  endif()
-
-  set(COMPILING_TARGETS "${SUPPORTED_GPUS}" CACHE STRING "GPU targets to compile for.")
-  message(STATUS "Compiling for ${COMPILING_TARGETS}")
-
-  foreach (target ${COMPILING_TARGETS})
-    list(APPEND offload_flags --offload-arch=${target})
-  endforeach()
 
   #############################################################################
   # PACKAGE DEPENDENCIES
@@ -149,6 +147,9 @@ if (NOT BUILD_TESTS_ONLY)
   set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
   set(THREADS_PREFER_PTHREAD_FLAG TRUE)
   find_package(Threads REQUIRED)
+
+
+  configure_file(cmake/rocshmem_config.h.in include/rocshmem/rocshmem_config.h)
 
   #############################################################################
   # LINKING AND INCLUDE DIRECTORIES
@@ -164,7 +165,8 @@ if (NOT BUILD_TESTS_ONLY)
     ${PROJECT_NAME}
     PUBLIC
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-      $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>               # rocshmem_config.h
+      $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>            # rocshmem_config.h
+      $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include/rocshmem>   # rocshmem_config.h from rocshmem.hpp
       $<INSTALL_INTERFACE:include>
   )
 
@@ -193,7 +195,7 @@ if (NOT BUILD_TESTS_ONLY)
   )
 
   rocm_install(
-    FILES "${CMAKE_BINARY_DIR}/rocshmem_config.h"
+    FILES "${CMAKE_BINARY_DIR}/include/rocshmem/rocshmem_config.h"
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rocshmem
   )
 
