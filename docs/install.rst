@@ -23,7 +23,7 @@ Requirements
 
 * ROCm-aware Open MPI and UCX. For more information, see :ref:`install-dependencies`.
 
-* Inter-node with the Reverse Offload backend is supported only for CX7 Infiniband.
+* Inter-node communication requires MPI, and is tested with Open MPI and CX7 Infiniband NICs.
 
 Available network backends
 --------------------------
@@ -31,7 +31,7 @@ Available network backends
 rocSHMEM supports two network backends:
 
 * The **IPC (Inter-Process Communication)** backend enables fast communication between GPUs on the same host using ROCm inter-process mechanisms. It does not support inter-node communication.
-* The **RO** backend (Reverse Offload) enables communication between GPUs on different nodes through a NIC, using a host-based proxy to forward communication orders to and from the GPU. In this release, RO is the only inter-node communication backend and is built on an MPI-RMA compatibility layer.
+* The **RO (Reverse Offload)** backend enables communication between GPUs on different nodes through a NIC, using a host-based proxy to forward communication orders to and from the GPU. In this release, RO is the only inter-node communication backend and is built on an MPI-RMA compatibility layer.
 
 
 You can activate IPC and RO backends in the same rocSHMEM build. In this case, IPC handles intra-node communication, while RO handles inter-node communication. 
@@ -152,15 +152,10 @@ This is similar to the default build in ROCm 6.4.
 Installation prefix
 ^^^^^^^^^^^^^^^^^^^
 
-By default, the build scripts install the library to ``~/rocshmem``. You can customize the installation path by running:
+By default, the build scripts install the library to ``~/rocshmem``. You can customize the installation path by adding
+the desired path as the script parameter. For example, to relocate the default configuration:
 
 .. code-block:: bash
 
   ../scripts/build_configs/ro_ipc /path/to/install
-
-or alternatively for an IPC only build:
-
-.. code-block:: bash
-
-  ../scripts/build_configs/ipc_single /path/to/install
 
