@@ -28,12 +28,17 @@ Requirements
 Available network backends
 --------------------------
 
-rocSHMEM currently supports two different network backends:
+rocSHMEM supports two network backends:
 
-1. The **IPC** backend (Inter-Process Communication) supports communication between GPUs on the same host (using ROCm interprocess GPU communication mechanisms). This is the fastest backend for on-node inter-GPU communication, but it cannot communicate inter-node.
-2. The **RO** backend (Reverse-Offload) supports communication between GPUs on separate nodes connected through a NIC, using a host-based proxy to forward the communication orders to/from the GPU. In this release RO is the only inter-node communication backend, and is implemented on top of an MPI-RMA compatibility layer.
+* The **IPC (Inter-Process Communication)** backend enables fast communication between GPUs on the same host using ROCm inter-process mechanisms. It does not support inter-node communication.
+* The **RO** backend (Reverse Offload) enables communication between GPUs on different nodes through a NIC, using a host-based proxy to forward communication orders to and from the GPU. In this release, RO is the only inter-node communication backend and is built on an MPI-RMA compatibility layer.
 
-The IPC and RO backends can be activated in the same build of rocSHMEM, in which case intra-node communication will use IPC, and inter-node communication will use RO. Note that when RO is active, all atomic operations will use RO (even for intra-node communication).
+
+You can activate IPC and RO backends in the same rocSHMEM build. In this case, IPC handles intra-node communication, while RO handles inter-node communication. 
+
+.. note::
+
+  When RO is active, all atomic operations use the RO backend, even for intra-node communication.
 
 Installing from a package manager
 ---------------------------------
@@ -94,17 +99,17 @@ For more information about OpenMPI-UCX support, see
 Installing from source
 --------------------------------
 
-rocSHMEM currently has two communication backends that can be selected at build time: RO and IPC.
-The default configuration enables both backends, and will use, at runtime, IPC for intra-node communication,
-and RO for inter-node communication (rocSHMEM atomic operations always use RO in this configuration).
+You can select between two communication backends at build time for rocSHMEM: RO and IPC.
+The default configuration enables both backends, using IPC for intra-node communication
+RO for inter-node communication at runtime. In this configuration, rocSHMEM atomic operations always use the RO backend.
 
-The IPC only configuration is still possible, a benefit of this setup is that it will benefit from
-performing rocSHMEM atomic operation using the IPC backend.
+rocSHMEM also supports the IPC-only configuration, which allows atomic operations to use the IPC backend only.
 
-RO+IPC backend build
+RO and IPC backend build
 ^^^^^^^^^^^^^^^^^^^^
 
-To build and install rocSHMEM with the hybrid RO-IPC off-node,on-node backends, run:
+To build and install rocSHMEM with the hybrid RO (off-node) and IPC (on-node) backends, run:
+
 
 .. code-block:: bash
 
@@ -114,11 +119,12 @@ To build and install rocSHMEM with the hybrid RO-IPC off-node,on-node backends, 
   cd build
   ../scripts/build_configs/ro_ipc
 
-The build script passes configuration options to CMake to setup a canonical build.
+The build script passes configuration options to CMake to set up a canonical build.
 
 .. note::
 
-  The only supported and tested configuration for the RO backend is when using Open MPI and UCX with a CX7 Infiniband adapter (see :ref:`install-dependencies`). Using other configurations may be possible (notably when the MPI implementation is thread-safe and supports GPU buffers) but is considered experimental.
+  The only officially supported configuration for the RO backend uses Open MPI and UCX with a CX7 InfiniBand adapter. For more information, see :ref:`install-dependencies`. Other configurations, such as MPI implementations that are thread-safe and support GPU buffers, might work but are considered experimental.
+
 
 
 IPC only backend build
@@ -139,14 +145,14 @@ This is similar to the default build in ROCm 6.4.
 
 .. note::
 
-  The default configuration changed from IPC only in ROCm 6.4 (as built by script ``ipc_single``) to RO+IPC in ROCm 7.0 (as built by script ``ro_ipc``).
+  The default configuration changed from IPC only in ROCm 6.4 (built with the ``ipc_single`` script) to RO and IPC in ROCm 7.0 (built with the ``ro_ipc`` script).
   Other experimental configuration scripts are available in ``./scripts/build_configs``, but only ``ipc_single`` and ``ro_ipc``
-  are currently supported.
+  are officially supported.
 
 Installation prefix
 ^^^^^^^^^^^^^^^^^^^
 
-By default, the build scripts install the library in ``~/rocshmem``. You can customize the installation path by running:
+By default, the build scripts install the library to ``~/rocshmem``. You can customize the installation path by running:
 
 .. code-block:: bash
 
