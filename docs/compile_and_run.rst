@@ -84,3 +84,6 @@ You can control the behavior of rocSHMEM by using the following environment vari
     * - ROCSHMEM_UNIQUEID_WITH_MPI
       - 0
       - Defines whether rocSHMEM is expected to use MPI when using the uniqueId based initialization.
+    * - ROCSHMEM_RO_DISABLE_IPC
+      - 0
+      - Defines whether to force using the RO conduit even when IPC is available.
