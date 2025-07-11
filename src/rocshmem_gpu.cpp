@@ -92,6 +92,44 @@ __device__ void rocshmem_query_thread(int *provided) {
 
 __device__ void rocshmem_wg_finalize() {}
 
+
+/******************************************************************************
+* These host APIs use Device side symbol - ROCSHMEM_CTX_DEFAULT so it needs 
+* to stay here to avoid getting pulled into other places in compilation
+******************************************************************************/
+
+__host__ void * rocshmem_get_device_ctx() {
+  void *ctx = nullptr;
+
+  CHECK_HIP(hipMemcpyFromSymbol(&ctx, HIP_SYMBOL(ROCSHMEM_CTX_DEFAULT),
+                             sizeof(rocshmem_ctx_t)));
+  return ctx;
+
+}
+
+__host__ void *rocshmem_ptr(void * dest, int pe){
+  void * ctx = nullptr;
+  void *ret = nullptr;
+  int my_pe = rocshmem_my_pe();
+
+  CHECK_HIP(hipMemcpyFromSymbol(&ctx, HIP_SYMBOL(ROCSHMEM_CTX_DEFAULT),
+                             sizeof(rocshmem_ctx_t)));
+
+  IPCContext * IpcCtx = reinterpret_cast<IPCContext *>(ctx);
+
+  char **host_ipc_base  =(char ** ) malloc(IpcCtx->ipcImpl_.shm_size * sizeof(char **));
+  CHECK_HIP(hipMemcpy(host_ipc_base, IpcCtx->ipcImpl_.ipc_bases, IpcCtx->ipcImpl_.shm_size * sizeof(char **),
+                        hipMemcpyDeviceToHost));
+
+  void *dst = const_cast<void *>(dest);
+  uint64_t L_offset =
+      reinterpret_cast<char *>(dst) - host_ipc_base[my_pe];
+  
+  ret = host_ipc_base[pe] + L_offset;
+
+  return ret;
+}
+
 /******************************************************************************
  ************************** Default Context Wrappers **************************
  *****************************************************************************/
