@@ -107,18 +107,14 @@ __host__ void * rocshmem_get_device_ctx() {
 
 }
 
-__host__ void *rocshmem_ptr(void * dest, int pe){
-  void * ctx = nullptr;
+__host__ void * rocshmem_ptr(void * dest, int pe){
   void *ret = nullptr;
   int my_pe = rocshmem_my_pe();
 
-  CHECK_HIP(hipMemcpyFromSymbol(&ctx, HIP_SYMBOL(ROCSHMEM_CTX_DEFAULT),
-                             sizeof(rocshmem_ctx_t)));
+  Context * host_ctx = reinterpret_cast<Context *>(ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque);
 
-  IPCContext * IpcCtx = reinterpret_cast<IPCContext *>(ctx);
-
-  char **host_ipc_base  =(char ** ) malloc(IpcCtx->ipcImpl_.shm_size * sizeof(char **));
-  CHECK_HIP(hipMemcpy(host_ipc_base, IpcCtx->ipcImpl_.ipc_bases, IpcCtx->ipcImpl_.shm_size * sizeof(char **),
+  char **host_ipc_base  =(char ** ) malloc(host_ctx->ipcImpl_.shm_size * sizeof(char **));
+  CHECK_HIP(hipMemcpy(host_ipc_base, host_ctx->ipcImpl_.ipc_bases, host_ctx->ipcImpl_.shm_size * sizeof(char **),
                         hipMemcpyDeviceToHost));
 
   void *dst = const_cast<void *>(dest);
@@ -126,6 +122,8 @@ __host__ void *rocshmem_ptr(void * dest, int pe){
       reinterpret_cast<char *>(dst) - host_ipc_base[my_pe];
   
   ret = host_ipc_base[pe] + L_offset;
+
+  free(host_ipc_base);
 
   return ret;
 }
