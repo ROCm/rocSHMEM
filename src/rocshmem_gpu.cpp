@@ -107,27 +107,6 @@ __host__ void * rocshmem_get_device_ctx() {
 
 }
 
-__host__ void * rocshmem_ptr(void * dest, int pe){
-  void *ret = nullptr;
-  int my_pe = rocshmem_my_pe();
-
-  Context * host_ctx = reinterpret_cast<Context *>(ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque);
-
-  char **host_ipc_base  =(char ** ) malloc(host_ctx->ipcImpl_.shm_size * sizeof(char **));
-  CHECK_HIP(hipMemcpy(host_ipc_base, host_ctx->ipcImpl_.ipc_bases, host_ctx->ipcImpl_.shm_size * sizeof(char **),
-                        hipMemcpyDeviceToHost));
-
-  void *dst = const_cast<void *>(dest);
-  uint64_t L_offset =
-      reinterpret_cast<char *>(dst) - host_ipc_base[my_pe];
-  
-  ret = host_ipc_base[pe] + L_offset;
-
-  free(host_ipc_base);
-
-  return ret;
-}
-
 /******************************************************************************
  ************************** Default Context Wrappers **************************
  *****************************************************************************/

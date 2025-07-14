@@ -300,6 +300,27 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   backend->heap.free(ptr);
 }
 
+__host__ void * rocshmem_ptr(void * dest, int pe){
+  void *remote_ptr = nullptr;
+  int my_pe = rocshmem_my_pe();
+
+  Context * host_ctx = reinterpret_cast<Context *>(ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque);
+
+  char **host_ipc_base  =(char ** ) malloc(host_ctx->ipcImpl_.shm_size * sizeof(char **));
+  CHECK_HIP(hipMemcpy(host_ipc_base, host_ctx->ipcImpl_.ipc_bases, host_ctx->ipcImpl_.shm_size * sizeof(char **),
+                        hipMemcpyDeviceToHost));
+
+  void *dst = const_cast<void *>(dest);
+  uint64_t L_offset =
+      reinterpret_cast<char *>(dst) - host_ipc_base[my_pe];
+
+  remote_ptr = host_ipc_base[pe] + L_offset;
+
+  free(host_ipc_base);
+
+  return remote_ptr;
+}
+
 [[maybe_unused]] __host__ void rocshmem_reset_stats() {
   VERIFY_BACKEND();
   backend->reset_stats();
