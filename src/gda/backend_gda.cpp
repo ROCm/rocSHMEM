@@ -1103,6 +1103,11 @@ void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   gpu_qp->sq_mask = dvqp.sq.mask;
   gpu_qp->ionic_sq_buf = reinterpret_cast<ionic_v1_wqe *>(dvqp.sq.ptr);
 
+  strncpy(gpu_qp->dev_name,
+          qps[conn_num]->context->device->name,
+          sizeof(gpu_qp->dev_name));
+  gpu_qp->dev_name[sizeof(gpu_qp->dev_name) - 1] = 0;
+
   gpu_qp->qp_num = qps[conn_num]->qp_num;
   gpu_qp->lkey = heap_mr->lkey;
   gpu_qp->rkey = heap_rkey[conn_num % num_pes];

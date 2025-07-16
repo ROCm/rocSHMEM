@@ -323,6 +323,7 @@ class QueuePair {
 
   uint32_t inline_threshold{0};
 
+  char dev_name[24];
   uint32_t qp_num{0};
   uint32_t rkey{0};
   uint32_t lkey{0};
