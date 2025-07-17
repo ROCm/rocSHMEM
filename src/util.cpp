@@ -28,7 +28,7 @@
 #include <cstdlib>
 #include <vector>
 
-#include "rocshmem_config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 
 namespace rocshmem {
 
