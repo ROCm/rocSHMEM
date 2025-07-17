@@ -61,7 +61,7 @@ class IpcOnImpl {
 
   __host__ void ipcHostStop();
 
-  __device__ bool isIpcAvailable(int my_pe, int target_pe, int *local_target_pe) {
+  __host__ __device__ bool isIpcAvailable(int my_pe, int target_pe, int *local_target_pe) {
     if (nullptr == pes_with_ipc_avail) { return false; }
 
     for (int i=0; i<shm_size; i++) {
@@ -146,7 +146,7 @@ class IpcOffImpl {
 
   __host__ void ipcHostStop() {}
 
-  __device__ bool isIpcAvailable(int my_pe, int target_pe, int *local_target_pe) { return false; }
+  __host__ __device__ bool isIpcAvailable(int my_pe, int target_pe, int *local_target_pe) { return false; }
 
   __device__ void ipcGpuInit(Backend *rocshmem_handle, Context *ctx,
                              int thread_id) {}

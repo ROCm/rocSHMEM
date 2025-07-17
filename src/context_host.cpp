@@ -31,7 +31,22 @@ namespace rocshmem {
 __host__ Context::Context(Backend* handle, bool shareable)
     : num_pes(handle->getNumPEs()),
       my_pe(handle->getMyPE()),
-      fence_(shareable) {}
+      fence_(shareable) {
+
+  char** ipc_bases = new char*[handle->ipcImpl.shm_size];
+
+  CHECK_HIP(hipMemcpy(ipc_bases,
+                  handle->ipcImpl.ipc_bases,
+                  handle->ipcImpl.shm_size * sizeof(char *),
+                  hipMemcpyDeviceToHost));
+
+  ipcImpl_.ipc_bases = ipc_bases;
+}
+
+__host__ Context::~Context() {
+
+  delete[] ipcImpl_.ipc_bases;
+}
 
 /******************************************************************************
  ********************** CONTEXT DISPATCH IMPLEMENTATIONS **********************
@@ -91,6 +106,12 @@ __host__ void Context::quiet() {
   ctxHostStats.incStat(NUM_HOST_QUIET);
 
   HOST_DISPATCH(quiet());
+}
+
+__host__ void* Context::shmem_ptr(const void* dest, int pe) {
+  ctxHostStats.incStat(NUM_HOST_SHMEM_PTR);
+
+  HOST_DISPATCH_RET_PTR(shmem_ptr(dest, pe));
 }
 
 __host__ void Context::sync_all() {

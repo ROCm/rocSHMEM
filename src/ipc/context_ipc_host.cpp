@@ -76,6 +76,15 @@ __host__ void IPCHostContext::quiet() {
   host_interface->quiet(context_window_info);
 }
 
+__host__ void *IPCHostContext::shmem_ptr(const void *dest, int pe) {
+  void *ret = nullptr;
+  void *dst = const_cast<void *>(dest);
+    uint64_t L_offset =
+        reinterpret_cast<char *>(dst) - ipcImpl_.ipc_bases[my_pe];
+    ret = ipcImpl_.ipc_bases[pe] + L_offset;
+  return ret;
+}
+
 __host__ void IPCHostContext::sync_all() {
   host_interface->sync_all(context_window_info);
 }

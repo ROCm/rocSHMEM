@@ -59,6 +59,8 @@ class Context {
 
   __device__ Context(Backend* handle, bool shareable);
 
+  __host__ virtual ~Context();
+
   /*
    * Dispatch functions to get runtime polymorphism without 'virtual' or
    * function pointers. Each one of these guys will use 'type' to
@@ -386,6 +388,8 @@ class Context {
   __host__ void fence();
 
   __host__ void quiet();
+
+  __host__ void* shmem_ptr(const void* dest, int pe);
 
   __host__ void barrier_all();
 
