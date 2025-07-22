@@ -77,18 +77,8 @@ __device__ void GDAContext::putmem(void *dest, const void *source, size_t nelems
     return;
   }
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
-  bool need_turn {true};
-  uint64_t turns = __ballot(need_turn);
-  while (turns) {
-    uint8_t lane = __ffsll((unsigned long long)turns) - 1;
-    int pe_turn = __shfl(pe, lane);
-    if (pe_turn == pe) {
-      qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
-      qps[pe].quiet();
-      need_turn = false;
-    }
-    turns = __ballot(need_turn);
-  }
+  qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
+  qps[pe].quiet();
 }
 
 __device__ void GDAContext::getmem(void *dest, const void *source, size_t nelems,
@@ -101,18 +91,8 @@ __device__ void GDAContext::getmem(void *dest, const void *source, size_t nelems
     return;
   }
   uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
-  bool need_turn {true};
-  uint64_t turns = __ballot(need_turn);
-  while (turns) {
-    uint8_t lane = __ffsll((unsigned long long)turns) - 1;
-    int pe_turn = __shfl(pe, lane);
-    if (pe_turn == pe) {
-      qps[pe].get_nbi(dest, base_heap[pe] + L_offset, nelems, pe);
-      qps[pe].quiet();
-      need_turn = false;
-    }
-    turns = __ballot(need_turn);
-  }
+  qps[pe].get_nbi(dest, base_heap[pe] + L_offset, nelems, pe);
+  qps[pe].quiet();
 }
 
 __device__ void GDAContext::putmem_nbi(void *dest, const void *source,
@@ -124,17 +104,7 @@ __device__ void GDAContext::putmem_nbi(void *dest, const void *source,
     return;
   }
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
-  bool need_turn {true};
-  uint64_t turns = __ballot(need_turn);
-  while (turns) {
-    uint8_t lane = __ffsll((unsigned long long)turns) - 1;
-    int pe_turn = __shfl(pe, lane);
-    if (pe_turn == pe) {
-      qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
-      need_turn = false;
-    }
-    turns = __ballot(need_turn);
-  }
+  qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
 }
 
 __device__ void GDAContext::getmem_nbi(void *dest, const void *source,
@@ -147,17 +117,7 @@ __device__ void GDAContext::getmem_nbi(void *dest, const void *source,
     return;
   }
   uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
-  bool need_turn {true};
-  uint64_t turns = __ballot(need_turn);
-  while (turns) {
-    uint8_t lane = __ffsll((unsigned long long)turns) - 1;
-    int pe_turn = __shfl(pe, lane);
-    if (pe_turn == pe) {
-      qps[pe].get_nbi(dest, base_heap[pe] + L_offset, nelems, pe);
-      need_turn = false;
-    }
-    turns = __ballot(need_turn);
-  }
+  qps[pe].get_nbi(dest, base_heap[pe] + L_offset, nelems, pe);
 }
 
 __device__ void GDAContext::fence() { //TODO: optimize
@@ -174,6 +134,12 @@ __device__ void GDAContext::fence(int pe) {
 __device__ void GDAContext::quiet() {
   for (int i = 0; i < num_pes; i++) {
     qps[i].quiet();
+  }
+}
+
+__device__ void GDAContext::quiet_wave() {
+  for (int i = 0; i < num_pes; i++) {
+    qps[i].quiet(QueuePair::WAVE);
   }
 }
 
@@ -201,8 +167,8 @@ __device__ void GDAContext::putmem_wg(void *dest, const void *source,
     return;
   }
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
-  if (is_thread_zero_in_block()) {
-    qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
+  if (is_wave_zero_in_block()) {
+    qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe, QueuePair::WAVE);
     qps[pe].quiet();
   }
 }
@@ -217,8 +183,8 @@ __device__ void GDAContext::getmem_wg(void *dest, const void *source,
     return;
   }
   uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
-  if (is_thread_zero_in_block()) {
-    qps[pe].get_nbi(dest, base_heap[pe] + L_offset, nelems, pe);
+  if (is_wave_zero_in_block()) {
+    qps[pe].get_nbi(dest, base_heap[pe] + L_offset, nelems, pe, QueuePair::WAVE);
     qps[pe].quiet();
   }
 }
@@ -232,8 +198,8 @@ __device__ void GDAContext::putmem_nbi_wg(void *dest, const void *source,
     return;
   }
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
-  if (is_thread_zero_in_block()) {
-    qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
+  if (is_wave_zero_in_block()) {
+    qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe, QueuePair::WAVE);
   }
 }
 
@@ -247,8 +213,8 @@ __device__ void GDAContext::getmem_nbi_wg(void *dest, const void *source,
     return;
   }
   uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
-  if (is_thread_zero_in_block()) {
-    qps[pe].get_nbi(dest, base_heap[pe] + L_offset, nelems, pe);
+  if (is_wave_zero_in_block()) {
+    qps[pe].get_nbi(base_heap[pe] + L_offset, source, nelems, pe, QueuePair::WAVE);
   }
 }
 
@@ -261,10 +227,8 @@ __device__ void GDAContext::putmem_wave(void *dest, const void *source,
     return;
   }
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
-  if (is_thread_zero_in_wave()) {
-    qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
-    qps[pe].quiet();
-  }
+  qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe, QueuePair::WAVE);
+  qps[pe].quiet();
 }
 
 __device__ void GDAContext::getmem_wave(void *dest, const void *source,
@@ -277,10 +241,8 @@ __device__ void GDAContext::getmem_wave(void *dest, const void *source,
     return;
   }
   uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
-  if (is_thread_zero_in_wave()) {
-    qps[pe].get_nbi(dest, base_heap[pe] + L_offset, nelems, pe);
-    qps[pe].quiet();
-  }
+  qps[pe].get_nbi(dest, base_heap[pe] + L_offset, nelems, pe, QueuePair::WAVE);
+  qps[pe].quiet();
 }
 
 __device__ void GDAContext::putmem_nbi_wave(void *dest, const void *source,
@@ -292,9 +254,7 @@ __device__ void GDAContext::putmem_nbi_wave(void *dest, const void *source,
     return;
   }
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
-  if (is_thread_zero_in_wave()) {
-    qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
-  }
+  qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe, QueuePair::WAVE);
 }
 
 __device__ void GDAContext::getmem_nbi_wave(void *dest, const void *source,
@@ -307,9 +267,7 @@ __device__ void GDAContext::getmem_nbi_wave(void *dest, const void *source,
     return;
   }
   uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
-  if (is_thread_zero_in_wave()) {
-    qps[pe].get_nbi(dest, base_heap[pe] + L_offset, nelems, pe);
-  }
+  qps[pe].get_nbi(dest, base_heap[pe] + L_offset, nelems, pe, QueuePair::WAVE);
 }
 
 
