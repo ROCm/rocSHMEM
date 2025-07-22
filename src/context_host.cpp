@@ -32,20 +32,9 @@ __host__ Context::Context(Backend* handle, bool shareable)
     : num_pes(handle->getNumPEs()),
       my_pe(handle->getMyPE()),
       fence_(shareable) {
-
-  char** ipc_bases = new char*[handle->ipcImpl.shm_size];
-
-  CHECK_HIP(hipMemcpy(ipc_bases,
-                  handle->ipcImpl.ipc_bases,
-                  handle->ipcImpl.shm_size * sizeof(char *),
-                  hipMemcpyDeviceToHost));
-
-  ipcImpl_.ipc_bases = ipc_bases;
 }
 
 __host__ Context::~Context() {
-
-  delete[] ipcImpl_.ipc_bases;
 }
 
 /******************************************************************************
