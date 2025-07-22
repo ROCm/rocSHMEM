@@ -137,21 +137,18 @@ __device__ uint32_t QueuePair::reserve_sq(uint64_t activemask, uint32_t num_wqes
   return my_sq_prod;
 }
 
-__device__ uint32_t QueuePair::commit_sq(bool last, uint32_t my_sq_prod, uint32_t num_wqes, struct ionic_v1_wqe *wqe) {
+__device__ uint32_t QueuePair::commit_sq(uint64_t activemask, uint32_t my_sq_prod, uint32_t my_sq_pos, uint32_t num_wqes) {
   uint32_t dbprod = my_sq_prod + num_wqes;
 
-  if (last) {
-    // signal last wqe before the doorbell
-    wqe->base.flags |= swap_endian_val<uint16_t>(IONIC_V1_FLAG_SIG);
+  spin_lock_acquire_shared(&sq_lock, activemask);
 
-    while (__hip_atomic_load(&sq_dbprod, __ATOMIC_ACQUIRE, __HIP_MEMORY_SCOPE_AGENT) != my_sq_prod) {
-      // spin
-    }
+  if (is_first_active_lane(activemask) && ((sq_dbprod - dbprod) & (1u << 31))) {
+    sq_dbprod = dbprod;
 
     ionic_ring_doorbell(dbprod);
-
-    __hip_atomic_exchange(&sq_dbprod, dbprod, __ATOMIC_RELEASE, __HIP_MEMORY_SCOPE_AGENT);
   }
+
+  spin_lock_release_shared(&sq_lock, activemask);
 
   return dbprod;
 }
@@ -434,6 +431,15 @@ __device__ void QueuePair::ionic_post_wqe_rma(int pe, int32_t size, uintptr_t *l
   uint32_t my_sq_prod = reserve_sq(activemask, num_wqes);
   uint32_t my_sq_pos = my_sq_prod + my_logical_lane_id;
   struct ionic_v1_wqe *wqe = &ionic_sq_buf[my_sq_pos & sq_mask];
+  uint16_t wqe_flags = 0;
+
+  if (!(my_sq_pos & (sq_mask + 1))) {
+    wqe_flags |= swap_endian_val<uint16_t>(IONIC_V1_FLAG_COLOR);
+  }
+
+  if (is_last_active_lane(activemask)) {
+    wqe_flags |= swap_endian_val<uint16_t>(IONIC_V1_FLAG_SIG);
+  }
 
   // TODO why is this needed?
   if (size && !laddr && opcode == IONIC_V2_OP_RDMA_WRITE) {
@@ -443,11 +449,6 @@ __device__ void QueuePair::ionic_post_wqe_rma(int pe, int32_t size, uintptr_t *l
   wqe->base.wqe_idx = my_sq_pos;
   wqe->base.op = opcode;
   wqe->base.num_sge_key = size ? 1 : 0;
-  if (my_sq_pos & (sq_mask + 1)) {
-    wqe->base.flags = swap_endian_val<uint16_t>(0);
-  } else {
-    wqe->base.flags = swap_endian_val<uint16_t>(IONIC_V1_FLAG_COLOR);
-  }
   wqe->base.imm_data_key = swap_endian_val<uint32_t>(0);
 
   wqe->common.rdma.remote_va_high = swap_endian_val<uint32_t>(reinterpret_cast<uint64_t>(raddr) >> 32);
@@ -457,7 +458,7 @@ __device__ void QueuePair::ionic_post_wqe_rma(int pe, int32_t size, uintptr_t *l
 
   if (size) {
     if (opcode == IONIC_V2_OP_RDMA_WRITE && size <= inline_threshold) {
-      wqe->base.flags |= swap_endian_val<uint16_t>(IONIC_V1_FLAG_INL);
+      wqe_flags |= swap_endian_val<uint16_t>(IONIC_V1_FLAG_INL);
       wqe->base.num_sge_key = 0;
       if (!laddr) {
         // TODO why is this needed?
@@ -472,7 +473,9 @@ __device__ void QueuePair::ionic_post_wqe_rma(int pe, int32_t size, uintptr_t *l
     }
   }
 
-  commit_sq(is_last_active_lane(activemask), my_sq_prod, num_wqes, wqe);
+  __hip_atomic_store(&wqe->base.flags, wqe_flags, __ATOMIC_RELEASE, __HIP_MEMORY_SCOPE_AGENT);
+
+  commit_sq(activemask, my_sq_prod, my_sq_pos, num_wqes);
 }
 #endif
 
@@ -549,6 +552,7 @@ __device__ uint64_t QueuePair::ionic_post_wqe_amo(int pe, int32_t size, uintptr_
   uint32_t my_sq_prod = reserve_sq(activemask, num_wqes);
   uint32_t my_sq_pos = my_sq_prod + my_logical_lane_id;
   struct ionic_v1_wqe *wqe = &ionic_sq_buf[my_sq_pos & sq_mask];
+  uint16_t wqe_flags = 0;
   uint32_t cons;
 
   uint64_t* wave_fetch_atomic{nullptr};
@@ -563,14 +567,17 @@ __device__ uint64_t QueuePair::ionic_post_wqe_amo(int pe, int32_t size, uintptr_
     wave_fetch_atomic = (uint64_t*)__shfl((uint64_t)wave_fetch_atomic, leader_phys_lane_id);
   }
 
+  if (!(my_sq_pos & (sq_mask + 1))) {
+    wqe_flags |= swap_endian_val<uint16_t>(IONIC_V1_FLAG_COLOR);
+  }
+
+  if (is_last_active_lane(activemask)) {
+    wqe_flags |= swap_endian_val<uint16_t>(IONIC_V1_FLAG_SIG);
+  }
+
   wqe->base.wqe_idx = my_sq_pos;
   wqe->base.op = opcode;
   wqe->base.num_sge_key = 1;
-  if (my_sq_pos & (sq_mask + 1)) {
-    wqe->base.flags = swap_endian_val<uint16_t>(0);
-  } else {
-    wqe->base.flags = swap_endian_val<uint16_t>(IONIC_V1_FLAG_COLOR);
-  }
   wqe->base.imm_data_key = swap_endian_val<uint32_t>(0);
 
   wqe->atomic_v2.remote_va_high = swap_endian_val<uint32_t>(reinterpret_cast<uint64_t>(raddr) >> 32);
@@ -589,7 +596,9 @@ __device__ uint64_t QueuePair::ionic_post_wqe_amo(int pe, int32_t size, uintptr_
     wqe->atomic_v2.lkey = swap_endian_val<uint32_t>(nonfetching_atomic_lkey);
   }
 
-  cons = commit_sq(is_last_active_lane(activemask), my_sq_prod, num_wqes, wqe);
+  __hip_atomic_store(&wqe->base.flags, wqe_flags, __ATOMIC_RELEASE, __HIP_MEMORY_SCOPE_AGENT);
+
+  cons = commit_sq(activemask, my_sq_prod, my_sq_pos, num_wqes);
 
   uint64_t ret{0};
   if (fetching) {

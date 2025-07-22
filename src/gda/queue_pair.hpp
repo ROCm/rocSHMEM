@@ -208,7 +208,7 @@ class QueuePair {
    * @param wqe this thread's wqe.
    * @return doorbell producer index.
    */
-  __device__ uint32_t commit_sq(bool last, uint32_t my_sq_prod, uint32_t num_wqes, struct ionic_v1_wqe *wqe);
+  __device__ uint32_t commit_sq(uint64_t activemask, uint32_t my_sq_prod, uint32_t my_sq_pos, uint32_t num_wqes);
 
   /**
    * @brief Helper method to poll the next completion queue entry.
@@ -233,6 +233,7 @@ class QueuePair {
   uint64_t sq_dbval{0};
   uint64_t sq_mask{0};
   struct ionic_v1_wqe *ionic_sq_buf{nullptr};
+  uint32_t sq_lock{SPIN_LOCK_UNLOCKED};
   uint32_t sq_dbprod{0};
   uint32_t sq_prod{0};
   uint32_t sq_msn{0};
