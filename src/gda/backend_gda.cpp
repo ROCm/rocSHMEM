@@ -841,6 +841,7 @@ void GDABackend::modify_qps_init_to_rtr() {
     attr.ah_attr.is_global      = 1;
     attr.ah_attr.grh.hop_limit  = 1;
     attr.ah_attr.sl             = 1;
+    attr.ah_attr.grh.traffic_class = envvar::gda::traffic_class;
   }
 
   attr_mask = IBV_QP_STATE
