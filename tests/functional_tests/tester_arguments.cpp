@@ -96,11 +96,11 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
     case WAVESyncAllTestType:
     case WGSyncAllTestType:
     case SyncTestType:
-    case ShmemPtrTestType:
       min_msg_size = 8;
       max_msg_size = 8;
       break;
     case PingPongTestType:
+    case ShmemPtrTestType:
       min_msg_size = 4;
       max_msg_size = 4;
       break;

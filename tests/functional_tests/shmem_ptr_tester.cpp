@@ -57,23 +57,25 @@ __global__ void ShmemPtrTest(int loop, int skip, long long int *start_time,
 
   char *local_addr = dest;
   void *remote_addr = rocshmem_ptr((void *)local_addr, 1);
-  if (remote_addr != NULL && get_flat_id() == 0) {
+  if (remote_addr != NULL) {
     *available = 1;
   }
 
-  for (int i = 0; i < loop + skip; i++) {
-    if (i == skip) {
-      __syncthreads();
-      // Ensures all RMA calls from the skip loops are completed
-      if(is_thread_zero_in_block()) {
-        rocshmem_ctx_quiet(ctx);
+  if(*available) {
+    for (int i = 0; i < loop + skip; i++) {
+      if (i == skip) {
+        __syncthreads();
+        // Ensures all RMA calls from the skip loops are completed
+        if(is_thread_zero_in_block()) {
+          rocshmem_ctx_quiet(ctx);
+        }
+        __syncthreads();
+        // Capture the start time of each wavefront to identify the earliest one
+        wf_start_time[wf_id] = wall_clock64();
       }
-      __syncthreads();
-      // Capture the start time of each wavefront to identify the earliest one
-      wf_start_time[wf_id] = wall_clock64();
-    }
 
-    ((char *)remote_addr)[0] = '1';
+      ((char *)remote_addr)[0] = '1';
+    }
   }
 
   __syncthreads();
@@ -154,6 +156,7 @@ void ShmemPtrTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
 void ShmemPtrTester::verifyResults(size_t size) {
   if (args.myid == 0) {
     if (*_available == 0) {
+      _print_results = false;
       std::cout << "rocshmem ptr not available\n" << std::endl;
     }
   }
@@ -162,7 +165,6 @@ void ShmemPtrTester::verifyResults(size_t size) {
     int *available = (int*)(dest + buff_size);
     if(*available == 1) {
       for (size_t i = 0; i < buff_size; i++) {
-        std::cout << dest[i] << std::endl;
         if (dest[i] != '1') {
           std::cerr << "Data validation error at idx " << i << std::endl;
           std::cerr << " Got " << dest[i] << ", Expected 1 " << std::endl;

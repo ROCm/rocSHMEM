@@ -165,8 +165,11 @@ class Tester {
 
   bool *verification_error;
 
+ protected:
+  bool _print_results = true;
+
  private:
-  bool _print_header = 1;
+  bool _print_header = true;
   void print(uint64_t size);
 
   void barrier();

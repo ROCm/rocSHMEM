@@ -560,7 +560,7 @@ bool Tester::peLaunchesKernel() {
 }
 
 void Tester::print(uint64_t size) {
-  if (args.myid != 0) {
+  if (args.myid != 0 || !_print_results) {
     return;
   }
 
