@@ -300,6 +300,13 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   backend->heap.free(ptr);
 }
 
+__host__ void * rocshmem_ptr(void * dest, int pe){
+
+  Context *ctx = reinterpret_cast<Context *>(ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque);
+
+  return ctx->shmem_ptr(dest, pe);
+}
+
 [[maybe_unused]] __host__ void rocshmem_reset_stats() {
   VERIFY_BACKEND();
   backend->reset_stats();

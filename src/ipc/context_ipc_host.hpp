@@ -78,6 +78,8 @@ class IPCHostContext : public Context {
 
   __host__ void quiet();
 
+  __host__ void *shmem_ptr(const void *dest, int pe);
+
   __host__ void barrier_all();
 
   __host__ void sync_all();

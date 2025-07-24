@@ -68,12 +68,12 @@ enum class BackendType { RO_BACKEND, IPC_BACKEND };
  * @brief Device static dispatch method call with a return value.
  */
 #ifdef USE_RO
-#define DISPATCH_RET(Func)                        \
+#define DISPATCH_RET(Func)                             \
   auto ret_val = static_cast<ROContext *>(this)->Func; \
   return ret_val;
 #else
-#define DISPATCH_RET(Func)                        \
-  auto ret_val{0};                                \
+#define DISPATCH_RET(Func)                         \
+  auto ret_val{0};                                 \
   ret_val = static_cast<IPCContext *>(this)->Func; \
   return ret_val;
 #endif
@@ -86,8 +86,8 @@ enum class BackendType { RO_BACKEND, IPC_BACKEND };
   ret_val = static_cast<ROContext *>(this)->Func; \
   return ret_val;
 #else
-#define DISPATCH_RET_PTR(Func)                    \
-  void *ret_val{nullptr};                         \
+#define DISPATCH_RET_PTR(Func)                     \
+  void *ret_val{nullptr};                          \
   ret_val = static_cast<IPCContext *>(this)->Func; \
   return ret_val;
 #endif
@@ -113,12 +113,27 @@ enum class BackendType { RO_BACKEND, IPC_BACKEND };
  */
 
 #ifdef USE_RO
-#define HOST_DISPATCH_RET(Func)                       \
+#define HOST_DISPATCH_RET(Func)                            \
   auto ret_val = static_cast<ROHostContext *>(this)->Func; \
   return ret_val;
 #else
-#define HOST_DISPATCH_RET(Func)                       \
-  auto ret_val{0};                                    \
+#define HOST_DISPATCH_RET(Func)                        \
+  auto ret_val{0};                                     \
+  ret_val = static_cast<IPCHostContext *>(this)->Func; \
+  return ret_val;
+#endif
+
+/**
+ * @brief Host static dispatch method call with a return type of pointer.
+ */
+#ifdef USE_RO
+#define HOST_DISPATCH_RET_PTR(Func)                    \
+  void *ret_val{nullptr};                              \
+  ret_val = static_cast<ROHostContext *>(this)->Func;  \
+  return ret_val;
+#else
+#define HOST_DISPATCH_RET_PTR(Func)                    \
+  void *ret_val{nullptr};                              \
   ret_val = static_cast<IPCHostContext *>(this)->Func; \
   return ret_val;
 #endif

@@ -41,10 +41,30 @@ __host__ ROHostContext::ROHostContext(Backend *backend, long options)
   host_interface = b->host_interface;
 
   context_window_info = dynamic_cast<WindowInfoMPI*>(host_interface->acquire_window_context());
+
+  int *pes_with_ipc_avail = new int[backend->ipcImpl.shm_size];
+  char** ipc_bases = new char*[b->ipcImpl.shm_size];
+
+  CHECK_HIP(hipMemcpy(pes_with_ipc_avail,
+                  backend->ipcImpl.pes_with_ipc_avail,
+                  backend->ipcImpl.shm_size * sizeof(int),
+                  hipMemcpyDeviceToHost));
+
+  CHECK_HIP(hipMemcpy(ipc_bases,
+                  backend->ipcImpl.ipc_bases,
+                  backend->ipcImpl.shm_size * sizeof(char *),
+                  hipMemcpyDeviceToHost));
+
+  ipcImpl_.pes_with_ipc_avail = pes_with_ipc_avail;
+  ipcImpl_.ipc_bases = ipc_bases;
+  ipcImpl_.shm_size = backend->ipcImpl.shm_size;
+  ipcImpl_.shm_rank = backend->ipcImpl.shm_rank;
 }
 
 __host__ ROHostContext::~ROHostContext() {
   // host_interface->release_window_context(context_window_info);
+  delete[] ipcImpl_.pes_with_ipc_avail;
+  delete[] ipcImpl_.ipc_bases;
 }
 
 __host__ void ROHostContext::putmem_nbi(void *dest, const void *source,
@@ -85,6 +105,20 @@ __host__ void ROHostContext::quiet() {
   DPRINTF("Function: ro_net_host_quiet\n");
 
   host_interface->quiet(context_window_info);
+}
+
+__host__ void *ROHostContext::shmem_ptr(const void *dest, int pe) {
+  DPRINTF("Function: ro_net_host_shmem_ptr\n");
+
+  void *ret = nullptr;
+  int local_pe{-1};
+  if (ipcImpl_.isIpcAvailable(my_pe, pe, &local_pe)) {
+    void *dst = const_cast<void *>(dest);
+    uint64_t L_offset =
+        reinterpret_cast<char *>(dst) - ipcImpl_.ipc_bases[ipcImpl_.shm_rank];
+    ret = ipcImpl_.ipc_bases[local_pe] + L_offset;
+  }
+  return ret;
 }
 
 __host__ void ROHostContext::sync_all() {

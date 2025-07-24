@@ -42,9 +42,20 @@ __host__ IPCHostContext::IPCHostContext(Backend *backend,
   host_interface = b->host_interface;
 
   context_window_info = host_interface->acquire_window_context();
+
+  char** ipc_bases = new char*[b->ipcImpl.shm_size];
+
+  CHECK_HIP(hipMemcpy(ipc_bases,
+                  b->ipcImpl.ipc_bases,
+                  b->ipcImpl.shm_size * sizeof(char *),
+                  hipMemcpyDeviceToHost));
+
+  ipcImpl_.ipc_bases = ipc_bases;
 }
 
 __host__ IPCHostContext::~IPCHostContext() {
+  delete[] ipcImpl_.ipc_bases;
+
   host_interface->release_window_context(context_window_info);
 }
 
@@ -74,6 +85,15 @@ __host__ void IPCHostContext::fence() {
 
 __host__ void IPCHostContext::quiet() {
   host_interface->quiet(context_window_info);
+}
+
+__host__ void *IPCHostContext::shmem_ptr(const void *dest, int pe) {
+  void *ret = nullptr;
+  void *dst = const_cast<void *>(dest);
+    uint64_t L_offset =
+        reinterpret_cast<char *>(dst) - ipcImpl_.ipc_bases[my_pe];
+    ret = ipcImpl_.ipc_bases[pe] + L_offset;
+  return ret;
 }
 
 __host__ void IPCHostContext::sync_all() {

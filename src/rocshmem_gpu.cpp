@@ -92,6 +92,21 @@ __device__ void rocshmem_query_thread(int *provided) {
 
 __device__ void rocshmem_wg_finalize() {}
 
+
+/******************************************************************************
+* These host APIs use Device side symbol - ROCSHMEM_CTX_DEFAULT so it needs 
+* to stay here to avoid getting pulled into other places in compilation
+******************************************************************************/
+
+__host__ void * rocshmem_get_device_ctx() {
+  void *ctx = nullptr;
+
+  CHECK_HIP(hipMemcpyFromSymbol(&ctx, HIP_SYMBOL(ROCSHMEM_CTX_DEFAULT),
+                             sizeof(rocshmem_ctx_t)));
+  return ctx;
+
+}
+
 /******************************************************************************
  ************************** Default Context Wrappers **************************
  *****************************************************************************/
