@@ -98,10 +98,10 @@ __global__ void ShmemPtrTest(int loop, int skip, long long int *start_time,
   }
 
   // For data validation in remote PE
-  if(*available == 1 && get_flat_id() == 0) {
-    local_addr = dest + get_flat_grid_size();
-    int *_available = (int*)rocshmem_ptr((void *)local_addr, 1);
-    *_available = 1;
+  if( get_flat_id() == 0 ) {
+    int *store_avail = (int*)(dest + get_flat_grid_size());
+    *store_avail = *available;
+    rocshmem_ctx_int_put(ctx, store_avail, store_avail, 1, 1);
   }
 
   __syncthreads();
