@@ -200,6 +200,11 @@ TestRMAPut() {
   ExecTest  "p"                2       8            1         32
   ExecTest  "p"                2       16           128       4
 
+  ExecTest  "shmemptr"         2       1            1         8
+  ExecTest  "shmemptr"         2       1            1024      8
+  ExecTest  "shmemptr"         2       8            1         8
+  ExecTest  "shmemptr"         2       16           128       8
+
   ################################ Non-Blocking ################################
 
   ExecTest  "putnbi"           2       1            1         1048576

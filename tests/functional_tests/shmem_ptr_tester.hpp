@@ -43,7 +43,7 @@ class ShmemPtrTester : public Tester {
 
   virtual void verifyResults(size_t size) override;
 
-  char *r_buf = nullptr;
+  char *dest = nullptr;
   int *_available = nullptr;
 };
 
