@@ -201,13 +201,13 @@ void MPITransport::submitRequestsToMPI() {
       break;
     case RO_NET_BARRIER:
       barrier(queue_idx, next_element.status, true,
-              next_element.team_comm == NULL ? ro_net_comm_world : next_element.team_comm,
+              next_element.team_comm == MPI_COMM_NULL ? ro_net_comm_world : next_element.team_comm,
               true);
       DPRINTF("Submitted Barrier_all\n");
       break;
     case RO_NET_SYNC:
       barrier(queue_idx, next_element.status, true,
-              next_element.team_comm == NULL ? ro_net_comm_world : next_element.team_comm,
+              next_element.team_comm == MPI_COMM_NULL ? ro_net_comm_world : next_element.team_comm,
               false);
       DPRINTF("Submitted Sync\n");
       break;
