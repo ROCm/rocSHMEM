@@ -105,7 +105,7 @@ set(DEFAULT_GPUS
     gfx950:xnack-;
     gfx950:xnack+)
 
-if (BUILD_LOCAL_GPU_TARGET_ONLY)
+if ($ENV{BUILD_LOCAL_GPU_TARGET_ONLY} OR BUILD_LOCAL_GPU_TARGET_ONLY)
   message(STATUS "Building only for local GPU target")
   if (COMMAND rocm_local_targets)
     rocm_local_targets(DEFAULT_GPUS)
