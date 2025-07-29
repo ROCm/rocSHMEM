@@ -94,17 +94,6 @@ rocm_setup_version(VERSION ${VERSION_STRING})
 
 
 ## Check for ROCm version
-# Try to establish ROCM_PATH (for find_package)
-#==================================================================================================
-if(NOT DEFINED ROCM_PATH)
-  # Guess default location
-  set(ROCM_PATH "/opt/rocm")
-  message(WARNING "Unable to find ROCM_PATH: Falling back to ${ROCM_PATH}")
-else()
-  message(STATUS "ROCM_PATH found: ${ROCM_PATH}")
-endif()
-set(ENV{ROCM_PATH} ${ROCM_PATH})
-
 
 set(EXPLICIT_ROCM_VERSION "" CACHE STRING "Explicit ROCM version to compile to (auto detect if empty)")
 if(EXPLICIT_ROCM_VERSION)

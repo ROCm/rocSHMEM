@@ -31,6 +31,18 @@ set(CMAKE_BUILD_TYPE "Release" CACHE STRING
 ###############################################################################
 # GLOBAL COMPILE FLAGS
 ###############################################################################
+
+# Try to establish ROCM_PATH (for find_package)
+#==================================================================================================
+if(NOT DEFINED ROCM_PATH)
+  # Guess default location
+  set(ROCM_PATH "/opt/rocm")
+  message(WARNING "Unable to find ROCM_PATH: Falling back to ${ROCM_PATH}")
+else()
+  message(STATUS "ROCM_PATH found: ${ROCM_PATH}")
+endif()
+set(ENV{ROCM_PATH} ${ROCM_PATH})
+
 foreach (root ${hip_ROOT} $ENV{hip_ROOT} ${ROCM_ROOT} $ENV{ROCM_ROOT} ${ROCM_PATH} $ENV{ROCM_PATH})
   if (IS_DIRECTORY ${root})
     list(PREPEND CMAKE_PREFIX_PATH ${root})
