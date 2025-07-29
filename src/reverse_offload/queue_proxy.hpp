@@ -66,7 +66,7 @@ typedef struct queue_element {
   int datatype{-1};
   int PE_root{-1};
   volatile char *status{nullptr};
-  MPI_Comm team_comm{};
+  intptr_t team_comm{};
   union {
     size_t size;
     unsigned long long atomic_value;

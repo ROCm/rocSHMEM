@@ -152,7 +152,7 @@ __device__ void ROContext::p(T *dest, T value, int pe) {
                      reinterpret_cast<void *>(&value), sizeof(T));
   } else {
     build_queue_element(RO_NET_P, dest, &value, sizeof(T), pe, 0, 0, 0, nullptr,
-                        nullptr, (MPI_Comm)NULL, ro_net_win_id,
+                        nullptr, NULL, ro_net_win_id,
                         block_handle, true, get_status_flag(), is_default_ctx);
   }
 }
@@ -196,7 +196,7 @@ __device__ T ROContext::amo_fetch_cas(void *dst, T value, T cond, int pe) {
   build_queue_element(RO_NET_AMO_FCAS, dst, reinterpret_cast<T *>(source),
                       value, pe, 0, 0, 0,
                       reinterpret_cast<void *>(static_cast<long long>(cond)),
-                      nullptr, (MPI_Comm)NULL, ro_net_win_id, block_handle,
+                      nullptr, NULL, ro_net_win_id, block_handle,
                       true, get_status_flag(), is_default_ctx, ROCSHMEM_SUM,
                       GetROType<T>::Type);
   __threadfence();
@@ -215,7 +215,7 @@ template <typename T>
 __device__ T ROContext::amo_fetch_add(void *dst, T value, int pe) {
   auto source{get_atomic_ret_buf()};
   build_queue_element(RO_NET_AMO_FOP, dst, reinterpret_cast<T *>(source), value,
-                      pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
+                      pe, 0, 0, 0, nullptr, nullptr, NULL,
                       ro_net_win_id, block_handle, true, get_status_flag(),
                       is_default_ctx, ROCSHMEM_SUM, GetROType<T>::Type);
   __threadfence();
@@ -234,7 +234,7 @@ template <typename T>
 __device__ T ROContext::amo_swap(void *dst, T value, int pe) {
   auto source{get_atomic_ret_buf()};
   build_queue_element(RO_NET_AMO_FOP, dst, reinterpret_cast<void *>(source),
-                      value, pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
+                      value, pe, 0, 0, 0, nullptr, nullptr, NULL,
                       ro_net_win_id, block_handle, true, get_status_flag(),
                       is_default_ctx, ROCSHMEM_REPLACE, GetROType<T>::Type);
   __threadfence();
@@ -253,7 +253,7 @@ template <typename T>
 __device__ T ROContext::amo_fetch_and(void *dst, T value, int pe) {
   auto source{get_atomic_ret_buf()};
   build_queue_element(RO_NET_AMO_FOP, dst, reinterpret_cast<void *>(source),
-                      value, pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
+                      value, pe, 0, 0, 0, nullptr, nullptr, NULL,
                       ro_net_win_id, block_handle, true, get_status_flag(),
                       is_default_ctx, ROCSHMEM_AND, GetROType<T>::Type);
   __threadfence();
@@ -272,7 +272,7 @@ template <typename T>
 __device__ T ROContext::amo_fetch_or(void *dst, T value, int pe) {
   auto source{get_atomic_ret_buf()};
   build_queue_element(RO_NET_AMO_FOP, dst, reinterpret_cast<void *>(source),
-                      value, pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
+                      value, pe, 0, 0, 0, nullptr, nullptr, NULL,
                       ro_net_win_id, block_handle, true, get_status_flag(),
                       is_default_ctx, ROCSHMEM_OR, GetROType<T>::Type);
   __threadfence();
@@ -291,7 +291,7 @@ template <typename T>
 __device__ T ROContext::amo_fetch_xor(void *dst, T value, int pe) {
   auto source{get_atomic_ret_buf()};
   build_queue_element(RO_NET_AMO_FOP, dst, reinterpret_cast<void *>(source),
-                      value, pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
+                      value, pe, 0, 0, 0, nullptr, nullptr, NULL,
                       ro_net_win_id, block_handle, true, get_status_flag(),
                       is_default_ctx, ROCSHMEM_XOR, GetROType<T>::Type);
   __threadfence();
