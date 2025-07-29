@@ -110,6 +110,9 @@ enum TestType {
   TeamWAVEBarrierTestType = 70,
   WAVESyncTestType = 71,
   WGSyncTestType = 72,
+  TeamCtxInfraTestSingleType = 73,
+  TeamCtxInfraTestBlockType = 74,
+  TeamCtxInfraTestOddEvenType = 75,
 };
 
 enum OpType { PutType = 0, GetType = 1 };

@@ -106,6 +106,9 @@ declare -A TEST_NUMBERS=(
   ["teamwavebarrier"]="70"
   ["wavesync"]="71"
   ["wgsync"]="72"
+  ["teamctxsingleinfra"]="73"
+  ["teamctxblockinfra"]="74"
+  ["teamctxoddeveninfra"]="75"
 )
 
 ExecTest() {
@@ -422,7 +425,12 @@ TestOther() {
 
   # This test requires more contexts than workgroups
   export ROCSHMEM_MAX_NUM_CONTEXTS=1024
-  ExecTest  "teamctxinfra"     2       1            1
+  ExecTest  "teamctxinfra"        2       1            1
+  ExecTest  "teamctxsingleinfra"  2       1            1
+  ExecTest  "teamctxblockinfra"   4       1            1
+  ExecTest  "teamctxblockinfra"   5       1            1
+  ExecTest  "teamctxoddeveninfra" 4       1            1
+  ExecTest  "teamctxoddeveninfra" 5       1            1
   unset ROCSHMEM_MAX_NUM_CONTEXTS
 }
 

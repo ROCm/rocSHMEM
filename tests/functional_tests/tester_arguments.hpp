@@ -31,6 +31,14 @@
 #include <string>
 #include <iostream>
 
+
+enum TeamSplitType {
+  ROCSHMEM_TEST_TEAM_DUP = 0,    // Dup parent team
+  ROCSHMEM_TEST_TEAM_SINGLE,     // each PE will be its own team
+  ROCSHMEM_TEST_TEAM_BLOCK,      // split parent into two halfs
+  ROCSHMEM_TEST_TEAM_ODDEVEN,    // odd-even splitting
+};
+
 class TesterArguments {
  public:
   TesterArguments(int argc, char *argv[]);
@@ -47,7 +55,7 @@ class TesterArguments {
    */
   static void show_usage(std::string executable_name);
 
- public:
+public:
   /**
    * Arguments obtained from command line
    */
@@ -75,6 +83,8 @@ class TesterArguments {
   int skip = 10;
   int loop_large = 10;
   size_t large_message_size = 32768;
+
+  TeamSplitType team_type = ROCSHMEM_TEST_TEAM_DUP;
 };
 
 #endif

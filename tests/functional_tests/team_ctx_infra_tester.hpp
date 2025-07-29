@@ -49,6 +49,11 @@ class TeamCtxInfraTester : public Tester {
 
   char *s_buf = nullptr;
   char *r_buf = nullptr;
+
+  TeamSplitType _splitType;
+  rocshmem::rocshmem_team_t _parentTeam = rocshmem::ROCSHMEM_TEAM_WORLD;
+  int _expected_pe;
+  int _expected_n_pes;
 };
 
 #endif

@@ -113,6 +113,9 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
       min_msg_size = 8;
       break;
     case TeamCtxInfraTestType:
+    case TeamCtxInfraTestSingleType:
+    case TeamCtxInfraTestBlockType:
+    case TeamCtxInfraTestOddEvenType:
       max_msg_size = min_msg_size;
       break;
     case PutNBIMRTestType:
@@ -149,7 +152,8 @@ void TesterArguments::get_rocshmem_arguments() {
       (type != TeamFCollectTestType) && (type != TeamReductionTestType) &&
       (type != TeamBroadcastTestType) && (type != PingAllTestType) &&
       (type != TeamBarrierTestType) && (type != TeamWAVEBarrierTestType) &&
-      (type != TeamWGBarrierTestType)) {
+      (type != TeamWGBarrierTestType) && (type != TeamCtxInfraTestBlockType) &&
+      (type != TeamCtxInfraTestOddEvenType)) {
     if (numprocs != 2) {
       if (myid == 0) {
         std::cerr << "This test requires exactly two processes, we have "

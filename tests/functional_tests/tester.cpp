@@ -150,6 +150,21 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       if (rank == 0) std::cout << "Team Ctx Infra test ###" << std::endl;
       testers.push_back(new TeamCtxInfraTester(args));
       return testers;
+    case TeamCtxInfraTestSingleType:
+      if (rank == 0) std::cout << "Team Ctx Infra Single test ###" << std::endl;
+      args.team_type = ROCSHMEM_TEST_TEAM_SINGLE;
+      testers.push_back(new TeamCtxInfraTester(args));
+      return testers;
+    case TeamCtxInfraTestBlockType:
+      if (rank == 0) std::cout << "Team Ctx Infra Block test ###" << std::endl;
+      args.team_type = ROCSHMEM_TEST_TEAM_BLOCK;
+      testers.push_back(new TeamCtxInfraTester(args));
+      return testers;
+    case TeamCtxInfraTestOddEvenType:
+      if (rank == 0) std::cout << "Team Ctx Infra Odd-Even test ###" << std::endl;
+      args.team_type = ROCSHMEM_TEST_TEAM_ODDEVEN;
+      testers.push_back(new TeamCtxInfraTester(args));
+      return testers;
     case TeamCtxGetTestType:
       if (rank == 0) std::cout << "Blocking Team Ctx Gets ###" << std::endl;
       testers.push_back(new TeamCtxPrimitiveTester(args));
@@ -527,7 +542,10 @@ void Tester::execute() {
 
     barrier();
 
-    if (_type != TeamCtxInfraTestType) {
+    if (_type != TeamCtxInfraTestType       &&
+        _type != TeamCtxInfraTestSingleType &&
+        _type != TeamCtxInfraTestBlockType  &&
+        _type != TeamCtxInfraTestOddEvenType ) {
       print(size);
     }
   }
@@ -546,6 +564,8 @@ bool Tester::peLaunchesKernel() {
    */
   is_launcher = is_launcher || (_type == TeamReductionTestType) ||
                 (_type == TeamBroadcastTestType) || (_type == TeamCtxInfraTestType) ||
+                (_type == TeamCtxInfraTestSingleType) || (_type == TeamCtxInfraTestBlockType) ||
+                (_type == TeamCtxInfraTestOddEvenType) ||
                 (_type == TeamAllToAllTestType) || (_type == TeamFCollectTestType) ||
                 (_type == PingPongTestType) || (_type == BarrierAllTestType) ||
                 (_type == WAVEBarrierAllTestType) || (_type == WGBarrierAllTestType) ||
