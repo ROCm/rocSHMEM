@@ -28,6 +28,7 @@ rocSHMEM base requirements:
 * AMD GPUs
   * MI250X
   * MI300X
+  * MI350X (Requires ROCm 7.0 or later)
 * ROCm-aware Open MPI and UCX as described in
   [Building the Dependencies](#building-the-dependencies)
 
