@@ -135,9 +135,6 @@ if(${ROCM_MAJOR_VERSION} GREATER 6)
   list(APPEND DEFAULT_GPUS gfx950:xnack-;gfx950:xnack+)
 endif()
 
-
-
-
 if($ENV{BUILD_LOCAL_GPU_TARGET_ONLY})
   set(BUILD_LOCAL_GPU_TARGET_ONLY ON)
 endif()
