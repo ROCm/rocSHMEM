@@ -435,8 +435,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   outstanding_wqes[my_sq_counter % OUTSTANDING_TABLE_SIZE] = my_sq_counter;
 
   SegmentBuilder seg_build(my_sq_index, sq_buf);
-  uint8_t wqe_ctrl_flag = (my_logical_lane_id == (num_active_lanes - 1)) ? MLX5_WQE_CTRL_CQ_UPDATE : 0;
-  seg_build.update_ctrl_seg(my_sq_counter, opcode, 0, qp_num, wqe_ctrl_flag, 3, 0, 0);
+  seg_build.update_ctrl_seg(my_sq_counter, opcode, 0, qp_num, MLX5_WQE_CTRL_CQ_UPDATE, 3, 0, 0);
   seg_build.update_raddr_seg(raddr, rkey);
   seg_build.update_data_seg(laddr, size, lkey);
   __atomic_signal_fence(__ATOMIC_SEQ_CST);
@@ -572,8 +571,7 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   outstanding_wqes[my_sq_counter % OUTSTANDING_TABLE_SIZE] = my_sq_counter;
 
   SegmentBuilder seg_build(my_sq_index, sq_buf);
-  uint8_t wqe_ctrl_flag = (my_logical_lane_id == (num_active_lanes - 1)) ? MLX5_WQE_CTRL_CQ_UPDATE : 0;
-  seg_build.update_ctrl_seg(my_sq_counter, opcode, 0, qp_num, wqe_ctrl_flag, 4, 0, 0);
+  seg_build.update_ctrl_seg(my_sq_counter, opcode, 0, qp_num, MLX5_WQE_CTRL_CQ_UPDATE, 4, 0, 0);
   seg_build.update_raddr_seg(raddr, rkey);
   seg_build.update_atomic_seg(atomic_data, atomic_cmp);
   if (fetching) {
