@@ -121,7 +121,7 @@ __device__ int ROContext::reduce(rocshmem_team_t team, T *dest,
   ROTeam *team_obj{reinterpret_cast<ROTeam *>(team)};
 
   build_queue_element(RO_NET_TEAM_REDUCE, dest, const_cast<T *>(source),
-                      nreduce, 0, 0, 0, 0, nullptr, nullptr, team_obj->mpi_comm,
+                      nreduce, 0, 0, 0, 0, nullptr, nullptr, (intptr_t)team_obj->mpi_comm,
                       ro_net_win_id, block_handle, true, get_status_flag(),
                       is_default_ctx, Op, GetROType<T>::Type);
 
@@ -318,7 +318,7 @@ __device__ void ROContext::broadcast(rocshmem_team_t team, T *dest,
 
   build_queue_element(RO_NET_TEAM_BROADCAST, dest, const_cast<T *>(source),
                       nelems, 0, 0, 0, pe_root, nullptr, nullptr,
-                      team_obj->mpi_comm, ro_net_win_id, block_handle, true,
+                      (intptr_t)team_obj->mpi_comm, ro_net_win_id, block_handle, true,
                       get_status_flag(), is_default_ctx, ROCSHMEM_SUM,
                       GetROType<T>::Type);
 
@@ -337,7 +337,7 @@ __device__ void ROContext::alltoall(rocshmem_team_t team, T *dest,
 
   build_queue_element(RO_NET_ALLTOALL, dest, const_cast<T *>(source), nelems, 0,
                       0, 0, 0, team_obj->ata_buffer, nullptr,
-                      team_obj->mpi_comm, ro_net_win_id, block_handle, true,
+                      (intptr_t)team_obj->mpi_comm, ro_net_win_id, block_handle, true,
                       get_status_flag(), is_default_ctx, ROCSHMEM_SUM,
                       GetROType<T>::Type);
 
@@ -356,7 +356,7 @@ __device__ void ROContext::fcollect(rocshmem_team_t team, T *dest,
 
   build_queue_element(RO_NET_FCOLLECT, dest, const_cast<T *>(source), nelems, 0,
                       0, 0, 0, team_obj->ata_buffer, nullptr,
-                      team_obj->mpi_comm, ro_net_win_id, block_handle, true,
+                      (intptr_t)team_obj->mpi_comm, ro_net_win_id, block_handle, true,
                       get_status_flag(), is_default_ctx, ROCSHMEM_SUM,
                       GetROType<T>::Type);
 

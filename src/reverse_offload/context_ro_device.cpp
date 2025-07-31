@@ -199,7 +199,7 @@ __device__ void ROContext::barrier_all_wg() {
 __device__ void ROContext::barrier(rocshmem_team_t team) {
   ROTeam *team_obj = reinterpret_cast<ROTeam *>(team);
   build_queue_element(RO_NET_BARRIER, nullptr, nullptr, 0, 0, 0, 0, 0, nullptr,
-                      nullptr, team_obj->mpi_comm, ro_net_win_id, block_handle,
+                      nullptr, (intptr_t)team_obj->mpi_comm, ro_net_win_id, block_handle,
                       true, get_status_flag(), is_default_ctx);
 }
 
@@ -207,7 +207,7 @@ __device__ void ROContext::barrier_wave(rocshmem_team_t team) {
   ROTeam *team_obj = reinterpret_cast<ROTeam *>(team);
   if (is_thread_zero_in_wave()) {
     build_queue_element(RO_NET_BARRIER, nullptr, nullptr, 0, 0, 0, 0, 0, nullptr,
-                        nullptr, team_obj->mpi_comm, ro_net_win_id, block_handle,
+                        nullptr, (intptr_t)team_obj->mpi_comm, ro_net_win_id, block_handle,
                         true, get_status_flag(), is_default_ctx);
   }
 }
@@ -216,7 +216,7 @@ __device__ void ROContext::barrier_wg(rocshmem_team_t team) {
   ROTeam *team_obj = reinterpret_cast<ROTeam *>(team);
   if (is_thread_zero_in_block()) {
     build_queue_element(RO_NET_BARRIER, nullptr, nullptr, 0, 0, 0, 0, 0, nullptr,
-                        nullptr, team_obj->mpi_comm, ro_net_win_id, block_handle,
+                        nullptr, (intptr_t)team_obj->mpi_comm, ro_net_win_id, block_handle,
                         true, get_status_flag(), is_default_ctx);
   }
   __syncthreads();
@@ -248,7 +248,7 @@ __device__ void ROContext::sync_all_wg() {
 __device__ void ROContext::sync(rocshmem_team_t team) {
   ROTeam *team_obj = reinterpret_cast<ROTeam *>(team);
   build_queue_element(RO_NET_SYNC, nullptr, nullptr, 0, 0, 0, 0, 0, nullptr,
-                      nullptr, team_obj->mpi_comm, ro_net_win_id, block_handle,
+                      nullptr, (intptr_t)team_obj->mpi_comm, ro_net_win_id, block_handle,
                       true, get_status_flag(), is_default_ctx);
 }
 
@@ -256,7 +256,7 @@ __device__ void ROContext::sync_wave(rocshmem_team_t team) {
   ROTeam *team_obj = reinterpret_cast<ROTeam *>(team);
   if (is_thread_zero_in_wave()) {
     build_queue_element(RO_NET_SYNC, nullptr, nullptr, 0, 0, 0, 0, 0, nullptr,
-                        nullptr, team_obj->mpi_comm, ro_net_win_id, block_handle,
+                        nullptr, (intptr_t)team_obj->mpi_comm, ro_net_win_id, block_handle,
                         true, get_status_flag(), is_default_ctx);
   }
 }
@@ -265,7 +265,7 @@ __device__ void ROContext::sync_wg(rocshmem_team_t team) {
   ROTeam *team_obj = reinterpret_cast<ROTeam *>(team);
   if (is_thread_zero_in_block()) {
     build_queue_element(RO_NET_SYNC, nullptr, nullptr, 0, 0, 0, 0, 0, nullptr,
-                        nullptr, team_obj->mpi_comm, ro_net_win_id, block_handle,
+                        nullptr, (intptr_t)team_obj->mpi_comm, ro_net_win_id, block_handle,
                         true, get_status_flag(), is_default_ctx);
   }
   __syncthreads();
