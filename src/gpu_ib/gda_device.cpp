@@ -994,11 +994,13 @@ GDADevice::RtrState GDADevice::rtr(dest_info_t* dest, uint8_t port) {
   rtr.exp_qp_attr.ah_attr.port_num = port;
   if (ib_state->portinfo.link_layer == IBV_LINK_LAYER_INFINIBAND) {
     rtr.exp_qp_attr.ah_attr.dlid = dest->lid;
+//    printf("IB!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
   } else {
     rtr.exp_qp_attr.ah_attr.is_global = 1;
     rtr.exp_qp_attr.ah_attr.grh.dgid = dest->gid;
     rtr.exp_qp_attr.ah_attr.grh.sgid_index = GPUIB_DEFAULT_GID;
     rtr.exp_qp_attr.ah_attr.grh.hop_limit = 1;
+//    printf("ROCE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
   }
   rtr.exp_attr_mask |= IBV_QP_DEST_QPN | IBV_QP_RQ_PSN | IBV_QP_MAX_DEST_RD_ATOMIC | IBV_QP_MIN_RNR_TIMER;
   return rtr;

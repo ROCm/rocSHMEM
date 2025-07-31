@@ -55,7 +55,7 @@ extern "C" {
 #define GPUIB_OP_ATOMIC_FA   IONIC_V2_OP_ATOMIC_FA
 #define GPUIB_OP_ATOMIC_CS   IONIC_V2_OP_ATOMIC_CS
 #elif !defined(GPUIB_BNXT)
-#define GPUIB_DEFAULT_GID    0
+#define GPUIB_DEFAULT_GID    3
 #define GPUIB_MAX_ATOMIC     1
 #define GPUIB_OP_RDMA_WRITE  MLX5_OPCODE_RDMA_WRITE
 #define GPUIB_OP_ATOMIC_FA   MLX5_OPCODE_ATOMIC_FA
@@ -122,6 +122,14 @@ class QueuePair {
    * @param[in] atomic_op The atomic operation to perform.
    */
   __device__ void atomic_nofetch(void *dest, int64_t value, int64_t cond, int pe, uint8_t atomic_op);
+
+  /**
+   * @brief Helper method to extract syndrome field from cqe.
+   *
+   * @param[in] cq_entry Completion queue entry.
+   */
+  __device__ uint8_t get_cq_error_syndrome(mlx5_cqe64 *cq_entry);
+
 
   char *const *base_heap{nullptr};
 

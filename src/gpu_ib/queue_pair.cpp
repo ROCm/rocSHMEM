@@ -271,6 +271,11 @@ __device__ void QueuePair::quiet() {
   quiet_internal(get_same_qp_lane_mask(), sq_prod);
 }
 #else // !GPUIB_IONIC
+__device__ uint8_t QueuePair::get_cq_error_syndrome(mlx5_cqe64 *cqe_entry) {
+  mlx5_err_cqe *cqe_err = reinterpret_cast<mlx5_err_cqe *>(cqe_entry);
+  return cqe_err->syndrome;
+}
+
 __device__ void QueuePair::quiet() {
   constexpr size_t BROADCAST_SIZE = 1024 / __AMDGCN_WAVEFRONT_SIZE;
   __shared__ uint64_t wqe_broadcast[BROADCAST_SIZE];
@@ -318,7 +323,29 @@ __device__ void QueuePair::quiet() {
       uint8_t owner_bit = (my_cq_consumer >> cq_log_cnt) & 1;
       bool vote_failed{true};
 
+//      const uint8_t *d = reinterpret_cast<const uint8_t*>(const_cast<mlx5_cqe64*>(cqe_entry));
+
       while (vote_failed) {
+//        gpu_dprintf(
+//         "Observing CQE at address %p at index %u\n"
+//         "%02x %02x %02x %02x %02x %02x %02x %02x "
+//         "%02x %02x %02x %02x %02x %02x %02x %02x "
+//         "%02x %02x %02x %02x %02x %02x %02x %02x "
+//         "%02x %02x %02x %02x %02x %02x %02x %02x "
+//         "%02x %02x %02x %02x %02x %02x %02x %02x "
+//         "%02x %02x %02x %02x %02x %02x %02x %02x "
+//         "%02x %02x %02x %02x %02x %02x %02x %02x "
+//         "%02x %02x %02x %02x %02x %02x %02x %02x\n",
+//         cqe_entry, my_cq_index,
+//          d[0],  d[1],  d[2],  d[3],  d[4],  d[5],  d[6],  d[7],
+//          d[8],  d[9], d[10], d[11], d[12], d[13], d[14], d[15],
+//         d[16], d[17], d[18], d[19], d[20], d[21], d[22], d[23],
+//         d[24], d[25], d[26], d[27], d[28], d[29], d[30], d[31],
+//         d[32], d[33], d[34], d[35], d[36], d[37], d[38], d[39],
+//         d[40], d[41], d[42], d[43], d[44], d[45], d[46], d[47],
+//         d[48], d[49], d[50], d[51], d[52], d[53], d[54], d[55],
+//         d[56], d[57], d[58], d[59], d[60], d[61], d[62], d[63]);
+
         op_own = *((volatile uint8_t*)&cqe_entry->op_own);
         bool my_ownership_vote = (op_own & 1) == owner_bit;
         bool my_opcode_vote = (op_own >> 4) != MLX5_CQE_INVALID;
@@ -326,7 +353,12 @@ __device__ void QueuePair::quiet() {
         vote_failed = __popcll(votes) < quiet_amount;
         if (!vote_failed) {
           be_wqe_counter = *((volatile uint16_t*)&cqe_entry->wqe_counter);
-        }
+	}
+//        } else {
+//          uint8_t syndrome = get_cq_error_syndrome(const_cast<mlx5_cqe64*>(cqe_entry));
+//          mlx5_err_cqe *cqe_err = reinterpret_cast<mlx5_err_cqe*>(const_cast<mlx5_cqe64*>(cqe_entry));
+//          gpu_dprintf("QUIET ERROR: signature %d opcode_qpn %x wqe_cnt %hx \n", syndrome, cqe_err->s_wqe_opcode_qpn, cqe_err->wqe_counter);
+//        }
       }
 
       uint16_t wqe_counter;
@@ -336,6 +368,30 @@ __device__ void QueuePair::quiet() {
       uint8_t mlx5_invld_bits = MLX5_CQE_INVALID << 4 | owner_bit;
       *((volatile uint8_t*)&cqe_entry->op_own) = mlx5_invld_bits;
       __atomic_signal_fence(__ATOMIC_SEQ_CST);
+
+//      uint8_t syndrome = get_cq_error_syndrome(const_cast<mlx5_cqe64*>(cqe_entry));
+//      mlx5_err_cqe *cqe_err = reinterpret_cast<mlx5_err_cqe*>(const_cast<mlx5_cqe64*>(cqe_entry));
+//      gpu_dprintf("QUIET ERROR: signature %d opcode_qpn %x wqe_cnt %hx \n", syndrome, cqe_err->s_wqe_opcode_qpn, cqe_err->wqe_counter);
+//      gpu_dprintf(
+//         "Clearing CQE at address %p at index %lu\n"
+//         "%02x %02x %02x %02x %02x %02x %02x %02x "
+//         "%02x %02x %02x %02x %02x %02x %02x %02x "
+//         "%02x %02x %02x %02x %02x %02x %02x %02x "
+//         "%02x %02x %02x %02x %02x %02x %02x %02x "
+//         "%02x %02x %02x %02x %02x %02x %02x %02x "
+//         "%02x %02x %02x %02x %02x %02x %02x %02x "
+//         "%02x %02x %02x %02x %02x %02x %02x %02x "
+//         "%02x %02x %02x %02x %02x %02x %02x %02x\n",
+//         cqe_entry, my_cq_index,
+//          d[0],  d[1],  d[2],  d[3],  d[4],  d[5],  d[6],  d[7],
+//          d[8],  d[9], d[10], d[11], d[12], d[13], d[14], d[15],
+//         d[16], d[17], d[18], d[19], d[20], d[21], d[22], d[23],
+//         d[24], d[25], d[26], d[27], d[28], d[29], d[30], d[31],
+//         d[32], d[33], d[34], d[35], d[36], d[37], d[38], d[39],
+//         d[40], d[41], d[42], d[43], d[44], d[45], d[46], d[47],
+//         d[48], d[49], d[50], d[51], d[52], d[53], d[54], d[55],
+//         d[56], d[57], d[58], d[59], d[60], d[61], d[62], d[63]);
+
     }
     if (is_leader) {
       uint64_t completed {0};
@@ -358,6 +414,7 @@ __device__ void QueuePair::quiet() {
 #ifndef GPUIB_BNXT
 #ifdef GPUIB_IONIC
 __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
+
   uint64_t activemask = get_same_qp_lane_mask();
   uint32_t num_wqes = get_active_lane_count(activemask);
   uint32_t my_logical_lane_id = get_active_lane_num(activemask);
