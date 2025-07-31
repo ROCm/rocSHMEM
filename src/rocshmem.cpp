@@ -35,12 +35,16 @@
 
 #include "backend_bc.hpp"
 #include "context_incl.hpp"
-#ifdef USE_RO
+#if defined(USE_RO)
 #include "reverse_offload/backend_ro.hpp"
 #include "reverse_offload/context_ro_tmpl_host.hpp"
-#else
+#elif defined(USE_IPC)
 #include "ipc/backend_ipc.hpp"
 #include "ipc/context_ipc_tmpl_host.hpp"
+#elif defined(USE_GDA)
+#include "gpu_ib/gda_device.hpp"
+#else
+#error "Select one backend among USE_RO, USE_IPC, USE_GDA"
 #endif
 #include "mpi_instance.hpp"
 #include "team.hpp"

@@ -22,25 +22,26 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_CONTEXT_INCL_HPP_
-#define LIBRARY_SRC_CONTEXT_INCL_HPP_
+#include "../queue_pair.hpp"
 
-#include "context.hpp"
-#include "context_tmpl_device.hpp"
-#include "context_tmpl_host.hpp"
-#if defined(USE_RO)
-#include "reverse_offload/context_ro_device.hpp"
-#include "reverse_offload/context_ro_host.hpp"
-#elif defined(USE_IPC)
-#include "ipc/context_ipc_device.hpp"
-#include "ipc/context_ipc_host.hpp"
-#elif defined(USE_GDA)
-#include "gpu_ib/context_ib_device.hpp"
-#include "gpu_ib/context_ib_tmpl_device.hpp"
-#include "gpu_ib/context_ib_host.hpp"
-#include "gpu_ib/context_ib_tmpl_host.hpp"
-#else
-#error "Select one backend among USE_RO, USE_IPC, USE_GDA"
-#endif
+namespace rocshmem {
 
-#endif  // LIBRARY_SRC_CONTEXT_INCL_HPP_
+__device__ void QueuePair::ring_doorbell(uint32_t pos) {
+  printf("Not implemented\n");
+}
+
+__device__ void QueuePair::quiet() {
+  printf("Not implemented\n");
+}
+
+__device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
+  printf("%s not implemented\n", __func__);
+}
+
+__device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode,
+                                            int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
+  printf("%s not implemented\n", __func__);
+  return 0;
+}
+
+}  // namespace rocshmem

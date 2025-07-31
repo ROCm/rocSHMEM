@@ -22,25 +22,26 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_CONTEXT_INCL_HPP_
-#define LIBRARY_SRC_CONTEXT_INCL_HPP_
+#ifndef LIBRARY_SRC_GPU_IB_BNXT_GDA_PROVIDER_HPP_
+#define LIBRARY_SRC_GPU_IB_BNXT_GDA_PROVIDER_HPP_
 
-#include "context.hpp"
-#include "context_tmpl_device.hpp"
-#include "context_tmpl_host.hpp"
-#if defined(USE_RO)
-#include "reverse_offload/context_ro_device.hpp"
-#include "reverse_offload/context_ro_host.hpp"
-#elif defined(USE_IPC)
-#include "ipc/context_ipc_device.hpp"
-#include "ipc/context_ipc_host.hpp"
-#elif defined(USE_GDA)
-#include "gpu_ib/context_ib_device.hpp"
-#include "gpu_ib/context_ib_tmpl_device.hpp"
-#include "gpu_ib/context_ib_host.hpp"
-#include "gpu_ib/context_ib_tmpl_host.hpp"
-#else
-#error "Select one backend among USE_RO, USE_IPC, USE_GDA"
-#endif
+extern "C" {
+#include <linux/types.h>
+#include "bnxt_re-abi.h"
 
-#endif  // LIBRARY_SRC_CONTEXT_INCL_HPP_
+#define EXPERIMENTAL_APIS
+#include "bnxt_re_dv.h"
+}
+
+#include "bnxt_util.hpp"
+
+#define GPUIB_DEFAULT_GID    0
+#define GPUIB_MAX_ATOMIC     1
+#define GPUIB_OP_RDMA_WRITE  BNXT_RE_WR_OPCD_RDMA_WRITE
+#define GPUIB_OP_ATOMIC_FA   BNXT_RE_WR_OPCD_ATOMIC_FA
+#define GPUIB_OP_ATOMIC_CS   BNXT_RE_WR_OPCD_ATOMIC_CS
+
+// Should this be in bnxt_re-abi or _dv.h?
+#define BNXT_CQE_SIZE       32
+
+#endif  //LIBRARY_SRC_GPU_IB_BNXT_GDA_PROVIDER_HPP_

@@ -41,3 +41,5 @@
 #cmakedefine USE_SINGLE_NODE
 #cmakedefine USE_HDP_FLUSH
 #cmakedefine USE_HDP_FLUSH_HOST_SIDE
+#cmakedefine GPUIB_IONIC
+#cmakedefine GPUIB_BNXT

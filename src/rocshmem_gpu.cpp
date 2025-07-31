@@ -51,10 +51,14 @@
 #include "templates.hpp"
 #include "util.hpp"
 
-#ifdef USE_RO
+#if defined(USE_RO)
 #include "reverse_offload/context_ro_tmpl_device.hpp"
-#else
+#elif defined(USE_IPC)
 #include "ipc/context_ipc_tmpl_device.hpp"
+#elif defined(USE_GDA)
+#include "gpu_ib/gda_device.hpp"
+#else
+#error "Select one backend among USE_RO, USE_IPC, USE_GDA"
 #endif
 
 /******************************************************************************

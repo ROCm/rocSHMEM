@@ -132,7 +132,7 @@ __device__ __forceinline__ int get_flat_grid_id() {
  * Returns the flattened thread index of the calling thread within the grid.
  */
 __device__ __forceinline__ int get_flat_id() {
-    return get_flat_grid_id() * (hipBlockDim_x * hipBlockDim_y * hipBlockDim_z) + get_flat_block_id();
+  return get_flat_grid_id() * (hipBlockDim_x * hipBlockDim_y * hipBlockDim_z) + get_flat_block_id();
 }
 
 /*
@@ -141,6 +141,51 @@ __device__ __forceinline__ int get_flat_id() {
 __device__ __forceinline__ bool is_thread_zero_in_wave() {
   return (get_flat_block_id() % WF_SIZE) == 0;
 }
+
+__device__ __forceinline__ uint64_t get_active_lane_mask() {
+  return __ballot(true);
+}
+
+__device__ __forceinline__ unsigned int get_active_lane_count(uint64_t active_lane_mask) {
+  return __popcll(active_lane_mask);
+}
+
+__device__ __forceinline__ unsigned int get_active_lane_count() {
+  return get_active_lane_count(get_active_lane_mask());
+}
+
+__device__ __forceinline__ unsigned int get_active_lane_num(uint64_t active_lane_mask) {
+  return __popcll(active_lane_mask & __lanemask_lt());
+}
+
+__device__ __forceinline__ unsigned int get_active_lane_num() {
+  return get_active_lane_num(get_active_lane_mask());
+}
+
+__device__ __forceinline__ int get_first_active_lane_id(uint64_t active_lane_mask) {
+  return __ffsll((unsigned long long int)active_lane_mask) - 1;
+}
+
+__device__ __forceinline__ int get_first_active_lane_id() {
+  return get_first_active_lane_id(get_active_lane_mask());
+}
+
+__device__ __forceinline__ bool is_first_active_lane(uint64_t active_lane_mask) {
+  return get_active_lane_num(active_lane_mask) == 0;
+}
+
+__device__ __forceinline__ bool is_first_active_lane() {
+  return is_first_active_lane(get_active_lane_mask());
+}
+
+__device__ __forceinline__ bool is_last_active_lane(uint64_t active_lane_mask) {
+  return get_active_lane_num(active_lane_mask) == get_active_lane_count(active_lane_mask) - 1;
+}
+
+__device__ __forceinline__ bool is_last_active_lane() {
+  return is_last_active_lane(get_active_lane_mask());
+}
+
 
 extern __constant__ int* print_lock;
 
@@ -264,8 +309,7 @@ __device__ __forceinline__ void memcpy_wave(void* dst, void* src, size_t size) {
 
 int rocm_init();
 
-void rocm_memory_lock_to_fine_grain(void* ptr, size_t size, void** gpu_ptr,
-                                    int gpu_id);
+void rocm_memory_lock_to_fine_grain(void* ptr, size_t size, void** gpu_ptr, int gpu_id);
 
 class rocshmem_env_config {
 public:

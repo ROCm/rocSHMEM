@@ -22,25 +22,41 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_CONTEXT_INCL_HPP_
-#define LIBRARY_SRC_CONTEXT_INCL_HPP_
+#ifndef LIBRARY_SRC_GPU_IB_ENDIAN_HPP_
+#define LIBRARY_SRC_GPU_IB_ENDIAN_HPP_
 
-#include "context.hpp"
-#include "context_tmpl_device.hpp"
-#include "context_tmpl_host.hpp"
-#if defined(USE_RO)
-#include "reverse_offload/context_ro_device.hpp"
-#include "reverse_offload/context_ro_host.hpp"
-#elif defined(USE_IPC)
-#include "ipc/context_ipc_device.hpp"
-#include "ipc/context_ipc_host.hpp"
-#elif defined(USE_GDA)
-#include "gpu_ib/context_ib_device.hpp"
-#include "gpu_ib/context_ib_tmpl_device.hpp"
-#include "gpu_ib/context_ib_host.hpp"
-#include "gpu_ib/context_ib_tmpl_host.hpp"
-#else
-#error "Select one backend among USE_RO, USE_IPC, USE_GDA"
-#endif
+#include <hip/hip_runtime.h>
 
-#endif  // LIBRARY_SRC_CONTEXT_INCL_HPP_
+namespace rocshmem {
+
+template <typename T>
+__device__ void swap_endian_store(T *dst, const T val);
+
+template <>
+__device__ void swap_endian_store(uint64_t *dst, const uint64_t val);
+
+template <>
+__device__ void swap_endian_store(int64_t *dst, const int64_t val);
+
+template <>
+__device__ void swap_endian_store(uint32_t *dst, const uint32_t val);
+
+template <>
+__device__ void swap_endian_store(int32_t *dst, const int32_t val);
+
+template <>
+__device__ void swap_endian_store(uint16_t *dst, const uint16_t val);
+
+template <>
+__device__ void swap_endian_store(int16_t *dst, const int16_t val);
+
+template <typename T>
+__device__ T swap_endian_val(const T val) {
+  T dst;
+  swap_endian_store(&dst, val);
+  return dst;
+}
+
+}  // namespace rocshmem
+
+#endif  // LIBRARY_SRC_GPU_IB_ENDIAN_HPP_

@@ -28,54 +28,18 @@
 target_sources(
   ${PROJECT_NAME}
   PRIVATE
-    atomic_return.cpp
-    backend_bc.cpp
-    context_host.cpp
-    context_device.cpp
-    mpi_instance.cpp
-    rocshmem_gpu.cpp
-    rocshmem.cpp
-    team.cpp
-    team_tracker.cpp
-    topology.cpp
-    util.cpp
-    wf_coal_policy.cpp
-    ipc_policy.cpp
+    context_ib_device.cpp
+    context_ib_device_coll.cpp
+    context_ib_host.cpp
+    endian.cpp
+    gpu_ib_team.cpp
+    gda_device.cpp
+    queue_pair.cpp
 )
 
-set(
-  ROCSHMEM_COMPILE_FLAGS
-  -fgpu-rdc
-  #   xnack allows address translation fault recovery
-  #   required option for managed heap configs
-  # -mxnack
-)
-if (BUILD_CODE_COVERAGE)
-  set(ROCSHMEM_COMPILE_FLAGS ${ROCSHMEM_COMPILE_FLAGS} -fprofile-instr-generate -fcoverage-mapping)
-  target_link_options(${PROJECT_NAME} PUBLIC -fprofile-instr-generate)
-endif()
-target_compile_options(${PROJECT_NAME} PUBLIC ${ROCSHMEM_COMPILE_FLAGS})
-#target_link_options(
-  #${PROJECT_NAME}
-  #PUBLIC
-    #--hip-link
-#)
-
-###############################################################################
-# ROCSHMEM TARGET FOR BACKENDS
-###############################################################################
-if (USE_RO)
-add_subdirectory(reverse_offload)
-elseif (USE_IPC)
-add_subdirectory(ipc)
-elseif (USE_GDA)
-add_subdirectory(gpu_ib)
-endif()
-add_subdirectory(host)
-add_subdirectory(containers)
-add_subdirectory(memory)
-add_subdirectory(sync)
-add_subdirectory(bootstrap)
-if (BUILD_TOOLS)
-add_subdirectory(tools)
-endif()
+IF (GPUIB_IONIC)
+ELSEIF (GPUIB_BNXT)
+add_subdirectory(bnxt)
+ELSE ()
+  target_sources(${PROJECT_NAME} PRIVATE segment_builder.cpp)
+ENDIF()

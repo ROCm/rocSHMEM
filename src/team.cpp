@@ -46,6 +46,10 @@ IPCTeam* get_internal_ipc_team(rocshmem_team_t team) {
   return reinterpret_cast<IPCTeam*>(team);
 }
 
+GPUIBTeam* get_internal_gpu_ib_team(rocshmem_team_t team) {
+  return reinterpret_cast<GPUIBTeam*>(team);
+}
+
 __host__ __device__ int team_translate_pe(rocshmem_team_t src_team, int src_pe,
                                           rocshmem_team_t dst_team) {
   if (src_team == ROCSHMEM_TEAM_INVALID ||

@@ -22,25 +22,44 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_CONTEXT_INCL_HPP_
-#define LIBRARY_SRC_CONTEXT_INCL_HPP_
+#include "context_ib_host.hpp"
 
-#include "context.hpp"
-#include "context_tmpl_device.hpp"
-#include "context_tmpl_host.hpp"
-#if defined(USE_RO)
-#include "reverse_offload/context_ro_device.hpp"
-#include "reverse_offload/context_ro_host.hpp"
-#elif defined(USE_IPC)
-#include "ipc/context_ipc_device.hpp"
-#include "ipc/context_ipc_host.hpp"
-#elif defined(USE_GDA)
-#include "gpu_ib/context_ib_device.hpp"
-#include "gpu_ib/context_ib_tmpl_device.hpp"
-#include "gpu_ib/context_ib_host.hpp"
-#include "gpu_ib/context_ib_tmpl_host.hpp"
-#else
-#error "Select one backend among USE_RO, USE_IPC, USE_GDA"
-#endif
+#include <mpi.h>
 
-#endif  // LIBRARY_SRC_CONTEXT_INCL_HPP_
+#include "context_incl.hpp"
+#include "host/host.hpp"
+#include "gda_device.hpp"
+
+namespace rocshmem {
+
+GPUIBHostContext::GPUIBHostContext(GDADevice *device)
+    : Context(device) {
+  host_interface = device->host_interface;
+  context_window_info = host_interface->acquire_window_context();
+}
+
+GPUIBHostContext::~GPUIBHostContext() {
+  host_interface->release_window_context(context_window_info);
+}
+
+void GPUIBHostContext::putmem_nbi(void *dest, const void *source, size_t nelems, int pe) {
+  host_interface->putmem_nbi(dest, source, nelems, pe, context_window_info);
+}
+
+void GPUIBHostContext::putmem(void *dest, const void *source, size_t nelems, int pe) {
+  host_interface->putmem(dest, source, nelems, pe, context_window_info);
+}
+
+void GPUIBHostContext::quiet() {
+  host_interface->quiet(context_window_info);
+}
+
+void GPUIBHostContext::sync_all() {
+  host_interface->sync_all(context_window_info);
+}
+
+void GPUIBHostContext::barrier_all() {
+  host_interface->barrier_all(context_window_info);
+}
+
+}  // namespace rocshmem

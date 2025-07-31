@@ -139,6 +139,7 @@ ExecTest() {
   OPTIONS=" -n $NUM_RANKS -mca pml ucx -mca osc ucx"
   OPTIONS+=" -x ROCSHMEM_MAX_NUM_CONTEXTS=$ROCSHMEM_MAX_NUM_CONTEXTS"
   OPTIONS+=" -x UCX_ROCM_IPC_SIGPOOL_MAX_ELEMS=16384"
+  OPTIONS+=" -x PATH -x LD_LIBRARY_PATH"
   OPTIONS+=" --map-by numa --timeout $TIMEOUT"
 
   if [[ "" != "$HOSTFILE" ]]

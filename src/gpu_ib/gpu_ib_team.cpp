@@ -22,25 +22,18 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_CONTEXT_INCL_HPP_
-#define LIBRARY_SRC_CONTEXT_INCL_HPP_
+#include "gpu_ib_team.hpp"
 
-#include "context.hpp"
-#include "context_tmpl_device.hpp"
-#include "context_tmpl_host.hpp"
-#if defined(USE_RO)
-#include "reverse_offload/context_ro_device.hpp"
-#include "reverse_offload/context_ro_host.hpp"
-#elif defined(USE_IPC)
-#include "ipc/context_ipc_device.hpp"
-#include "ipc/context_ipc_host.hpp"
-#elif defined(USE_GDA)
-#include "gpu_ib/context_ib_device.hpp"
-#include "gpu_ib/context_ib_tmpl_device.hpp"
-#include "gpu_ib/context_ib_host.hpp"
-#include "gpu_ib/context_ib_tmpl_host.hpp"
-#else
-#error "Select one backend among USE_RO, USE_IPC, USE_GDA"
-#endif
+#include "gda_device.hpp"
 
-#endif  // LIBRARY_SRC_CONTEXT_INCL_HPP_
+namespace rocshmem {
+
+GPUIBTeam::GPUIBTeam(GDADevice *device, TeamInfo *team_info_parent, TeamInfo *team_info_world, int num_pes, int my_pe, MPI_Comm mpi_comm, int pool_index)
+    : Team(device, team_info_parent, team_info_world, num_pes, my_pe, mpi_comm) {
+  pool_index_ = pool_index;
+  barrier_pSync = &(device->barrier_pSync_pool[pool_index * ROCSHMEM_BARRIER_SYNC_SIZE]);
+}
+
+GPUIBTeam::~GPUIBTeam() {}
+
+}  // namespace rocshmem
