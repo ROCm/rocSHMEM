@@ -35,7 +35,7 @@ namespace rocshmem {
 __device__ void build_queue_element(
     ro_net_cmds type, void *dst, void *src, size_t size, int pe,
     int logPE_stride, int PE_size, int PE_root, void *pWrk, long *pSync,
-    MPI_Comm team_comm, int ro_net_win_id, BlockHandle *handle,
+    intptr_t team_comm, int ro_net_win_id, BlockHandle *handle,
     bool blocking, volatile char *status = nullptr, bool default_ctx = false,
     ROCSHMEM_OP op = ROCSHMEM_SUM, ro_net_types datatype = RO_NET_INT);
 

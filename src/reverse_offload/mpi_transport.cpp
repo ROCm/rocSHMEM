@@ -159,7 +159,7 @@ void MPITransport::submitRequestsToMPI() {
     case RO_NET_TEAM_REDUCE:
       team_reduction(next_element.dst, next_element.src, next_element.ol1.size,
                      next_element.ro_net_win_id, queue_idx,
-                     next_element.team_comm,
+                     (MPI_Comm)next_element.team_comm,
                      static_cast<ROCSHMEM_OP>(next_element.op),
                      static_cast<ro_net_types>(next_element.datatype),
                      next_element.status, true);
@@ -170,7 +170,7 @@ void MPITransport::submitRequestsToMPI() {
     case RO_NET_TEAM_BROADCAST:
       team_broadcast(next_element.dst, next_element.src, next_element.ol1.size,
                      next_element.ro_net_win_id, queue_idx,
-                     next_element.team_comm, next_element.PE_root,
+                     (MPI_Comm)next_element.team_comm, next_element.PE_root,
                      static_cast<ro_net_types>(next_element.datatype),
                      next_element.status, true);
       DPRINTF(
@@ -181,7 +181,7 @@ void MPITransport::submitRequestsToMPI() {
       break;
     case RO_NET_ALLTOALL:
       alltoall(next_element.dst, next_element.src, next_element.ol1.size,
-               next_element.ro_net_win_id, queue_idx, next_element.team_comm,
+               next_element.ro_net_win_id, queue_idx, (MPI_Comm)next_element.team_comm,
                next_element.ol2.pWrk,
                static_cast<ro_net_types>(next_element.datatype),
                next_element.status, true);
@@ -191,7 +191,7 @@ void MPITransport::submitRequestsToMPI() {
       break;
     case RO_NET_FCOLLECT:
       fcollect(next_element.dst, next_element.src, next_element.ol1.size,
-               next_element.ro_net_win_id, queue_idx, next_element.team_comm,
+               next_element.ro_net_win_id, queue_idx, (MPI_Comm)next_element.team_comm,
                next_element.ol2.pWrk,
                static_cast<ro_net_types>(next_element.datatype),
                next_element.status, true);
@@ -201,13 +201,13 @@ void MPITransport::submitRequestsToMPI() {
       break;
     case RO_NET_BARRIER:
       barrier(queue_idx, next_element.status, true,
-              next_element.team_comm == NULL ? ro_net_comm_world : next_element.team_comm,
+              next_element.team_comm == ((intptr_t) NULL) ? ro_net_comm_world : (MPI_Comm)next_element.team_comm,
               true);
       DPRINTF("Submitted Barrier_all\n");
       break;
     case RO_NET_SYNC:
       barrier(queue_idx, next_element.status, true,
-              next_element.team_comm == NULL ? ro_net_comm_world : next_element.team_comm,
+              next_element.team_comm == ((intptr_t) NULL) ? ro_net_comm_world : (MPI_Comm)next_element.team_comm,
               false);
       DPRINTF("Submitted Sync\n");
       break;

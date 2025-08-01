@@ -78,7 +78,7 @@ __device__ void ROContext::putmem(void *dest, const void *source, size_t nelems,
       return;
     }
     build_queue_element(RO_NET_PUT, dest, const_cast<void *>(source), nelems,
-                        pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
+                        pe, 0, 0, 0, nullptr, nullptr, NULL,
                         ro_net_win_id, block_handle, true, get_status_flag(),
                         is_default_ctx);
   }
@@ -98,7 +98,7 @@ __device__ void ROContext::getmem(void *dest, const void *source, size_t nelems,
       return;
     }
     build_queue_element(RO_NET_GET, dest, const_cast<void *>(source), nelems,
-                        pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
+                        pe, 0, 0, 0, nullptr, nullptr, NULL,
                         ro_net_win_id, block_handle, true, get_status_flag(),
                         is_default_ctx);
   }
@@ -118,7 +118,7 @@ __device__ void ROContext::putmem_nbi(void *dest, const void *source,
       return;
     }
     build_queue_element(RO_NET_PUT_NBI, dest, const_cast<void *>(source),
-                        nelems, pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
+                        nelems, pe, 0, 0, 0, nullptr, nullptr, NULL,
                         ro_net_win_id, block_handle, false);
   }
 }
@@ -137,27 +137,27 @@ __device__ void ROContext::getmem_nbi(void *dest, const void *source,
       return;
     }
     build_queue_element(RO_NET_GET_NBI, dest, const_cast<void *>(source),
-                        nelems, pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
+                        nelems, pe, 0, 0, 0, nullptr, nullptr, NULL,
                         ro_net_win_id, block_handle, false);
   }
 }
 
 __device__ void ROContext::fence() {
   build_queue_element(RO_NET_FENCE, nullptr, nullptr, 0, 0, 0, 0, 0, nullptr,
-                      nullptr, (MPI_Comm)NULL, ro_net_win_id, block_handle,
+                      nullptr, NULL, ro_net_win_id, block_handle,
                       true, get_status_flag(), is_default_ctx);
 }
 
 __device__ void ROContext::fence(int pe) {
   // TODO(khamidou): need to check if per pe has any special handling
   build_queue_element(RO_NET_FENCE, nullptr, nullptr, 0, 0, 0, 0, 0, nullptr,
-                      nullptr, (MPI_Comm)NULL, ro_net_win_id, block_handle,
+                      nullptr, NULL, ro_net_win_id, block_handle,
                       true, get_status_flag(), is_default_ctx);
 }
 
 __device__ void ROContext::quiet() {
   build_queue_element(RO_NET_QUIET, nullptr, nullptr, 0, 0, 0, 0, 0, nullptr,
-                      nullptr, (MPI_Comm)NULL, ro_net_win_id, block_handle,
+                      nullptr, NULL, ro_net_win_id, block_handle,
                       true, get_status_flag(), is_default_ctx);
 }
 
@@ -175,14 +175,14 @@ __device__ void *ROContext::shmem_ptr(const void *dest, int pe) {
 
 __device__ void ROContext::barrier_all() {
   build_queue_element(RO_NET_BARRIER, nullptr, nullptr, 0, 0, 0, 0, 0,
-                      nullptr, nullptr, (MPI_Comm)NULL, ro_net_win_id,
+                      nullptr, nullptr, NULL, ro_net_win_id,
                       block_handle, true, get_status_flag(), is_default_ctx);
 }
 
 __device__ void ROContext::barrier_all_wave() {
   if (is_thread_zero_in_wave()) {
     build_queue_element(RO_NET_BARRIER, nullptr, nullptr, 0, 0, 0, 0, 0,
-                        nullptr, nullptr, (MPI_Comm)NULL, ro_net_win_id,
+                        nullptr, nullptr, NULL, ro_net_win_id,
                         block_handle, true, get_status_flag(), is_default_ctx);
   }
 }
@@ -190,7 +190,7 @@ __device__ void ROContext::barrier_all_wave() {
 __device__ void ROContext::barrier_all_wg() {
   if (is_thread_zero_in_block()) {
     build_queue_element(RO_NET_BARRIER, nullptr, nullptr, 0, 0, 0, 0, 0,
-                        nullptr, nullptr, (MPI_Comm)NULL, ro_net_win_id,
+                        nullptr, nullptr, NULL, ro_net_win_id,
                         block_handle, true, get_status_flag(), is_default_ctx);
   }
   __syncthreads();
@@ -199,7 +199,7 @@ __device__ void ROContext::barrier_all_wg() {
 __device__ void ROContext::barrier(rocshmem_team_t team) {
   ROTeam *team_obj = reinterpret_cast<ROTeam *>(team);
   build_queue_element(RO_NET_BARRIER, nullptr, nullptr, 0, 0, 0, 0, 0, nullptr,
-                      nullptr, team_obj->mpi_comm, ro_net_win_id, block_handle,
+                      nullptr, (intptr_t)team_obj->mpi_comm, ro_net_win_id, block_handle,
                       true, get_status_flag(), is_default_ctx);
 }
 
@@ -207,7 +207,7 @@ __device__ void ROContext::barrier_wave(rocshmem_team_t team) {
   ROTeam *team_obj = reinterpret_cast<ROTeam *>(team);
   if (is_thread_zero_in_wave()) {
     build_queue_element(RO_NET_BARRIER, nullptr, nullptr, 0, 0, 0, 0, 0, nullptr,
-                        nullptr, team_obj->mpi_comm, ro_net_win_id, block_handle,
+                        nullptr, (intptr_t)team_obj->mpi_comm, ro_net_win_id, block_handle,
                         true, get_status_flag(), is_default_ctx);
   }
 }
@@ -216,7 +216,7 @@ __device__ void ROContext::barrier_wg(rocshmem_team_t team) {
   ROTeam *team_obj = reinterpret_cast<ROTeam *>(team);
   if (is_thread_zero_in_block()) {
     build_queue_element(RO_NET_BARRIER, nullptr, nullptr, 0, 0, 0, 0, 0, nullptr,
-                        nullptr, team_obj->mpi_comm, ro_net_win_id, block_handle,
+                        nullptr, (intptr_t)team_obj->mpi_comm, ro_net_win_id, block_handle,
                         true, get_status_flag(), is_default_ctx);
   }
   __syncthreads();
@@ -224,14 +224,14 @@ __device__ void ROContext::barrier_wg(rocshmem_team_t team) {
 
 __device__ void ROContext::sync_all() {
   build_queue_element(RO_NET_SYNC, nullptr, nullptr, 0, 0, 0, 0, 0,
-                      nullptr, nullptr, (MPI_Comm)NULL, ro_net_win_id,
+                      nullptr, nullptr, NULL, ro_net_win_id,
                       block_handle, true, get_status_flag(), is_default_ctx);
 }
 
 __device__ void ROContext::sync_all_wave() {
   if (is_thread_zero_in_wave()) {
     build_queue_element(RO_NET_SYNC, nullptr, nullptr, 0, 0, 0, 0, 0,
-                        nullptr, nullptr, (MPI_Comm)NULL, ro_net_win_id,
+                        nullptr, nullptr, NULL, ro_net_win_id,
                         block_handle, true, get_status_flag(), is_default_ctx);
   }
 }
@@ -239,7 +239,7 @@ __device__ void ROContext::sync_all_wave() {
 __device__ void ROContext::sync_all_wg() {
   if (is_thread_zero_in_block()) {
     build_queue_element(RO_NET_SYNC, nullptr, nullptr, 0, 0, 0, 0, 0,
-                        nullptr, nullptr, (MPI_Comm)NULL, ro_net_win_id,
+                        nullptr, nullptr, NULL, ro_net_win_id,
                         block_handle, true, get_status_flag(), is_default_ctx);
   }
   __syncthreads();
@@ -248,7 +248,7 @@ __device__ void ROContext::sync_all_wg() {
 __device__ void ROContext::sync(rocshmem_team_t team) {
   ROTeam *team_obj = reinterpret_cast<ROTeam *>(team);
   build_queue_element(RO_NET_SYNC, nullptr, nullptr, 0, 0, 0, 0, 0, nullptr,
-                      nullptr, team_obj->mpi_comm, ro_net_win_id, block_handle,
+                      nullptr, (intptr_t)team_obj->mpi_comm, ro_net_win_id, block_handle,
                       true, get_status_flag(), is_default_ctx);
 }
 
@@ -256,7 +256,7 @@ __device__ void ROContext::sync_wave(rocshmem_team_t team) {
   ROTeam *team_obj = reinterpret_cast<ROTeam *>(team);
   if (is_thread_zero_in_wave()) {
     build_queue_element(RO_NET_SYNC, nullptr, nullptr, 0, 0, 0, 0, 0, nullptr,
-                        nullptr, team_obj->mpi_comm, ro_net_win_id, block_handle,
+                        nullptr, (intptr_t)team_obj->mpi_comm, ro_net_win_id, block_handle,
                         true, get_status_flag(), is_default_ctx);
   }
 }
@@ -265,7 +265,7 @@ __device__ void ROContext::sync_wg(rocshmem_team_t team) {
   ROTeam *team_obj = reinterpret_cast<ROTeam *>(team);
   if (is_thread_zero_in_block()) {
     build_queue_element(RO_NET_SYNC, nullptr, nullptr, 0, 0, 0, 0, 0, nullptr,
-                        nullptr, team_obj->mpi_comm, ro_net_win_id, block_handle,
+                        nullptr, (intptr_t)team_obj->mpi_comm, ro_net_win_id, block_handle,
                         true, get_status_flag(), is_default_ctx);
   }
   __syncthreads();
@@ -278,7 +278,7 @@ __device__ void ROContext::ctx_destroy() {
     auto *proxy{backend_proxy.get()};
 
     build_queue_element(RO_NET_FINALIZE, nullptr, nullptr, 0, 0, 0, 0, 0,
-                        nullptr, nullptr, (MPI_Comm)NULL, ro_net_win_id,
+                        nullptr, nullptr, NULL, ro_net_win_id,
                         block_handle, true, get_status_flag(), is_default_ctx);
 
     int buffer_id = ro_net_win_id;
@@ -302,7 +302,7 @@ __device__ void ROContext::putmem_wg(void *dest, const void *source,
   } else {
     if (is_thread_zero_in_block()) {
       build_queue_element(RO_NET_PUT, dest, const_cast<void *>(source), nelems,
-                          pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
+                          pe, 0, 0, 0, nullptr, nullptr, NULL,
                           ro_net_win_id, block_handle, true, get_status_flag(),
                           is_default_ctx);
     }
@@ -321,7 +321,7 @@ __device__ void ROContext::getmem_wg(void *dest, const void *source,
   } else {
     if (is_thread_zero_in_block()) {
       build_queue_element(RO_NET_GET, dest, const_cast<void *>(source), nelems,
-                          pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
+                          pe, 0, 0, 0, nullptr, nullptr, NULL,
                           ro_net_win_id, block_handle, true, get_status_flag(),
                           is_default_ctx);
     }
@@ -340,7 +340,7 @@ __device__ void ROContext::putmem_nbi_wg(void *dest, const void *source,
   } else {
     if (is_thread_zero_in_block()) {
       build_queue_element(RO_NET_PUT_NBI, dest, const_cast<void *>(source),
-                          nelems, pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
+                          nelems, pe, 0, 0, 0, nullptr, nullptr, NULL,
                           ro_net_win_id, block_handle, false);
     }
   }
@@ -358,7 +358,7 @@ __device__ void ROContext::getmem_nbi_wg(void *dest, const void *source,
   } else {
     if (is_thread_zero_in_block()) {
       build_queue_element(RO_NET_GET_NBI, dest, const_cast<void *>(source),
-                          nelems, pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
+                          nelems, pe, 0, 0, 0, nullptr, nullptr, NULL,
                           ro_net_win_id, block_handle, false);
     }
   }
@@ -376,7 +376,7 @@ __device__ void ROContext::putmem_wave(void *dest, const void *source,
   } else {
     if (is_thread_zero_in_wave()) {
       build_queue_element(RO_NET_PUT, dest, const_cast<void *>(source), nelems,
-                          pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
+                          pe, 0, 0, 0, nullptr, nullptr, NULL,
                           ro_net_win_id, block_handle, true, get_status_flag(),
                           is_default_ctx);
     }
@@ -395,7 +395,7 @@ __device__ void ROContext::getmem_wave(void *dest, const void *source,
   } else {
     if (is_thread_zero_in_wave()) {
       build_queue_element(RO_NET_GET, dest, const_cast<void *>(source), nelems,
-                          pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
+                          pe, 0, 0, 0, nullptr, nullptr, NULL,
                           ro_net_win_id, block_handle, true, get_status_flag(),
                           is_default_ctx);
     }
@@ -413,7 +413,7 @@ __device__ void ROContext::putmem_nbi_wave(void *dest, const void *source,
   } else {
     if (is_thread_zero_in_wave()) {
       build_queue_element(RO_NET_PUT_NBI, dest, const_cast<void *>(source),
-                          nelems, pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
+                          nelems, pe, 0, 0, 0, nullptr, nullptr, NULL,
                           ro_net_win_id, block_handle, false);
     }
   }
@@ -431,7 +431,7 @@ __device__ void ROContext::getmem_nbi_wave(void *dest, const void *source,
   } else {
     if (is_thread_zero_in_wave()) {
       build_queue_element(RO_NET_GET_NBI, dest, const_cast<void *>(source),
-                          nelems, pe, 0, 0, 0, nullptr, nullptr, (MPI_Comm)NULL,
+                          nelems, pe, 0, 0, 0, nullptr, nullptr, NULL,
                           ro_net_win_id, block_handle, false);
     }
   }
@@ -665,7 +665,7 @@ __device__ uint64_t next_write_slot(BlockHandle *handle) {
 __device__ void build_queue_element(
     ro_net_cmds type, void *dst, void *src, size_t size, int pe,
     int logPE_stride, int PE_size, int PE_root, void *pWrk, long *pSync,
-    MPI_Comm team_comm, int ro_net_win_id, BlockHandle *handle,
+    intptr_t team_comm, int ro_net_win_id, BlockHandle *handle,
     bool blocking, volatile char *status, bool default_ctx, ROCSHMEM_OP op,
     ro_net_types datatype) {
   auto write_slot{next_write_slot(handle)};
