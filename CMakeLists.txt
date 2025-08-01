@@ -92,7 +92,8 @@ include(cmake/rocm_local_targets.cmake)
 
 set(DEFAULT_GPUS
       gfx90a
-      gfx942)
+      gfx942
+      gfx950)
 
 ###############################################################################
 # PROJECT
@@ -125,12 +126,12 @@ if (NOT BUILD_TESTS_ONLY)
     endif()
   endif()
 
-  set(GPU_TARGETS "${DEFAULT_GPUS}" CACHE STRING
-      "Target default GPUs if GPU_TARGETS is not defined.")
-
+  if (GPU_TARGETS)
+    set(DEFAULT_GPUS "${GPU_TARGETS}")
+  endif()
   if (COMMAND rocm_check_target_ids)
-    message(STATUS "Checking for ROCm support for GPU targets: " "${GPU_TARGETS}")
-    rocm_check_target_ids(SUPPORTED_GPUS TARGETS ${GPU_TARGETS})
+    message(STATUS "Checking for ROCm support for GPU targets: " "${DEFAULT_GPUS}")
+    rocm_check_target_ids(SUPPORTED_GPUS TARGETS ${DEFAULT_GPUS})
   else()
     message(WARNING "Unable to check for supported GPU targets. Falling back to default GPUs.")
     set(SUPPORTED_GPUS ${DEFAULT_GPUS})
