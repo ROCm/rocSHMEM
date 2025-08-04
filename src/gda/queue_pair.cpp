@@ -167,18 +167,9 @@ __device__ void QueuePair::poll_wave_cqes(uint64_t activemask) {
     qtf_color_exp = 0;
   }
 
-  /* Wait for at least one thread cqe color == expected color */
-  uint32_t qtf_be;
-  bool ready;
-  uint64_t ballot_ready;
-  do {
-    qtf_be = *(volatile uint32_t *)(&cqe->qid_type_flags);
-    ready = (qtf_be & qtf_color_bit) == qtf_color_exp;
-    ballot_ready = __ballot(ready);
-  } while (!ballot_ready);
-
-  /* Other threads saw a ready cqe, but not this thread */
-  if (!ready) {
+  /* Check if my cqe color == expected color */
+  uint32_t qtf_be = *(volatile uint32_t *)(&cqe->qid_type_flags);
+  if ((qtf_be & qtf_color_bit) != qtf_color_exp) {
     return;
   }
 
@@ -204,7 +195,7 @@ __device__ void QueuePair::poll_wave_cqes(uint64_t activemask) {
   /* Only proceed with the furthest ahead cqe to update the sq state */
   uint64_t my_lane_mask = 1ull << __lane_id();
   uint64_t lesser_lane_mask = my_lane_mask - 1;
-  if (my_lane_mask != (ballot_ready & ~lesser_lane_mask)) {
+  if (my_lane_mask != (__ballot(true) & activemask & ~lesser_lane_mask)) {
     return;
   }
 
@@ -225,6 +216,8 @@ __device__ void QueuePair::poll_wave_cqes(uint64_t activemask) {
 }
 
 __device__ void QueuePair::ionic_quiet_internal(uint64_t activemask, uint32_t cons) {
+  uint32_t greed = 10;
+
   /* wait for sq_msn to catch up or pass cons. */
   /* 0x800000 - sign bit for 24-bit fields     */
   while ((sq_msn - cons) & 0x800000) {
@@ -234,7 +227,19 @@ __device__ void QueuePair::ionic_quiet_internal(uint64_t activemask, uint32_t co
 
     /* with lock acquired, this wave polls cqes until caught up */
     while ((sq_msn - cons) & 0x800000) {
+      uint32_t old_sq_msn = sq_msn;
+
       poll_wave_cqes(activemask);
+
+      if (!((sq_msn - cons) & 0x800000)) {
+        if (sq_msn == old_sq_msn) {
+          break;
+        }
+        if (!greed) {
+          break;
+        }
+        --greed;
+      }
     }
 
     spin_lock_release_shared(&cq_lock, activemask);
