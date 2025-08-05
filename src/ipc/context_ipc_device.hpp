@@ -25,9 +25,9 @@
 #ifndef LIBRARY_SRC_IPC_CONTEXT_DEVICE_HPP_
 #define LIBRARY_SRC_IPC_CONTEXT_DEVICE_HPP_
 
-#include "../context.hpp"
-#include "../atomic.hpp"
-#include "../team.hpp"
+#include "context.hpp"
+#include "atomic.hpp"
+#include "team.hpp"
 
 namespace rocshmem {
 

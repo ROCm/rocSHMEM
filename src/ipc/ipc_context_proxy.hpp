@@ -26,7 +26,7 @@
 #define LIBRARY_SRC_IPC_CONTEXT_PROXY_HPP_
 
 
-#include "../device_proxy.hpp"
+#include "device_proxy.hpp"
 #include "backend_ipc.hpp"
 
 namespace rocshmem {

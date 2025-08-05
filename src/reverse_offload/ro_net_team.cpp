@@ -24,7 +24,7 @@
 
 #include "ro_net_team.hpp"
 
-#include "../backend_type.hpp"
+#include "backend_type.hpp"
 #include "backend_ro.hpp"
 
 namespace rocshmem {

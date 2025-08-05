@@ -25,7 +25,7 @@
 #ifndef LIBRARY_SRC_IPC_CONTEXT_HOST_HPP_
 #define LIBRARY_SRC_IPC_CONTEXT_HOST_HPP_
 
-#include "../context.hpp"
+#include "context.hpp"
 
 namespace rocshmem {
 

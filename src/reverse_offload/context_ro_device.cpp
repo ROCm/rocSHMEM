@@ -34,12 +34,12 @@
 
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "rocshmem/rocshmem.hpp"
-#include "../backend_type.hpp"
-#include "../hdp_policy.hpp"
+#include "backend_type.hpp"
+#include "hdp_policy.hpp"
 #include "backend_proxy.hpp"
 #include "backend_ro.hpp"
 #include "ro_net_team.hpp"
-#include "../sync/abql_block_mutex.hpp"
+#include "sync/abql_block_mutex.hpp"
 
 namespace rocshmem {
 

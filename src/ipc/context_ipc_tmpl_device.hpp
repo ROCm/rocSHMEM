@@ -28,9 +28,9 @@
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "rocshmem/rocshmem.hpp"
 #include "context_ipc_device.hpp"
-#include "../util.hpp"
+#include "util.hpp"
 #include "ipc_team.hpp"
-#include "../rocshmem_calc.hpp"
+#include "rocshmem_calc.hpp"
 
 #include <hip/hip_runtime.h>
 

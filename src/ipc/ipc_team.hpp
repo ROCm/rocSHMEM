@@ -25,7 +25,7 @@
 #ifndef LIBRARY_SRC_IPC_TEAM_HPP_
 #define LIBRARY_SRC_IPC_TEAM_HPP_
 
-#include "../team.hpp"
+#include "team.hpp"
 
 namespace rocshmem {
 

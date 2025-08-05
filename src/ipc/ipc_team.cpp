@@ -24,7 +24,7 @@
 
 #include "ipc_team.hpp"
 
-#include "../backend_type.hpp"
+#include "backend_type.hpp"
 #include "backend_ipc.hpp"
 
 namespace rocshmem {

@@ -27,9 +27,9 @@
 
 #include <hip/hip_runtime.h>
 
-#include "../memory/hip_allocator.hpp"
-#include "../sync/abql_block_mutex.hpp"
-#include "../src/util.hpp"
+#include "memory/hip_allocator.hpp"
+#include "sync/abql_block_mutex.hpp"
+#include "util.hpp"
 
 namespace rocshmem {
 

@@ -25,9 +25,9 @@
 #ifndef LIBRARY_SRC_MEMORY_NOTIFIER_HPP_
 #define LIBRARY_SRC_MEMORY_NOTIFIER_HPP_
 
-#include "../device_proxy.hpp"
-#include "../util.hpp"
-#include "../atomic.hpp"
+#include "device_proxy.hpp"
+#include "util.hpp"
+#include "atomic.hpp"
 
 namespace rocshmem {
 

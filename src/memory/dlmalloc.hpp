@@ -28,7 +28,7 @@
 #include <cassert>
 #include <map>
 
-#include "../constants.hpp"
+#include "constants.hpp"
 #include "shmem_allocator_strategy.hpp"
 
 /**

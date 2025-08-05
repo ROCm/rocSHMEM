@@ -22,7 +22,7 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "../queue_pair.hpp"
+#include "gpu_ib/queue_pair.hpp"
 
 namespace rocshmem {
 

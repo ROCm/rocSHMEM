@@ -25,14 +25,14 @@
 #ifndef LIBRARY_SRC_IPC_BACKEND_HPP_
 #define LIBRARY_SRC_IPC_BACKEND_HPP_
 
-#include "../backend_bc.hpp"
-#include "../containers/free_list_impl.hpp"
-#include "../hdp_proxy.hpp"
-#include "../memory/hip_allocator.hpp"
-#include "../context_incl.hpp"
+#include "backend_bc.hpp"
+#include "containers/free_list_impl.hpp"
+#include "hdp_proxy.hpp"
+#include "memory/hip_allocator.hpp"
+#include "context_incl.hpp"
 #include "ipc_context_proxy.hpp"
-#include "../ipc_policy.hpp"
-#include "../bootstrap/bootstrap.hpp"
+#include "ipc_policy.hpp"
+#include "bootstrap/bootstrap.hpp"
 
 namespace rocshmem {
 

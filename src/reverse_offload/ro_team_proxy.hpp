@@ -27,7 +27,7 @@
 
 #include <mpi.h>
 
-#include "../device_proxy.hpp"
+#include "device_proxy.hpp"
 #include "ro_net_team.hpp"
 #include "team_info_proxy.hpp"
 

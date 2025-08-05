@@ -25,7 +25,7 @@
 #ifndef LIBRARY_SRC_REVERSE_OFFLOAD_QUEUE_DESC_PROXY_HPP_
 #define LIBRARY_SRC_REVERSE_OFFLOAD_QUEUE_DESC_PROXY_HPP_
 
-#include "../device_proxy.hpp"
+#include "device_proxy.hpp"
 
 namespace rocshmem {
 

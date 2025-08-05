@@ -45,7 +45,7 @@ extern "C" {
 #include "memory/symmetric_heap.hpp"
 #include "queue_pair.hpp"
 #include "team_tracker.hpp"
-#include "../bootstrap/bootstrap.hpp"
+#include "bootstrap/bootstrap.hpp"
 
 namespace rocshmem {
 

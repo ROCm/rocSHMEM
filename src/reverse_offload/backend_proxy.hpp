@@ -27,8 +27,8 @@
 
 #include <atomic>
 
-#include "../device_proxy.hpp"
-#include "../stats.hpp"
+#include "device_proxy.hpp"
+#include "stats.hpp"
 #include "queue.hpp"
 
 namespace rocshmem {

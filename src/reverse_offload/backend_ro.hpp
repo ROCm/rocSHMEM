@@ -28,10 +28,10 @@
 #include <memory>
 #include <vector>
 
-#include "../backend_bc.hpp"
-#include "../containers/free_list_impl.hpp"
-#include "../hdp_proxy.hpp"
-#include "../memory/hip_allocator.hpp"
+#include "backend_bc.hpp"
+#include "containers/free_list_impl.hpp"
+#include "hdp_proxy.hpp"
+#include "memory/hip_allocator.hpp"
 #include "backend_proxy.hpp"
 #include "block_handle.hpp"
 #include "context_proxy.hpp"

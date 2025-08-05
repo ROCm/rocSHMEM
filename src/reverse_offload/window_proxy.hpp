@@ -25,8 +25,8 @@
 #ifndef LIBRARY_SRC_REVERSE_OFFLOAD_WINDOW_PROXY_HPP_
 #define LIBRARY_SRC_REVERSE_OFFLOAD_WINDOW_PROXY_HPP_
 
-#include "../device_proxy.hpp"
-#include "../memory/window_info.hpp"
+#include "device_proxy.hpp"
+#include "memory/window_info.hpp"
 #include "mpi_transport.hpp"
 
 namespace rocshmem {

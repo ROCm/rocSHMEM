@@ -168,7 +168,7 @@ if (NOT BUILD_TESTS_ONLY)
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
       $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>            # rocshmem_config.h
       $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include/rocshmem>   # rocshmem_config.h from rocshmem.hpp
-      #$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
       $<INSTALL_INTERFACE:include>
   )
 

@@ -25,7 +25,7 @@
 #ifndef LIBRARY_SRC_SYNC_ABQL_BLOCK_MUTEX_HPP_
 #define LIBRARY_SRC_SYNC_ABQL_BLOCK_MUTEX_HPP_
 
-#include "../device_proxy.hpp"
+#include "device_proxy.hpp"
 
 #include <hip/hip_runtime.h>
 

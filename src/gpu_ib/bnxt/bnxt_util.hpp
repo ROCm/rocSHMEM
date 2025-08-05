@@ -23,7 +23,7 @@
 #ifndef LIBRARY_SRC_GPU_IB_BNXT_BNXT_UTIL_HPP_
 #define LIBRARY_SRC_GPU_IB_BNXT_BNXT_UTIL_HPP_
 
-#include "../gpuib_macros.inl"
+#include "gpu_ib/gpuib_macros.inl"
 #include "util.hpp"
 
 #include <sys/utsname.h> // utsname

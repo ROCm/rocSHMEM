@@ -25,9 +25,9 @@
 #ifndef LIBRARY_SRC_REVERSE_OFFLOAD_BLOCK_HANDLE_HPP_
 #define LIBRARY_SRC_REVERSE_OFFLOAD_BLOCK_HANDLE_HPP_
 
-#include "../containers/atomic_wf_queue_impl.hpp"
-#include "../hdp_policy.hpp"
-#include "../ipc_policy.hpp"
+#include "containers/atomic_wf_queue_impl.hpp"
+#include "hdp_policy.hpp"
+#include "ipc_policy.hpp"
 #include "profiler.hpp"
 #include "queue.hpp"
 

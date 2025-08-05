@@ -35,12 +35,12 @@
 #include <thread>  // NOLINT
 
 #include "rocshmem/rocshmem.hpp"
-#include "../atomic_return.hpp"
-#include "../backend_type.hpp"
-#include "../context_incl.hpp"
+#include "atomic_return.hpp"
+#include "backend_type.hpp"
+#include "context_incl.hpp"
 #include "mpi_transport.hpp"
 #include "ro_net_team.hpp"
-#include "../util.hpp"
+#include "util.hpp"
 
 namespace rocshmem {
 

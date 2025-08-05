@@ -20,8 +20,8 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "../gda_device.hpp"
-#include "../gpuib_macros.inl"
+#include "gpu_ib/gda_device.hpp"
+#include "gpu_ib/gpuib_macros.inl"
 #include <unistd.h> // getpagesize()
 
 namespace rocshmem {
