@@ -67,7 +67,7 @@ template <typename T>
 __device__ T GPUIBContext::amo_fetch_cas(void *dst, T value, T cond, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
   T ret_val;
-  for (int i = 0; i < __AMDGCN_WAVEFRONT_SIZE; i++) {
+  for (int i = 0; i < WF_SIZE; i++) {
     ret_val = qps[pe].atomic_fetch(base_heap[pe] + L_offset, value, cond, pe, GPUIB_OP_ATOMIC_CS);
   }
   return ret_val;
@@ -94,7 +94,7 @@ __device__ void GPUIBContext::amo_set(void *dst, T value, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
   T ret_val;
   T cond = 0;
-  for (int i = 0; i < __AMDGCN_WAVEFRONT_SIZE; i++) {
+  for (int i = 0; i < WF_SIZE; i++) {
     while ((ret_val = qps[pe].atomic_fetch(base_heap[pe] + L_offset, value, cond, pe, GPUIB_OP_ATOMIC_CS))) {
       if (ret_val == cond) { break; }
       cond = ret_val;
@@ -111,7 +111,7 @@ __device__ T GPUIBContext::amo_swap(void *dst, T value, int pe) {
 template <typename T>
 __device__ void GPUIBContext::amo_cas(void *dst, T value, T cond, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
-  for (int i = 0; i < __AMDGCN_WAVEFRONT_SIZE; i++) {
+  for (int i = 0; i < WF_SIZE; i++) {
     qps[pe].atomic_nofetch(base_heap[pe] + L_offset, value, cond, pe, GPUIB_OP_ATOMIC_CS);
   }
 }

@@ -71,7 +71,7 @@ QueuePair::QueuePair(struct ibv_pd* pd) {
 
   allocator.allocate((void**)&fetching_atomic_freelist, sizeof(FreeListT*));
   new (fetching_atomic_freelist) FreeListT();
-  for(int i{0}; i < FETCHING_ATOMIC_CNT; i+=__AMDGCN_WAVEFRONT_SIZE) {
+  for(int i{0}; i < FETCHING_ATOMIC_CNT; i+=WF_SIZE) {
     fetching_atomic_freelist->push_back(fetching_atomic + i);
   }
 }
@@ -272,9 +272,9 @@ __device__ void QueuePair::quiet() {
 }
 #else // !GPUIB_IONIC
 __device__ void QueuePair::quiet() {
-  constexpr size_t BROADCAST_SIZE = 1024 / __AMDGCN_WAVEFRONT_SIZE;
+  constexpr size_t BROADCAST_SIZE = 1024 / WF_SIZE;
   __shared__ uint64_t wqe_broadcast[BROADCAST_SIZE];
-  uint8_t wavefront_id = get_flat_block_id() / __AMDGCN_WAVEFRONT_SIZE;
+  uint8_t wavefront_id = get_flat_block_id() / WF_SIZE;
   wqe_broadcast[wavefront_id] = 0;
 
   uint64_t activemask = get_active_lane_mask();
