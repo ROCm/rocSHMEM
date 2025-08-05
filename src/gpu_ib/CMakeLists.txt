@@ -35,11 +35,20 @@ target_sources(
     gpu_ib_team.cpp
     gda_device.cpp
     queue_pair.cpp
+    topology.cpp
 )
 
-IF (GPUIB_IONIC)
-ELSEIF (GPUIB_BNXT)
-add_subdirectory(bnxt)
-ELSE ()
+find_package(IBVerbs REQUIRED)
+
+target_link_libraries(
+  ${PROJECT_NAME}
+  PUBLIC
+    IBVerbs::verbs
+)
+
+if (GPUIB_IONIC)
+elseif (GPUIB_BNXT)
+  add_subdirectory(bnxt)
+else()
   target_sources(${PROJECT_NAME} PRIVATE segment_builder.cpp)
-ENDIF()
+endif()

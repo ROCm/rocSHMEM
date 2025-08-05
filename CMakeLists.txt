@@ -147,8 +147,6 @@ if (NOT BUILD_TESTS_ONLY)
   find_package(hip REQUIRED PATHS /opt/rocm)
   find_package(hsa-runtime64 REQUIRED)
 
-  include(cmake/find_ibverbs.cmake)
-
   set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
   set(THREADS_PREFER_PTHREAD_FLAG TRUE)
   find_package(Threads REQUIRED)
@@ -161,7 +159,6 @@ if (NOT BUILD_TESTS_ONLY)
   target_compile_options(
     ${PROJECT_NAME}
     PUBLIC
-      ${offload_flags}
       -fgpu-rdc
   )
 
@@ -185,19 +182,6 @@ if (NOT BUILD_TESTS_ONLY)
       hsa-runtime64::hsa-runtime64
       -fgpu-rdc
   )
-
-  target_include_directories(
-    ${PROJECT_NAME}
-    PUBLIC
-      ${IBVERBS_INCLUDE_DIRS}
-  )
-
-  target_link_libraries(
-    ${PROJECT_NAME}
-    PUBLIC
-      ${IBVERBS_LIBRARIES}
-  )
-  link_libraries(numa)
 
   #############################################################################
   # INSTALL

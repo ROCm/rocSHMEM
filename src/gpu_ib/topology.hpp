@@ -90,7 +90,7 @@ namespace rocshmem
     MEM_CPU          = 0,                       ///< Coarse-grained pinned CPU memory
     MEM_GPU          = 1,                       ///< Coarse-grained global GPU memory
   };
-  
+
  /**
    * Enumeration of supported Executor types
    *
@@ -104,7 +104,7 @@ namespace rocshmem
     EXE_GPU          = 1,
     EXE_NIC          = 2
   };
- 
+
   inline bool IsCpuExeType(DeviceType e){ return e == EXE_CPU; }
   inline bool IsGpuExeType(DeviceType e){ return e == EXE_GPU; }
   inline bool IsNicExeType(DeviceType e){ return e == EXE_NIC; }
@@ -122,7 +122,7 @@ namespace rocshmem
     }
   };
 
-  
+
   /**
    * A MemDevice indicates a memory type on a specific device
    */
@@ -185,7 +185,7 @@ namespace rocshmem
 
 #define ERR_CHECK(cmd)            \
   do {                            \
-    int error = cmd;						      \
+    int error = cmd;                                                      \
     if (error != 0) {                                                \
       fprintf(stderr, "error: %d at %s:%d\n", error, __FILE__, __LINE__);     \
       exit(EXIT_FAILURE);                                                     \
@@ -194,7 +194,7 @@ namespace rocshmem
 
 #define CHECK_HSA(cmd)            \
   do {                            \
-    hsa_status_t error = cmd;						      \
+    hsa_status_t error = cmd;                                                      \
     if (error != HSA_STATUS_SUCCESS) {                                        \
       fprintf(stderr, "error: %d at %s:%d\n", error, __FILE__, __LINE__);     \
       exit(EXIT_FAILURE);                                                     \
@@ -208,7 +208,7 @@ namespace rocshmem
   do {                                                                  \
     int error = __func__(__VA_ARGS__);                                  \
     if (error != 0) {                                                   \
-      fprintf(stderr,"Encountered IbVerbs error (%d) at line (%d) "	\
+      fprintf(stderr,"Encountered IbVerbs error (%d) at line (%d) "        \
               "and function (%s)", (error), __LINE__, #__func__);       \
       exit(EXIT_FAILURE);                                               \
     }                                                                   \
@@ -219,7 +219,7 @@ namespace rocshmem
     __ptr__ = __func__(__VA_ARGS__);                                       \
     if (__ptr__ == nullptr) {                                              \
       fprintf(stderr, "Encountered IbVerbs nullptr error at line (%d) " \
-              "and function (%s)", __LINE__, #__func__);   		\
+              "and function (%s)", __LINE__, #__func__);                   \
       exit(EXIT_FAILURE);                                               \
     }                                                                      \
   } while (0)
@@ -239,7 +239,7 @@ namespace rocshmem
     __ptr__ = __func__(__VA_ARGS__);                                       \
     if (__ptr__ == nullptr) {                                              \
       fprintf(stderr, "Encountered IbVerbs nullptr error in func (%s) ",   \
-               #__func__);						\
+               #__func__);                                                \
       exit(EXIT_FAILURE);                                               \
     }                                                                      \
   } while (0)
