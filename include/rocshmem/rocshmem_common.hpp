@@ -115,7 +115,7 @@ typedef struct {
 /**
  * Shmem default context.
  */
-extern __constant__ rocshmem_ctx_t ROCSHMEM_CTX_DEFAULT;
+extern "C" __device__  rocshmem_ctx_t __attribute__((visibility("default"))) ROCSHMEM_CTX_DEFAULT;
 
 /**
  * Used internally to set default context.
