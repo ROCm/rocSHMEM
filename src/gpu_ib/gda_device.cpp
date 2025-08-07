@@ -38,6 +38,11 @@
 #include "queue_pair.hpp"
 #include "topology.hpp"
 
+#ifdef HAVE_DMABUF
+#include <hsa/hsa.h>
+#include <hsa/hsa_ext_amd.h>
+#endif
+
 namespace rocshmem {
 
 #define NET_CHECK(cmd) {                                     \
@@ -665,8 +670,22 @@ void GDADevice::heap_memory_rkey() {
   heap_mr = bnxt_re_dv_reg_mr(ib_state->pd_orig, base_heap, heap.get_size(), access);
   GPUIB_CHECK_NNULL(heap_mr, "bnxt_re_dv_reg_mr");
 #else
+#ifdef HAVE_DMABUF
+  hsa_status_t status;
+  int dmabuf_fd;
+  uint64_t dmabuf_offset = 0;
+
+  status = hsa_amd_portable_export_dmabuf(base_heap, heap.get_size(), &dmabuf_fd, &dmabuf_offset);
+  if (status != HSA_STATUS_SUCCESS) {
+    printf("Failed to export dmabuf handle for addr %p / %zu", base_heap, heap.get_size());
+    abort();
+  }
+  heap_mr = ibv_reg_dmabuf_mr(ib_state->pd_orig, dmabuf_offset, heap.get_size(), (uintptr_t)base_heap, dmabuf_fd, access);
+  GPUIB_CHECK_NNULL(heap_mr, "ibv_reg_dmabuf_mr");
+#else
   heap_mr = ibv_reg_mr(ib_state->pd_orig, base_heap, heap.get_size(), access);
   GPUIB_CHECK_NNULL(heap_mr, "ibv_reg_mr");
+#endif
 #endif
 
   const size_t rkeys_size = sizeof(uint32_t) * num_pes;

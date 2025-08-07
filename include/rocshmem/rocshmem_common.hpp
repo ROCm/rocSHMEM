@@ -23,6 +23,9 @@
 #ifndef LIBRARY_INCLUDE_ROCSHMEM_COMMON_HPP
 #define LIBRARY_INCLUDE_ROCSHMEM_COMMON_HPP
 
+// Just a temporary place holder
+#define HAVE_DMABUF 1
+
 namespace rocshmem {
 
 #ifdef USE_FUNC_CALL

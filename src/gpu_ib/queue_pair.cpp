@@ -23,6 +23,10 @@
 #include "queue_pair.hpp"
 
 #include <hip/hip_runtime.h>
+#ifdef HAVE_DMABUF
+#include <hsa/hsa.h>
+#include <hsa/hsa_ext_amd.h>
+#endif
 
 #include "gda_device.hpp"
 #include "endian.hpp"
@@ -43,8 +47,23 @@ QueuePair::QueuePair(struct ibv_pd* pd) {
   ibv_mr *mr = bnxt_re_dv_reg_mr(pd, nonfetching_atomic, 8, access);
   GPUIB_CHECK_NNULL(mr, "bnxt_re_dv_reg_mr");
 #else
-  ibv_mr *mr = ibv_reg_mr(pd, nonfetching_atomic, 8, access);
+  ibv_mr *mr;
+#ifdef HAVE_DMABUF
+  hsa_status_t status;
+  int dmabuf_fd;
+  uint64_t dmabuf_offset = 0;
+
+  status = hsa_amd_portable_export_dmabuf(nonfetching_atomic, 8, &dmabuf_fd, &dmabuf_offset);
+  if (status != HSA_STATUS_SUCCESS) {
+    printf("Failed to export dmabuf handle for addr %p / 8", nonfetching_atomic);
+    abort();
+  }
+  mr = ibv_reg_dmabuf_mr(pd, dmabuf_offset, 8, (uintptr_t)nonfetching_atomic, dmabuf_fd, access);
+  GPUIB_CHECK_NNULL(mr, "ibv_reg_dmabuf_mr");
+#else
+  mr = ibv_reg_mr(pd, nonfetching_atomic, 8, access);
   GPUIB_CHECK_NNULL(mr, "ibv_reg_mr");
+#endif
 #endif
 
 #if defined(GPUIB_IONIC) || defined(GPUIB_BNXT)
@@ -60,8 +79,18 @@ QueuePair::QueuePair(struct ibv_pd* pd) {
   mr = bnxt_re_dv_reg_mr(pd, fetching_atomic, 8 * FETCHING_ATOMIC_CNT, access);
   GPUIB_CHECK_NNULL(mr, "bnxt_re_dv_reg_mr");
 #else
+#ifdef HAVE_DMABUF
+  status = hsa_amd_portable_export_dmabuf(fetching_atomic, 8 * FETCHING_ATOMIC_CNT, &dmabuf_fd, &dmabuf_offset);
+  if (status != HSA_STATUS_SUCCESS) {
+    printf("Failed to export dmabuf handle for addr %p / %u", nonfetching_atomic, (8 * FETCHING_ATOMIC_CNT));
+    abort();
+  }
+  mr = ibv_reg_dmabuf_mr(pd, dmabuf_offset, 8 * FETCHING_ATOMIC_CNT, (uintptr_t)fetching_atomic, dmabuf_fd, access);
+  GPUIB_CHECK_NNULL(mr, "ibv_reg_dmabuf_mr");
+#else
   mr = ibv_reg_mr(pd, fetching_atomic, 8 * FETCHING_ATOMIC_CNT, access);
   GPUIB_CHECK_NNULL(mr, "ibv_reg_mr");
+#endif
 #endif
 #if defined(GPUIB_IONIC) || defined(GPUIB_BNXT)
   fetching_atomic_lkey = mr->lkey;
