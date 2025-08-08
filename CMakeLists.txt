@@ -93,33 +93,6 @@ include(ROCMCheckTargetIds)
 rocm_setup_version(VERSION ${VERSION_STRING})
 
 
-## Check for ROCm version
-
-set(EXPLICIT_ROCM_VERSION "" CACHE STRING "Explicit ROCM version to compile to (auto detect if empty)")
-if(EXPLICIT_ROCM_VERSION)
-  set(rocm_version_string "${EXPLICIT_ROCM_VERSION}")
-elseif(ROCM_PATH)
-  message(STATUS "Reading ROCM version from ${ROCM_PATH}/.info/version")
-  file(READ "${ROCM_PATH}/.info/version" rocm_version_string)
-else()
-  message(FATAL_ERROR "Could not determine ROCM version (set EXPLICIT_ROCM_VERSION or set ROCM_PATH to a valid installation)")
-endif()
-string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" rocm_version_matches ${rocm_version_string})
-if (rocm_version_matches)
-  set(ROCM_MAJOR_VERSION ${CMAKE_MATCH_1})
-  set(ROCM_MINOR_VERSION ${CMAKE_MATCH_2})
-  set(ROCM_PATCH_VERSION ${CMAKE_MATCH_3})
-
-  message(STATUS "ROCm version: ${ROCM_MAJOR_VERSION}.${ROCM_MINOR_VERSION}.${ROCM_PATCH_VERSION}")
-
-  # Convert the version components to int for comparison
-  math(EXPR ROCM_VERSION "(10000 * ${ROCM_MAJOR_VERSION}) + (100 * ${ROCM_MINOR_VERSION}) + ${ROCM_PATCH_VERSION}")
-  add_definitions("-DROCM_VERSION=${ROCM_VERSION}")
-else()
-  message(WARNING "Failed to extract ROCm version.")
-endif()
-
-
 #############################################################################
 # SET GPU ARCHITECTURES
 #############################################################################

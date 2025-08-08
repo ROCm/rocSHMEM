@@ -43,6 +43,25 @@ else()
 endif()
 set(ENV{ROCM_PATH} ${ROCM_PATH})
 
+## Check for ROCm version
+
+if(ROCM_PATH)
+  message(STATUS "Reading ROCM version from ${ROCM_PATH}/.info/version")
+  file(READ "${ROCM_PATH}/.info/version" rocm_version_string)
+else()
+  message(FATAL_ERROR "Could not determine ROCM version (set EXPLICIT_ROCM_VERSION or set ROCM_PATH to a valid installation)")
+endif()
+string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" rocm_version_matches ${rocm_version_string})
+if (rocm_version_matches)
+  set(ROCM_MAJOR_VERSION ${CMAKE_MATCH_1})
+  set(ROCM_MINOR_VERSION ${CMAKE_MATCH_2})
+  set(ROCM_PATCH_VERSION ${CMAKE_MATCH_3})
+
+  message(STATUS "ROCm version: ${ROCM_MAJOR_VERSION}.${ROCM_MINOR_VERSION}.${ROCM_PATCH_VERSION}")
+else()
+  message(WARNING "Failed to extract ROCm version.")
+endif()
+
 foreach (root ${hip_ROOT} $ENV{hip_ROOT} ${ROCM_ROOT} $ENV{ROCM_ROOT} ${ROCM_PATH} $ENV{ROCM_PATH})
   if (IS_DIRECTORY ${root})
     list(PREPEND CMAKE_PREFIX_PATH ${root})
