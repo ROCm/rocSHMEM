@@ -101,11 +101,10 @@ include(cmake/rocm_local_targets.cmake)
 set(DEFAULT_GPUS
     gfx90a:xnack-;
     gfx90a:xnack+;
-    gfx942:xnack-;
-    gfx942:xnack+)
+    gfx942)
 
 if(${ROCM_MAJOR_VERSION} GREATER 6)
-  list(APPEND DEFAULT_GPUS gfx950:xnack-;gfx950:xnack+)
+  list(APPEND DEFAULT_GPUS gfx950)
 endif()
 
 if($ENV{BUILD_LOCAL_GPU_TARGET_ONLY})
