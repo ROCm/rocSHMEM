@@ -21,6 +21,8 @@ Requirements
 
   * MI300X
 
+  * MI350X (Requires ROCm 7.0 or later)
+
 * ROCm-aware Open MPI and UCX. For more information, see :ref:`install-dependencies`.
 
 * Inter-node communication requires MPI, and is tested with Open MPI and CX7 Infiniband NICs.
@@ -34,7 +36,7 @@ rocSHMEM supports two network backends:
 * The **RO (Reverse Offload)** backend enables communication between GPUs on different nodes through a NIC, using a host-based proxy to forward communication orders to and from the GPU. In this release, RO is the only inter-node communication backend and is built on an MPI-RMA compatibility layer.
 
 
-You can activate IPC and RO backends in the same rocSHMEM build. In this case, IPC handles intra-node communication, while RO handles inter-node communication. 
+You can activate IPC and RO backends in the same rocSHMEM build. In this case, IPC handles intra-node communication, while RO handles inter-node communication.
 
 .. note::
 

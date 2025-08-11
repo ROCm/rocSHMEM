@@ -92,6 +92,7 @@ include(ROCMCheckTargetIds)
 
 rocm_setup_version(VERSION ${VERSION_STRING})
 
+
 #############################################################################
 # SET GPU ARCHITECTURES
 #############################################################################
@@ -100,10 +101,15 @@ include(cmake/rocm_local_targets.cmake)
 set(DEFAULT_GPUS
     gfx90a:xnack-;
     gfx90a:xnack+;
-    gfx942:xnack-;
-    gfx942:xnack+;
-    gfx950:xnack-;
-    gfx950:xnack+)
+    gfx942)
+
+if(${ROCM_MAJOR_VERSION} GREATER 6)
+  list(APPEND DEFAULT_GPUS gfx950)
+endif()
+
+if($ENV{BUILD_LOCAL_GPU_TARGET_ONLY})
+  set(BUILD_LOCAL_GPU_TARGET_ONLY ON)
+endif()
 
 if (BUILD_LOCAL_GPU_TARGET_ONLY)
   message(STATUS "Building only for local GPU target")
