@@ -32,7 +32,7 @@ namespace rocshmem {
 
 template <typename T>
 __device__ void GPUIBContext::p(T *dest, T value, int pe) {
-  putmem_nbi(dest, &value, sizeof(T), pe);
+  putmem(dest, &value, sizeof(T), pe);
 }
 
 template <typename T>
