@@ -105,7 +105,6 @@ class GDADevice {
    public:
     RtrState() {
       exp_qp_attr.qp_state = IBV_QPS_RTR;
-      exp_qp_attr.path_mtu = IBV_MTU_4096;
       exp_qp_attr.ah_attr.sl = 1;
       exp_qp_attr.max_dest_rd_atomic = GPUIB_MAX_ATOMIC;
       exp_qp_attr.min_rnr_timer = 12;
