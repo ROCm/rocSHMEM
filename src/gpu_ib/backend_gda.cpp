@@ -1143,6 +1143,7 @@ GDADevice::RtrState GDADevice::rtr(dest_info_t* dest, uint8_t port) {
   rtr.exp_qp_attr.dest_qp_num = dest->qpn;
   rtr.exp_qp_attr.rq_psn = dest->psn;
   rtr.exp_qp_attr.ah_attr.port_num = port;
+  rtr.exp_qp_attr.path_mtu = ib_state->portinfo.active_mtu;
   if (ib_state->portinfo.link_layer == IBV_LINK_LAYER_INFINIBAND) {
     rtr.exp_qp_attr.ah_attr.dlid = dest->lid;
   } else {

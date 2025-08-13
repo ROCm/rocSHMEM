@@ -86,7 +86,7 @@ void GDADevice::change_status_rtr(ibv_qp *qp, dest_info_t *dest, uint8_t port) {
                               | IBV_QP_MIN_RNR_TIMER;
 
   attr.qp_state               = IBV_QPS_RTR;
-  attr.path_mtu               = IBV_MTU_4096;
+  artr.path_mtu               = ib_state->portinfo.active_mtu;
   attr.rq_psn                 = dest->psn;
   attr.dest_qp_num            = dest->qpn;
 
