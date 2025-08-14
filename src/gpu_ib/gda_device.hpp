@@ -234,6 +234,8 @@ public:
 
   void initialize_context(GPUIBContext *ctx, int context_id);
 
+  void init_gid_index(uint8_t port_num);
+
   HostInterface *host_interface{nullptr};
 
   char* requested_dev{nullptr};
@@ -287,6 +289,9 @@ public:
   TcpBootstrap *backend_bootstr{nullptr};
 
   SymmetricHeap heap;
+
+  union ibv_gid *gid;
+  int gid_index;
 
 #ifdef GPUIB_BNXT
   union ibv_gid gid;

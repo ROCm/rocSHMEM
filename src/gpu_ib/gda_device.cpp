@@ -745,6 +745,9 @@ void GDADevice::ib_init(struct ibv_device* ib_dev, uint8_t port) {
   GPUIB_CHECK_ZERO(err, "ibv_query_port");
   dump_ibv_port_attr(&ib_state->portinfo);
 
+  /* Must init after querying port */
+  init_gid_index(port);
+
 #ifdef GPUIB_IONIC
   ionic_dv_ctx dvctx;
   ionic_dv_get_ctx(&dvctx, ib_state->context);
@@ -813,10 +816,7 @@ void GDADevice::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
     dest_info[i].lid = ib_port_att->lid;
     dest_info[i].qpn = qps[i]->qp_num;
     dest_info[i].psn = 0;
-    union ibv_gid gid;
-    int err = ibv_query_gid(ib_state->context, port, GPUIB_DEFAULT_GID, &gid);
-    GPUIB_CHECK_ZERO(err, "ibv_query_gid");
-    dest_info[i].gid = gid;
+    memcpy(&dest_info[i].gid, gid, sizeof(union ibv_gid));
   }
 }
 
@@ -993,7 +993,7 @@ GDADevice::RtrState GDADevice::rtr(dest_info_t* dest, uint8_t port) {
   } else {
     rtr.exp_qp_attr.ah_attr.is_global = 1;
     rtr.exp_qp_attr.ah_attr.grh.dgid = dest->gid;
-    rtr.exp_qp_attr.ah_attr.grh.sgid_index = GPUIB_DEFAULT_GID;
+    rtr.exp_qp_attr.ah_attr.grh.sgid_index = gid_index;
     rtr.exp_qp_attr.ah_attr.grh.hop_limit = 1;
   }
   rtr.exp_attr_mask |= IBV_QP_DEST_QPN | IBV_QP_RQ_PSN | IBV_QP_MAX_DEST_RD_ATOMIC | IBV_QP_MIN_RNR_TIMER;
@@ -1013,6 +1013,68 @@ GDADevice::QPInitAttr GDADevice::qpattr(ibv_qp_cap cap) {
   return qpattr;
 }
 #endif
+
+void GDADevice::init_gid_index(uint8_t port_num) {
+  struct ibv_gid_entry *gid_entries;
+  struct ibv_gid_entry *gid_entry;
+  union ibv_gid *current_gid;
+  uint32_t gid_type;
+  int err;
+
+  const uint8_t local_gid_prefix[2] = {0xFE, 0x80};
+  uint32_t selected_gid_type        = IBV_GID_TYPE_ROCE_V1;
+  int selected_gid_index            = -1;
+  union ibv_gid *selected_gid       = nullptr;
+  ssize_t gid_tbl_entries           = 0;
+
+  int gid_tbl_len         = ib_state->portinfo.gid_tbl_len;
+  struct ibv_context *ctx = ib_state->context;
+
+  gid_entries = (struct ibv_gid_entry*) calloc(gid_tbl_len, sizeof(struct ibv_gid_entry));
+
+  gid_tbl_entries = ibv_query_gid_table(ctx, gid_entries, gid_tbl_len, 0);
+  if (gid_tbl_entries < 0) {
+    fprintf(stderr, "[Warning] ibv_query_gid_table failed. No available GIDs\n");
+    return;
+  }
+
+  for (int i = 0; i < gid_tbl_entries; i++) {
+    gid_type = gid_entries[i].gid_type;
+
+    /* rocSHMEM does not use GIDs for IB mode */
+    if (gid_type == IBV_GID_TYPE_IB) {
+      break;
+    }
+
+    current_gid = &gid_entries[i].gid;
+
+    err = ibv_query_gid(ctx, port_num, i, current_gid);
+    GPUIB_CHECK_ZERO(err, "ibv_query_gid");
+
+    /* We don't want local GIDs */
+    if (memcmp(gid->raw, &local_gid_prefix, 2) == 0) {
+      continue;
+    }
+
+    /* Initialize using first available GID */
+    if (selected_gid_index == -1) {
+      selected_gid_index = i;
+      selected_gid_type  = gid_type;
+      selected_gid       = current_gid;
+    }
+    /* Choose RoCE V2 over V1 */
+    else  if (gid_type > selected_gid_type) {
+      selected_gid_index = i;
+      selected_gid_type  = gid_type;
+      selected_gid       = current_gid;
+    }
+  }
+
+  free(gid_entries);
+
+  gid_index = selected_gid_index;
+  gid       = selected_gid;
+}
 
 }  // namespace rocshmem
 
