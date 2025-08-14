@@ -290,7 +290,7 @@ public:
 
   SymmetricHeap heap;
 
-  union ibv_gid *gid;
+  union ibv_gid gid;
   int gid_index;
 
 #ifdef GPUIB_BNXT

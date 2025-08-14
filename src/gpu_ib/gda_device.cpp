@@ -816,7 +816,7 @@ void GDADevice::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
     dest_info[i].lid = ib_port_att->lid;
     dest_info[i].qpn = qps[i]->qp_num;
     dest_info[i].psn = 0;
-    memcpy(&dest_info[i].gid, gid, sizeof(union ibv_gid));
+    dest_info[i].gid = gid;
   }
 }
 
@@ -1017,14 +1017,14 @@ GDADevice::QPInitAttr GDADevice::qpattr(ibv_qp_cap cap) {
 void GDADevice::init_gid_index(uint8_t port_num) {
   struct ibv_gid_entry *gid_entries;
   struct ibv_gid_entry *gid_entry;
-  union ibv_gid *current_gid;
+  union ibv_gid current_gid;
+  union ibv_gid selected_gid;
   uint32_t gid_type;
   int err;
 
   const uint8_t local_gid_prefix[2] = {0xFE, 0x80};
   uint32_t selected_gid_type        = IBV_GID_TYPE_ROCE_V1;
   int selected_gid_index            = -1;
-  union ibv_gid *selected_gid       = nullptr;
   ssize_t gid_tbl_entries           = 0;
 
   int gid_tbl_len         = ib_state->portinfo.gid_tbl_len;
@@ -1035,6 +1035,7 @@ void GDADevice::init_gid_index(uint8_t port_num) {
   gid_tbl_entries = ibv_query_gid_table(ctx, gid_entries, gid_tbl_len, 0);
   if (gid_tbl_entries < 0) {
     fprintf(stderr, "[Warning] ibv_query_gid_table failed. No available GIDs\n");
+    free(gid_entries);
     return;
   }
 
@@ -1046,13 +1047,13 @@ void GDADevice::init_gid_index(uint8_t port_num) {
       break;
     }
 
-    current_gid = &gid_entries[i].gid;
+    current_gid = gid_entries[i].gid;
 
-    err = ibv_query_gid(ctx, port_num, i, current_gid);
+    err = ibv_query_gid(ctx, port_num, i, &current_gid);
     GPUIB_CHECK_ZERO(err, "ibv_query_gid");
 
     /* We don't want local GIDs */
-    if (memcmp(gid->raw, &local_gid_prefix, 2) == 0) {
+    if (memcmp(current_gid.raw, &local_gid_prefix, 2) == 0) {
       continue;
     }
 
@@ -1070,10 +1071,10 @@ void GDADevice::init_gid_index(uint8_t port_num) {
     }
   }
 
-  free(gid_entries);
-
   gid_index = selected_gid_index;
   gid       = selected_gid;
+
+  free(gid_entries);
 }
 
 }  // namespace rocshmem
