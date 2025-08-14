@@ -192,10 +192,11 @@ void GDADevice::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
             "There may be runtime errors.\n");
   }
 
-  gpu_qp->sq.id         = ib_qp->qp_num;
-  gpu_qp->sq.msntbl     = bnxt_qps[conn_num].msntbl;
-  gpu_qp->sq.msn_tbl_sz = bnxt_qps[conn_num].msn_tbl_sz;
-  gpu_qp->sq.mtu        = 4096;
+  gpu_qp->sq.id          = ib_qp->qp_num;
+  gpu_qp->sq.msntbl      = bnxt_qps[conn_num].msntbl;
+  gpu_qp->sq.msn_tbl_sz  = bnxt_qps[conn_num].msn_tbl_sz;
+  gpu_qp->sq.psn_sz_log2 = std::log2(bnxt_qps[conn_num].mem_info.sq_psn_sz);
+  gpu_qp->sq.mtu         = 4096;
 
   /* Export DB */
   err = bnxt_re_dv_get_default_db_region(context, &db_region_attr);

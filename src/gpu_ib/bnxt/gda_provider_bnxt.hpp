@@ -64,6 +64,7 @@ struct bnxt_device_sq : public bnxt_device_wq {
   void *msntbl;
   uint32_t msn;
   uint32_t msn_tbl_sz;
+  uint32_t psn_sz_log2;
   uint64_t mtu{4096};
 } __attribute__((packed));
 

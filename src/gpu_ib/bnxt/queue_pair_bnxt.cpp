@@ -41,7 +41,7 @@ __device__ static inline void bnxt_re_init_db_hdr(struct bnxt_re_db_hdr *hdr,
 }
 
 __device__ static inline struct bnxt_re_msns* bnxt_re_pull_psn_buff(struct bnxt_device_sq *sq) {
-  return (struct bnxt_re_msns*)(((char *) sq->msntbl) + ((sq->msn) << 4));
+  return (struct bnxt_re_msns*)(((char *) sq->msntbl) + ((sq->msn) << sq->psn_sz_log2));
 }
 
 __device__ static inline uint64_t bnxt_re_update_msn_tbl(uint32_t st_idx, uint32_t npsn,
