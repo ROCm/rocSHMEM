@@ -211,6 +211,8 @@ public:
   void create_cqs(int ncqs, int cqe);
 
   void create_qps_impl(int nqps);
+
+  int ibv_mtu_to_int(enum ibv_mtu mtu);
 #else
   template <typename T>
   void try_to_modify_qp(ibv_qp* qp, T state);

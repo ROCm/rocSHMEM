@@ -65,7 +65,7 @@ struct bnxt_device_sq : public bnxt_device_wq {
   uint32_t msn;
   uint32_t msn_tbl_sz;
   uint32_t psn_sz_log2;
-  uint64_t mtu{4096};
+  uint64_t mtu;
 } __attribute__((packed));
 
 struct bnxt_host_cq {

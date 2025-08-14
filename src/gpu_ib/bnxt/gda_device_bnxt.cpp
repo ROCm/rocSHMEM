@@ -26,6 +26,20 @@
 
 namespace rocshmem {
 
+int GDADevice::ibv_mtu_to_int(enum ibv_mtu mtu) {
+  switch (mtu) {
+    case IBV_MTU_256:  return 256;
+    case IBV_MTU_512:  return 512;
+    case IBV_MTU_1024: return 1024;
+    case IBV_MTU_2048: return 2048;
+    case IBV_MTU_4096: return 4096;
+    default: {
+      fprintf(stderr, "[ERROR] Invalid ibv_mtu\n");
+      return 0;
+    }
+  }
+}
+
 void GDADevice::ib_init(struct ibv_device* ib_dev, uint8_t port) {
   int err;
 
@@ -78,7 +92,7 @@ void GDADevice::change_status_rtr(ibv_qp *qp, dest_info_t *dest, uint8_t port) {
 
   memset(&attr, 0, sizeof(struct ibv_qp_attr));
   attr.qp_state               = IBV_QPS_RTR;
-  artr.path_mtu               = ib_state->portinfo.active_mtu;
+  attr.path_mtu               = ib_state->portinfo.active_mtu;
   attr.rq_psn                 = dest->psn;
   attr.dest_qp_num            = dest->qpn;
 
@@ -196,7 +210,7 @@ void GDADevice::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   gpu_qp->sq.msntbl      = bnxt_qps[conn_num].msntbl;
   gpu_qp->sq.msn_tbl_sz  = bnxt_qps[conn_num].msn_tbl_sz;
   gpu_qp->sq.psn_sz_log2 = std::log2(bnxt_qps[conn_num].mem_info.sq_psn_sz);
-  gpu_qp->sq.mtu         = 4096;
+  gpu_qp->sq.mtu         = ibv_mtu_to_int(ib_state->portinfo.active_mtu);
 
   /* Export DB */
   err = bnxt_re_dv_get_default_db_region(context, &db_region_attr);
