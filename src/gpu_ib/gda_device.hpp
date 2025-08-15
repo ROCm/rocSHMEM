@@ -294,8 +294,6 @@ public:
   int gid_index;
 
 #ifdef GPUIB_BNXT
-  union ibv_gid gid;
-
   std::vector<struct bnxt_host_qp> bnxt_qps;
   std::vector<struct bnxt_host_cq> bnxt_cqs;
 
