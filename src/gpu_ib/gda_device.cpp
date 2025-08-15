@@ -451,7 +451,7 @@ void GDADevice::Alltoall_char_inplace (char *inoutbuf, size_t num_bytes, rocshme
 
   int my_pe_in_world = team_obj->my_pe_in_world;
   for (int i = 0; i < num_pes; i++) {
-      pes_in_world[i] = team_obj->get_pe_in_world(i);      
+      pes_in_world[i] = team_obj->get_pe_in_world(i);
   }
 
   // Since this is an in-place algorithm, allocate the temporary receive buffer first
@@ -470,7 +470,7 @@ void GDADevice::Alltoall_char_inplace (char *inoutbuf, size_t num_bytes, rocshme
     // followed by the receive.
     // There is a chance for deadlock in my opinion for large messages.
     backend_bootstr->send(tmpsend, num_bytes, pes_in_world[sendto_team], step /* used as tag */);
-    backend_bootstr->recv(tmprecv, num_bytes, pes_in_world[recvfrom_team], step );	
+    backend_bootstr->recv(tmprecv, num_bytes, pes_in_world[recvfrom_team], step );
   }
   //Since this is an in_place all-to-all, copy data back into the user buffer
   for (int step = 0; step < num_pes; step++) {
@@ -479,7 +479,7 @@ void GDADevice::Alltoall_char_inplace (char *inoutbuf, size_t num_bytes, rocshme
   }
 
   delete[] recv_buf;
-  delete[] pes_in_world;  
+  delete[] pes_in_world;
 }
 
 void GDADevice::Allreduce_char_BAND (char* inbuf, char *outbuf, size_t num_bytes,
@@ -661,13 +661,8 @@ void GDADevice::heap_memory_rkey() {
   auto *base_heap = heap.get_local_heap_base();
   int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
 
-#ifdef GPUIB_BNXT
-  heap_mr = bnxt_re_dv_reg_mr(ib_state->pd_orig, base_heap, heap.get_size(), access);
-  GPUIB_CHECK_NNULL(heap_mr, "bnxt_re_dv_reg_mr");
-#else
   heap_mr = ibv_reg_mr(ib_state->pd_orig, base_heap, heap.get_size(), access);
   GPUIB_CHECK_NNULL(heap_mr, "ibv_reg_mr");
-#endif
 
   const size_t rkeys_size = sizeof(uint32_t) * num_pes;
   uint32_t *host_rkey_cpy = reinterpret_cast<uint32_t*>(malloc(rkeys_size));
