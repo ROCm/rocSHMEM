@@ -155,10 +155,11 @@ class QueuePair {
    *
    * @param[in] db_val Doorbell value is written by method.
    */
-#ifdef GPUIB_IONIC
+#if defined(GPUIB_IONIC)
   __device__ void ring_doorbell(uint32_t pos);
 #elif defined(GPUIB_BNXT)
-  __device__ void ring_doorbell(uint32_t pos);
+  __device__ void ring_sq_doorbell(uint32_t slot_idx);
+  __device__ void ring_cq_doorbell(uint32_t slot_idx);
 #else
   __device__ void ring_doorbell(uint64_t db_val, uint64_t my_sq_counter);
 #endif
@@ -217,10 +218,11 @@ class QueuePair {
   uint32_t inline_threshold{0};
 
 #elif defined(GPUIB_BNXT)
-  uint64_t *dpi;
-  void *cq_buf;
-  void *sq_buf;
-  void *rq_buf;
+  uint64_t *dbr;
+  struct bnxt_device_cq cq;
+  struct bnxt_device_sq sq;
+
+  __device__ int poll_cq();
 #else // !GPUIB_IONIC && !GPUIB_BNXT
 
   db_reg_t db{};

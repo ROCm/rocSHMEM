@@ -26,22 +26,67 @@
 #define LIBRARY_SRC_GPU_IB_BNXT_GDA_PROVIDER_HPP_
 
 extern "C" {
-#include <linux/types.h>
-#include "bnxt_re-abi.h"
-
-#define EXPERIMENTAL_APIS
-#include "bnxt_re_dv.h"
+#include <infiniband/bnxt_re_dv.h>
+#include <infiniband/bnxt_re_hsi.h>
 }
 
-#include "bnxt_util.hpp"
-
-#define GPUIB_DEFAULT_GID    0
+#define GPUIB_DEFAULT_GID    3
 #define GPUIB_MAX_ATOMIC     1
 #define GPUIB_OP_RDMA_WRITE  BNXT_RE_WR_OPCD_RDMA_WRITE
 #define GPUIB_OP_ATOMIC_FA   BNXT_RE_WR_OPCD_ATOMIC_FA
 #define GPUIB_OP_ATOMIC_CS   BNXT_RE_WR_OPCD_ATOMIC_CS
 
-// Should this be in bnxt_re-abi or _dv.h?
-#define BNXT_CQE_SIZE       32
+#define bnxt_re_get_cqe_sz() (sizeof(struct bnxt_re_req_cqe) + \
+                              sizeof(struct bnxt_re_bcqe))
+
+#define bnxt_re_is_cqe_valid(valid, phase)              \
+        (((valid) & BNXT_RE_BCQE_PH_MASK) == (phase))
+
+struct bnxt_device_wq {
+  void *buf;
+  uint32_t depth;
+  uint32_t head;
+  uint32_t tail;
+  uint32_t flags;
+  uint32_t id;
+
+  uint32_t lock;
+
+  uint32_t db_cnt {0};
+} __attribute__((packed));
+
+struct bnxt_device_cq : public bnxt_device_wq {
+  uint32_t phase;
+} __attribute__((packed));
+
+struct bnxt_device_sq : public bnxt_device_wq {
+  uint32_t psn;
+  volatile uint32_t posted;
+
+  void *msntbl;
+  uint32_t msn;
+  uint32_t msn_tbl_sz;
+  uint32_t psn_sz_log2;
+  uint64_t mtu;
+} __attribute__((packed));
+
+struct bnxt_host_cq {
+  void *buf;
+  void *handle;
+  void *umem_handle;
+  uint64_t length;
+  uint32_t depth;
+} __attribute__((packed));
+
+struct bnxt_host_qp {
+  struct bnxt_re_dv_qp_mem_info mem_info;
+  struct bnxt_re_dv_qp_init_attr attr;
+  void *sq_buf;
+  void *rq_buf;
+  void *msntbl;
+  uint32_t msn_tbl_sz;
+} __attribute__((packed));
+
+/*****************************************************************************/
 
 #endif  //LIBRARY_SRC_GPU_IB_BNXT_GDA_PROVIDER_HPP_

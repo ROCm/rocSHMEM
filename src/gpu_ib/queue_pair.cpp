@@ -39,13 +39,8 @@ QueuePair::QueuePair(struct ibv_pd* pd) {
   CHECK_HIP(hipMemset(nonfetching_atomic, 0, 8));
   int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
 
-#ifdef GPUIB_BNXT
-  ibv_mr *mr = bnxt_re_dv_reg_mr(pd, nonfetching_atomic, 8, access);
-  GPUIB_CHECK_NNULL(mr, "bnxt_re_dv_reg_mr");
-#else
   ibv_mr *mr = ibv_reg_mr(pd, nonfetching_atomic, 8, access);
   GPUIB_CHECK_NNULL(mr, "ibv_reg_mr");
-#endif
 
 #if defined(GPUIB_IONIC) || defined(GPUIB_BNXT)
   nonfetching_atomic_lkey = mr->lkey;
@@ -56,13 +51,8 @@ QueuePair::QueuePair(struct ibv_pd* pd) {
   allocator.allocate((void**)&fetching_atomic, 8 * FETCHING_ATOMIC_CNT);
   CHECK_HIP(hipMemset(fetching_atomic, 0, 8 * FETCHING_ATOMIC_CNT));
   access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
-#ifdef GPUIB_BNXT
-  mr = bnxt_re_dv_reg_mr(pd, fetching_atomic, 8 * FETCHING_ATOMIC_CNT, access);
-  GPUIB_CHECK_NNULL(mr, "bnxt_re_dv_reg_mr");
-#else
   mr = ibv_reg_mr(pd, fetching_atomic, 8 * FETCHING_ATOMIC_CNT, access);
   GPUIB_CHECK_NNULL(mr, "ibv_reg_mr");
-#endif
 #if defined(GPUIB_IONIC) || defined(GPUIB_BNXT)
   fetching_atomic_lkey = mr->lkey;
 #else

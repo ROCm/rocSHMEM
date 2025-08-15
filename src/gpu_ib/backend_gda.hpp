@@ -324,6 +324,8 @@ class GDABackend : public Backend {
   void create_cqs(int ncqs, int cqe);
 
   void create_qps_impl(int nqps);
+
+  int ibv_mtu_to_int(enum ibv_mtu mtu);
 #else
   template <typename T>
   void try_to_modify_qp(ibv_qp* qp, T state);
@@ -477,20 +479,10 @@ class GDABackend : public Backend {
 #ifdef GPUIB_BNXT
   union ibv_gid gid;
 
-  uint64_t *host_dpi_ptr;
-  uint64_t *gpu_dpi_ptr;
+  std::vector<struct bnxt_host_qp> bnxt_qps;
+  std::vector<struct bnxt_host_cq> bnxt_cqs;
 
-  int cq_buf_offset;    /* Length of a single queue */
-  void *cq_buf;         /* Host ptr */
-  void *gpu_cq_buf;     /* Device ptr */
-  void *cq_umem_handle;
-
-  int sq_buf_offset;    /* Length of QP sq */
-  int rq_buf_offset;    /* Length of QP rq */
-  int qp_buf_offset;    /* Length of QP buf (sq + rq) */
-  void *qp_buf;         /* Host ptr */
-  void *gpu_qp_buf;     /* Device ptr */
-  void *qp_umem_handle;
+  struct bnxt_re_dv_db_region_attr db_region_attr;
 #endif
 };
 

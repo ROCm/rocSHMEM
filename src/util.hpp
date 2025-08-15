@@ -31,9 +31,9 @@
 
 #include <cstdio>
 
-#include "assembly.hpp"
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "constants.hpp"
+#include "assembly.hpp"
 
 namespace rocshmem {
 
