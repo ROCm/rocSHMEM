@@ -1063,7 +1063,7 @@ void GDADevice::init_gid_index(uint8_t port_num) {
       selected_gid_type  = gid_type;
       selected_gid       = current_gid;
     }
-    /* Choose RoCE V2 over V1 */
+    /* Choose RoCEv2 over RoCEv1 */
     else  if (gid_type > selected_gid_type) {
       selected_gid_index = i;
       selected_gid_type  = gid_type;
