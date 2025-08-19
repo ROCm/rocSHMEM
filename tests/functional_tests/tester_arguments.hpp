@@ -69,9 +69,9 @@ class TesterArguments {
   /**
    * Defaults tester values
    */
-  int loop = 200;
+  int loop = 10;
   int skip = 10;
-  int loop_large = 200;
+  int loop_large = 10;
   uint64_t large_message_size = 32768;
 };
 
