@@ -74,7 +74,8 @@ __host__ Team::Team(GDADevice * device, TeamInfo* team_info_wrt_parent,
       tinfo_wrt_parent(team_info_wrt_parent),
       tinfo_wrt_world(team_info_wrt_world),
       num_pes(_num_pes),
-      my_pe(_my_pe) {
+      my_pe(_my_pe),
+      mpi_comm(_mpi_comm) {
 }
 
 __host__ __device__ int Team::get_pe_in_world(int pe) {
