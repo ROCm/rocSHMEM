@@ -455,9 +455,8 @@ TestGDA() {
   ExecTest  "waveput"          2       2            128       1048576
   ExecTest  "waveput"          2       16           128       8
 
-#This should work
-#  ExecTest  "teamctxput"       2       4            128       1024
-#  ExecTest  "teamctxput"       2       16           256       1024
+  ExecTest  "teamctxput"       2       4            128       1024
+  ExecTest  "teamctxput"       2       16           256       1024
 
 #  ExecTest  "get"              2       1            1         1048576
 #  ExecTest  "get"              2       1            1024      512
@@ -475,7 +474,6 @@ TestGDA() {
 #  ExecTest  "waveget"          2       2            128       1048576
 #  ExecTest  "waveget"          2       16           128       8
 
-#This should work
 #  ExecTest  "teamctxget"       2       4            128       1024
 #  ExecTest  "teamctxget"       2       16           256       1024
 
@@ -484,7 +482,7 @@ TestGDA() {
 #  ExecTest  "g"                2       8            1         32
 #  ExecTest  "g"                2       16           128       4
 
-#Implemented but know incorrect
+#Implemented but known incorrect
 #  ExecTest  "p"                2       1            1         128
 #  ExecTest  "p"                2       1            1024      2
 #  ExecTest  "p"                2       8            1         32
@@ -508,9 +506,8 @@ TestGDA() {
   ExecTest  "waveputnbi"       2       2            128       1048576
   ExecTest  "waveputnbi"       2       16           128       8
 
-#This should work
-#  ExecTest  "teamctxputnbi"    2       4            128       1024
-#  ExecTest  "teamctxputnbi"    2       16           256       1024
+  ExecTest  "teamctxputnbi"    2       4            128       1024
+  ExecTest  "teamctxputnbi"    2       16           256       1024
 
 #  ExecTest  "getnbi"           2       1            1         1048576
 #  ExecTest  "getnbi"           2       1            1024      512
@@ -554,7 +551,7 @@ TestGDA() {
 #  ExecTest  "amo_finc"         2       8            1
 #  ExecTest  "amo_finc"         2       32           128
 
-#This works but tester required get
+#This works but tester requires get
 #  ExecTest  "amo_inc"          2       1            1
 #  ExecTest  "amo_inc"          2       1            1024
 #  ExecTest  "amo_inc"          2       8            1
@@ -566,7 +563,7 @@ TestGDA() {
 #  ExecTest  "amo_fadd"         2       8            1
 #  ExecTest  "amo_fadd"         2       32           128
 
-#This works but tester required get
+#This works but tester requires get
 #  ExecTest  "amo_add"          2       1            1
 #  ExecTest  "amo_add"          2       1            1024
 #  ExecTest  "amo_add"          2       8            1
@@ -583,14 +580,10 @@ TestGDA() {
   #       | Name             | Ranks | Workgroups | Threads | Max Message Size #
   ##############################################################################
   ExecTest  "barrierall"       2       1            1
-#This should work
-#  ExecTest  "teambarrier"      2       1            1
+  ExecTest  "teambarrier"      2       1            1
 
-#This should work
-#  ExecTest  "sync"             2       1            1
-
-#This should work
-#  ExecTest  "syncall"          2       1            1
+  ExecTest  "sync"             2       1            1
+  ExecTest  "syncall"          2       1            1
 
 #  ExecTest  "alltoall"         2       1            1         512
 
@@ -610,6 +603,11 @@ TestGDA() {
   ExecTest  "pingpong"         2       1            1
   ExecTest  "pingpong"         2       8            1
   ExecTest  "pingpong"         2       32           1
+
+  # This test requires more contexts than workgroups
+  export ROCSHMEM_MAX_NUM_CONTEXTS=1024
+  ExecTest  "teamctxinfra"     2       1            1
+  unset ROCSHMEM_MAX_NUM_CONTEXTS
 }
 
 ValidateInput() {
