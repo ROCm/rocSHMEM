@@ -1,5 +1,7 @@
 /******************************************************************************
- * Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) Advanced Micro Devices, Inc. All rights reserved.
+ *
+ * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -13,32 +15,44 @@
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_GPU_IB_CONTEXT_IB_DEVICE_HPP_
-#define LIBRARY_SRC_GPU_IB_CONTEXT_IB_DEVICE_HPP_
+#ifndef LIBRARY_SRC_GDA_CONTEXT_DEVICE_HPP_
+#define LIBRARY_SRC_GDA_CONTEXT_DEVICE_HPP_
 
 #include "context.hpp"
+#include "team.hpp"
 
 namespace rocshmem {
 
-class QueuePair;
-class GDADevice;
-
-class GPUIBContext : public Context {
+class GDAContext : public Context {
  public:
-  GPUIBContext(GDADevice *device, int idx);
+  __host__ GDAContext(Backend *b, unsigned int ctx_id);
+
+  __device__ GDAContext(Backend *b, unsigned int ctx_id);
+
+  __device__ void ctx_create();
 
   __device__ void ctx_destroy();
 
   __device__ void putmem(void *dest, const void *source, size_t nelems, int pe);
 
-  __device__ void putmem_nbi(void *dest, const void *source, size_t nelems, int pe);
+  __device__ void getmem(void *dest, const void *source, size_t nelems, int pe);
+
+  __device__ void putmem_nbi(void *dest, const void *source, size_t nelems,
+                             int pe);
+
+  __device__ void getmem_nbi(void *dest, const void *source, size_t size,
+                             int pe);
+
+  __device__ void fence();
+
+  __device__ void fence(int pe);
 
   __device__ void quiet();
 
@@ -64,23 +78,9 @@ class GPUIBContext : public Context {
 
   __device__ void sync(rocshmem_team_t team);
 
-  template <typename T>
-  __device__ void amo_add(void *dst, T value, int pe);
+  __device__ void sync_wave(rocshmem_team_t team);
 
-  template <typename T>
-  __device__ void amo_set(void *dst, T value, int pe);
-
-  template <typename T>
-  __device__ T amo_swap(void *dst, T value, int pe);
-
-  template <typename T>
-  __device__ void amo_cas(void *dst, T value, T cond, int pe);
-
-  template <typename T>
-  __device__ T amo_fetch_add(void *dst, T value, int pe);
-
-  template <typename T>
-  __device__ T amo_fetch_cas(void *dst, T value, T cond, int pe);
+  __device__ void sync_wg(rocshmem_team_t team);
 
   template <typename T>
   __device__ void p(T *dest, T value, int pe);
@@ -91,9 +91,98 @@ class GPUIBContext : public Context {
   template <typename T>
   __device__ void put_nbi(T *dest, const T *source, size_t nelems, int pe);
 
-  __device__ void putmem_wave(void *dest, const void *source, size_t nelems, int pe);
+  template <typename T>
+  __device__ T g(const T *source, int pe);
 
-  __device__ void putmem_nbi_wave(void *dest, const void *source, size_t nelems, int pe);
+  template <typename T>
+  __device__ void get(T *dest, const T *source, size_t nelems, int pe);
+
+  template <typename T>
+  __device__ void get_nbi(T *dest, const T *source, size_t nelems, int pe);
+
+  // Atomic operations
+  template <typename T>
+  __device__ void amo_add(void *dst, T value, int pe);
+
+  template <typename T>
+  __device__ void amo_set(void *dst, T value, int pe);
+
+  template <typename T>
+  __device__ T amo_swap(void *dst, T value, int pe);
+
+  template <typename T>
+  __device__ T amo_fetch_and(void *dst, T value, int pe);
+
+  template <typename T>
+  __device__ void amo_and(void *dst, T value, int pe);
+
+  template <typename T>
+  __device__ T amo_fetch_or(void *dst, T value, int pe);
+
+  template <typename T>
+  __device__ void amo_or(void *dst, T value, int pe);
+
+  template <typename T>
+  __device__ T amo_fetch_xor(void *dst, T value, int pe);
+
+  template <typename T>
+  __device__ void amo_xor(void *dst, T value, int pe);
+
+  template <typename T>
+  __device__ void amo_cas(void *dst, T value, T cond, int pe);
+
+  template <typename T>
+  __device__ T amo_fetch_add(void *dst, T value, int pe);
+
+  template <typename T>
+  __device__ T amo_fetch_cas(void *dst, T value, T cond, int pe);
+
+  // Collectives
+  template <typename T, ROCSHMEM_OP Op>
+  __device__ int reduce(rocshmem_team_t team, T *dest, const T *source, int nreduce);
+
+  template <typename T>
+  __device__ void broadcast(rocshmem_team_t team, T *dest, const T *source,
+                            int nelems, int pe_root);
+
+  template <typename T>
+  __device__ void alltoall(rocshmem_team_t team, T *dest, const T *source,
+                           int nelems);
+  template <typename T>
+  __device__ void fcollect(rocshmem_team_t team, T *dest, const T *source,
+                           int nelems);
+
+
+  // Block/wave functions
+  __device__ void putmem_wg(void *dest, const void *source, size_t nelems,
+                            int pe);
+
+  __device__ void getmem_wg(void *dest, const void *source, size_t nelems,
+                            int pe);
+
+  __device__ void putmem_nbi_wg(void *dest, const void *source, size_t nelems,
+                                int pe);
+
+  __device__ void getmem_nbi_wg(void *dest, const void *source, size_t size,
+                                int pe);
+
+  __device__ void putmem_wave(void *dest, const void *source, size_t nelems,
+                              int pe);
+
+  __device__ void getmem_wave(void *dest, const void *source, size_t nelems,
+                              int pe);
+
+  __device__ void putmem_nbi_wave(void *dest, const void *source, size_t nelems,
+                                  int pe);
+
+  __device__ void getmem_nbi_wave(void *dest, const void *source, size_t size,
+                                  int pe);
+
+  template <typename T>
+  __device__ void put_wg(T *dest, const T *source, size_t nelems, int pe);
+
+  template <typename T>
+  __device__ void put_nbi_wg(T *dest, const T *source, size_t nelems, int pe);
 
   template <typename T>
   __device__ void put_wave(T *dest, const T *source, size_t nelems, int pe);
@@ -101,27 +190,112 @@ class GPUIBContext : public Context {
   template <typename T>
   __device__ void put_nbi_wave(T *dest, const T *source, size_t nelems, int pe);
 
-  __device__ void fence();
+  template <typename T>
+  __device__ void get_wg(T *dest, const T *source, size_t nelems, int pe);
+
+  template <typename T>
+  __device__ void get_nbi_wg(T *dest, const T *source, size_t nelems, int pe);
+
+
+  template <typename T>
+  __device__ void get_wave(T *dest, const T *source, size_t nelems, int pe);
+
+  template <typename T>
+  __device__ void get_nbi_wave(T *dest, const T *source, size_t nelems, int pe);
+
+#define GDA_CONTEXT_PUT_SIGNAL_DEC(SUFFIX)                                               \
+  template <typename T>                                                                  \
+  __device__ void put_signal##SUFFIX(T *dest, const T *source, size_t nelems,            \
+                                     uint64_t *sig_addr, uint64_t signal, int sig_op,    \
+                                     int pe);                                            \
+                                                                                         \
+  __device__ void putmem_signal##SUFFIX(void *dest, const void *source, size_t nelems,   \
+                                        uint64_t *sig_addr, uint64_t signal, int sig_op, \
+                                        int pe);
+
+  GDA_CONTEXT_PUT_SIGNAL_DEC()
+  GDA_CONTEXT_PUT_SIGNAL_DEC(_wg)
+  GDA_CONTEXT_PUT_SIGNAL_DEC(_wave)
+  GDA_CONTEXT_PUT_SIGNAL_DEC(_nbi)
+  GDA_CONTEXT_PUT_SIGNAL_DEC(_nbi_wg)
+  GDA_CONTEXT_PUT_SIGNAL_DEC(_nbi_wave)
+
+  __device__ uint64_t signal_fetch(const uint64_t *sig_addr);
+  __device__ uint64_t signal_fetch_wg(const uint64_t *sig_addr);
+  __device__ uint64_t signal_fetch_wave(const uint64_t *sig_addr);
 
  private:
-  __device__ void internal_direct_barrier(int pe, int PE_start, int stride, int n_pes, int64_t *pSync);
 
-  __device__ void internal_atomic_barrier(int pe, int PE_start, int stride, int n_pes, int64_t *pSync);
+  //internal functions used by collective operations
+  template <typename T>
+  __device__ void internal_broadcast(T *dest, const T *source, int nelems, int pe_root,
+                            int pe_start, int stride, int pe_size,
+                            long *p_sync);  // NOLINT(runtime/int)
 
-  __device__ void internal_sync(int pe, int PE_start, int stride, int PE_size, int64_t *pSync);
+  template <typename T>
+  __device__ void internal_put_broadcast(T *dst, const T *src, int nelems,
+                                         int pe_root, int PE_start,
+                                         int logPE_stride, int PE_size);  // NOLINT(runtime/int)
 
-  __device__ void internal_sync_wave(int pe, int PE_start, int stride, int PE_size, int64_t *pSync);
+  template <typename T>
+  __device__ void internal_get_broadcast(T *dst, const T *src, int nelems,
+                                         int pe_root);  // NOLINT(runtime/int)
 
-  __device__ void internal_sync_wg(int pe, int PE_start, int stride, int PE_size, int64_t *pSync);
+  template <typename T>
+  __device__ void fcollect_linear(rocshmem_team_t team, T *dest,
+                                  const T *source, int nelems);
+
+  template <typename T>
+  __device__ void alltoall_linear(rocshmem_team_t team, T *dest,
+                                  const T *source, int nelems);
+
+  __device__ void internal_sync(int pe, int PE_start, int stride, int PE_size,
+                                int64_t *pSync);
+
+  __device__ void internal_sync_wave(int pe, int PE_start, int stride, int PE_size,
+                                int64_t *pSync);
+
+  __device__ void internal_sync_wg(int pe, int PE_start, int stride, int PE_size,
+                                int64_t *pSync);
+
+  __device__ void internal_direct_barrier(int pe, int PE_start, int stride,
+                                          int n_pes, int64_t *pSync);
+
+  __device__ void internal_atomic_barrier(int pe, int PE_start, int stride,
+                                          int n_pes, int64_t *pSync);
+
+  template <typename T, ROCSHMEM_OP Op>
+  __device__ void internal_direct_allreduce(T *dst, const T *src,
+                                            int nelems, GDATeam *team_obj);
+  template <typename T, ROCSHMEM_OP Op>
+  __device__ void internal_ring_allreduce(T *dst, const T *src,
+                                          int nelems, GDATeam *team_obj,
+                                          int n_seg, int seg_size, int chunk_size);
+
+
+  //Temporary scratchpad memory used by internal barrier algorithms.
+  int64_t *barrier_sync{nullptr};
+
+  /**
+   * @brief Array containing the addresses of the work/sync buffer bases
+   * of other PEs
+  */
+  char **Wrk_Sync_buffer_bases_{nullptr};
+
+  /**
+   * @brief Device context Id
+   */
+  unsigned int ctx_id_{};
 
  public:
-  QueuePair *qps{nullptr};
+  //TODO(Avinash):
+  //Make tinfo private variable, it requires changes to the context
+  //creation API in backend
 
-  char *const *base_heap{nullptr};
-
-  int64_t *barrier_sync{nullptr};
+  //Team information for the team associated with the context
+  TeamInfo *tinfo{nullptr};
 };
 
 }  // namespace rocshmem
 
-#endif  // LIBRARY_SRC_GPU_IB_CONTEXT_IB_DEVICE_HPP_
+#endif // LIBRARY_SRC_GDA_CONTEXT_DEVICE_HPP_

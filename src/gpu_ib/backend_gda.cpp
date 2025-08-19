@@ -1,5 +1,7 @@
 /******************************************************************************
- * Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) Advanced Micro Devices, Inc. All rights reserved.
+ *
+ * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -13,30 +15,22 @@
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "gda_device.hpp"
+#include <cstring>
 
-#include <cstdio>
+#include "backend_gda.hpp"
+#include "gda_team.hpp"
+
+
+#include <hip/hip_runtime.h>
 #include <cstdlib>
-#include <endian.h>
-#include <mpi.h>
-#include <vector>
-#include <mutex>
-#include <rocshmem/rocshmem.hpp>
-#include <unistd.h>
-
-#include "context_incl.hpp"
-#include "gpuib_macros.inl"
-#include "gpu_ib_team.hpp"
-#include "host/host.hpp"
-#include "queue_pair.hpp"
-#include "topology.hpp"
+#include <cassert>
 
 namespace rocshmem {
 
@@ -49,13 +43,13 @@ namespace rocshmem {
 
 extern rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
-rocshmem_team_t get_external_team(GPUIBTeam *team) {
+rocshmem_team_t get_external_team(GDATeam *team) {
   return reinterpret_cast<rocshmem_team_t>(team);
 }
 
 int get_ls_non_zero_bit(char *bitmask, int mask_length) {
   int position{-1};
-  for (int bit_i{0}; bit_i < mask_length; bit_i++) {
+  for (int bit_i = 0; bit_i < mask_length; bit_i++) {
     int byte_i = bit_i / CHAR_BIT;
     if (bitmask[byte_i] & (1 << (bit_i % CHAR_BIT))) {
       position = bit_i;
@@ -87,7 +81,7 @@ static void dump_ibv_context(struct ibv_context* x) {
          "  (int)                async_fd            = %d\n"
          "  (int)                num_comp_vectors    = %d\n"
          "  (void*)              abi_compat          = %p\n",
-	 x->device, x->cmd_fd, x->async_fd, x->num_comp_vectors, x->abi_compat);
+         x->device, x->cmd_fd, x->async_fd, x->num_comp_vectors, x->abi_compat);
 };
 
 static void dump_ibv_device(struct ibv_device* x) {
@@ -112,7 +106,7 @@ static void dump_ibv_device(struct ibv_device* x) {
          "  (char[])                  dev_name       = %s\n"
          "  (char[])                  dev_path       = %s\n"
          "  (char[])                  ibdev_path     = %s\n",
-	 x->node_type, x->transport_type, x->name, x->dev_name, x->dev_path, x->ibdev_path);
+         x->node_type, x->transport_type, x->name, x->dev_name, x->dev_path, x->ibdev_path);
 }
 
 static void dump_ibv_pd(struct ibv_pd* x) {
@@ -128,7 +122,7 @@ static void dump_ibv_pd(struct ibv_pd* x) {
          "===============================================\n"
          "  (ibv_context*) context = %p\n"
          "  (uint32_t)     handle  = 0x%x\n",
-	 x->context, x->handle);
+         x->context, x->handle);
 }
 
 static void dump_ibv_port_attr(struct ibv_port_attr* x) {
@@ -184,10 +178,10 @@ static void dump_ibv_port_attr(struct ibv_port_attr* x) {
          "  (uint8_t)             link_layer      = 0x%x\n"
          "  (uint8_t)             flags           = 0x%x\n"
          "  (uint16_t)            port_cap_flags2 = 0x%x\n",
-	 x->state, x->max_mtu, x->active_mtu, x->gid_tbl_len, x->port_cap_flags, x->max_msg_sz,
-	 x->bad_pkey_cntr, x->qkey_viol_cntr, x->pkey_tbl_len, x->lid, x->sm_lid, x->lmc, x->max_vl_num,
-	 x->sm_sl, x->subnet_timeout, x->init_type_reply, x->active_width, x->active_speed, x->phys_state,
-	 x->link_layer, x->flags, x->port_cap_flags2);
+         x->state, x->max_mtu, x->active_mtu, x->gid_tbl_len, x->port_cap_flags, x->max_msg_sz,
+         x->bad_pkey_cntr, x->qkey_viol_cntr, x->pkey_tbl_len, x->lid, x->sm_lid, x->lmc, x->max_vl_num,
+         x->sm_sl, x->subnet_timeout, x->init_type_reply, x->active_width, x->active_speed, x->phys_state,
+         x->link_layer, x->flags, x->port_cap_flags2);
 }
 
 void dump_ibv_qp(struct ibv_qp *qp, int conn_num) {
@@ -267,40 +261,36 @@ void dump_mlx5dv_cq(struct mlx5dv_cq *cq_dv, int conn_num) {
 }
 #endif // !GPUIB_IONIC
 
-GDADevice::GDADevice(TcpBootstrap* bootstrap):  heap(MPI_COMM_NULL, bootstrap) {
+GDADevice::GDADevice(TcpBootstrap* bootstrap):  Backend(bootstrap) {
+  type = BackendType::GDA_BACKEND;
   init_part1();
   backend_bootstr = bootstrap;
 
-  my_pe = bootstrap->getRank();
-  num_pes = bootstrap->getNranks();
-  host_interface = new HostInterface(bootstrap, &heap);
+  /* Initialize the host interface */
+  host_interface = std::make_shared<HostInterface>(hdp_proxy_.get(), //TODO: need an hdp proxy?
+                                                   bootstrap,
+                                                   &heap);
+
+  default_host_ctx = std::make_unique<GDAHostContext>(this, 0); //TODO move to setup_default_ctx?
+
   init_part2();
 }
 
-GDADevice::GDADevice(MPI_Comm _comm) : comm(_comm), heap(_comm, nullptr) {
+GDABackend::GDABackend(TcpBootstrap *bootstrap):  Backend(bootstrap) {
+  type = BackendType::GDA_BACKEND;
   init_part1();
 
-  init_mpi_once(_comm);
-  comm = _comm;
-  NET_CHECK(MPI_Comm_size(comm, &num_pes));
-  NET_CHECK(MPI_Comm_rank(comm, &my_pe));
+  /* Initialize the host interface */
+  host_interface = std::make_shared<HostInterface>(hdp_proxy_.get(), //TODO: need an hdp proxy?
+                                                   bootstrap,
+                                                   &heap);
 
-  host_interface = new HostInterface(comm, &heap);
+  default_host_ctx = std::make_unique<GDAHostContext>(this, 0); //TODO: move to setup_default_ctx?
+
   init_part2();
 }
 
-void GDADevice::init_part1() {
-  CHECK_HIP(hipMalloc(&print_lock, sizeof(*print_lock)));
-  *print_lock = 0;
-  int* print_lock_addr{nullptr};
-  CHECK_HIP(hipGetSymbolAddress(reinterpret_cast<void**>(&print_lock_addr), HIP_SYMBOL(print_lock)));
-  CHECK_HIP(hipMemcpy(print_lock_addr, &print_lock, sizeof(print_lock), hipMemcpyDefault));
-
-  int* device_proxy_symbol_addr{nullptr};
-  CHECK_HIP(hipGetSymbolAddress(reinterpret_cast<void**>(&device_proxy_symbol_addr), HIP_SYMBOL(device_proxy)));
-  GDADevice* this_temp_addr{this};
-  CHECK_HIP(hipMemcpy(device_proxy_symbol_addr, &this_temp_addr, sizeof(this), hipMemcpyDefault));
-
+void GDABackend::init_part1() {
   if (auto maximum_num_contexts_str = getenv("ROCSHMEM_MAX_NUM_CONTEXTS")) {
     std::stringstream sstream(maximum_num_contexts_str);
     sstream >> maximum_num_contexts_;
@@ -320,11 +310,22 @@ void GDADevice::init_part1() {
 }
 
 void GDADevice::init_part2() {
-  setup_default_host_ctx();
+//TODO move to setup_default_host_ctx()?
+  ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque = default_host_ctx.get();
+
+  teams_init();
+
+  TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
+
+  default_context_proxy_ = GDADefaultContextProxyT(this, tinfo);
+
   setup_team_world();
 
-  init_teams();
-  init_collective();
+  setup_fence_buffer();
+
+  init_wrk_sync_buffer();
+
+  rocshmem_collective_init();
 
   internal_barrier();
   dest_info.resize(num_pes * (maximum_num_contexts_ + 1));
@@ -348,12 +349,12 @@ void GDADevice::init_part2() {
 
   auto npes = num_pes;
   auto dinfo = dest_info.data();
-  for (int i{0}; i < maximum_num_contexts_ + 1; i++) {
-      if (comm != MPI_COMM_NULL) {
-	  MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t), MPI_CHAR, dinfo + i * npes, sizeof(dest_info_t), MPI_CHAR, comm);
-      } else {
-	  Alltoall_char_inplace(reinterpret_cast<char*>(dinfo + i * npes), sizeof(dest_info_t), ROCSHMEM_TEAM_WORLD);
-      }
+  for (int i = 0; i < maximum_num_contexts_ + 1; i++) {
+    if (comm != MPI_COMM_NULL) {
+      MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t), MPI_CHAR, dinfo + i * npes, sizeof(dest_info_t), MPI_CHAR, comm);
+    } else {
+      Alltoall_char_inplace(reinterpret_cast<char*>(dinfo + i * npes), sizeof(dest_info_t), ROCSHMEM_TEAM_WORLD);
+    }
   }
 
   for (int i{0}; i < qps.size(); i++) {
@@ -373,15 +374,18 @@ void GDADevice::init_part2() {
   internal_barrier();
 }
 
-GDADevice::~GDADevice() {
-  CHECK_HIP(hipFree(print_lock));
-
-  destroy_teams();
+GDABackend::~GDABackend() {
+  /**
+   * Destroy teams infrastructure
+   * and team world
+   */
+  teams_destroy();
+  cleanup_wrk_sync_buffer();
   auto *team_world{team_tracker.get_team_world()};
   team_world->~Team();
   CHECK_HIP(hipFree(team_world));
 
-  delete default_host_ctx_;
+  delete default_host_ctx; //TODO this is not done in IPC/RO, why?
   CHECK_HIP(hipFree(default_ctx_->qps));
   CHECK_HIP(hipFree(default_ctx_));
   default_ctx_ = nullptr;
@@ -405,11 +409,21 @@ GDADevice::~GDADevice() {
 
   delete ib_state;
   if (requested_dev != nullptr)
-    free (requested_dev);
+    free(requested_dev);
 }
 
-__device__ bool GDADevice::create_ctx(rocshmem_ctx_t *ctx) {
-  GPUIBContext *ctx_;
+void GDABackend::setup_ctxs() {
+  CHECK_HIP(hipMalloc(&ctx_array, sizeof(GDAContext) * maximum_num_contexts_ + 1)); //TODO: double check if +1 needed, and if default_ctx should also be in that array
+  // 0th context is default context
+  for (size_t i = 0; i < maximum_num_contexts_; i++) {
+    new (&ctx_array[i]) GDAContext(this, i + 1);
+    ctx_free_list.get()->push_back(ctx_array + i);
+  }
+}
+
+__device__ bool GDABackend::create_ctx(int64_t options, rocshmem_ctx_t *ctx) {
+  GDAContext *ctx_{nullptr};
+
   auto pop_result = ctx_free_list.get()->pop_front();
   if (!pop_result.success) {
     return false;
@@ -417,41 +431,63 @@ __device__ bool GDADevice::create_ctx(rocshmem_ctx_t *ctx) {
   ctx_ = pop_result.value;
 
   ctx->ctx_opaque = ctx_;
+
+  ctx_->tinfo = reinterpret_cast<TeamInfo *>(ctx->team_opaque);
   return true;
 }
 
-void GDADevice::create_ctx(void **ctx) {
-  GPUIBHostContext *new_ctx = nullptr;
-  new_ctx = new GPUIBHostContext(this);
-  *ctx = new_ctx;
+__device__ void GDABackend::destroy_ctx(rocshmem_ctx_t *ctx) {
+  ctx_free_list.get()->push_back(static_cast<GDAContext *>(ctx->ctx_opaque));
 }
 
-void GDADevice::destroy_ctx(Context *ctx) {
-  GPUIBHostContext *gpu_ib_host_ctx = reinterpret_cast<GPUIBHostContext*>(ctx);
-  delete gpu_ib_host_ctx;
+void GDABackend::setup_team_world() {
+  TeamInfo *team_info_wrt_parent, *team_info_wrt_world;
+
+  /**
+   * Allocate device-side memory for team_world and construct a
+   * GDA team in it.
+   */
+  CHECK_HIP(hipMalloc(&team_info_wrt_parent, sizeof(TeamInfo)));
+  CHECK_HIP(hipMalloc(&team_info_wrt_world, sizeof(TeamInfo)));
+
+  new (team_info_wrt_parent) TeamInfo(nullptr, 0, 1, num_pes);
+  new (team_info_wrt_world) TeamInfo(nullptr, 0, 1, num_pes);
+
+  GDATeam *team_world{nullptr};
+  CHECK_HIP(hipMalloc(&team_world, sizeof(GDATeam)));
+  new (team_world) GDATeam(this, team_info_wrt_parent, team_info_wrt_world,
+                           num_pes, my_pe, backend_comm, 0);
+  team_tracker.set_team_world(team_world);
+
+  /**
+   * Copy the address to ROCSHMEM_TEAM_WORLD.
+   */
+  ROCSHMEM_TEAM_WORLD = reinterpret_cast<rocshmem_team_t>(team_world);
 }
 
-__device__ void GDADevice::destroy_ctx(rocshmem_ctx_t *ctx) {
-  ctx_free_list.get()->push_back(static_cast<GPUIBContext*>(ctx->ctx_opaque));
+void GDABackend::team_destroy(rocshmem_team_t team) {
+  GDATeam *team_obj = get_internal_gda_team(team);
+
+  /* Mark the pool as available */
+  int bit = team_obj->pool_index_;
+  int byte_i = bit / CHAR_BIT;
+  pool_bitmask_[byte_i] |= 1 << (bit % CHAR_BIT);
+
+  team_obj->~GDATeam();
+  CHECK_HIP(hipFree(team_obj));
 }
 
-__host__ void GDADevice::global_exit(int status) {
-  if (comm != MPI_COMM_NULL)
-    MPI_Abort(comm, status);
-  else
-    abort();
-}
-
+//TODO: factorize somewhere else maybe backend_bc
 void GDADevice::Alltoall_char_inplace (char *inoutbuf, size_t num_bytes, rocshmem_team_t team) {
   // Implement an Alltoall outside of MPI assuming in_place communication
-  GPUIBTeam *team_obj = reinterpret_cast<GPUIBTeam *>(team);
+  GDATeam *team_obj = reinterpret_cast<GDATeam *>(team);
   int num_pes = team_obj->num_pes;
   int my_pe = team_obj->my_pe;
   int *pes_in_world = new int[num_pes];
 
   int my_pe_in_world = team_obj->my_pe_in_world;
   for (int i = 0; i < num_pes; i++) {
-      pes_in_world[i] = team_obj->get_pe_in_world(i);      
+      pes_in_world[i] = team_obj->get_pe_in_world(i);
   }
 
   // Since this is an in-place algorithm, allocate the temporary receive buffer first
@@ -470,7 +506,7 @@ void GDADevice::Alltoall_char_inplace (char *inoutbuf, size_t num_bytes, rocshme
     // followed by the receive.
     // There is a chance for deadlock in my opinion for large messages.
     backend_bootstr->send(tmpsend, num_bytes, pes_in_world[sendto_team], step /* used as tag */);
-    backend_bootstr->recv(tmprecv, num_bytes, pes_in_world[recvfrom_team], step );	
+    backend_bootstr->recv(tmprecv, num_bytes, pes_in_world[recvfrom_team], step);
   }
   //Since this is an in_place all-to-all, copy data back into the user buffer
   for (int step = 0; step < num_pes; step++) {
@@ -479,17 +515,18 @@ void GDADevice::Alltoall_char_inplace (char *inoutbuf, size_t num_bytes, rocshme
   }
 
   delete[] recv_buf;
-  delete[] pes_in_world;  
+  delete[] pes_in_world;
 }
 
-void GDADevice::Allreduce_char_BAND (char* inbuf, char *outbuf, size_t num_bytes,
-	                             Team *team) {
+//TODO: factorize somewhere else, maybe backend_bc?
+void GDABackend::Allreduce_char_BAND (char* inbuf, char *outbuf, size_t num_bytes,
+                                      Team *team) {
 
   // Implement an Allreduce outside of MPI. This is specialized for the scenario
   // required for the team creation, i.e. assuming bytes and using BAND operation.
   // Implementation uses an Allgather operation followed a local reduction.
 
-  GPUIBTeam *team_obj =  reinterpret_cast<GPUIBTeam *>(team);
+  GDATeam *team_obj = reinterpret_cast<GDATeam *>(team);
   int num_pes = team_obj->num_pes;
   int my_pe = team_obj->my_pe;
 
@@ -500,7 +537,7 @@ void GDADevice::Allreduce_char_BAND (char* inbuf, char *outbuf, size_t num_bytes
   if (num_pes == backend_bootstr->getNranks() ) {
     backend_bootstr->allGather(tmp_buffer, num_bytes);
   } else {
-    printf("GPUIBBackend::create_new_team: non-mpi version only supports parent_teams that contain all processes. Aborting.\n");
+    printf("GDABackend::create_new_team: non-mpi version only supports parent_teams that contain all processes. Aborting.\n");
     abort();
   }
 
@@ -514,147 +551,259 @@ void GDADevice::Allreduce_char_BAND (char* inbuf, char *outbuf, size_t num_bytes
   delete[] tmp_buffer;
 }
 
-void GDADevice::create_team(Team *parent_team, TeamInfo *team_info_wrt_parent, TeamInfo *team_info_wrt_world, int num_pes,
-			    int my_pe_in_new_team, MPI_Comm team_comm, rocshmem_team_t *new_team) {
+void GDABackend::create_new_team([[maybe_unused]] Team *parent_team,
+                                TeamInfo *team_info_wrt_parent,
+                                TeamInfo *team_info_wrt_world, int num_pes,
+                                int my_pe_in_new_team, MPI_Comm team_comm,
+                                rocshmem_team_t *new_team) {
+  /**
+   * Read the bit mask and find out a common index into
+   * the pool of available work arrays.
+   */
+  if (team_comm != MPI_COMM_NULL) {
+    NET_CHECK(MPI_Allreduce(pool_bitmask_, reduced_bitmask_, bitmask_size_,
+                            MPI_CHAR, MPI_BAND, team_comm));
+  } else {
+    Allreduce_char_BAND (pool_bitmask_, reduced_bitmask_, bitmask_size_, parent_team);
+  }
 
- if (team_comm != MPI_COMM_NULL) {
-   NET_CHECK(MPI_Allreduce(team_pool_bitmask_, team_reduced_bitmask_, team_bitmask_size_, MPI_CHAR, MPI_BAND, team_comm));
- } else {
-   Allreduce_char_BAND (team_pool_bitmask_, team_reduced_bitmask_, team_bitmask_size_, parent_team);
- }
-
+  /* Pick the least significant non-zero bit (logical layout) in the reduced
+   * bitmask */
   auto max_num_teams{team_tracker.get_max_num_teams()};
+  int common_index = get_ls_non_zero_bit(reduced_bitmask_, max_num_teams);
+  if (common_index < 0) {
+    /* No team available */
+    printf("Could not create team, all bits in use. Aborting.\n");
+    abort();
+  }
 
-  int common_index = get_ls_non_zero_bit(team_reduced_bitmask_, max_num_teams);
-  if (common_index < 0) { abort(); }
+  /* Mark the team as taken (by unsetting the bit in the pool bitmask) */
   int byte = common_index / CHAR_BIT;
-  team_pool_bitmask_[byte] &= ~(1 << (common_index % CHAR_BIT));
+  pool_bitmask_[byte] &= ~(1 << (common_index % CHAR_BIT));
 
-  GPUIBTeam *new_team_obj;
-  CHECK_HIP(hipMalloc(&new_team_obj, sizeof(GPUIBTeam)));
-  new (new_team_obj) GPUIBTeam(this, team_info_wrt_parent, team_info_wrt_world, num_pes, my_pe_in_new_team, team_comm, common_index);
+  /**
+   * Allocate device-side memory for team_world and
+   * construct a GDA team in it
+   */
+  GDATeam *new_team_obj;
+  CHECK_HIP(hipMalloc(&new_team_obj, sizeof(GDATeam)));
+  new (new_team_obj)
+      GDATeam(this, team_info_wrt_parent, team_info_wrt_world, num_pes,
+                my_pe_in_new_team, team_comm, common_index);
 
   *new_team = get_external_team(new_team_obj);
 }
 
-void GDADevice::destroy_team(rocshmem_team_t team) {
-  GPUIBTeam *team_obj = get_internal_gpu_ib_team(team);
-
-  int bit = team_obj->pool_index_;
-  int byte_i = bit / CHAR_BIT;
-  team_pool_bitmask_[byte_i] |= 1 << (bit % CHAR_BIT);
-
-  team_obj->~GPUIBTeam();
-
-  CHECK_HIP(hipFree(team_obj));
+void GDABackend::ctx_create(int64_t options, void **ctx) {
+  GDAHostContext *new_ctx{nullptr};
+  new_ctx = new GDAHostContext(this, options);
+  *ctx = new_ctx;
 }
 
+GDAHostContext *get_internal_gda_net_ctx(Context *ctx) {
+  return reinterpret_cast<GDAHostContext *>(ctx);
+}
 
-void GDADevice::init_collective() {
+void GDABackend::ctx_destroy(Context *ctx) {
+  GDAHostContext *gda_host_ctx{get_internal_gda_net_ctx(ctx)};
+  delete gda_host_ctx;
+}
+
+void GDABackend::reset_backend_stats() {
+  assert(false);
+}
+
+void GDABackend::dump_backend_stats() {
+  assert(false);
+}
+
+__host__ void GDABackend::global_exit(int status) {
+  if (backend_comm != MPI_COMM_NULL)
+    MPI_Abort(backend_comm, status);
+  else
+    abort();
+}
+
+void GDABackend::teams_destroy() {
+  free(pool_bitmask_);
+  free(reduced_bitmask_);
+}
+
+void GDABackend::init_wrk_sync_buffer() {
+  /**
+   * compute work/sync buffer size
+   */
+  auto max_num_teams{team_tracker.get_max_num_teams()};
+
+  /**
+   * size of barrier sync
+   */
+  Wrk_Sync_buffer_size_ += sizeof(*barrier_sync) * ROCSHMEM_BARRIER_SYNC_SIZE;
+
+  /**
+   * Size of sync arrays for the teams
+  */
+  Wrk_Sync_buffer_size_ += sizeof(long) * max_num_teams *
+                           (ROCSHMEM_BARRIER_SYNC_SIZE +
+                            ROCSHMEM_REDUCE_SYNC_SIZE +
+                            ROCSHMEM_BCAST_SYNC_SIZE +
+                            ROCSHMEM_ALLTOALL_SYNC_SIZE);
+
+  /**
+   * Size of work arrays for the teams
+   * Accommodate largest possible data type for pWrk
+  */
+  Wrk_Sync_buffer_size_ += sizeof(double) * max_num_teams *
+                           (ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE +
+                            ROCSHMEM_ATA_MAX_WRKDATA_SIZE);
+
+  /**
+   * Size of fence array
+   */
+  Wrk_Sync_buffer_size_ += sizeof(int) * num_pes; //TODO: do we need a fence array?
+
+  /**
+   * Allocate a buffer of size Wrk_Sync_buffer_size_, using heap memory 
+   * (should be uncached fine-grained ideally)
+  */
+  heap.malloc(reinterpret_cast<void**>(&Wrk_Sync_buffer_ptr_), Wrk_Sync_buffer_size_);
+  assert(Wrk_Sync_buffer_ptr_);
+  temp_Wrk_Sync_buff_ptr_ = Wrk_Sync_buffer_ptr_;
+}
+
+void GDABackend::cleanup_wrk_sync_buffer() {
+  heap.free(Wrk_Sync_buffer_ptr_);
+}
+
+void GDABackend::setup_fence_buffer() { //TODO is this used?
+  /*
+  * Allocate memory for fence
+  */
+  fence_pool = reinterpret_cast<int *>(temp_Wrk_Sync_buff_ptr_);
+  temp_Wrk_Sync_buff_ptr_ += sizeof(int) * num_pes;
+}
+
+void GDABackend::rocshmem_collective_init() {
+  /*
+   * Allocate heap space for barrier_sync
+   */
   size_t one_sync_size_bytes {sizeof(*barrier_sync)};
   size_t sync_size_bytes {one_sync_size_bytes * ROCSHMEM_BARRIER_SYNC_SIZE};
 
-  heap.malloc(reinterpret_cast<void**>(&barrier_sync), sync_size_bytes);
-  for (int i{0}; i < ROCSHMEM_BARRIER_SYNC_SIZE; i++) {
+  barrier_sync = reinterpret_cast<int64_t*>(temp_Wrk_Sync_buff_ptr_);
+  temp_Wrk_Sync_buff_ptr_ += sync_size_bytes;
+
+  /*
+   * Initialize the barrier synchronization array with default values.
+   */
+  for (int i = 0; i < ROCSHMEM_BARRIER_SYNC_SIZE; i++) {
     barrier_sync[i] = ROCSHMEM_SYNC_VALUE;
   }
 
+  /*
+   * Make sure that all processing elements have done this before
+   * continuing.
+   */
   internal_barrier();
 }
 
-void GDADevice::setup_default_host_ctx() {
-  default_host_ctx_ = new GPUIBHostContext(this);
-  ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque = default_host_ctx_;
-}
-
-void GDADevice::setup_ctxs() {
-  CHECK_HIP(hipMalloc(&ctx_array, sizeof(GPUIBContext) * (maximum_num_contexts_ + 1)));
-  for (int i = 0; i < maximum_num_contexts_; i++) {
-    new (&ctx_array[i]) GPUIBContext(this, i);
-    ctx_free_list.get()->push_back(ctx_array + i);
-  }
-}
-
-void GDADevice::setup_default_ctx() {
-  CHECK_HIP(hipMalloc(&default_ctx_, sizeof(GPUIBContext)));
-  new (default_ctx_) GPUIBContext(this, maximum_num_contexts_);
-
-  int *symbol_address;
-  CHECK_HIP(hipGetSymbolAddress(reinterpret_cast<void**>(&symbol_address), HIP_SYMBOL(ROCSHMEM_CTX_DEFAULT)));
-
-  TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
-  rocshmem_ctx_t ctx_default_host{default_ctx_, tinfo};
-
-  CHECK_HIP(hipMemcpy(symbol_address, &ctx_default_host, sizeof(rocshmem_ctx_t), hipMemcpyDefault));
-}
-
-void GDADevice::setup_team_world() {
-  TeamInfo *team_info_wrt_parent;
-  CHECK_HIP(hipMalloc(&team_info_wrt_parent, sizeof(TeamInfo)));
-  new (team_info_wrt_parent) TeamInfo(nullptr, 0, 1, num_pes);
-
-  TeamInfo *team_info_wrt_world;
-  CHECK_HIP(hipMalloc(&team_info_wrt_world, sizeof(TeamInfo)));
-  new (team_info_wrt_world) TeamInfo(nullptr, 0, 1, num_pes);
-
-  GPUIBTeam *team_world{nullptr};
-  CHECK_HIP(hipMalloc(&team_world, sizeof(GPUIBTeam)));
-  new (team_world) GPUIBTeam(this, team_info_wrt_parent, team_info_wrt_world, num_pes, my_pe, comm, 0);
-
-  team_tracker.set_team_world(team_world);
-  ROCSHMEM_TEAM_WORLD = reinterpret_cast<rocshmem_team_t>(team_world);
-}
-
-void GDADevice::init_mpi_once(MPI_Comm comm) {
-  static std::mutex init_mutex;
-  const std::lock_guard<std::mutex> lock(init_mutex);
-
-  int init_done{0};
-  NET_CHECK(MPI_Initialized(&init_done));
-  if (init_done == 0) {
-    int provided;
-    NET_CHECK(MPI_Init_thread(nullptr, nullptr, MPI_THREAD_MULTIPLE, &provided));
-  }
-}
-
-void GDADevice::init_teams() {
+void GDABackend::teams_init() {
+  /**
+   * Allocate pools for the teams sync and work arrary from the SHEAP.
+   */
   auto max_num_teams{team_tracker.get_max_num_teams()};
-  size_t total_sync_elems = sizeof(long) * ROCSHMEM_BARRIER_SYNC_SIZE * max_num_teams;
-  heap.malloc(reinterpret_cast<void**>(&barrier_pSync_pool), total_sync_elems);
-  long *barrier_pSync;
-  for (int team_i{0}; team_i < max_num_teams; team_i++) {
-    barrier_pSync = reinterpret_cast<long*>(&barrier_pSync_pool[team_i * ROCSHMEM_BARRIER_SYNC_SIZE]);
-    for (int i{0}; i < ROCSHMEM_BARRIER_SYNC_SIZE; i++) {
+
+  barrier_pSync_pool = reinterpret_cast<long *>(temp_Wrk_Sync_buff_ptr_);
+  temp_Wrk_Sync_buff_ptr_ += sizeof(long) * ROCSHMEM_BARRIER_SYNC_SIZE
+                            * max_num_teams;
+
+  reduce_pSync_pool = reinterpret_cast<long *>(temp_Wrk_Sync_buff_ptr_);
+  temp_Wrk_Sync_buff_ptr_ += sizeof(long) * ROCSHMEM_REDUCE_SYNC_SIZE
+                            * max_num_teams;
+
+  bcast_pSync_pool = reinterpret_cast<long *>(temp_Wrk_Sync_buff_ptr_);
+  temp_Wrk_Sync_buff_ptr_ += sizeof(long) * ROCSHMEM_BCAST_SYNC_SIZE
+                            * max_num_teams;
+
+  alltoall_pSync_pool = reinterpret_cast<long *>(temp_Wrk_Sync_buff_ptr_);
+  temp_Wrk_Sync_buff_ptr_ += sizeof(long) * ROCSHMEM_BCAST_SYNC_SIZE
+                            * max_num_teams;
+
+  /* Accommodating for largest possible data type for pWrk */
+  pWrk_pool = reinterpret_cast<void *>(temp_Wrk_Sync_buff_ptr_);
+  temp_Wrk_Sync_buff_ptr_ += sizeof(double) * ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE
+                            * max_num_teams;
+
+
+  pAta_pool = reinterpret_cast<void *>(temp_Wrk_Sync_buff_ptr_);
+  temp_Wrk_Sync_buff_ptr_ += sizeof(double) * ROCSHMEM_ATA_MAX_WRKDATA_SIZE
+                            * max_num_teams;
+
+  /**
+   * Initialize the sync arrays in the pool with default values.
+   */
+  long *barrier_pSync, *reduce_pSync, *bcast_pSync, *alltoall_pSync;
+  for (int team_i = 0; team_i < max_num_teams; team_i++) {
+    barrier_pSync = reinterpret_cast<long *>(
+        &barrier_pSync_pool[team_i * ROCSHMEM_BARRIER_SYNC_SIZE]);
+    reduce_pSync = reinterpret_cast<long *>(
+        &reduce_pSync_pool[team_i * ROCSHMEM_REDUCE_SYNC_SIZE]);
+    bcast_pSync = reinterpret_cast<long *>(
+        &bcast_pSync_pool[team_i * ROCSHMEM_BCAST_SYNC_SIZE]);
+    alltoall_pSync = reinterpret_cast<long *>(
+        &alltoall_pSync_pool[team_i * ROCSHMEM_ALLTOALL_SYNC_SIZE]);
+
+    for (size_t i = 0; i < ROCSHMEM_BARRIER_SYNC_SIZE; i++) {
       barrier_pSync[i] = ROCSHMEM_SYNC_VALUE;
+    }
+    for (size_t i = 0; i < ROCSHMEM_REDUCE_SYNC_SIZE; i++) {
+      reduce_pSync[i] = ROCSHMEM_SYNC_VALUE;
+    }
+    for (size_t i = 0; i < ROCSHMEM_BCAST_SYNC_SIZE; i++) {
+      bcast_pSync[i] = ROCSHMEM_SYNC_VALUE;
+    }
+    for (size_t i = 0; i < ROCSHMEM_ALLTOALL_SYNC_SIZE; i++) {
+      alltoall_pSync[i] = ROCSHMEM_SYNC_VALUE;
     }
   }
 
-  team_bitmask_size_ = (max_num_teams % CHAR_BIT) ? (max_num_teams / CHAR_BIT + 1) : (max_num_teams / CHAR_BIT);
-  team_pool_bitmask_ = reinterpret_cast<char*>(malloc(team_bitmask_size_));
-  team_reduced_bitmask_ = reinterpret_cast<char*>(malloc(team_bitmask_size_));
+  /**
+   * Initialize bit mask
+   *
+   * Logical:
+   * MSB..........................................................................LSB
+   * Physical: MSB...1st least significant 8 bits...LSB  MSB...2nd least
+   * signifant 8 bits...LSB
+   *
+   * Description shows only a 2-byte long mask but idea extends to any
+   * arbitrary size.
+   */
+  bitmask_size_ = (max_num_teams % CHAR_BIT) ? (max_num_teams / CHAR_BIT + 1)
+                                             : (max_num_teams / CHAR_BIT);
+  pool_bitmask_ = reinterpret_cast<char *>(malloc(bitmask_size_));
+  reduced_bitmask_ = reinterpret_cast<char *>(malloc(bitmask_size_));
 
-  memset(team_pool_bitmask_, 0, team_bitmask_size_);
-  memset(team_reduced_bitmask_, 0, team_bitmask_size_);
-  for (int bit_i{1}; bit_i < max_num_teams; bit_i++) {
+  memset(pool_bitmask_, 0, bitmask_size_);
+  memset(reduced_bitmask_, 0, bitmask_size_);
+  /* Set all to available except the 0th one (reserved for TEAM_WORLD) */
+  for (int bit_i = 1; bit_i < max_num_teams; bit_i++) {
     int byte_i = bit_i / CHAR_BIT;
-    team_pool_bitmask_[byte_i] |= 1 << (bit_i % CHAR_BIT);
+    pool_bitmask_[byte_i] |= 1 << (bit_i % CHAR_BIT);
   }
 
+  /**
+   * Make sure that all processing elements have done this before
+   * continuing.
+   */
   internal_barrier();
 }
 
-void GDADevice::internal_barrier() {
+void GDABackend::internal_barrier() {
   if (comm != MPI_COMM_NULL) {
     NET_CHECK(MPI_Barrier(comm));
   } else {
     backend_bootstr->barrier();
   }
-}
-
-void GDADevice::destroy_teams() {
-  heap.free(barrier_pSync_pool);
-  free(team_pool_bitmask_);
-  free(team_reduced_bitmask_);
 }
 
 void GDADevice::heap_memory_rkey() {
@@ -702,7 +851,7 @@ void GDADevice::setup_gpu_qps() {
   }
 }
 
-void GDADevice::initialize_context(GPUIBContext *ctx, int context_id) {
+void GDADevice::initialize_context(GDAContext *ctx, int context_id) {
   CHECK_HIP(hipMalloc(&ctx->qps, sizeof(QueuePair) * num_pes));
   CHECK_HIP(hipMemset(ctx->qps, 0, sizeof(QueuePair) * num_pes));
   for (int i{0}; i < num_pes; i++) {
@@ -819,12 +968,13 @@ void GDADevice::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
     dest_info[i].qpn = qps[i]->qp_num;
     dest_info[i].psn = 0;
     union ibv_gid gid;
-    int err = ibv_query_gid(ib_state->context, port, GPUIB_DEFAULT_GID, &gid);
+    int err = ibv_query_gid(ib_state->context, port, GDA_DEFAULT_GID, &gid);
     GPUIB_CHECK_ZERO(err, "ibv_query_gid");
     dest_info[i].gid = gid;
   }
 }
 
+//TODO: is this needed? canm we use allocator class?
 void* GDADevice::buf_alloc(struct ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type) {
   void* dev_ptr{nullptr};
 #ifdef GPUIB_IONIC
@@ -836,6 +986,7 @@ void* GDADevice::buf_alloc(struct ibv_pd* pd, void* pd_context, size_t size, siz
   return dev_ptr;
 }
 
+//TODO: is this needed (see buf_alloc)
 void GDADevice::buf_release(struct ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type) {
   CHECK_HIP(hipFree(ptr));
 }
@@ -997,7 +1148,7 @@ GDADevice::RtrState GDADevice::rtr(dest_info_t* dest, uint8_t port) {
   } else {
     rtr.exp_qp_attr.ah_attr.is_global = 1;
     rtr.exp_qp_attr.ah_attr.grh.dgid = dest->gid;
-    rtr.exp_qp_attr.ah_attr.grh.sgid_index = GPUIB_DEFAULT_GID;
+    rtr.exp_qp_attr.ah_attr.grh.sgid_index = GDA_DEFAULT_GID;
     rtr.exp_qp_attr.ah_attr.grh.hop_limit = 1;
   }
   rtr.exp_attr_mask |= IBV_QP_DEST_QPN | IBV_QP_RQ_PSN | IBV_QP_MAX_DEST_RD_ATOMIC | IBV_QP_MIN_RNR_TIMER;
@@ -1019,4 +1170,3 @@ GDADevice::QPInitAttr GDADevice::qpattr(ibv_qp_cap cap) {
 #endif
 
 }  // namespace rocshmem
-

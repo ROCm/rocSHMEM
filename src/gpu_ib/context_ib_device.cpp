@@ -1,5 +1,7 @@
 /******************************************************************************
- * Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) Advanced Micro Devices, Inc. All rights reserved.
+ *
+ * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -13,43 +15,46 @@
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "context_ib_device.hpp"
-
 #include <hip/hip_runtime.h>
-#include <rocshmem/rocshmem.hpp>
+#include <hip/amd_detail/amd_device_functions.h>
+//#include <unistd.h> //TODO needed?
 
-#include "context_incl.hpp"
-#include "gda_device.hpp"
+//#include <cstdio> //TODO needed?
+//#include <cstdlib> //TODO needed?
+
+#include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem/rocshmem.hpp"
+#include "backend_gda.hpp"
+#include "context_gda_tmpl_device.hpp"
 #include "queue_pair.hpp"
 
 namespace rocshmem {
 
-GPUIBContext::GPUIBContext(GDADevice *device, int idx)
-    : Context(device) {
-  base_heap = device->heap.get_heap_bases().data();
-  barrier_sync = device->barrier_sync;
-  device->initialize_context(this, idx);
-  barrier_sync = device->barrier_sync;
+__host__ GDAContext::IPCContext(Backend *b, unsigned int ctx_id)
+    : Context(b, false) {
+  GDABackend *backend{static_cast<IPCBackend *>(b)};
+  base_heap = b->ipcImpl.ipc_bases; //TODO not correct
+
+  barrier_sync = backend->barrier_sync;
+  Wrk_Sync_buffer_bases_ = backend->get_wrk_sync_bases();
+  ctx_id_ = ctx_id;
 }
 
-__device__ void GPUIBContext::quiet() {
-  for (int k = 0; k < num_pes; k++) {
-    qps[k].quiet();
-  }
+__device__ void GDAContext::ctx_create() {
 }
 
-__device__ void *GPUIBContext::shmem_ptr(const void *dest, int pe) {
-  return nullptr;
+__device__ void GDAContext::ctx_destroy(){
 }
 
-__device__ void GPUIBContext::putmem(void *dest, const void *source, size_t nelems, int pe) {
+__device__ void GDAContext::putmem(void *dest, const void *source, size_t nelems,
+                                  int pe) {
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
   bool need_turn {true};
   uint64_t turns = __ballot(need_turn);
@@ -65,7 +70,12 @@ __device__ void GPUIBContext::putmem(void *dest, const void *source, size_t nele
   }
 }
 
-__device__ void GPUIBContext::putmem_nbi(void *dest, const void *source, size_t nelems, int pe) {
+__device__ void GDAContext::getmem(void *dest, const void *source, size_t nelems,
+                                  int pe) {
+}
+
+__device__ void GDAContext::putmem_nbi(void *dest, const void *source,
+                                      size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
   bool need_turn {true};
   uint64_t turns = __ballot(need_turn);
@@ -80,7 +90,49 @@ __device__ void GPUIBContext::putmem_nbi(void *dest, const void *source, size_t 
   }
 }
 
-__device__ void GPUIBContext::putmem_wave(void *dest, const void *source, size_t nelems, int pe) {
+__device__ void GDAContext::getmem_nbi(void *dest, const void *source,
+                                      size_t nelems, int pe) {
+}
+
+__device__ void GDAContext::fence() { //TODO: optimize
+  for (int i = 0; i < num_pes; i++) {
+    qps[i].quiet();
+  }
+  __threadfence_system();
+}
+
+__device__ void GDAContext::fence(int pe) {
+  fence(); //TODO: optimize
+}
+
+__device__ void GDAContext::quiet() {
+  for (int i = 0; i < num_pes; i++) {
+    qps[i].quiet();
+  }
+}
+
+__device__ void *GDAContext::shmem_ptr(const void *dest, int pe) {
+  return nullptr;
+}
+
+__device__ void GDAContext::putmem_wg(void *dest, const void *source,
+                                     size_t nelems, int pe) {
+}
+
+__device__ void GDAContext::getmem_wg(void *dest, const void *source,
+                                     size_t nelems, int pe) {
+}
+
+__device__ void GDAContext::putmem_nbi_wg(void *dest, const void *source,
+                                         size_t nelems, int pe) {
+}
+
+__device__ void GDAContext::getmem_nbi_wg(void *dest, const void *source,
+                                         size_t nelems, int pe) {
+}
+
+__device__ void GDAContext::putmem_wave(void *dest, const void *source,
+                                       size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
   if (is_thread_zero_in_wave()) {
     qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
@@ -88,18 +140,130 @@ __device__ void GPUIBContext::putmem_wave(void *dest, const void *source, size_t
   }
 }
 
-__device__ void GPUIBContext::putmem_nbi_wave(void *dest, const void *source, size_t nelems, int pe) {
+__device__ void GDAContext::getmem_wave(void *dest, const void *source,
+                                       size_t nelems, int pe) {
+}
+
+__device__ void GDAContext::putmem_nbi_wave(void *dest, const void *source,
+                                           size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
   if (is_thread_zero_in_wave()) {
     qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
   }
 }
 
-__device__ void GPUIBContext::fence() {
-  for (int i{0}; i < num_pes; i++) {
-    qps[i].quiet();
+__device__ void GDAContext::getmem_nbi_wave(void *dest, const void *source,
+                                           size_t nelems, int pe) {
+}
+
+
+//TODO: copied from IPC, needs review
+__device__ void GDAContext::putmem_signal(void *dest, const void *source, size_t nelems,
+                                          uint64_t *sig_addr, uint64_t signal, int sig_op,
+                                          int pe) {
+  putmem(dest, source, nelems, pe);
+  fence();
+
+  switch (sig_op) {
+  case ROCSHMEM_SIGNAL_SET:
+    amo_set<uint64_t>(static_cast<void*>(sig_addr), signal, pe);
+    break;
+  case ROCSHMEM_SIGNAL_ADD:
+    amo_add<uint64_t>(static_cast<void*>(sig_addr), signal, pe);
+    break;
+  default:
+    DPRINTF("[%s] Invalid sig_op value (%d)\n", __func__, sig_op);
+    break;
   }
-  __threadfence_system();
+  //TODO: missing quiet_pe?
+}
+
+__device__ void GDAContext::putmem_signal_wg(void *dest, const void *source, size_t nelems,
+                                             uint64_t *sig_addr, uint64_t signal, int sig_op,
+                                             int pe) {
+  putmem_wg(dest, source, nelems, pe);
+  fence();
+
+  if (is_thread_zero_in_block()) {
+    switch (sig_op) {
+    case ROCSHMEM_SIGNAL_SET:
+      amo_set<uint64_t>(static_cast<void*>(sig_addr), signal, pe);
+      break;
+    case ROCSHMEM_SIGNAL_ADD:
+      amo_add<uint64_t>(static_cast<void*>(sig_addr), signal, pe);
+      break;
+    default:
+      DPRINTF("[%s] Invalid sig_op value (%d)\n", __func__, sig_op);
+      break;
+    }
+    //TODO: missing quiet_pe?
+  }
+}
+
+__device__ void GDAContext::putmem_signal_wave(void *dest, const void *source, size_t nelems,
+                                               uint64_t *sig_addr, uint64_t signal, int sig_op,
+                                               int pe) {
+  putmem_wave(dest, source, nelems, pe);
+  fence();
+
+  if (is_thread_zero_in_wave()) {
+    switch (sig_op) {
+    case ROCSHMEM_SIGNAL_SET:
+      amo_set<uint64_t>(static_cast<void*>(sig_addr), signal, pe);
+      break;
+    case ROCSHMEM_SIGNAL_ADD:
+      amo_add<uint64_t>(static_cast<void*>(sig_addr), signal, pe);
+      break;
+    default:
+      DPRINTF("[%s] Invalid sig_op value (%d)\n", __func__, sig_op);
+      break;
+    }
+    //TODO: missing quiet_pe?
+  }
+}
+
+__device__ void GDAContext::putmem_signal_nbi(void *dest, const void *source, size_t nelems,
+                                              uint64_t *sig_addr, uint64_t signal, int sig_op,
+                                              int pe) {
+  putmem_signal(dest, source, nelems, sig_addr, signal, sig_op, pe); //TODO: optimize
+}
+
+__device__ void GDAContext::putmem_signal_nbi_wg(void *dest, const void *source, size_t nelems,
+                                                 uint64_t *sig_addr, uint64_t signal, int sig_op,
+                                                 int pe) {
+  putmem_signal_wg(dest, source, nelems, sig_addr, signal, sig_op, pe); //TODO: optimize
+}
+
+__device__ void GDAContext::putmem_signal_nbi_wave(void *dest, const void *source, size_t nelems,
+                                                   uint64_t *sig_addr, uint64_t signal, int sig_op,
+                                                   int pe) {
+  putmem_signal_wave(dest, source, nelems, sig_addr, signal, sig_op, pe); //TODO: optimize
+}
+
+__device__ uint64_t GDAContext::signal_fetch(const uint64_t *sig_addr) {
+  uint64_t *dst = const_cast<uint64_t*>(sig_addr);
+  return amo_fetch_add<uint64_t>(static_cast<void*>(dst), 0, my_pe);
+}
+
+__device__ uint64_t GDAContext::signal_fetch_wg(const uint64_t *sig_addr) {
+  __shared__ uint64_t value;
+  if (is_thread_zero_in_block()) {
+    uint64_t *dst = const_cast<uint64_t*>(sig_addr);
+    value = amo_fetch_add<uint64_t>(static_cast<void*>(dst), 0, my_pe);
+  }
+  __threadfence_block();
+  return value;
+}
+
+__device__ uint64_t GDAContext::signal_fetch_wave(const uint64_t *sig_addr) {
+  uint64_t value;
+  if (is_thread_zero_in_wave()) {
+    uint64_t *dst = const_cast<uint64_t*>(sig_addr);
+    value = amo_fetch_add<uint64_t>(static_cast<void*>(dst), 0, my_pe);
+  }
+  __threadfence_block();
+  value = __shfl(value, 0);
+  return value;
 }
 
 }  // namespace rocshmem

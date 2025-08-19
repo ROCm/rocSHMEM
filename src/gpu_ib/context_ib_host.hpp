@@ -22,71 +22,131 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_GPU_IB_CONTEXT_IB_HOST_HPP_
-#define LIBRARY_SRC_GPU_IB_CONTEXT_IB_HOST_HPP_
+#ifndef LIBRARY_SRC_GDA_CONTEXT_HOST_HPP_
+#define LIBRARY_SRC_GDA_CONTEXT_HOST_HPP_
 
 #include "context.hpp"
 
 namespace rocshmem {
 
-class GPUIBHostContext : public Context {
+class GDAHostContext : public Context {
  public:
-  GPUIBHostContext(GDADevice *device);
+  __host__ GDAHostContext(Backend *b, int64_t options);
 
-  ~GPUIBHostContext();
-
-  template <typename T>
-  void p(T *dest, T value, int pe);
+  __host__ ~GDAHostContext();
 
   template <typename T>
-  void put(T *dest, const T *source, size_t nelems, int pe);
+  __host__ void p(T *dest, T value, int pe);
 
   template <typename T>
-  void put_nbi(T *dest, const T *source, size_t nelems, int pe);
-
-  void putmem(void *dest, const void *source, size_t nelems, int pe);
-
-  void putmem_nbi(void *dest, const void *source, size_t nelems, int pe);
+  __host__ T g(const T *source, int pe);
 
   template <typename T>
-  void amo_add(void *dst, T value, int pe);
+  __host__ void put(T *dest, const T *source, size_t nelems, int pe);
 
   template <typename T>
-  void amo_cas(void *dst, T value, T cond, int pe);
+  __host__ void get(T *dest, const T *source, size_t nelems, int pe);
 
   template <typename T>
-  T amo_fetch_add(void *dst, T value, int pe);
+  __host__ void put_nbi(T *dest, const T *source, size_t nelems, int pe);
 
   template <typename T>
-  T amo_fetch_cas(void *dst, T value, T cond, int pe);
+  __host__ void get_nbi(T *dest, const T *source, size_t nelems, int pe);
 
-  void quiet();
+  __host__ void putmem(void *dest, const void *source, size_t nelems, int pe);
 
-  void barrier_all();
+  __host__ void getmem(void *dest, const void *source, size_t nelems, int pe);
 
-  void sync_all();
+  __host__ void putmem_nbi(void *dest, const void *source, size_t nelems,
+                           int pe);
 
-  template <typename T>
-  void wait_until(T *ivars, int cmp, T val);
-
-  template <typename T>
-  size_t wait_until_any(T *ivars, size_t nelems, const int *status, int cmp, T val);
+  __host__ void getmem_nbi(void *dest, const void *source, size_t size, int pe);
 
   template <typename T>
-  void wait_until_all(T *ivars, size_t nelems, const int *status, int cmp, T val);
+  __host__ void amo_add(void *dst, T value, int pe);
 
   template <typename T>
-  size_t wait_until_some(T *ivars, size_t nelems, size_t* indices, const int *status, int cmp, T val);
+  __host__ void amo_cas(void *dst, T value, T cond, int pe);
 
   template <typename T>
-  int test(T *ivars, int cmp, T val);
+  __host__ T amo_fetch_add(void *dst, T value, int pe);
+
+  template <typename T>
+  __host__ T amo_fetch_cas(void *dst, T value, T cond, int pe);
+
+  __host__ void fence();
+
+  __host__ void quiet();
+
+  __host__ void *shmem_ptr(const void *dest, int pe);
+
+  __host__ void barrier_all();
+
+  __host__ void sync_all();
+
+  template <typename T>
+  __host__ void broadcast(T *dest, const T *source, int nelems, int pe_root,
+                          int pe_start, int log_pe_stride, int pe_size,
+                          long *p_sync);
+
+  template <typename T>
+  __host__ void broadcast(rocshmem_team_t team, T *dest, const T *source,
+                          int nelems, int pe_root);
+
+  template <typename T, ROCSHMEM_OP Op>
+  __host__ void to_all(T *dest, const T *source, int nreduce, int pe_start,
+                       int log_pe_stride, int pe_size, T *p_wrk,
+                       long *p_sync);
+
+  template <typename T, ROCSHMEM_OP Op>
+  __host__ int reduce(rocshmem_team_t team, T *dest, const T *source, int nreduce);
+
+  template <typename T>
+  __host__ void wait_until(T *ivars, int cmp, T val);
+
+  template <typename T>
+  __host__ size_t wait_until_any(T *ivars, size_t nelems,
+                                 const int *status,
+                                 int cmp, T val);
+
+  template <typename T>
+  __host__ void wait_until_all(T *ivars, size_t nelems,
+                               const int *status,
+                               int cmp, T val);
+
+  template <typename T>
+  __host__ size_t wait_until_some(T *ivars, size_t nelems,
+                                size_t* indices,
+                                const int *status,
+                                int cmp, T val);
+
+  template <typename T>
+  __host__ void wait_until_all_vector(T *ivars, size_t nelems,
+                                      const int *status,
+                                      int cmp, T* vals);
+
+  template <typename T>
+  __host__ size_t wait_until_any_vector(T *ivars, size_t nelems,
+                                        const int *status,
+                                        int cmp, T* vals);
+
+  template <typename T>
+  __host__ size_t wait_until_some_vector(T *ivars, size_t nelems,
+                                         size_t* indices,
+                                         const int *status,
+                                         int cmp, T* vals);
+
+  template <typename T>
+  __host__ int test(T *ivars, int cmp, T val);
 
  public:
-  HostInterface *host_interface{nullptr};
+  /* Shared pointer to the backend's host interface */
+  std::shared_ptr<HostInterface> host_interface{nullptr};
 
+  /* An MPI Window implements a context */
   WindowInfo *context_window_info{nullptr};
 };
 
 }  // namespace rocshmem
 
-#endif  // LIBRARY_SRC_GPU_IB_CONTEXT_IB_HOST_HPP_
+#endif  // LIBRARY_SRC_GDA_CONTEXT_HOST_HPP_

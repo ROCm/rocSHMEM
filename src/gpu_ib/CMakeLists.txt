@@ -33,7 +33,7 @@ target_sources(
     context_ib_host.cpp
     endian.cpp
     gpu_ib_team.cpp
-    gda_device.cpp
+    backend_gda.cpp
     queue_pair.cpp
     topology.cpp
 )

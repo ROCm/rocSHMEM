@@ -1,5 +1,7 @@
 /******************************************************************************
- * Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
+ * Copyright (c) Advanced Micro Devices, Inc. All rights reserved.
+ *
+ * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to
@@ -13,38 +15,54 @@
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include <rocshmem/rocshmem.hpp>
-
+#include "rocshmem/rocshmem.hpp"
 #include "context_incl.hpp"
-#include "context_ib_tmpl_device.hpp"
-#include "gpu_ib_team.hpp"
+#include "context_gda_tmpl_device.hpp"
+#include "util.hpp"
+#include "gda_team.hpp"
 
 namespace rocshmem {
 
-__device__ void GPUIBContext::internal_direct_barrier(int pe, int PE_start, int stride, int n_pes, int64_t *pSync) {
+__device__ void GDAContext::internal_direct_barrier(int pe, int PE_start,
+                                                      int stride, int n_pes,
+                                                      int64_t *pSync) {
   int64_t flag_val{1};
   if (pe == PE_start) {
-    for (size_t i{1}; i < n_pes; i++) {
+    // Go through all PE offsets (except current offset = 0)
+    // and wait until they all reach
+#if defined(__gfx90a__)
+    __threadfence_system();
+#endif /* __gfx90a__ */
+    for (int i = 1; i < n_pes; i++) {
       wait_until(&pSync[i], ROCSHMEM_CMP_EQ, flag_val);
       pSync[i] = ROCSHMEM_SYNC_VALUE;
     }
     __threadfence_system();
-    for (size_t i{1}, j = PE_start + stride; i < n_pes; ++i, j += stride) {
+
+    // Announce to other PEs that all have reached
+    for (int i = 1, j = PE_start + stride; i < n_pes; ++i, j += stride) {
       pSync[0] = flag_val;
       put(&pSync[0], &pSync[0], 1, j);
-      pSync[0] = ROCSHMEM_SYNC_VALUE;
+#if defined(__gfx90a__)
+      __threadfence_system();
+#endif /* __gfx90a__ */
     }
+    pSync[0] = ROCSHMEM_SYNC_VALUE;
   } else {
+    // Mark current PE offset as reached
     size_t pe_offset = (pe - PE_start) / stride;
     pSync[pe_offset] = flag_val;
     put(&pSync[pe_offset], &pSync[pe_offset], 1, PE_start);
+#if defined(__gfx90a__)
+    __threadfence_system();
+#endif /* __gfx90a__ */
     wait_until(&pSync[0], ROCSHMEM_CMP_EQ, flag_val);
     pSync[0] = ROCSHMEM_SYNC_VALUE;
     pSync[pe_offset] = ROCSHMEM_SYNC_VALUE;
@@ -52,15 +70,21 @@ __device__ void GPUIBContext::internal_direct_barrier(int pe, int PE_start, int 
   }
 }
 
-__device__ void GPUIBContext::internal_atomic_barrier(int pe, int PE_start, int stride, int n_pes, int64_t *pSync) {
+__device__ void GDAContext::internal_atomic_barrier(int pe, int PE_start,
+                                                      int stride, int n_pes,
+                                                      int64_t *pSync) {
   int64_t flag_val{1};
   if (pe == PE_start) {
     wait_until(&pSync[0], ROCSHMEM_CMP_EQ, (int64_t)(n_pes - 1));
     pSync[0] = ROCSHMEM_SYNC_VALUE;
     __threadfence_system();
-    for (size_t i{1}, j = PE_start + stride; i < n_pes; ++i, j += stride) {
-      put_nbi(&pSync[0], &flag_val, 1, j);
+
+    pSync[0] = flag_val;
+    for (int i = 1, j = PE_start + stride; i < n_pes; ++i, j += stride) {
+      put_nbi(&pSync[0], &pSync[0], 1, j);
     }
+    quiet();
+    pSync[0] = ROCSHMEM_SYNC_VALUE;
   } else {
     amo_add<int64_t>(&pSync[0], flag_val, PE_start);
     wait_until(&pSync[0], ROCSHMEM_CMP_EQ, flag_val);
@@ -69,7 +93,7 @@ __device__ void GPUIBContext::internal_atomic_barrier(int pe, int PE_start, int 
   }
 }
 
-__device__ void GPUIBContext::internal_sync(int pe, int PE_start, int stride,
+__device__ void GDAContext::internal_sync(int pe, int PE_start, int stride,
                                           int PE_size, int64_t *pSync) {
   if (PE_size < 64) {
     internal_direct_barrier(pe, PE_start, stride, PE_size, pSync);
@@ -78,7 +102,7 @@ __device__ void GPUIBContext::internal_sync(int pe, int PE_start, int stride,
   }
 }
 
-__device__ void GPUIBContext::internal_sync_wave(int pe, int PE_start, int stride,
+__device__ void GDAContext::internal_sync_wave(int pe, int PE_start, int stride,
                                           int PE_size, int64_t *pSync) {
   if (is_thread_zero_in_wave()) {
     if (PE_size < 64) {
@@ -89,7 +113,8 @@ __device__ void GPUIBContext::internal_sync_wave(int pe, int PE_start, int strid
   }
 }
 
-__device__ void GPUIBContext::internal_sync_wg(int pe, int PE_start, int stride, int PE_size, int64_t *pSync) {
+__device__ void GDAContext::internal_sync_wg(int pe, int PE_start, int stride,
+                                          int PE_size, int64_t *pSync) {
   __syncthreads();
   if (is_thread_zero_in_block()) {
     if (PE_size < 64) {
@@ -102,43 +127,67 @@ __device__ void GPUIBContext::internal_sync_wg(int pe, int PE_start, int stride,
   __syncthreads();
 }
 
-__device__ void GPUIBContext::sync(rocshmem_team_t team) {
-  GPUIBTeam *team_obj = reinterpret_cast<GPUIBTeam *>(team);
-  double dbl_log_pe_stride = team_obj->tinfo_wrt_world->log_stride;
-  int log_pe_stride = static_cast<int>(dbl_log_pe_stride);
-  assert((dbl_log_pe_stride - log_pe_stride) == 0);
+__device__ void GDAContext::sync(rocshmem_team_t team) {
+  GDATeam *team_obj = reinterpret_cast<GDATeam *>(team);
+
   int pe = team_obj->my_pe_in_world;
   int pe_start = team_obj->tinfo_wrt_world->pe_start;
-  int pe_stride = (1 << log_pe_stride);
+  int pe_stride = team_obj->tinfo_wrt_world->stride;
   int pe_size = team_obj->num_pes;
-  internal_sync(pe, pe_start, pe_stride, pe_size, barrier_sync);
+  long *p_sync = team_obj->barrier_pSync;
+
+  internal_sync(pe, pe_start, pe_stride, pe_size, p_sync);
 }
 
-__device__ void GPUIBContext::sync_all() {
+__device__ void GDAContext::sync_wave(rocshmem_team_t team) {
+  GDATeam *team_obj = reinterpret_cast<GDATeam *>(team);
+
+  int pe = team_obj->my_pe_in_world;
+  int pe_start = team_obj->tinfo_wrt_world->pe_start;
+  int pe_stride = team_obj->tinfo_wrt_world->stride;
+  int pe_size = team_obj->num_pes;
+  long *p_sync = team_obj->barrier_pSync;
+
+  internal_sync_wave(pe, pe_start, pe_stride, pe_size, p_sync);
+}
+
+__device__ void GDAContext::sync_wg(rocshmem_team_t team) {
+  GDATeam *team_obj = reinterpret_cast<GDATeam *>(team);
+
+  int pe = team_obj->my_pe_in_world;
+  int pe_start = team_obj->tinfo_wrt_world->pe_start;
+  int pe_stride = team_obj->tinfo_wrt_world->stride;
+  int pe_size = team_obj->num_pes;
+  long *p_sync = team_obj->barrier_pSync;
+
+  internal_sync_wg(pe, pe_start, pe_stride, pe_size, p_sync);
+}
+
+__device__ void GDAContext::sync_all() {
   internal_sync(my_pe, 0, 1, num_pes, barrier_sync);
 }
 
-__device__ void GPUIBContext::sync_all_wave() {
+__device__ void GDAContext::sync_all_wave() {
   internal_sync_wave(my_pe, 0, 1, num_pes, barrier_sync);
 }
 
-__device__ void GPUIBContext::sync_all_wg() {
+__device__ void GDAContext::sync_all_wg() {
   internal_sync_wg(my_pe, 0, 1, num_pes, barrier_sync);
 }
 
-__device__ void GPUIBContext::barrier_all() {
+__device__ void GDAContext::barrier_all() {
   quiet();
   sync_all();
 }
 
-__device__ void GPUIBContext::barrier_all_wave() {
+__device__ void GDAContext::barrier_all_wave() {
   if (is_thread_zero_in_wave()) {
     quiet();
   }
   sync_all_wave();
 }
 
-__device__ void GPUIBContext::barrier_all_wg() {
+__device__ void GDAContext::barrier_all_wg() {
   if (is_thread_zero_in_block()) {
     quiet();
   }
@@ -146,8 +195,9 @@ __device__ void GPUIBContext::barrier_all_wg() {
   __syncthreads();
 }
 
-__device__ void GPUIBContext::barrier(rocshmem_team_t team) {
-  GPUIBTeam *team_obj = reinterpret_cast<GPUIBTeam *>(team);
+__device__ void GDAContext::barrier(rocshmem_team_t team) {
+  GDATeam *team_obj = reinterpret_cast<GDATeam *>(team);
+
   int pe = team_obj->my_pe_in_world;
   int pe_start = team_obj->tinfo_wrt_world->pe_start;
   int pe_stride = team_obj->tinfo_wrt_world->stride;
@@ -158,8 +208,8 @@ __device__ void GPUIBContext::barrier(rocshmem_team_t team) {
   internal_sync(pe, pe_start, pe_stride, pe_size, p_sync);
 }
 
-__device__ void GPUIBContext::barrier_wave(rocshmem_team_t team) {
-  GPUIBTeam *team_obj = reinterpret_cast<GPUIBTeam *>(team);
+__device__ void GDAContext::barrier_wave(rocshmem_team_t team) {
+  GDATeam *team_obj = reinterpret_cast<GDATeam *>(team);
 
   int pe = team_obj->my_pe_in_world;
   int pe_start = team_obj->tinfo_wrt_world->pe_start;
@@ -173,8 +223,8 @@ __device__ void GPUIBContext::barrier_wave(rocshmem_team_t team) {
   internal_sync_wave(pe, pe_start, pe_stride, pe_size, p_sync);
 }
 
-__device__ void GPUIBContext::barrier_wg(rocshmem_team_t team) {
-  GPUIBTeam *team_obj = reinterpret_cast<GPUIBTeam *>(team);
+__device__ void GDAContext::barrier_wg(rocshmem_team_t team) {
+  GDATeam *team_obj = reinterpret_cast<GDATeam *>(team);
 
   int pe = team_obj->my_pe_in_world;
   int pe_start = team_obj->tinfo_wrt_world->pe_start;

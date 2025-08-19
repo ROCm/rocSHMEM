@@ -22,24 +22,31 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_GPU_IB_GPU_IB_TEAM_HPP_
-#define LIBRARY_SRC_GPU_IB_GPU_IB_TEAM_HPP_
+#ifndef LIBRARY_SRC_GDA_TEAM_HPP_
+#define LIBRARY_SRC_GDA_TEAM_HPP_
 
 #include "team.hpp"
 
 namespace rocshmem {
 
-class GPUIBTeam : public Team {
+class GDATeam : public Team {
  public:
-  GPUIBTeam(GDADevice* device, TeamInfo* team_info_wrt_parent, TeamInfo* team_info_wrt_world, int num_pes, int my_pe, MPI_Comm team_comm, int pool_index);
+  GDATeam(Backend* handle, TeamInfo* team_info_wrt_parent,
+          TeamInfo* team_info_wrt_world, int num_pes, int my_pe,
+          MPI_Comm team_comm, int pool_index);
 
-  virtual ~GPUIBTeam();
+  virtual ~GDATeam();
 
   long* barrier_pSync{nullptr};
+  long* reduce_pSync{nullptr};
+  long* bcast_pSync{nullptr};
+  long* alltoall_pSync{nullptr};
+  void* pWrk{nullptr};
+  void* pAta{nullptr};
 
   int pool_index_{-1};
 };
 
 }  // namespace rocshmem
 
-#endif  // LIBRARY_SRC_GPU_IB_GPU_IB_TEAM_HPP_
+#endif  // LIBRARY_SRC_GDA_TEAM_HPP_
