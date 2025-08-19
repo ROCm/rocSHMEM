@@ -217,7 +217,7 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 }
 
 [[maybe_unused]] __host__ int rocshmem_set_attr_uniqueid_args(int rank, int nranks,
-							       rocshmem_uniqueid_t *uid,
+							       const rocshmem_uniqueid_t *uid,
 							       rocshmem_init_attr_t *attr) {
   if (uid == nullptr || attr == nullptr) {
       fprintf(stderr, "ROCSHMEM_ERROR: %s in file '%s' in line %d\n",

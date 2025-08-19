@@ -140,7 +140,7 @@ __host__ int rocshmem_get_uniqueid(rocshmem_uniqueid_t *uid);
  *                     value
  */
 __host__ int rocshmem_set_attr_uniqueid_args(int rank, int nranks,
-                                             rocshmem_uniqueid_t *uid,
+                                             const rocshmem_uniqueid_t *uid,
                                              rocshmem_init_attr_t *attr);
 /**
  * @brief Query the thread mode used by the runtime.
