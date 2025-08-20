@@ -55,8 +55,7 @@ void GDADevice::ib_init(struct ibv_device* ib_dev, uint8_t port) {
   err = ibv_query_port(ib_state->context, port, &ib_state->portinfo);
   GPUIB_CHECK_ZERO(err, "ibv_query_port");
 
-  err = ibv_query_gid(ib_state->context, port, GPUIB_DEFAULT_GID, &gid);
-  GPUIB_CHECK_ZERO(err, "ibv_query_gid");
+  init_gid_index(port);
 }
 
 void GDADevice::init_qp_status(uint8_t port) {
@@ -97,7 +96,7 @@ void GDADevice::change_status_rtr(ibv_qp *qp, dest_info_t *dest, uint8_t port) {
   attr.dest_qp_num            = dest->qpn;
 
   memcpy(&attr.ah_attr.grh.dgid, &dest->gid, 16);
-  attr.ah_attr.grh.sgid_index = GPUIB_DEFAULT_GID;
+  attr.ah_attr.grh.sgid_index = gid_index;
   attr.ah_attr.grh.hop_limit  = 1;
   attr.ah_attr.sl             = 1;
   attr.ah_attr.is_global      = 1;

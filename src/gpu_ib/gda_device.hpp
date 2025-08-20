@@ -234,6 +234,8 @@ public:
 
   void initialize_context(GPUIBContext *ctx, int context_id);
 
+  void init_gid_index(uint8_t port_num);
+
   HostInterface *host_interface{nullptr};
 
   char* requested_dev{nullptr};
@@ -288,9 +290,10 @@ public:
 
   SymmetricHeap heap;
 
-#ifdef GPUIB_BNXT
   union ibv_gid gid;
+  int gid_index;
 
+#ifdef GPUIB_BNXT
   std::vector<struct bnxt_host_qp> bnxt_qps;
   std::vector<struct bnxt_host_cq> bnxt_cqs;
 
