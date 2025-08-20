@@ -28,13 +28,13 @@
 target_sources(
   ${PROJECT_NAME}
   PRIVATE
-    context_ib_device.cpp
-    context_ib_device_coll.cpp
-    context_ib_host.cpp
-    endian.cpp
-    gpu_ib_team.cpp
+    context_gda_device.cpp
+    context_gda_device_coll.cpp
+    context_gda_host.cpp
     backend_gda.cpp
+    gda_team.cpp
     queue_pair.cpp
+    endian.cpp
     topology.cpp
 )
 
@@ -46,8 +46,8 @@ target_link_libraries(
     IBVerbs::verbs
 )
 
-if (GPUIB_IONIC)
-elseif (GPUIB_BNXT)
+if (GDA_IONIC)
+elseif (GDA_BNXT)
   add_subdirectory(bnxt)
 else()
   target_sources(${PROJECT_NAME} PRIVATE segment_builder.cpp)

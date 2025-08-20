@@ -27,7 +27,7 @@
 #include "gda_device.hpp"
 #include "endian.hpp"
 #include "gpuib_macros.inl"
-#if !defined(GPUIB_IONIC) && !defined(GPUIB_BNXT)
+#if !defined(GDA_IONIC) && !defined(GDA_BNXT)
 #include "segment_builder.hpp"
 #endif
 #include "util.hpp"
@@ -40,9 +40,9 @@ QueuePair::QueuePair(struct ibv_pd* pd) {
   int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
 
   ibv_mr *mr = ibv_reg_mr(pd, nonfetching_atomic, 8, access);
-  GPUIB_CHECK_NNULL(mr, "ibv_reg_mr");
+  GDA_CHECK_NNULL(mr, "ibv_reg_mr");
 
-#if defined(GPUIB_IONIC) || defined(GPUIB_BNXT)
+#if defined(GDA_IONIC) || defined(GDA_BNXT)
   nonfetching_atomic_lkey = mr->lkey;
 #else
   nonfetching_atomic_lkey = htobe32(mr->lkey);
@@ -52,8 +52,8 @@ QueuePair::QueuePair(struct ibv_pd* pd) {
   CHECK_HIP(hipMemset(fetching_atomic, 0, 8 * FETCHING_ATOMIC_CNT));
   access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
   mr = ibv_reg_mr(pd, fetching_atomic, 8 * FETCHING_ATOMIC_CNT, access);
-  GPUIB_CHECK_NNULL(mr, "ibv_reg_mr");
-#if defined(GPUIB_IONIC) || defined(GPUIB_BNXT)
+  GDA_CHECK_NNULL(mr, "ibv_reg_mr");
+#if defined(GDA_IONIC) || defined(GDA_BNXT)
   fetching_atomic_lkey = mr->lkey;
 #else
   fetching_atomic_lkey = htobe32(mr->lkey);
@@ -70,7 +70,7 @@ QueuePair::QueuePair(struct ibv_pd* pd) {
 /******************************************************************************
  ************************ PROVIDER-SPECIFIC HELPERS ***************************
  *****************************************************************************/
-#ifdef GPUIB_IONIC
+#ifdef GDA_IONIC
 __device__ uint64_t QueuePair::get_same_qp_lane_mask() {
   uint64_t lane_mask = get_active_lane_mask();
   uintptr_t this_val = reinterpret_cast<uintptr_t>(this);
@@ -228,10 +228,10 @@ __device__ void QueuePair::quiet_internal(uint64_t activemask, uint32_t cons) {
     break;
   }
 }
-#endif // GPUIB_IONIC
+#endif // GDA_IONIC
 
-#ifndef GPUIB_BNXT
-#ifdef GPUIB_IONIC
+#ifndef GDA_BNXT
+#ifdef GDA_IONIC
 __device__ void QueuePair::ring_doorbell(uint32_t pos) {
   // TODO When threads write at once to the same address, not all writes reach the bus.
   for (int i = 0; i < 64; ++i) {
@@ -242,7 +242,7 @@ __device__ void QueuePair::ring_doorbell(uint32_t pos) {
   }
   __threadfence();
 }
-#else // !GPUIB_IONIC
+#else // !GDA_IONIC
 __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint64_t my_sq_counter) {
   swap_endian_store(const_cast<uint32_t*>(dbrec), (uint32_t)my_sq_counter);
   __atomic_signal_fence(__ATOMIC_SEQ_CST);
@@ -252,15 +252,15 @@ __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint64_t my_sq_counter
   db_uint ^= 0x100;
   __hip_atomic_store(&db.uint, db_uint, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
 }
-#endif // !GPUIB_IONIC
-#endif // !GPUIB_BNXT
+#endif // !GDA_IONIC
+#endif // !GDA_BNXT
 
-#ifndef GPUIB_BNXT
-#ifdef GPUIB_IONIC
+#ifndef GDA_BNXT
+#ifdef GDA_IONIC
 __device__ void QueuePair::quiet() {
   quiet_internal(get_same_qp_lane_mask(), sq_prod);
 }
-#else // !GPUIB_IONIC
+#else // !GDA_IONIC
 __device__ void QueuePair::quiet() {
   constexpr size_t BROADCAST_SIZE = 1024 / WF_SIZE;
   __shared__ uint64_t wqe_broadcast[BROADCAST_SIZE];
@@ -342,11 +342,11 @@ __device__ void QueuePair::quiet() {
     }
   }
 }
-#endif // !GPUIB_IONIC
-#endif // !GPUIB_BNXT
+#endif // !GDA_IONIC
+#endif // !GDA_BNXT
 
-#ifndef GPUIB_BNXT
-#ifdef GPUIB_IONIC
+#ifndef GDA_BNXT
+#ifdef GDA_IONIC
 __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
   uint64_t activemask = get_same_qp_lane_mask();
   uint32_t num_wqes = get_active_lane_count(activemask);
@@ -390,7 +390,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
 
   commit_sq(is_last_active_lane(activemask), my_sq_prod, num_wqes, wqe);
 }
-#else // !GPUIB_IONIC
+#else // !GDA_IONIC
 __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
   uint64_t activemask = get_active_lane_mask();
   uint8_t num_active_lanes = get_active_lane_count(activemask);
@@ -444,11 +444,11 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
     __hip_atomic_store(&sq_db_touched, wave_sq_counter + num_wqes, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
   }
 }
-#endif // !GPUIB_IONIC
-#endif // !GPUIB_BNXT
+#endif // !GDA_IONIC
+#endif // !GDA_BNXT
 
-#ifndef GPUIB_BNXT
-#ifdef GPUIB_IONIC
+#ifndef GDA_BNXT
+#ifdef GDA_IONIC
 __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode,
                                             int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
   uint64_t activemask = get_same_qp_lane_mask();
@@ -508,7 +508,7 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   }
   return ret;
 }
-#else // !GPUIB_IONIC || !GPUIB_BNXT
+#else // !GDA_IONIC || !GDA_BNXT
 __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode,
                                             int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
   uint64_t activemask = get_active_lane_mask();
@@ -596,8 +596,8 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   }
   return ret;
 }
-#endif // !GPUIB_IONIC
-#endif // !GPUIB_BNXT
+#endif // !GDA_IONIC
+#endif // !GDA_BNXT
 
 /******************************************************************************
  ****************************** SHMEM INTERFACE *******************************
@@ -605,7 +605,7 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
 __device__ void QueuePair::put_nbi(void *dest, const void *source, size_t nelems, int pe) {
   uintptr_t *src = reinterpret_cast<uintptr_t*>(const_cast<void*>(source));
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
-  post_wqe_rma(pe, nelems, src, dst, GPUIB_OP_RDMA_WRITE);
+  post_wqe_rma(pe, nelems, src, dst, GDA_OP_RDMA_WRITE);
 }
 
 __device__ int64_t QueuePair::atomic_fetch(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe, uint8_t atomic_op) {

@@ -218,7 +218,7 @@ void dump_ibv_qp(struct ibv_qp *qp, int conn_num) {
   DPRINTF("=========== QP_DUMP_END CONNECTION#%d  ========\n", conn_num);
 }
 
-#if !defined(GPUIB_IONIC) && !defined(GPUIB_BNXT)
+#if !defined(GDA_IONIC) && !defined(GDA_BNXT)
 void dump_mlx5dv_qp(struct mlx5dv_qp *qp_dv, int conn_num) {
   DPRINTF("\n");
   DPRINTF("===============================================\n");
@@ -259,7 +259,7 @@ void dump_mlx5dv_cq(struct mlx5dv_cq *cq_dv, int conn_num) {
   DPRINTF("  (uint64_t) comp_mask       = 0x%lx\n",  cq_dv->comp_mask);
   DPRINTF("================== CQ_DUMP_END ================\n");
 }
-#endif // !GPUIB_IONIC
+#endif // !GDA_IONIC
 
 GDADevice::GDADevice(TcpBootstrap* bootstrap):  Backend(bootstrap) {
   type = BackendType::GDA_BACKEND;
@@ -331,12 +331,12 @@ void GDADevice::init_part2() {
   dest_info.resize(num_pes * (maximum_num_contexts_ + 1));
   int ib_devices{0};
   dev_list = ibv_get_device_list(&ib_devices);
-  GPUIB_CHECK_NNULL(dev_list, "ibv_get_device");
+  GDA_CHECK_NNULL(dev_list, "ibv_get_device");
   struct ibv_device* ib_dev = dev_list[0];
   if (requested_dev) {
     for (int i{0}; i < ib_devices; i++) {
       const char* select_dev{ibv_get_device_name(dev_list[i])};
-      GPUIB_CHECK_NNULL(select_dev, "ibv_get_device_name");
+      GDA_CHECK_NNULL(select_dev, "ibv_get_device_name");
       if (strstr(select_dev, requested_dev)) {
         ib_dev = dev_list[i];
         break;
@@ -401,7 +401,7 @@ GDABackend::~GDABackend() {
   ibv_free_device_list(dev_list);
 
   int ret = ibv_dereg_mr(heap_mr);
-  GPUIB_CHECK_ZERO(ret, "ibv_dereg_mr");
+  GDA_CHECK_ZERO(ret, "ibv_dereg_mr");
 
   CHECK_HIP(hipFree(ctx_array));
 
@@ -811,7 +811,7 @@ void GDADevice::heap_memory_rkey() {
   int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
 
   heap_mr = ibv_reg_mr(ib_state->pd_orig, base_heap, heap.get_size(), access);
-  GPUIB_CHECK_NNULL(heap_mr, "ibv_reg_mr");
+  GDA_CHECK_NNULL(heap_mr, "ibv_reg_mr");
 
   const size_t rkeys_size = sizeof(uint32_t) * num_pes;
   uint32_t *host_rkey_cpy = reinterpret_cast<uint32_t*>(malloc(rkeys_size));
@@ -856,33 +856,33 @@ void GDADevice::initialize_context(GDAContext *ctx, int context_id) {
   }
 }
 
-#ifndef GPUIB_BNXT
+#ifndef GDA_BNXT
 void GDADevice::ib_init(struct ibv_device* ib_dev, uint8_t port) {
   ib_state = new ib_state_t;
-  GPUIB_CHECK_NNULL(ib_state, "ib_state object create");
+  GDA_CHECK_NNULL(ib_state, "ib_state object create");
 
   ib_state->context = ibv_open_device(ib_dev);
-  GPUIB_CHECK_NNULL(ib_state->context, "ib open device");
+  GDA_CHECK_NNULL(ib_state->context, "ib open device");
   dump_ibv_context(ib_state->context);
   dump_ibv_device(ib_state->context->device);
 
   ib_state->pd_orig = ibv_alloc_pd(ib_state->context);
-  GPUIB_CHECK_NNULL(ib_state->pd_orig, "ib allocate pd");
+  GDA_CHECK_NNULL(ib_state->pd_orig, "ib allocate pd");
   dump_ibv_pd(ib_state->pd_orig);
 
   ibv_parent_domain_init_attr pattr{};
   init_parent_domain_attr(&pattr);
   ib_state->pd_parent = ibv_alloc_parent_domain(ib_state->context, &pattr);
-  GPUIB_CHECK_NNULL(ib_state->pd_parent, "ibv_alloc_parent_domain");
+  GDA_CHECK_NNULL(ib_state->pd_parent, "ibv_alloc_parent_domain");
   dump_ibv_pd(ib_state->pd_parent);
 
-#ifdef GPUIB_IONIC
+#ifdef GDA_IONIC
   ionic_dv_pd_set_sqcmb(ib_state->pd_parent, false, false, false);
   ionic_dv_pd_set_rqcmb(ib_state->pd_parent, false, false, false);
 
   for (int uxdma_i = 0; uxdma_i < 2; ++uxdma_i) {
     ib_state->pd_uxdma[uxdma_i] = ibv_alloc_parent_domain(ib_state->context, &pattr);
-    GPUIB_CHECK_NNULL(ib_state->pd_uxdma[uxdma_i], "ibv_alloc_parent_domain (uxdma)");
+    GDA_CHECK_NNULL(ib_state->pd_uxdma[uxdma_i], "ibv_alloc_parent_domain (uxdma)");
 
     ionic_dv_pd_set_sqcmb(ib_state->pd_uxdma[uxdma_i], false, false, false);
     ionic_dv_pd_set_rqcmb(ib_state->pd_uxdma[uxdma_i], false, false, false);
@@ -891,10 +891,10 @@ void GDADevice::ib_init(struct ibv_device* ib_dev, uint8_t port) {
 #endif
 
   int err = ibv_query_port(ib_state->context, port, &ib_state->portinfo);
-  GPUIB_CHECK_ZERO(err, "ibv_query_port");
+  GDA_CHECK_ZERO(err, "ibv_query_port");
   dump_ibv_port_attr(&ib_state->portinfo);
 
-#ifdef GPUIB_IONIC
+#ifdef GDA_IONIC
   ionic_dv_ctx dvctx;
   ionic_dv_get_ctx(&dvctx, ib_state->context);
 
@@ -918,7 +918,7 @@ void GDADevice::ib_init(struct ibv_device* ib_dev, uint8_t port) {
 template <typename StateType>
 void GDADevice::try_to_modify_qp(ibv_qp* qp, StateType state) {
   int err = ibv_modify_qp(qp, &state.exp_qp_attr, state.exp_attr_mask);
-  GPUIB_CHECK_ZERO(err, "ibv_modify_qp");
+  GDA_CHECK_ZERO(err, "ibv_modify_qp");
 }
 
 void GDADevice::init_qp_status(ibv_qp* qp, uint8_t port) {
@@ -938,7 +938,7 @@ void GDADevice::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
   cap.max_send_wr = sq_size;
   cap.max_send_sge = 1;
   cap.max_inline_data = 0;
-#ifdef GPUIB_IONIC
+#ifdef GDA_IONIC
   // TODO allow zero sges in the driver
   cap.max_recv_sge = 1;
 #endif
@@ -947,24 +947,24 @@ void GDADevice::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
   qps.resize((maximum_num_contexts_ + 1) * num_pes);
   int max_num_cqe = qp_init_attr.attr.cap.max_send_wr;
   for (int i{0}; i < qps.size(); i++) {
-#ifdef GPUIB_IONIC
+#ifdef GDA_IONIC
     int uxdma_i = ((i + 1) / 2) & 1;
     cqs[i] = create_cq(ib_state->context, ib_state->pd_uxdma[uxdma_i], max_num_cqe << 1);
-    GPUIB_CHECK_NNULL(cqs[i], "create_cq");
+    GDA_CHECK_NNULL(cqs[i], "create_cq");
     qps[i] = create_qp(ib_state->pd_uxdma[uxdma_i], ib_state->context, &qp_init_attr.attr, cqs[i]);
 #else
     cqs[i] = create_cq(ib_state->context, ib_state->pd_parent, max_num_cqe);
-    GPUIB_CHECK_NNULL(cqs[i], "create_cq");
+    GDA_CHECK_NNULL(cqs[i], "create_cq");
     qps[i] = create_qp(ib_state->pd_parent, ib_state->context, &qp_init_attr.attr, cqs[i]);
 #endif
-    GPUIB_CHECK_NNULL(qps[i], "create_qp");
+    GDA_CHECK_NNULL(qps[i], "create_qp");
     init_qp_status(qps[i], port);
     dest_info[i].lid = ib_port_att->lid;
     dest_info[i].qpn = qps[i]->qp_num;
     dest_info[i].psn = 0;
     union ibv_gid gid;
     int err = ibv_query_gid(ib_state->context, port, GDA_DEFAULT_GID, &gid);
-    GPUIB_CHECK_ZERO(err, "ibv_query_gid");
+    GDA_CHECK_ZERO(err, "ibv_query_gid");
     dest_info[i].gid = gid;
   }
 }
@@ -972,7 +972,7 @@ void GDADevice::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
 //TODO: is this needed? canm we use allocator class?
 void* GDADevice::buf_alloc(struct ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type) {
   void* dev_ptr{nullptr};
-#ifdef GPUIB_IONIC
+#ifdef GDA_IONIC
   CHECK_HIP(hipExtMallocWithFlags(reinterpret_cast<void**>(&dev_ptr), size, hipDeviceMallocUncached));
 #else
   CHECK_HIP(hipHostMalloc(reinterpret_cast<void**>(&dev_ptr), size, hipHostMallocDefault));
@@ -1006,9 +1006,9 @@ ibv_cq* GDADevice::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
   cq_attr.comp_mask = IBV_CQ_INIT_ATTR_MASK_PD;
   cq_attr.parent_domain = pd;
   ibv_cq_ex* cq_ex = ibv_create_cq_ex(context, &cq_attr);
-  GPUIB_CHECK_NNULL(cq_ex, "ibv_create_cq_ex");
+  GDA_CHECK_NNULL(cq_ex, "ibv_create_cq_ex");
   ibv_cq *cq = ibv_cq_ex_to_cq(cq_ex);
-  GPUIB_CHECK_NNULL(cq, "ibv_cq_ex_to_cq");
+  GDA_CHECK_NNULL(cq, "ibv_cq_ex_to_cq");
   return cq;
 }
 
@@ -1016,7 +1016,7 @@ void GDADevice::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   int hip_dev_id{-1};
   CHECK_HIP(hipGetDevice(&hip_dev_id));
 
-#ifdef GPUIB_IONIC
+#ifdef GDA_IONIC
   uint8_t udma_idx = ionic_dv_qp_get_udma_idx(qps[conn_num]);
 
   ionic_dv_cq dvcq;
@@ -1040,7 +1040,7 @@ void GDADevice::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   gpu_qp->lkey = heap_mr->lkey;
   gpu_qp->rkey = heap_rkey[conn_num % num_pes];
   gpu_qp->inline_threshold = 32;
-#else // !GPUIB_IONIC
+#else // !GDA_IONIC
   mlx5dv_cq cq_out;
   mlx5dv_obj mlx_obj;
   mlx_obj.cq.in = cqs[conn_num];
@@ -1108,7 +1108,7 @@ void GDADevice::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   void* gpu_ptr{nullptr};
   rocm_memory_lock_to_fine_grain(qp_out.bf.reg, qp_out.bf.size * 2, &gpu_ptr, hip_dev_id);
   gpu_qp->db.ptr = reinterpret_cast<uint64_t*>(gpu_ptr);
-#endif // !GPUIB_IONIC
+#endif // !GDA_IONIC
 }
 
 ibv_qp* GDADevice::create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr_ex* qp_attr, ibv_cq* cq) {
@@ -1121,7 +1121,7 @@ ibv_qp* GDADevice::create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr_
   qp_attr->pd = pd;
   qp_attr->comp_mask = IBV_QP_INIT_ATTR_PD;
   qp = ibv_create_qp_ex(context, qp_attr);
-  GPUIB_CHECK_NNULL(qp, "ibv_create_qp_ex");
+  GDA_CHECK_NNULL(qp, "ibv_create_qp_ex");
   return qp;
 }
 

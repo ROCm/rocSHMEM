@@ -69,8 +69,8 @@ option(BUILD_TOOLS "Build binary tools (e.g., rocshmem_info)" ON)
 option(BUILD_LOCAL_GPU_TARGET_ONLY "Build only for GPUs detected on this machine" OFF)
 option(BUILD_CODE_COVERAGE "Build with code coverage flags (gcc only)" OFF)
 
-option(GPUIB_IONIC "Build for AMD Pensando IONIC RDMA provider" OFF)
-option(GPUIB_BNXT "Build for Broadcom" OFF)
+option(GDA_IONIC "Build for AMD Pensando IONIC RDMA provider" OFF)
+option(GDA_BNXT "Build for Broadcom" OFF)
 
 ###############################################################################
 # PROJECT

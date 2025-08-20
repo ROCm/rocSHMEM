@@ -40,13 +40,13 @@ find_library(IBVerbs_LIBRARY
   PATH_SUFFIXES lib lib64
 )
 
-if (GPUIB_IONIC)
+if (GDA_IONIC)
 find_library(IBVerbs_PROVIDER_LIBRARY
   NAMES ionic libionic
   HINTS ${PC_IBVerbs_LIBDIR} ${PC_IBVerbs_LIBRARY_DIRS}
   PATH_SUFFIXES lib lib64
 )
-elseif (GPUIB_BNXT)
+elseif (GDA_BNXT)
 find_library(IBVerbs_PROVIDER_LIBRARY
   NAMES bnxt_re libbnxt_re
   HINTS ${PC_IBVerbs_LIBDIR} ${PC_IBVerbs_LIBRARY_DIRS}

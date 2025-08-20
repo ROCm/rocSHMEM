@@ -20,23 +20,23 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_GPUIB_MACROS_HPP_
-#define LIBRARY_SRC_GPUIB_MACROS_HPP_
+#ifndef LIBRARY_SRC_GDA_MACROS_HPP_
+#define LIBRARY_SRC_GDA_MACROS_HPP_
 
-#define GPUIB_LIKELY(X)   __builtin_expect(X, 1)
-#define GPUIB_UNLIKELY(X) __builtin_expect(X, 0)
+#define GDA_LIKELY(X)   __builtin_expect(X, 1)
+#define GDA_UNLIKELY(X) __builtin_expect(X, 0)
 
 /**
- * @name GPUIB_CHECK_NNULL
+ * @name GDA_CHECK_NNULL
  * @brief Checks if value is not NULL. If it is NULL then it exits the program.
  *
  * @param[in] value    Value to check
  * @param[in] str      Error string to print
  *
  */
-#define GPUIB_CHECK_NNULL(value, str)                  \
+#define GDA_CHECK_NNULL(value, str)                    \
 {                                                      \
-  if (GPUIB_UNLIKELY(NULL == value)) {                 \
+  if (GDA_UNLIKELY(NULL == value)) {                   \
     fprintf(stderr,                                    \
             "[%s:%d] %s failed with errno %s (%d) \n", \
             __FILE__, __LINE__,                        \
@@ -46,16 +46,16 @@
 }
 
 /**
- * @name GPUIB_CHECK_ZERO
+ * @name GDA_CHECK_ZERO
  * @brief Checks if value is zero. If it is not zero then it exits the program.
  *
  * @param[in] value    Value to check
  * @param[in] str      Error string to print
  *
  */
-#define GPUIB_CHECK_ZERO(value, str)                   \
+#define GDA_CHECK_ZERO(value, str)                     \
 {                                                      \
-  if (GPUIB_UNLIKELY(0 != value)) {                    \
+  if (GDA_UNLIKELY(0 != value)) {                      \
     fprintf(stderr,                                    \
             "[%s:%d] %s failed with errno %s (%d) \n", \
             __FILE__, __LINE__,                        \
@@ -64,4 +64,4 @@
   }                                                    \
 }
 
-#endif // LIBRARY_SRC_GPUIB_MACROS_HPP_
+#endif // LIBRARY_SRC_GDA_MACROS_HPP_

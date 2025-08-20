@@ -86,7 +86,7 @@ __device__ void GDAContext::amo_add(void *dest, T value, int pe) {//TODO:support
     uint8_t lane = __ffsll((unsigned long long)turns) - 1;
     int pe_turn = __shfl(pe, lane);
     if (pe_turn == pe) {
-      qps[pe].atomic_nofetch(base_heap[pe] + L_offset, value, 0, pe, GPUIB_OP_ATOMIC_FA);
+      qps[pe].atomic_nofetch(base_heap[pe] + L_offset, value, 0, pe, GDA_OP_ATOMIC_FA);
       need_turn = false;
     }
     turns = __ballot(need_turn);
@@ -99,7 +99,7 @@ __device__ void GDAContext::amo_set(void *dst, T value, int pe) {
   T ret_val;
   T cond = 0;
   for (int i = 0; i < WF_SIZE; i++) { //TODO: this looks wrong
-    while ((ret_val = qps[pe].atomic_fetch(base_heap[pe] + L_offset, value, cond, pe, GPUIB_OP_ATOMIC_CS))) {
+    while ((ret_val = qps[pe].atomic_fetch(base_heap[pe] + L_offset, value, cond, pe, GDA_OP_ATOMIC_CS))) {
       if (ret_val == cond) { break; }
       cond = ret_val;
     }
@@ -156,7 +156,7 @@ template <typename T>
 __device__ void GDAContext::amo_cas(void *dest, T value, T cond, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
   for (int i = 0; i < WF_SIZE; i++) { //TODO: this looks wrong
-    qps[pe].atomic_nofetch(base_heap[pe] + L_offset, value, cond, pe, GPUIB_OP_ATOMIC_CS);
+    qps[pe].atomic_nofetch(base_heap[pe] + L_offset, value, cond, pe, GDA_OP_ATOMIC_CS);
   }
 }
 
@@ -170,7 +170,7 @@ __device__ T GDAContext::amo_fetch_add(void *dest, T value, int pe) {
     uint8_t lane = __ffsll((unsigned long long)turns) - 1;
     int pe_turn = __shfl(pe, lane);
     if (pe_turn == pe) {
-      ret_val =  qps[pe].atomic_fetch(base_heap[pe] + L_offset, value, 0, pe, GPUIB_OP_ATOMIC_FA);
+      ret_val =  qps[pe].atomic_fetch(base_heap[pe] + L_offset, value, 0, pe, GDA_OP_ATOMIC_FA);
       need_turn = false;
     }
     turns = __ballot(need_turn);
@@ -183,7 +183,7 @@ __device__ T GDAContext::amo_fetch_cas(void *dest, T value, T cond, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
   T ret_val;
   for (int i = 0; i < WF_SIZE; i++) {
-    ret_val = qps[pe].atomic_fetch(base_heap[pe] + L_offset, value, cond, pe, GPUIB_OP_ATOMIC_CS);
+    ret_val = qps[pe].atomic_fetch(base_heap[pe] + L_offset, value, cond, pe, GDA_OP_ATOMIC_CS);
   }
   return ret_val;
 }

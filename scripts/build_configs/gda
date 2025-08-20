@@ -41,6 +41,8 @@ cmake \
     -DCMAKE_INSTALL_PREFIX=$install_path \
     -DCMAKE_VERBOSE_MAKEFILE=OFF \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    -DBUILD_FUNCTIONAL_TESTS=ON \
+    -DBUILD_UNIT_TESTS=ON \
     -DDEBUG=OFF \
     -DPROFILE=OFF \
     -DUSE_IPC=OFF \
@@ -49,9 +51,9 @@ cmake \
     -DUSE_HDP_FLUSH=OFF \
     -DUSE_HDP_FLUSH_HOST_SIDE=OFF \
     -DUSE_RO=OFF \
-    -DBUILD_FUNCTIONAL_TESTS=ON \
-    -DBUILD_UNIT_TESTS=ON \
-    -DGPUIB_IONIC=$GPUIB_IONIC \
+    -DUSE_GDA=ON \
+    -DGDA_IONIC=$GDA_IONIC \
+    -DGDA_BNXT=$GDA_BNXT \
     $src_path
 cmake --build . --parallel 8
 cmake --install .

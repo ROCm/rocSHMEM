@@ -22,19 +22,19 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_GPU_IB_BNXT_GDA_PROVIDER_HPP_
-#define LIBRARY_SRC_GPU_IB_BNXT_GDA_PROVIDER_HPP_
+#ifndef LIBRARY_SRC_GDA_BNXT_GDA_PROVIDER_HPP_
+#define LIBRARY_SRC_GDA_BNXT_GDA_PROVIDER_HPP_
 
 extern "C" {
 #include <infiniband/bnxt_re_dv.h>
 #include <infiniband/bnxt_re_hsi.h>
 }
 
-#define GPUIB_DEFAULT_GID    3
-#define GPUIB_MAX_ATOMIC     1
-#define GPUIB_OP_RDMA_WRITE  BNXT_RE_WR_OPCD_RDMA_WRITE
-#define GPUIB_OP_ATOMIC_FA   BNXT_RE_WR_OPCD_ATOMIC_FA
-#define GPUIB_OP_ATOMIC_CS   BNXT_RE_WR_OPCD_ATOMIC_CS
+#define GDA_DEFAULT_GID    3
+#define GDA_MAX_ATOMIC     1
+#define GDA_OP_RDMA_WRITE  BNXT_RE_WR_OPCD_RDMA_WRITE
+#define GDA_OP_ATOMIC_FA   BNXT_RE_WR_OPCD_ATOMIC_FA
+#define GDA_OP_ATOMIC_CS   BNXT_RE_WR_OPCD_ATOMIC_CS
 
 #define bnxt_re_get_cqe_sz() (sizeof(struct bnxt_re_req_cqe) + \
                               sizeof(struct bnxt_re_bcqe))
@@ -89,4 +89,4 @@ struct bnxt_host_qp {
 
 /*****************************************************************************/
 
-#endif  //LIBRARY_SRC_GPU_IB_BNXT_GDA_PROVIDER_HPP_
+#endif  //LIBRARY_SRC_GDA_BNXT_GDA_PROVIDER_HPP_

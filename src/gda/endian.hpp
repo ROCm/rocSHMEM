@@ -22,8 +22,8 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_GPU_IB_ENDIAN_HPP_
-#define LIBRARY_SRC_GPU_IB_ENDIAN_HPP_
+#ifndef LIBRARY_SRC_GDA_ENDIAN_HPP_
+#define LIBRARY_SRC_GDA_ENDIAN_HPP_
 
 #include <hip/hip_runtime.h>
 
@@ -59,4 +59,4 @@ __device__ T swap_endian_val(const T val) {
 
 }  // namespace rocshmem
 
-#endif  // LIBRARY_SRC_GPU_IB_ENDIAN_HPP_
+#endif  // LIBRARY_SRC_GDA_ENDIAN_HPP_

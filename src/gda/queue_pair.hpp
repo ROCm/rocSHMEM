@@ -20,8 +20,8 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_GPU_IB_QUEUE_PAIR_HPP_
-#define LIBRARY_SRC_GPU_IB_QUEUE_PAIR_HPP_
+#ifndef LIBRARY_SRC_GDA_QUEUE_PAIR_HPP_
+#define LIBRARY_SRC_GDA_QUEUE_PAIR_HPP_
 
 /**
  * @file queue_pair.hpp
@@ -34,12 +34,12 @@
 
 #include "rocshmem_config.h"
 #include "endian.h"
-#ifdef GPUIB_IONIC
+#ifdef GDA_IONIC
 extern "C" {
 #include <infiniband/ionic_dv.h>
 #include <infiniband/ionic_fw.h>
 }
-#elif defined(GPUIB_BNXT)
+#elif defined(GDA_BNXT)
 #include "bnxt/gda_provider_bnxt.hpp"
 #else
 #include <infiniband/mlx5dv.h>
@@ -48,18 +48,18 @@ extern "C" {
 #include "containers/free_list.hpp"
 #include "memory/hip_allocator.hpp"
 
-#ifdef GPUIB_IONIC
-#define GPUIB_DEFAULT_GID    1
-#define GPUIB_MAX_ATOMIC     15
-#define GPUIB_OP_RDMA_WRITE  IONIC_V2_OP_RDMA_WRITE
-#define GPUIB_OP_ATOMIC_FA   IONIC_V2_OP_ATOMIC_FA
-#define GPUIB_OP_ATOMIC_CS   IONIC_V2_OP_ATOMIC_CS
-#elif !defined(GPUIB_BNXT)
-#define GPUIB_DEFAULT_GID    0
-#define GPUIB_MAX_ATOMIC     1
-#define GPUIB_OP_RDMA_WRITE  MLX5_OPCODE_RDMA_WRITE
-#define GPUIB_OP_ATOMIC_FA   MLX5_OPCODE_ATOMIC_FA
-#define GPUIB_OP_ATOMIC_CS   MLX5_OPCODE_ATOMIC_CS
+#ifdef GDA_IONIC
+#define GDA_DEFAULT_GID    1
+#define GDA_MAX_ATOMIC     15
+#define GDA_OP_RDMA_WRITE  IONIC_V2_OP_RDMA_WRITE
+#define GDA_OP_ATOMIC_FA   IONIC_V2_OP_ATOMIC_FA
+#define GDA_OP_ATOMIC_CS   IONIC_V2_OP_ATOMIC_CS
+#elif !defined(GDA_BNXT)
+#define GDA_DEFAULT_GID    0
+#define GDA_MAX_ATOMIC     1
+#define GDA_OP_RDMA_WRITE  MLX5_OPCODE_RDMA_WRITE
+#define GDA_OP_ATOMIC_FA   MLX5_OPCODE_ATOMIC_FA
+#define GDA_OP_ATOMIC_CS   MLX5_OPCODE_ATOMIC_CS
 #endif
 
 namespace rocshmem {
@@ -155,16 +155,16 @@ class QueuePair {
    *
    * @param[in] db_val Doorbell value is written by method.
    */
-#if defined(GPUIB_IONIC)
+#if defined(GDA_IONIC)
   __device__ void ring_doorbell(uint32_t pos);
-#elif defined(GPUIB_BNXT)
+#elif defined(GDA_BNXT)
   __device__ void ring_sq_doorbell(uint32_t slot_idx);
   __device__ void ring_cq_doorbell(uint32_t slot_idx);
 #else
   __device__ void ring_doorbell(uint64_t db_val, uint64_t my_sq_counter);
 #endif
 
-#ifdef GPUIB_IONIC
+#ifdef GDA_IONIC
   __device__ uint64_t get_same_qp_lane_mask();
 
   __device__ bool cq_lock_try_acquire(uint64_t active_lane_mask);
@@ -217,13 +217,13 @@ class QueuePair {
 
   uint32_t inline_threshold{0};
 
-#elif defined(GPUIB_BNXT)
+#elif defined(GDA_BNXT)
   uint64_t *dbr;
   struct bnxt_device_cq cq;
   struct bnxt_device_sq sq;
 
   __device__ int poll_cq();
-#else // !GPUIB_IONIC && !GPUIB_BNXT
+#else // !GDA_IONIC && !GDA_BNXT
 
   db_reg_t db{};
 
@@ -284,7 +284,7 @@ class QueuePair {
   static constexpr size_t OUTSTANDING_TABLE_SIZE = 65536;
   uint64_t outstanding_wqes[OUTSTANDING_TABLE_SIZE]{0};
 
-#endif // GPUIB_IONIC
+#endif // GDA_IONIC
 
   uint32_t qp_num{0};
   uint32_t rkey{0};
@@ -306,4 +306,4 @@ class QueuePair {
 
 }  // namespace rocshmem
 
-#endif  // LIBRARY_SRC_GPU_IB_QUEUE_PAIR_HPP_
+#endif  // LIBRARY_SRC_GDA_QUEUE_PAIR_HPP_

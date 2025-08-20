@@ -35,10 +35,10 @@
 #include "ipc/context_ipc_device.hpp"
 #include "ipc/context_ipc_host.hpp"
 #elif defined(USE_GDA)
-#include "gpu_ib/context_ib_device.hpp"
-#include "gpu_ib/context_ib_tmpl_device.hpp"
-#include "gpu_ib/context_ib_host.hpp"
-#include "gpu_ib/context_ib_tmpl_host.hpp"
+#include "gda/context_gda_device.hpp"
+#include "gda/context_gda_host.hpp"
+//TODO needed? #include "gda/context_gda_tmpl_device.hpp"
+//TODO needed? #include "gda/context_gda_tmpl_host.hpp"
 #else
 #error "Select one backend among USE_RO, USE_IPC, USE_GDA"
 #endif

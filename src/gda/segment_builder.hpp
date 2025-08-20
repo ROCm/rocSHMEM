@@ -20,8 +20,8 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_GPU_IB_SEGMENT_BUILDER_HPP_
-#define LIBRARY_SRC_GPU_IB_SEGMENT_BUILDER_HPP_
+#ifndef LIBRARY_SRC_GDA_SEGMENT_BUILDER_HPP_
+#define LIBRARY_SRC_GDA_SEGMENT_BUILDER_HPP_
 
 #include <infiniband/mlx5dv.h>
 
@@ -86,4 +86,4 @@ class SegmentBuilder {
 
 }  // namespace rocshmem
 
-#endif  // LIBRARY_SRC_GPU_IB_SEGMENT_BUILDER_HPP_
+#endif  // LIBRARY_SRC_GDA_SEGMENT_BUILDER_HPP_

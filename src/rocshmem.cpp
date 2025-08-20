@@ -42,7 +42,8 @@
 #include "ipc/backend_ipc.hpp"
 #include "ipc/context_ipc_tmpl_host.hpp"
 #elif defined(USE_GDA)
-#include "gpu_ib/gda_device.hpp"
+#include "gda/backend_gda.hpp"
+#include "gda/context_gda_tmpl_host.hpp"
 #else
 #error "Select one backend among USE_RO, USE_IPC, USE_GDA"
 #endif

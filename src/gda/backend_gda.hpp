@@ -44,16 +44,16 @@ class GDABackend : public Backend {
   typedef struct ib_state {
     struct ibv_context* context;
     struct ibv_pd* pd_orig;
-#ifndef GPUIB_BNXT
+#ifndef GDA_BNXT
     struct ibv_pd* pd_parent;
 #endif
-#ifdef GPUIB_IONIC
+#ifdef GDA_IONIC
     struct ibv_pd* pd_uxdma[2];
 #endif
     struct ibv_mr* mr;
     struct ibv_port_attr portinfo;
 
-#ifdef GPUIB_IONIC
+#ifdef GDA_IONIC
     void *gpu_db_page;
     uint64_t *gpu_db_cq;
     uint64_t *gpu_db_sq;
@@ -67,7 +67,7 @@ class GDABackend : public Backend {
     union ibv_gid gid;
   } dest_info_t;
 
-#ifndef GPUIB_BNXT
+#ifndef GDA_BNXT
   class State {
    public:
     ibv_qp_attr exp_qp_attr{};
@@ -88,7 +88,7 @@ class GDABackend : public Backend {
     RtrState() {
       exp_qp_attr.qp_state = IBV_QPS_RTR;
       exp_qp_attr.ah_attr.sl = 1;
-      exp_qp_attr.max_dest_rd_atomic = GPUIB_MAX_ATOMIC;
+      exp_qp_attr.max_dest_rd_atomic = GDA_MAX_ATOMIC;
       exp_qp_attr.min_rnr_timer = 12;
       exp_attr_mask = IBV_QP_STATE | IBV_QP_AV | IBV_QP_PATH_MTU;
     }
@@ -101,7 +101,7 @@ class GDABackend : public Backend {
       exp_qp_attr.timeout = 14;
       exp_qp_attr.retry_cnt = 7;
       exp_qp_attr.rnr_retry = 7;
-      exp_qp_attr.max_rd_atomic = GPUIB_MAX_ATOMIC;
+      exp_qp_attr.max_rd_atomic = GDA_MAX_ATOMIC;
       exp_attr_mask = IBV_QP_STATE | IBV_QP_TIMEOUT | IBV_QP_RETRY_CNT | IBV_QP_RNR_RETRY | IBV_QP_MAX_QP_RD_ATOMIC;
     }
   };
@@ -300,7 +300,7 @@ class GDABackend : public Backend {
 
   void initialize_gpu_qp(QueuePair* qp, int conn_num);
 
-#ifndef GPUIB_BNXT
+#ifndef GDA_BNXT
   InitQPState initqp(uint8_t port);
 
   RtrState rtr(dest_info_t* dest, uint8_t port);
@@ -318,7 +318,7 @@ class GDABackend : public Backend {
 
   void create_qps(uint8_t port, ibv_port_attr* ib_port_att);
 
-#ifdef GPUIB_BNXT
+#ifdef GDA_BNXT
   void init_qp_status(uint8_t port);
 
   void create_cqs(int ncqs, int cqe);
@@ -476,7 +476,7 @@ class GDABackend : public Backend {
 
   ibv_mr *heap_mr{nullptr};
 
-#ifdef GPUIB_BNXT
+#ifdef GDA_BNXT
   union ibv_gid gid;
 
   std::vector<struct bnxt_host_qp> bnxt_qps;
