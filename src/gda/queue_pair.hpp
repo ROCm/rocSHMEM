@@ -52,13 +52,11 @@ extern "C" {
 #include "memory/hip_allocator.hpp"
 
 #ifdef GDA_IONIC
-#define GDA_DEFAULT_GID    1
 #define GDA_MAX_ATOMIC     15
 #define GDA_OP_RDMA_WRITE  IONIC_V2_OP_RDMA_WRITE
 #define GDA_OP_ATOMIC_FA   IONIC_V2_OP_ATOMIC_FA
 #define GDA_OP_ATOMIC_CS   IONIC_V2_OP_ATOMIC_CS
 #elif !defined(GDA_BNXT)
-#define GDA_DEFAULT_GID    0
 #define GDA_MAX_ATOMIC     1
 #define GDA_OP_RDMA_WRITE  MLX5_OPCODE_RDMA_WRITE
 #define GDA_OP_ATOMIC_FA   MLX5_OPCODE_ATOMIC_FA

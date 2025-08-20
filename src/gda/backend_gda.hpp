@@ -342,6 +342,8 @@ class GDABackend : public Backend {
 
   void ib_init(ibv_device* ib_dev, uint8_t port);
 
+  void init_gid_index(uint8_t port);
+
   void setup_gpu_qps();
 
   char* requested_dev{nullptr};
@@ -466,9 +468,10 @@ class GDABackend : public Backend {
 
   ibv_mr *heap_mr{nullptr};
 
-#ifdef GDA_BNXT
   union ibv_gid gid;
+  int gid_index;
 
+#ifdef GDA_BNXT
   std::vector<struct bnxt_host_qp> bnxt_qps;
   std::vector<struct bnxt_host_cq> bnxt_cqs;
 
