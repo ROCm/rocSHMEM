@@ -1,5 +1,5 @@
 # ROCm OpenSHMEM (rocSHMEM)
-
+TEST
 The ROCm OpenSHMEM (rocSHMEM) runtime is part of an AMD and AMD Research
 initiative to provide GPU-centric networking through an OpenSHMEM-like interface.
 This intra-kernel networking library simplifies application
