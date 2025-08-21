@@ -23,7 +23,6 @@
 #ifndef LIBRARY_SRC_GDA_BNXT_BNXT_UTIL_HPP_
 #define LIBRARY_SRC_GDA_BNXT_BNXT_UTIL_HPP_
 
-#include "gda/gda_macros.inl"
 #include "util.hpp"
 
 #include <sys/utsname.h> // utsname
@@ -106,7 +105,7 @@ static inline struct ibv_mr *bnxt_re_dv_reg_mr(struct ibv_pd *pd, void *addr,
   }
 
   mr = ibv_reg_dmabuf_mr(pd, offset, length, (uint64_t) addr, dmabuf_fd, access);
-  GDA_CHECK_NNULL(mr, "ibv_reg_dmabuf_mr");
+  CHECK_NNULL(mr, "ibv_reg_dmabuf_mr");
   return mr;
 }
 

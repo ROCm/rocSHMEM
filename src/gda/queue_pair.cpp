@@ -26,7 +26,6 @@
 
 #include "backend_gda.hpp"
 #include "endian.hpp"
-#include "gda_macros.inl"
 #if !defined(GDA_IONIC) && !defined(GDA_BNXT)
 #include "segment_builder.hpp"
 #endif
@@ -41,7 +40,7 @@ QueuePair::QueuePair(struct ibv_pd* pd) {
   int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
 
   ibv_mr *mr = ibv_reg_mr(pd, nonfetching_atomic, 8, access);
-  GDA_CHECK_NNULL(mr, "ibv_reg_mr");
+  CHECK_NNULL(mr, "ibv_reg_mr");
 
 #if defined(GDA_IONIC) || defined(GDA_BNXT)
   nonfetching_atomic_lkey = mr->lkey;
@@ -53,7 +52,7 @@ QueuePair::QueuePair(struct ibv_pd* pd) {
   CHECK_HIP(hipMemset(fetching_atomic, 0, 8 * FETCHING_ATOMIC_CNT));
   access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
   mr = ibv_reg_mr(pd, fetching_atomic, 8 * FETCHING_ATOMIC_CNT, access);
-  GDA_CHECK_NNULL(mr, "ibv_reg_mr");
+  CHECK_NNULL(mr, "ibv_reg_mr");
 #if defined(GDA_IONIC) || defined(GDA_BNXT)
   fetching_atomic_lkey = mr->lkey;
 #else

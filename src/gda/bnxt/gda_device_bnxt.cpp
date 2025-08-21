@@ -21,7 +21,7 @@
  *****************************************************************************/
 
 #include "gpu_ib/gda_device.hpp"
-#include "gpu_ib/gpuib_macros.inl"
+#include "utils.hpp"
 #include <unistd.h> // getpagesize()
 
 namespace rocshmem {
@@ -44,19 +44,19 @@ void GDADevice::ib_init(struct ibv_device* ib_dev, uint8_t port) {
   int err;
 
   ib_state = new ib_state_t;
-  GDA_CHECK_NNULL(ib_state, "ib_state object create");
+  CHECK_NNULL(ib_state, "ib_state object create");
 
   ib_state->context = ibv_open_device(ib_dev);
-  GDA_CHECK_NNULL(ib_state->context, "ibv_open_device");
+  CHECK_NNULL(ib_state->context, "ibv_open_device");
 
   ib_state->pd_orig = ibv_alloc_pd(ib_state->context);
-  GDA_CHECK_NNULL(ib_state->pd_orig, "ibv_alloc_pd");
+  CHECK_NNULL(ib_state->pd_orig, "ibv_alloc_pd");
 
   err = ibv_query_port(ib_state->context, port, &ib_state->portinfo);
-  GDA_CHECK_ZERO(err, "ibv_query_port");
+  CHECK_ZERO(err, "ibv_query_port");
 
   err = ibv_query_gid(ib_state->context, port, GDA_DEFAULT_GID, &gid);
-  GDA_CHECK_ZERO(err, "ibv_query_gid");
+  CHECK_ZERO(err, "ibv_query_gid");
 }
 
 void GDADevice::init_qp_status(uint8_t port) {
@@ -81,7 +81,7 @@ void GDADevice::init_qp_status(uint8_t port) {
 
   for (int i =0; i < qps.size() ; i++) {
     err = bnxt_re_dv_modify_qp(qps[i], &attr, attr_mask, 0, 0);
-    GDA_CHECK_ZERO(err, "bnxt_re_dv_modify_qp");
+    CHECK_ZERO(err, "bnxt_re_dv_modify_qp");
   }
 }
 
@@ -115,7 +115,7 @@ void GDADevice::change_status_rtr(ibv_qp *qp, dest_info_t *dest, uint8_t port) {
             | IBV_QP_MIN_RNR_TIMER;
 
   err = bnxt_re_dv_modify_qp(qp, &attr, attr_mask, 0, 0);
-  GDA_CHECK_ZERO(err, "bnxt_re_dv_modify_qp");
+  CHECK_ZERO(err, "bnxt_re_dv_modify_qp");
 }
 
 void GDADevice::change_status_rts(ibv_qp* qp, dest_info_t* dest) {
@@ -139,7 +139,7 @@ void GDADevice::change_status_rts(ibv_qp* qp, dest_info_t* dest) {
             | IBV_QP_RNR_RETRY;
 
   err = bnxt_re_dv_modify_qp(qp, &attr, attr_mask, 0, 0);
-  GDA_CHECK_ZERO(err, "bnxt_re_dv_modify_qp");
+  CHECK_ZERO(err, "bnxt_re_dv_modify_qp");
 }
 
 void GDADevice::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
@@ -180,7 +180,7 @@ void GDADevice::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   dv_obj.cq.out = &dv_cq;
 
   err = bnxt_re_dv_init_obj(&dv_obj, BNXT_RE_DV_OBJ_CQ);
-  GDA_CHECK_ZERO(err, "bnxt_re_dv_init_obj(CQ)");
+  CHECK_ZERO(err, "bnxt_re_dv_init_obj(CQ)");
 
   memset(&gpu_qp->cq, 0, sizeof(bnxt_device_cq));
   gpu_qp->cq.buf   = bnxt_cqs[conn_num].buf;
@@ -194,7 +194,7 @@ void GDADevice::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   dv_obj.qp.out = &dv_qp;
 
   err = bnxt_re_dv_init_obj(&dv_obj, BNXT_RE_DV_OBJ_QP);
-  GDA_CHECK_ZERO(err, "bnxt_re_dv_init_obj(QP)");
+  CHECK_ZERO(err, "bnxt_re_dv_init_obj(QP)");
 
   memset(&gpu_qp->sq, 0, sizeof(bnxt_device_sq));
   gpu_qp->sq.buf        = bnxt_qps[conn_num].sq_buf;
@@ -214,7 +214,7 @@ void GDADevice::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
 
   /* Export DB */
   err = bnxt_re_dv_get_default_db_region(context, &db_region_attr);
-  GDA_CHECK_ZERO(err, "bnxt_re_dv_init_obj(QP)");
+  CHECK_ZERO(err, "bnxt_re_dv_init_obj(QP)");
 
   CHECK_HIP(hipHostRegister(db_region_attr.dbr, getpagesize(), hipHostRegisterDefault));
   CHECK_HIP(hipHostGetDevicePointer((void**) &gpu_qp->dbr, db_region_attr.dbr, 0));
@@ -236,7 +236,7 @@ void GDADevice::create_cqs(int ncqs, int cqe) {
     /* Allocate CQ mem */
     memset(&cq_attr, 0, sizeof(struct bnxt_re_dv_cq_attr));
     bnxt_cqs[i].handle = bnxt_re_dv_cq_mem_alloc(context, cqe, &cq_attr);
-    GDA_CHECK_NNULL(bnxt_cqs[i].handle, "bnxt_re_dv_cq_mem_alloc");
+    CHECK_NNULL(bnxt_cqs[i].handle, "bnxt_re_dv_cq_mem_alloc");
 
     /* Allocate CQ UMEM */
     bnxt_cqs[i].length = cq_attr.ncqe * cq_attr.cqe_size;
@@ -250,7 +250,7 @@ void GDADevice::create_cqs(int ncqs, int cqe) {
     umem_attr.access_flags = IBV_ACCESS_LOCAL_WRITE;
 
     bnxt_cqs[i].umem_handle = bnxt_re_dv_umem_reg(context, &umem_attr);
-    GDA_CHECK_NNULL(bnxt_cqs[i].umem_handle, "bnxt_re_dv_umem_reg(cq_buf)");
+    CHECK_NNULL(bnxt_cqs[i].umem_handle, "bnxt_re_dv_umem_reg(cq_buf)");
 
     /* Create CQ */
     memset(&cq_init_attr, 0, sizeof(struct bnxt_re_dv_cq_init_attr));
@@ -259,7 +259,7 @@ void GDADevice::create_cqs(int ncqs, int cqe) {
     cq_init_attr.ncqe        = cq_attr.ncqe;
 
     cqs[i] = bnxt_re_dv_create_cq(context, &cq_init_attr);
-    GDA_CHECK_NNULL(cqs[i], "bnxt_re_dv_create_cq");
+    CHECK_NNULL(cqs[i], "bnxt_re_dv_create_cq");
   }
 }
 
@@ -295,7 +295,7 @@ void GDADevice::create_qps_impl(int nqps) {
     /* Alloc qp_mem_info */
     memset(&bnxt_qps[i].mem_info, 0, sizeof(struct bnxt_re_dv_qp_mem_info));
     err = bnxt_re_dv_qp_mem_alloc(pd, &ib_qp_attr, &bnxt_qps[i].mem_info);
-    GDA_CHECK_ZERO(err, "bnxt_re_dv_qp_mem_alloc");
+    CHECK_ZERO(err, "bnxt_re_dv_qp_mem_alloc");
 
     /* Alloc SQ */
     CHECK_HIP(hipExtMallocWithFlags(&sq_ptr, bnxt_qps[i].mem_info.sq_len, hipDeviceMallocUncached));
@@ -320,7 +320,7 @@ void GDADevice::create_qps_impl(int nqps) {
     umem_attr.access_flags = IBV_ACCESS_LOCAL_WRITE;
 
     sq_umem_handle = bnxt_re_dv_umem_reg(context, &umem_attr);
-    GDA_CHECK_NNULL(sq_umem_handle, "bnxt_re_dv_umem_reg(sq)");
+    CHECK_NNULL(sq_umem_handle, "bnxt_re_dv_umem_reg(sq)");
 
     memset(&umem_attr, 0, sizeof(struct bnxt_re_dv_umem_reg_attr));
     umem_attr.addr         = (void*) bnxt_qps[i].mem_info.rq_va;
@@ -328,7 +328,7 @@ void GDADevice::create_qps_impl(int nqps) {
     umem_attr.access_flags = IBV_ACCESS_LOCAL_WRITE;
 
     rq_umem_handle = bnxt_re_dv_umem_reg(context, &umem_attr);
-    GDA_CHECK_NNULL(rq_umem_handle, "bnxt_re_dv_umem_reg(rq)");
+    CHECK_NNULL(rq_umem_handle, "bnxt_re_dv_umem_reg(rq)");
 
     /* IB DV QP Init Attr */
     memset(&bnxt_qps[i].attr, 0, sizeof(struct bnxt_re_dv_qp_init_attr));
@@ -357,7 +357,7 @@ void GDADevice::create_qps_impl(int nqps) {
 
     /* Alloc QP */
     qps[i] = bnxt_re_dv_create_qp(pd, &bnxt_qps[i].attr);
-    GDA_CHECK_NNULL(qps[i], "bnxt_re_dv_create_qp");
+    CHECK_NNULL(qps[i], "bnxt_re_dv_create_qp");
   }
 }
 

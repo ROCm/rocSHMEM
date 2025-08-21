@@ -37,18 +37,61 @@
 
 namespace rocshmem {
 
-#define LOAD(VAR) __atomic_load_n((VAR), __ATOMIC_SEQ_CST)
-#define STORE(DST, SRC) __atomic_store_n((DST), (SRC), __ATOMIC_SEQ_CST)
+#define LIKELY(X)   __builtin_expect(X, 1)
+#define UNLIKELY(X) __builtin_expect(X, 0)
 
-#define CHECK_HIP(cmd)                                                        \
-  {                                                                           \
-    hipError_t error = cmd;                                                   \
-    if (error != hipSuccess) {                                                \
-      fprintf(stderr, "error: '%s'(%d) at %s:%d\n", hipGetErrorString(error), \
-              error, __FILE__, __LINE__);                                     \
-      exit(EXIT_FAILURE);                                                     \
-    }                                                                         \
-  }
+/**
+ * @name CHECK_NNULL
+ * @brief Checks if value is NOT null. If it is null print errno and exit the program.
+ *
+ * @param[in] value    Value to check
+ * @param[in] fn_str   String describing checked function
+ *
+ */
+#define CHECK_NNULL(value, fn_str) do {                \
+  if (UNLIKELY(nullptr == (value))) {                  \
+    fprintf(stderr,                                    \
+      "Error: %s: %s (%d) at RocSHMEM::%s:%d\n",       \
+      fn_str, strerror(errno), errno,                  \
+      __FILE__, __LINE__);                             \
+    abort();                                           \
+  }                                                    \
+} while(0)
+
+/**
+ * @name CHECK_ZERO
+ * @brief Checks if value is zero. If it is not zero print errno and exit the program.
+ *
+ * @param[in] value    Value to check
+ * @param[in] fn_str   String describing checked function
+ *
+ */
+#define CHECK_ZERO(value, fn_str) do {                 \
+  if (UNLIKELY(0 != (value))) {                        \
+    fprintf(stderr,                                    \
+      "Error: %s: %s (%d) at RocSHMEM::%s:%d\n",       \
+      fn_str, strerror(errno), errno,             \
+      __FILE__, __LINE__);                             \
+    abort();                                           \
+  }                                                    \
+} while(0)
+
+/**
+ * @name CHECK_HIP
+ * @brief Checks if HIP command succeeded. If it is not not success then it exits the program.
+ *
+ * @param[in] instr    HIP function to run and check
+ *
+ */
+#define CHECK_HIP(instr) do {                               \
+  hipError_t error = (instr);                               \
+  if (error != hipSuccess) {                                \
+    fprintf(stderr,                                         \
+      "Error: " #instr ": %s (%d) at RocSHMEM::%s:%d\n",    \
+      hipGetErrorString(error), error, __FILE__, __LINE__); \
+    abort();                                                \
+  }                                                         \
+} while(0)
 
 #ifdef DEBUG
 #define DPRINTF(...)     \
@@ -212,6 +255,9 @@ __device__ void gpu_dprintf(const char* fmt, const Args&... args) {
     }
   }
 }
+
+#define LOAD(VAR) __atomic_load_n((VAR), __ATOMIC_SEQ_CST)
+#define STORE(DST, SRC) __atomic_store_n((DST), (SRC), __ATOMIC_SEQ_CST)
 
 __device__ __forceinline__ void memcpy(void* dst, void* src, size_t size) {
   uint8_t* dst_bytes{static_cast<uint8_t*>(dst)};
