@@ -24,13 +24,14 @@
 
 #include <hip/hip_runtime.h>
 
-#include "gda_device.hpp"
+#include "backend_gda.hpp"
 #include "endian.hpp"
-#include "gpuib_macros.inl"
+#include "gda_macros.inl"
 #if !defined(GDA_IONIC) && !defined(GDA_BNXT)
 #include "segment_builder.hpp"
 #endif
 #include "util.hpp"
+#include "constants.hpp"
 
 namespace rocshmem {
 

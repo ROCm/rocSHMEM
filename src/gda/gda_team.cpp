@@ -24,6 +24,7 @@
 
 #include "gda_team.hpp"
 
+#include "constants.hpp"
 #include "backend_type.hpp"
 #include "backend_gda.hpp"
 

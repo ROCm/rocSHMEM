@@ -26,7 +26,8 @@
 
 #include "backend_gda.hpp"
 #include "gda_team.hpp"
-
+#include "gda_macros.inl"
+#include "topology.hpp"
 
 #include <hip/hip_runtime.h>
 #include <cstdlib>
@@ -261,14 +262,13 @@ void dump_mlx5dv_cq(struct mlx5dv_cq *cq_dv, int conn_num) {
 }
 #endif // !GDA_IONIC
 
-GDADevice::GDADevice(TcpBootstrap* bootstrap):  Backend(bootstrap) {
+GDABackend::GDABackend(MPI_Comm comm):  Backend(comm) {
   type = BackendType::GDA_BACKEND;
   init_part1();
-  backend_bootstr = bootstrap;
 
   /* Initialize the host interface */
   host_interface = std::make_shared<HostInterface>(hdp_proxy_.get(), //TODO: need an hdp proxy?
-                                                   bootstrap,
+                                                   backend_comm,
                                                    &heap);
 
   default_host_ctx = std::make_unique<GDAHostContext>(this, 0); //TODO move to setup_default_ctx?
@@ -278,6 +278,7 @@ GDADevice::GDADevice(TcpBootstrap* bootstrap):  Backend(bootstrap) {
 
 GDABackend::GDABackend(TcpBootstrap *bootstrap):  Backend(bootstrap) {
   type = BackendType::GDA_BACKEND;
+  backend_bootstr = bootstrap;
   init_part1();
 
   /* Initialize the host interface */
@@ -309,7 +310,7 @@ void GDABackend::init_part1() {
   }
 }
 
-void GDADevice::init_part2() {
+void GDABackend::init_part2() {
 //TODO move to setup_default_host_ctx()?
   ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque = default_host_ctx.get();
 
@@ -350,8 +351,8 @@ void GDADevice::init_part2() {
   auto npes = num_pes;
   auto dinfo = dest_info.data();
   for (int i = 0; i < maximum_num_contexts_ + 1; i++) {
-    if (comm != MPI_COMM_NULL) {
-      MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t), MPI_CHAR, dinfo + i * npes, sizeof(dest_info_t), MPI_CHAR, comm);
+    if (backend_comm != MPI_COMM_NULL) {
+      MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t), MPI_CHAR, dinfo + i * npes, sizeof(dest_info_t), MPI_CHAR, backend_comm);
     } else {
       Alltoall_char_inplace(reinterpret_cast<char*>(dinfo + i * npes), sizeof(dest_info_t), ROCSHMEM_TEAM_WORLD);
     }
@@ -370,7 +371,7 @@ void GDADevice::init_part2() {
   heap_memory_rkey();
   setup_gpu_qps();
   setup_ctxs();
-  setup_default_ctx();
+  //setup_default_ctx();//TODO reintroduce?
   internal_barrier();
 }
 
@@ -385,13 +386,9 @@ GDABackend::~GDABackend() {
   team_world->~Team();
   CHECK_HIP(hipFree(team_world));
 
-  delete default_host_ctx; //TODO this is not done in IPC/RO, why?
   CHECK_HIP(hipFree(default_ctx_->qps));
   CHECK_HIP(hipFree(default_ctx_));
   default_ctx_ = nullptr;
-
-  delete host_interface;
-  host_interface = nullptr;
 
   CHECK_HIP(hipFree(gpu_qps));
   gpu_qps = nullptr;
@@ -478,7 +475,7 @@ void GDABackend::team_destroy(rocshmem_team_t team) {
 }
 
 //TODO: factorize somewhere else maybe backend_bc
-void GDADevice::Alltoall_char_inplace (char *inoutbuf, size_t num_bytes, rocshmem_team_t team) {
+void GDABackend::Alltoall_char_inplace (char *inoutbuf, size_t num_bytes, rocshmem_team_t team) {
   // Implement an Alltoall outside of MPI assuming in_place communication
   GDATeam *team_obj = reinterpret_cast<GDATeam *>(team);
   int num_pes = team_obj->num_pes;
@@ -799,14 +796,14 @@ void GDABackend::teams_init() {
 }
 
 void GDABackend::internal_barrier() {
-  if (comm != MPI_COMM_NULL) {
-    NET_CHECK(MPI_Barrier(comm));
+  if (backend_comm != MPI_COMM_NULL) {
+    NET_CHECK(MPI_Barrier(backend_comm));
   } else {
     backend_bootstr->barrier();
   }
 }
 
-void GDADevice::heap_memory_rkey() {
+void GDABackend::heap_memory_rkey() {
   auto *base_heap = heap.get_local_heap_base();
   int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
 
@@ -827,7 +824,7 @@ void GDADevice::heap_memory_rkey() {
 
   if (comm != MPI_COMM_NULL)
     MPI_Allgather(MPI_IN_PLACE, sizeof(uint32_t), MPI_CHAR, host_rkey_cpy, sizeof(uint32_t), MPI_CHAR, comm);
-   else
+  else
     backend_bootstr->allGather(host_rkey_cpy, sizeof(uint32_t));
 
   CHECK_HIP(hipMemcpyAsync(heap_rkey, host_rkey_cpy, rkeys_size, hipMemcpyHostToDevice, stream));
@@ -837,7 +834,7 @@ void GDADevice::heap_memory_rkey() {
   free(host_rkey_cpy);
 }
 
-void GDADevice::setup_gpu_qps() {
+void GDABackend::setup_gpu_qps() {
   CHECK_HIP(hipMalloc(&gpu_qps, sizeof(QueuePair) * (maximum_num_contexts_ + 1) * num_pes));
   for (int i{0}; i < (maximum_num_contexts_ + 1) * num_pes; i++) {
     QueuePair qp(ib_state->pd_orig);
@@ -846,7 +843,7 @@ void GDADevice::setup_gpu_qps() {
   }
 }
 
-void GDADevice::initialize_context(GDAContext *ctx, int context_id) {
+void GDABackend::initialize_context(GDAContext *ctx, int context_id) {
   CHECK_HIP(hipMalloc(&ctx->qps, sizeof(QueuePair) * num_pes));
   CHECK_HIP(hipMemset(ctx->qps, 0, sizeof(QueuePair) * num_pes));
   for (int i{0}; i < num_pes; i++) {
@@ -857,7 +854,7 @@ void GDADevice::initialize_context(GDAContext *ctx, int context_id) {
 }
 
 #ifndef GDA_BNXT
-void GDADevice::ib_init(struct ibv_device* ib_dev, uint8_t port) {
+void GDABackend::ib_init(struct ibv_device* ib_dev, uint8_t port) {
   ib_state = new ib_state_t;
   GDA_CHECK_NNULL(ib_state, "ib_state object create");
 
@@ -916,24 +913,24 @@ void GDADevice::ib_init(struct ibv_device* ib_dev, uint8_t port) {
 }
 
 template <typename StateType>
-void GDADevice::try_to_modify_qp(ibv_qp* qp, StateType state) {
+void GDABackend::try_to_modify_qp(ibv_qp* qp, StateType state) {
   int err = ibv_modify_qp(qp, &state.exp_qp_attr, state.exp_attr_mask);
   GDA_CHECK_ZERO(err, "ibv_modify_qp");
 }
 
-void GDADevice::init_qp_status(ibv_qp* qp, uint8_t port) {
+void GDABackend::init_qp_status(ibv_qp* qp, uint8_t port) {
   try_to_modify_qp<InitQPState>(qp, initqp(port));
 }
 
-void GDADevice::change_status_rtr(ibv_qp* qp, dest_info_t* dest, uint8_t port) {
+void GDABackend::change_status_rtr(ibv_qp* qp, dest_info_t* dest, uint8_t port) {
   try_to_modify_qp<RtrState>(qp, rtr(dest, port));
 }
 
-void GDADevice::change_status_rts(ibv_qp* qp, dest_info_t* dest) {
+void GDABackend::change_status_rts(ibv_qp* qp, dest_info_t* dest) {
   try_to_modify_qp<RtsState>(qp, rts(dest));
 }
 
-void GDADevice::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
+void GDABackend::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
   ibv_qp_cap cap{};
   cap.max_send_wr = sq_size;
   cap.max_send_sge = 1;
@@ -970,7 +967,7 @@ void GDADevice::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
 }
 
 //TODO: is this needed? canm we use allocator class?
-void* GDADevice::buf_alloc(struct ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type) {
+void* GDABackend::buf_alloc(struct ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type) {
   void* dev_ptr{nullptr};
 #ifdef GDA_IONIC
   CHECK_HIP(hipExtMallocWithFlags(reinterpret_cast<void**>(&dev_ptr), size, hipDeviceMallocUncached));
@@ -982,20 +979,20 @@ void* GDADevice::buf_alloc(struct ibv_pd* pd, void* pd_context, size_t size, siz
 }
 
 //TODO: is this needed (see buf_alloc)
-void GDADevice::buf_release(struct ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type) {
+void GDABackend::buf_release(struct ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type) {
   CHECK_HIP(hipFree(ptr));
 }
 
-void GDADevice::init_parent_domain_attr(ibv_parent_domain_init_attr* attr1) {
+void GDABackend::init_parent_domain_attr(ibv_parent_domain_init_attr* attr1) {
   attr1->pd = ib_state->pd_orig;
   attr1->td = nullptr;
   attr1->comp_mask = IBV_PARENT_DOMAIN_INIT_ATTR_ALLOCATORS;
-  attr1->alloc = GDADevice::buf_alloc;
-  attr1->free = GDADevice::buf_release;
+  attr1->alloc = GDABackend::buf_alloc;
+  attr1->free = GDABackend::buf_release;
   attr1->pd_context = nullptr;
 }
 
-ibv_cq* GDADevice::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
+ibv_cq* GDABackend::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
   ibv_cq_init_attr_ex cq_attr;
   memset(&cq_attr, 0, sizeof(ibv_cq_init_attr_ex));
   cq_attr.cqe = cqe;
@@ -1012,7 +1009,7 @@ ibv_cq* GDADevice::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
   return cq;
 }
 
-void GDADevice::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
+void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   int hip_dev_id{-1};
   CHECK_HIP(hipGetDevice(&hip_dev_id));
 
@@ -1111,7 +1108,7 @@ void GDADevice::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
 #endif // !GDA_IONIC
 }
 
-ibv_qp* GDADevice::create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr_ex* qp_attr, ibv_cq* cq) {
+ibv_qp* GDABackend::create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr_ex* qp_attr, ibv_cq* cq) {
   ibv_qp* qp{nullptr};
   assert(pd);
   assert(context);
@@ -1125,7 +1122,7 @@ ibv_qp* GDADevice::create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr_
   return qp;
 }
 
-GDADevice::InitQPState GDADevice::initqp(uint8_t port) {
+GDABackend::InitQPState GDABackend::initqp(uint8_t port) {
   InitQPState init{};
   init.exp_qp_attr.qp_access_flags = IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
   init.exp_qp_attr.port_num = port;
@@ -1133,7 +1130,7 @@ GDADevice::InitQPState GDADevice::initqp(uint8_t port) {
   return init;
 }
 
-GDADevice::RtrState GDADevice::rtr(dest_info_t* dest, uint8_t port) {
+GDABackend::RtrState GDABackend::rtr(dest_info_t* dest, uint8_t port) {
   RtrState rtr{};
   rtr.exp_qp_attr.dest_qp_num = dest->qpn;
   rtr.exp_qp_attr.rq_psn = dest->psn;
@@ -1151,14 +1148,14 @@ GDADevice::RtrState GDADevice::rtr(dest_info_t* dest, uint8_t port) {
   return rtr;
 }
 
-GDADevice::RtsState GDADevice::rts(dest_info_t* dest) {
+GDABackend::RtsState GDABackend::rts(dest_info_t* dest) {
   RtsState rts{};
   rts.exp_qp_attr.sq_psn = dest->psn;
   rts.exp_attr_mask |= IBV_QP_SQ_PSN;
   return rts;
 }
 
-GDADevice::QPInitAttr GDADevice::qpattr(ibv_qp_cap cap) {
+GDABackend::QPInitAttr GDABackend::qpattr(ibv_qp_cap cap) {
   QPInitAttr qpattr(cap);
   qpattr.attr.qp_type = IBV_QPT_RC;
   return qpattr;

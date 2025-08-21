@@ -32,14 +32,15 @@
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "rocshmem/rocshmem.hpp"
 #include "backend_gda.hpp"
+#include "context_gda_device.hpp"
 #include "context_gda_tmpl_device.hpp"
 #include "queue_pair.hpp"
 
 namespace rocshmem {
 
-__host__ GDAContext::IPCContext(Backend *b, unsigned int ctx_id)
+__host__ GDAContext::GDAContext(Backend *b, unsigned int ctx_id)
     : Context(b, false) {
-  GDABackend *backend{static_cast<IPCBackend *>(b)};
+  GDABackend *backend{static_cast<GDABackend *>(b)};
   base_heap = b->ipcImpl.ipc_bases; //TODO not correct
 
   barrier_sync = backend->barrier_sync;

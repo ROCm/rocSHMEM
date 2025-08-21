@@ -34,6 +34,7 @@
 
 #include "rocshmem_config.h"
 #include "endian.h"
+#include "constants.hpp"
 #ifdef GDA_IONIC
 extern "C" {
 #include <infiniband/ionic_dv.h>

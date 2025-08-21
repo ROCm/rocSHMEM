@@ -22,9 +22,6 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "context_ipc_device.hpp"
-#include "context_ipc_tmpl_device.hpp"
-
 #include <hip/hip_runtime.h>
 #include <hip/amd_detail/amd_device_functions.h>
 #include <unistd.h>
@@ -35,6 +32,8 @@
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "rocshmem/rocshmem.hpp"
 #include "backend_ipc.hpp"
+#include "context_ipc_device.hpp"
+#include "context_ipc_tmpl_device.hpp"
 
 namespace rocshmem {
 

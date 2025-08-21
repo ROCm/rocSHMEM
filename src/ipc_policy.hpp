@@ -186,7 +186,7 @@ class IpcOffImpl {
 /*
  * Select which one of our IPC policies to use at compile time.
  */
-#ifdef USE_IPC
+#if defined(USE_IPC)
 typedef IpcOnImpl IpcImpl;
 #else
 typedef IpcOffImpl IpcImpl;

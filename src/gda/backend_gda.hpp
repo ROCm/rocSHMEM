@@ -26,18 +26,20 @@
 #define LIBRARY_SRC_GDA_BACKEND_HPP_
 
 #include "backend_bc.hpp"
-#include "gda_context_proxy.hpp"
 #include "containers/free_list_impl.hpp"
-//#include "hdp_proxy.hpp" //TODO useless?
+#include "hdp_proxy.hpp" //TODO useless?
 #include "memory/hip_allocator.hpp"
-#include "bootstrap/bootstrap.hpp"
+#include "context_incl.hpp"
+#include "gda_context_proxy.hpp"
 #include "queue_pair.hpp"
+#include "bootstrap/bootstrap.hpp"
 
 namespace rocshmem {
 
 class GDAContext;
 class GDAHostContext;
 class QueuePair;
+class HostInterface;
 
 class GDABackend : public Backend {
  private:
@@ -254,14 +256,14 @@ class GDABackend : public Backend {
    * @copydoc Backend::reset_backend_stats()
    */
   void reset_backend_stats() override;
-#if 0
+
   /**
    * @brief Allocates uncacheable host memory for the hdp policy.
    *
    * @note Internal data ownership is managed by the proxy
    */
   HdpProxy<HIPHostAllocator> hdp_proxy_{};
-#endif
+
   /**
    * @brief Holds a copy of the default context for host functions
    */
@@ -347,8 +349,6 @@ class GDABackend : public Backend {
 
   void initialize_context(GDAContext *ctx, int context_id);
 
-  HostInterface *host_interface{nullptr};
-
   char* requested_dev{nullptr};
 
   ibv_device** dev_list{nullptr};
@@ -404,21 +404,6 @@ class GDABackend : public Backend {
    */
   int team_bitmask_size_{-1};
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   /**
    * Fine grained memory allocator for buffers used in collectives Routines
    */
@@ -460,9 +445,19 @@ class GDABackend : public Backend {
   void cleanup_wrk_sync_buffer();
 
   /**
-   * @brief
+   * @brief rte all-to-all
+   */
+  void Alltoall_char_inplace (char *inoutbuf, size_t num_bytes, rocshmem_team_t team);
+
+  /**
+   * @brief rte allreduce for teams
    */
   void Allreduce_char_BAND (char* inbuf, char *outbuf, size_t num_bytes, Team *team);
+
+  /**
+   * @brief rte barrier for initialization
+   */
+  void internal_barrier();
 
   QueuePair *gpu_qps{nullptr};
 

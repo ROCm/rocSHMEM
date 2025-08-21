@@ -28,7 +28,7 @@
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "rocshmem/rocshmem.hpp"
 #include "util.hpp"
-#include "backend_gda.hpp"
+#include "context_gda_device.hpp"
 #include "gda_team.hpp"
 #include "queue_pair.hpp"
 #include "rocshmem_calc.hpp"
@@ -78,7 +78,7 @@ __device__ void GDAContext::get_nbi(T *dest, const T *source, size_t nelems,
 
 // Atomics
 template <typename T>
-__device__ void GDAContext::amo_add(void *dest, T value, int pe) {//TODO:support for non-uint64t
+__device__ void GDAContext::amo_add(void *dst, T value, int pe) {//TODO:support for non-uint64t
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
   bool need_turn {true};
   uint64_t turns = __ballot(need_turn);
@@ -153,7 +153,7 @@ __device__ void GDAContext::amo_xor(void *dst, T value, int pe) {
 }
 
 template <typename T>
-__device__ void GDAContext::amo_cas(void *dest, T value, T cond, int pe) {
+__device__ void GDAContext::amo_cas(void *dst, T value, T cond, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
   for (int i = 0; i < WF_SIZE; i++) { //TODO: this looks wrong
     qps[pe].atomic_nofetch(base_heap[pe] + L_offset, value, cond, pe, GDA_OP_ATOMIC_CS);
@@ -161,7 +161,7 @@ __device__ void GDAContext::amo_cas(void *dest, T value, T cond, int pe) {
 }
 
 template <typename T>
-__device__ T GDAContext::amo_fetch_add(void *dest, T value, int pe) {
+__device__ T GDAContext::amo_fetch_add(void *dst, T value, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
   T ret_val = 0;
   bool need_turn {true};
@@ -179,7 +179,7 @@ __device__ T GDAContext::amo_fetch_add(void *dest, T value, int pe) {
 }
 
 template <typename T>
-__device__ T GDAContext::amo_fetch_cas(void *dest, T value, T cond, int pe) {
+__device__ T GDAContext::amo_fetch_cas(void *dst, T value, T cond, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
   T ret_val;
   for (int i = 0; i < WF_SIZE; i++) {
