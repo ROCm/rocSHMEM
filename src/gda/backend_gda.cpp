@@ -263,35 +263,52 @@ void dump_mlx5dv_cq(struct mlx5dv_cq *cq_dv, int conn_num) {
 #endif // !GDA_IONIC
 
 GDABackend::GDABackend(MPI_Comm comm):  Backend(comm) {
-  type = BackendType::GDA_BACKEND;
-  init_part1();
-
-  /* Initialize the host interface */
-  host_interface = std::make_shared<HostInterface>(hdp_proxy_.get(), //TODO: need an hdp proxy?
-                                                   backend_comm,
-                                                   &heap);
-
-  default_host_ctx = std::make_unique<GDAHostContext>(this, 0);
-
-  init_part2();
+  init();
 }
 
 GDABackend::GDABackend(TcpBootstrap *bootstrap):  Backend(bootstrap) {
-  type = BackendType::GDA_BACKEND;
-  backend_bootstr = bootstrap;
-  init_part1();
-
-  /* Initialize the host interface */
-  host_interface = std::make_shared<HostInterface>(hdp_proxy_.get(), //TODO: need an hdp proxy?
-                                                   bootstrap,
-                                                   &heap);
-
-  default_host_ctx = std::make_unique<GDAHostContext>(this, 0);
-
-  init_part2();
+  init();
 }
 
-void GDABackend::init_part1() {
+void GDABackend::init() {
+  type = BackendType::GDA_BACKEND;
+  read_env();
+  //TODO setup_host_interface();
+  /* Initialize the host interface */
+  if (MPI_COMM_NULL != backend_comm)
+    host_interface = std::make_shared<HostInterface>(hdp_proxy_.get(), //TODO: need an hdp proxy?
+                                                     backend_comm,
+                                                     &heap);
+  else
+    host_interface = std::make_shared<HostInterface>(hdp_proxy_.get(), //TODO: need an hdp proxy?
+                                                     backend_bootstr,
+                                                     &heap);
+  setup_teams();
+  setup_team_world();
+  //TODO setup_host_ctx
+  default_host_ctx = std::make_unique<GDAHostContext>(this, 0);
+  ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque = default_host_ctx.get();
+
+  TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
+  default_context_proxy_ = GDADefaultContextProxyT(this, tinfo); //TODO: this seems to never be destructed
+
+  setup_fence_buffers();
+
+  setup_wrk_sync_buffers();
+
+  setup_collectives();
+  rte_barrier();
+
+  setup_ibv();
+  rte_barrier();
+
+  heap_memory_rkey();
+  setup_gpu_qps();
+  setup_ctxs();
+  rte_barrier();
+}
+
+void GDABackend::read_env() {
   if (auto maximum_num_contexts_str = getenv("ROCSHMEM_MAX_NUM_CONTEXTS")) {
     std::stringstream sstream(maximum_num_contexts_str);
     sstream >> maximum_num_contexts_;
@@ -303,30 +320,14 @@ void GDABackend::init_part1() {
     int gpu_dev = 0;
     CHECK_HIP(hipGetDevice(&gpu_dev));
     int nic_dev = rocshmem::GetClosestNicToGpu(gpu_dev, &requested_dev);
-    assert (nic_dev != -1);
+    assert (nic_dev != -1); //TODO nic_dev is local, write only??? missing requested_dev=nic_dev?
   }
   if ((value = getenv("ROCSHMEM_SQ_SIZE"))) {
     sq_size = atoi(value);
   }
 }
 
-void GDABackend::init_part2() {
-//TODO move to setup_default_host_ctx()?
-  ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque = default_host_ctx.get();
-
-  teams_init();
-  setup_team_world();
-
-  TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
-  default_context_proxy_ = GDADefaultContextProxyT(this, tinfo); //TODO: this seems to never be destructed
-
-  setup_fence_buffer();
-
-  init_wrk_sync_buffer();
-
-  rocshmem_collective_init();
-
-  internal_barrier();
+void GDABackend::setup_ibv() {
   dest_info.resize(num_pes * (maximum_num_contexts_ + 1));
   int ib_devices{0};
   dev_list = ibv_get_device_list(&ib_devices);
@@ -359,17 +360,11 @@ void GDABackend::init_part2() {
   for (int i{0}; i < qps.size(); i++) {
     change_status_rtr(qps[i], &dest_info[i], port);
   }
-  internal_barrier();
+  rte_barrier();
   for (int i{0}; i < qps.size(); i++) {
     change_status_rts(qps[i], &dest_info[i]);
     dump_ibv_qp(qps[i], i);
   }
-  internal_barrier();
-
-  heap_memory_rkey();
-  setup_gpu_qps();
-  setup_ctxs();
-  internal_barrier();
 }
 
 GDABackend::~GDABackend() {
@@ -377,7 +372,7 @@ GDABackend::~GDABackend() {
    * Destroy teams infrastructure
    * and team world
    */
-  teams_destroy();
+  cleanup_teams();
   cleanup_wrk_sync_buffer();
   auto *team_world{team_tracker.get_team_world()};
   team_world->~Team();
@@ -463,7 +458,7 @@ void GDABackend::team_destroy(rocshmem_team_t team) {
   /* Mark the pool as available */
   int bit = team_obj->pool_index_;
   int byte_i = bit / CHAR_BIT;
-  pool_bitmask_[byte_i] |= 1 << (bit % CHAR_BIT);
+  team_pool_bitmask_[byte_i] |= 1 << (bit % CHAR_BIT);
 
   team_obj->~GDATeam();
   CHECK_HIP(hipFree(team_obj));
@@ -553,16 +548,16 @@ void GDABackend::create_new_team([[maybe_unused]] Team *parent_team,
    * the pool of available work arrays.
    */
   if (team_comm != MPI_COMM_NULL) {
-    NET_CHECK(MPI_Allreduce(pool_bitmask_, reduced_bitmask_, bitmask_size_,
+    NET_CHECK(MPI_Allreduce(team_pool_bitmask_, team_reduced_bitmask_, team_bitmask_size_,
                             MPI_CHAR, MPI_BAND, team_comm));
   } else {
-    Allreduce_char_BAND (pool_bitmask_, reduced_bitmask_, bitmask_size_, parent_team);
+    Allreduce_char_BAND (team_pool_bitmask_, team_reduced_bitmask_, team_bitmask_size_, parent_team);
   }
 
   /* Pick the least significant non-zero bit (logical layout) in the reduced
    * bitmask */
   auto max_num_teams{team_tracker.get_max_num_teams()};
-  int common_index = get_ls_non_zero_bit(reduced_bitmask_, max_num_teams);
+  int common_index = get_ls_non_zero_bit(team_reduced_bitmask_, max_num_teams);
   if (common_index < 0) {
     /* No team available */
     printf("Could not create team, all bits in use. Aborting.\n");
@@ -571,7 +566,7 @@ void GDABackend::create_new_team([[maybe_unused]] Team *parent_team,
 
   /* Mark the team as taken (by unsetting the bit in the pool bitmask) */
   int byte = common_index / CHAR_BIT;
-  pool_bitmask_[byte] &= ~(1 << (common_index % CHAR_BIT));
+  team_pool_bitmask_[byte] &= ~(1 << (common_index % CHAR_BIT));
 
   /**
    * Allocate device-side memory for team_world and
@@ -616,12 +611,20 @@ __host__ void GDABackend::global_exit(int status) {
     abort();
 }
 
-void GDABackend::teams_destroy() {
-  free(pool_bitmask_);
-  free(reduced_bitmask_);
+void GDABackend::cleanup_teams() {
+  free(team_pool_bitmask_);
+  free(team_reduced_bitmask_);
 }
 
-void GDABackend::init_wrk_sync_buffer() {
+void GDABackend::setup_fence_buffer() { //TODO is this used?
+  /*
+  * Allocate memory for fence
+  */
+  fence_pool = reinterpret_cast<int *>(temp_Wrk_Sync_buff_ptr_);
+  temp_Wrk_Sync_buff_ptr_ += sizeof(int) * num_pes;
+}
+
+void GDABackend::setup_wrk_sync_buffer() {
   /**
    * compute work/sync buffer size
    */
@@ -667,15 +670,7 @@ void GDABackend::cleanup_wrk_sync_buffer() {
   heap.free(Wrk_Sync_buffer_ptr_);
 }
 
-void GDABackend::setup_fence_buffer() { //TODO is this used?
-  /*
-  * Allocate memory for fence
-  */
-  fence_pool = reinterpret_cast<int *>(temp_Wrk_Sync_buff_ptr_);
-  temp_Wrk_Sync_buff_ptr_ += sizeof(int) * num_pes;
-}
-
-void GDABackend::rocshmem_collective_init() {
+void GDABackend::setup_collectives() {
   /*
    * Allocate heap space for barrier_sync
    */
@@ -696,10 +691,10 @@ void GDABackend::rocshmem_collective_init() {
    * Make sure that all processing elements have done this before
    * continuing.
    */
-  internal_barrier();
+  rte_barrier();
 }
 
-void GDABackend::teams_init() {
+void GDABackend::setup_teams() {
   /**
    * Allocate pools for the teams sync and work arrary from the SHEAP.
    */
@@ -770,27 +765,27 @@ void GDABackend::teams_init() {
    * Description shows only a 2-byte long mask but idea extends to any
    * arbitrary size.
    */
-  bitmask_size_ = (max_num_teams % CHAR_BIT) ? (max_num_teams / CHAR_BIT + 1)
+  team_bitmask_size_ = (max_num_teams % CHAR_BIT) ? (max_num_teams / CHAR_BIT + 1)
                                              : (max_num_teams / CHAR_BIT);
-  pool_bitmask_ = reinterpret_cast<char *>(malloc(bitmask_size_));
-  reduced_bitmask_ = reinterpret_cast<char *>(malloc(bitmask_size_));
+  team_pool_bitmask_ = reinterpret_cast<char *>(malloc(team_bitmask_size_));
+  team_reduced_bitmask_ = reinterpret_cast<char *>(malloc(team_bitmask_size_));
 
-  memset(pool_bitmask_, 0, bitmask_size_);
-  memset(reduced_bitmask_, 0, bitmask_size_);
+  memset(team_pool_bitmask_, 0, team_bitmask_size_);
+  memset(team_reduced_bitmask_, 0, team_bitmask_size_);
   /* Set all to available except the 0th one (reserved for TEAM_WORLD) */
   for (int bit_i = 1; bit_i < max_num_teams; bit_i++) {
     int byte_i = bit_i / CHAR_BIT;
-    pool_bitmask_[byte_i] |= 1 << (bit_i % CHAR_BIT);
+    team_pool_bitmask_[byte_i] |= 1 << (bit_i % CHAR_BIT);
   }
 
   /**
    * Make sure that all processing elements have done this before
    * continuing.
    */
-  internal_barrier();
+  rte_barrier();
 }
 
-void GDABackend::internal_barrier() {
+void GDABackend::rte_barrier() {
   if (backend_comm != MPI_COMM_NULL) {
     NET_CHECK(MPI_Barrier(backend_comm));
   } else {
@@ -817,8 +812,8 @@ void GDABackend::heap_memory_rkey() {
   CHECK_HIP(hipMemcpyAsync(host_rkey_cpy, heap_rkey, rkeys_size, hipMemcpyDeviceToHost, stream));
   CHECK_HIP(hipStreamSynchronize(stream));
 
-  if (comm != MPI_COMM_NULL)
-    MPI_Allgather(MPI_IN_PLACE, sizeof(uint32_t), MPI_CHAR, host_rkey_cpy, sizeof(uint32_t), MPI_CHAR, comm);
+  if (backend_comm != MPI_COMM_NULL)
+    MPI_Allgather(MPI_IN_PLACE, sizeof(uint32_t), MPI_CHAR, host_rkey_cpy, sizeof(uint32_t), MPI_CHAR, backend_comm);
   else
     backend_bootstr->allGather(host_rkey_cpy, sizeof(uint32_t));
 
@@ -849,6 +844,7 @@ void GDABackend::initialize_context(GDAContext *ctx, int context_id) {
   }
 }
 
+//TODO this ifdef sequence looks merge-mangled
 #ifndef GDA_BNXT
 void GDABackend::ib_init(struct ibv_device* ib_dev, uint8_t port) {
   ib_state = new ib_state_t;

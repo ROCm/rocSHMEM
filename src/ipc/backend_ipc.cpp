@@ -115,7 +115,7 @@ void IPCBackend::init() {
 
   setup_team_world();
 
-  init_wrk_sync_buffer();
+  setup_wrk_sync_buffers();
 
   rocshmem_collective_init();
 
@@ -203,7 +203,7 @@ void IPCBackend::team_destroy(rocshmem_team_t team) {
   /* Mark the pool as available */
   int bit = team_obj->pool_index_;
   int byte_i = bit / CHAR_BIT;
-  pool_bitmask_[byte_i] |= 1 << (bit % CHAR_BIT);
+  team_pool_bitmask_[byte_i] |= 1 << (bit % CHAR_BIT);
 
   team_obj->~IPCTeam();
   CHECK_HIP(hipFree(team_obj));
@@ -251,16 +251,16 @@ void IPCBackend::create_new_team([[maybe_unused]] Team *parent_team,
    * the pool of available work arrays.
    */
   if (team_comm != MPI_COMM_NULL) {
-    NET_CHECK(MPI_Allreduce(pool_bitmask_, reduced_bitmask_, bitmask_size_,
+    NET_CHECK(MPI_Allreduce(team_pool_bitmask_, team_reduced_bitmask_, team_bitmask_size_,
 			    MPI_CHAR, MPI_BAND, team_comm));
   } else {
-    Allreduce_char_BAND (pool_bitmask_, reduced_bitmask_, bitmask_size_, parent_team);
+    Allreduce_char_BAND (team_pool_bitmask_, team_reduced_bitmask_, team_bitmask_size_, parent_team);
   }
 
   /* Pick the least significant non-zero bit (logical layout) in the reduced
    * bitmask */
   auto max_num_teams{team_tracker.get_max_num_teams()};
-  int common_index = get_ls_non_zero_bit(reduced_bitmask_, max_num_teams);
+  int common_index = get_ls_non_zero_bit(team_reduced_bitmask_, max_num_teams);
   if (common_index < 0) {
     /* No team available */
     printf("Could not create team, all bits in use. Aborting.\n");
@@ -269,7 +269,7 @@ void IPCBackend::create_new_team([[maybe_unused]] Team *parent_team,
 
   /* Mark the team as taken (by unsetting the bit in the pool bitmask) */
   int byte = common_index / CHAR_BIT;
-  pool_bitmask_[byte] &= ~(1 << (common_index % CHAR_BIT));
+  team_pool_bitmask_[byte] &= ~(1 << (common_index % CHAR_BIT));
 
   /**
    * Allocate device-side memory for team_world and
@@ -329,11 +329,11 @@ void IPCBackend::global_exit(int status) {
 }
 
 void IPCBackend::teams_destroy() {
-  free(pool_bitmask_);
-  free(reduced_bitmask_);
+  free(team_pool_bitmask_);
+  free(team_reduced_bitmask_);
 }
 
-void IPCBackend::init_wrk_sync_buffer() {
+void IPCBackend::setup_wrk_sync_buffers() {
   /**
    * calcualte work/sync buffer size
    */
@@ -540,18 +540,18 @@ void IPCBackend::teams_init() {
    * Description shows only a 2-byte long mask but idea extends to any
    * arbitrary size.
    */
-  bitmask_size_ = (max_num_teams % CHAR_BIT) ? (max_num_teams / CHAR_BIT + 1)
+  team_bitmask_size_ = (max_num_teams % CHAR_BIT) ? (max_num_teams / CHAR_BIT + 1)
                                              : (max_num_teams / CHAR_BIT);
-  pool_bitmask_ = reinterpret_cast<char *>(malloc(bitmask_size_));
-  reduced_bitmask_ = reinterpret_cast<char *>(malloc(bitmask_size_));
+  team_pool_bitmask_ = reinterpret_cast<char *>(malloc(team_bitmask_size_));
+  team_reduced_bitmask_ = reinterpret_cast<char *>(malloc(team_bitmask_size_));
 
-  memset(pool_bitmask_, 0, bitmask_size_);
-  memset(reduced_bitmask_, 0, bitmask_size_);
+  memset(team_pool_bitmask_, 0, team_bitmask_size_);
+  memset(team_reduced_bitmask_, 0, team_bitmask_size_);
   /* Set all to available except the 0th one (reserved for TEAM_WORLD) */
   for (int bit_i = 1; bit_i < max_num_teams; bit_i++) {
     int byte_i = bit_i / CHAR_BIT;
 
-    pool_bitmask_[byte_i] |= 1 << (bit_i % CHAR_BIT);
+    team_pool_bitmask_[byte_i] |= 1 << (bit_i % CHAR_BIT);
   }
 
   /**

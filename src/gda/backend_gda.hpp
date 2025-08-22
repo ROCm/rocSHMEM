@@ -121,8 +121,8 @@ class GDABackend : public Backend {
  /**
    * @brief Common code invoked from the different constructors
    */
-  void init_part1();
-  void init_part2();
+  void read_env();
+  void setup_ibv();
 
  public:
   /**
@@ -153,16 +153,6 @@ class GDABackend : public Backend {
    * @copydoc Backend::ctx_destroy
    */
   void ctx_destroy(Context *ctx) override;
-
-  /**
-   * @brief Helper to initialize GDA interface.
-   */
-  void initGDA();
-
-  /**
-   * @brief Helper to initialize GDA interface, non-MPI based version.
-   */
-  void initGDA(TcpBootstrap *bootstrap);
 
   /**
    * @brief Allocation and initialization of backend contexts.
@@ -282,12 +272,12 @@ class GDABackend : public Backend {
   /**
    * @brief Initialize the resources required to support teams
    */
-  void init_teams();
+  void setup_teams();
 
   /**
    * @brief Destruct the resources required to support teams
    */
-  void destroy_teams();
+  void cleanup_teams();
 
   /**
    * @brief Allocate and initialize barrier operation addresses on
@@ -296,7 +286,7 @@ class GDABackend : public Backend {
    * When this method completes, the barrier_sync member will be available
    * for use.
    */
-  void init_collective();
+  void setup_collectives();
 
   /**
    * @brief Allocate buffer for fence/quiet operation
@@ -439,7 +429,7 @@ class GDABackend : public Backend {
    * @brief Initialize memory required for work/sync buffers and open GDA
    * handle on PE's Wrk_Sync_buffer_ptr.
    */
-  void init_wrk_sync_buffer();
+  void setup_wrk_sync_buffer();
 
   /**
    * @brief Close GDA memory handles for work/sync buffers and deallocate
@@ -460,7 +450,7 @@ class GDABackend : public Backend {
   /**
    * @brief rte barrier for initialization
    */
-  void internal_barrier();
+  void rte_barrier();
 
   QueuePair *gpu_qps{nullptr};
 

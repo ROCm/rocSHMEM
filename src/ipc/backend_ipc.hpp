@@ -244,7 +244,7 @@ class IPCBackend : public Backend {
   /**
    * @brief The bitmask representing the availability of teams in the pool
    */
-  char *pool_bitmask_{nullptr};
+  char *team_pool_bitmask_{nullptr};
 
   /**
    * @brief Bitmask to store the reduced result of bitmasks on pariticipating
@@ -253,12 +253,12 @@ class IPCBackend : public Backend {
    * With no thread-safety for this bitmask, multithreaded creation of teams is
    * not supported.
    */
-  char *reduced_bitmask_{nullptr};
+  char *team_reduced_bitmask_{nullptr};
 
   /**
    * @brief Size of the bitmask
    */
-  int bitmask_size_{-1};
+  int team_bitmask_size_{-1};
 
   /**
    * Fine grained memory allocator for buffers used in collectives Routines
@@ -292,7 +292,7 @@ class IPCBackend : public Backend {
    * @brief Initialize memory required for work/sync buffers and open IPC
    * handle on PE's Wrk_Sync_buffer_ptr.
    */
-  void init_wrk_sync_buffer();
+  void setup_wrk_sync_buffers();
 
   /**
    * @brief Close IPC memory handles for work/sync buffers and deallocate
