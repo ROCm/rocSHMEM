@@ -30,6 +30,8 @@
 
 namespace rocshmem {
 
+class QueuePair;
+
 class GDAContext : public Context {
  public:
   __host__ GDAContext(Backend *b, unsigned int ctx_id);
@@ -286,6 +288,10 @@ class GDAContext : public Context {
    * @brief Device context Id
    */
   unsigned int ctx_id_{};
+
+  QueuePair *qps{nullptr};
+
+  char *const *base_heap{nullptr};
 
  public:
   //TODO(Avinash):

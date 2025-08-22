@@ -41,12 +41,14 @@ namespace rocshmem {
 __host__ GDAContext::GDAContext(Backend *b, unsigned int ctx_id)
     : Context(b, false) {
   GDABackend *backend{static_cast<GDABackend *>(b)};
-  base_heap = b->ipcImpl.ipc_bases; //TODO not correct
-
+  base_heap = backend->heap.get_heap_bases().data();
+  backend->initialize_context(this, ctx_id);
   barrier_sync = backend->barrier_sync;
   Wrk_Sync_buffer_bases_ = backend->get_wrk_sync_bases();
   ctx_id_ = ctx_id;
 }
+
+//TODO no destructor?
 
 __device__ void GDAContext::ctx_create() {
 }

@@ -271,7 +271,7 @@ GDABackend::GDABackend(MPI_Comm comm):  Backend(comm) {
                                                    backend_comm,
                                                    &heap);
 
-  default_host_ctx = std::make_unique<GDAHostContext>(this, 0); //TODO move to setup_default_ctx?
+  default_host_ctx = std::make_unique<GDAHostContext>(this, 0);
 
   init_part2();
 }
@@ -286,7 +286,7 @@ GDABackend::GDABackend(TcpBootstrap *bootstrap):  Backend(bootstrap) {
                                                    bootstrap,
                                                    &heap);
 
-  default_host_ctx = std::make_unique<GDAHostContext>(this, 0); //TODO: move to setup_default_ctx?
+  default_host_ctx = std::make_unique<GDAHostContext>(this, 0);
 
   init_part2();
 }
@@ -315,12 +315,10 @@ void GDABackend::init_part2() {
   ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque = default_host_ctx.get();
 
   teams_init();
+  setup_team_world();
 
   TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
-
-  default_context_proxy_ = GDADefaultContextProxyT(this, tinfo);
-
-  setup_team_world();
+  default_context_proxy_ = GDADefaultContextProxyT(this, tinfo); //TODO: this seems to never be destructed
 
   setup_fence_buffer();
 
@@ -371,7 +369,6 @@ void GDABackend::init_part2() {
   heap_memory_rkey();
   setup_gpu_qps();
   setup_ctxs();
-  //setup_default_ctx();//TODO reintroduce?
   internal_barrier();
 }
 
@@ -386,9 +383,7 @@ GDABackend::~GDABackend() {
   team_world->~Team();
   CHECK_HIP(hipFree(team_world));
 
-  CHECK_HIP(hipFree(default_ctx_->qps));
-  CHECK_HIP(hipFree(default_ctx_));
-  default_ctx_ = nullptr;
+  //TODO: delete the contextproxy?, undo initialize_context?
 
   CHECK_HIP(hipFree(gpu_qps));
   gpu_qps = nullptr;
@@ -660,7 +655,7 @@ void GDABackend::init_wrk_sync_buffer() {
   Wrk_Sync_buffer_size_ += sizeof(int) * num_pes; //TODO: do we need a fence array?
 
   /**
-   * Allocate a buffer of size Wrk_Sync_buffer_size_, using heap memory 
+   * Allocate a buffer of size Wrk_Sync_buffer_size_, using heap memory
    * (should be uncached fine-grained ideally)
   */
   heap.malloc(reinterpret_cast<void**>(&Wrk_Sync_buffer_ptr_), Wrk_Sync_buffer_size_);
@@ -843,6 +838,7 @@ void GDABackend::setup_gpu_qps() {
   }
 }
 
+//TODO: we should also do the opposite of this, didn't find it
 void GDABackend::initialize_context(GDAContext *ctx, int context_id) {
   CHECK_HIP(hipMalloc(&ctx->qps, sizeof(QueuePair) * num_pes));
   CHECK_HIP(hipMemset(ctx->qps, 0, sizeof(QueuePair) * num_pes));

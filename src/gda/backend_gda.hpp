@@ -170,6 +170,11 @@ class GDABackend : public Backend {
   void setup_ctxs();
 
   /**
+   * @brief initialize context fields with shared backend structures during context contructor.
+   */
+  void initialize_context(GDAContext *ctx, int context_id);
+
+  /**
    * @brief Abort the application.
    *
    * @param[in] status Exit code.
@@ -346,8 +351,6 @@ class GDABackend : public Backend {
   void ib_init(ibv_device* ib_dev, uint8_t port);
 
   void setup_gpu_qps();
-
-  void initialize_context(GDAContext *ctx, int context_id);
 
   char* requested_dev{nullptr};
 
