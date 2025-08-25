@@ -44,6 +44,7 @@ target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC
     IBVerbs::verbs
+    numa
 )
 
 if (GDA_IONIC)
