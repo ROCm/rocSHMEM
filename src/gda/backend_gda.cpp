@@ -838,14 +838,14 @@ void GDABackend::setup_gpu_qps() {
 void GDABackend::initialize_context(GDAContext *ctx, int context_id) {
   CHECK_HIP(hipMalloc(&ctx->qps, sizeof(QueuePair) * num_pes));
   CHECK_HIP(hipMemset(ctx->qps, 0, sizeof(QueuePair) * num_pes));
-  for (int i{0}; i < num_pes; i++) {
+  for (int i = 0; i < num_pes; i++) {
     int offset = num_pes * context_id + i;
     CHECK_HIP(hipMemcpy(&ctx->qps[i], &gpu_qps[offset], sizeof(QueuePair), hipMemcpyDefault));
     ctx->qps[i].base_heap = ctx->base_heap;
   }
 }
 
-//TODO this ifdef sequence looks merge-mangled
+//TODO this ifdef sequence should go in a nic-specific file, like it is for bnxt, maybe whats above too?
 #ifndef GDA_BNXT
 void GDABackend::ib_init(struct ibv_device* ib_dev, uint8_t port) {
   ib_state = new ib_state_t;

@@ -67,7 +67,7 @@ extern "C" {
 
 namespace rocshmem {
 
-class GDADevice;
+class GDABackend;
 
 typedef union db_reg {
   uint64_t *ptr;
@@ -80,7 +80,7 @@ typedef union db_reg {
 
 class QueuePair {
  public:
-  friend GDADevice;
+  friend GDABackend;
 
   /**
    * @brief Constructor.

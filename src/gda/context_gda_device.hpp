@@ -289,11 +289,11 @@ class GDAContext : public Context {
    */
   unsigned int ctx_id_{};
 
+ public:
   QueuePair *qps{nullptr};
 
   char *const *base_heap{nullptr};
 
- public:
   //TODO(Avinash):
   //Make tinfo private variable, it requires changes to the context
   //creation API in backend
