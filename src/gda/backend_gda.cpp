@@ -654,7 +654,7 @@ void GDABackend::setup_wrk_sync_buffer() {
    * Allocate a buffer of size Wrk_Sync_buffer_size_, using heap memory
    * (should be uncached fine-grained ideally)
   */
-  heap.malloc(reinterpret_cast<void**>(&Wrk_Sync_buffer_ptr_), Wrk_Sync_buffer_size_);
+  heap.malloc((void**)&Wrk_Sync_buffer_ptr_, Wrk_Sync_buffer_size_);
   assert(Wrk_Sync_buffer_ptr_);
   temp_Wrk_Sync_buff_ptr_ = Wrk_Sync_buffer_ptr_;
 }
