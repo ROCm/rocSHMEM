@@ -54,6 +54,9 @@
 #ifdef USE_RO
 #include "reverse_offload/context_ro_tmpl_device.hpp"
 #else
+#ifdef ENABLE_IPC_BITCODE
+  #include "ipc/backend_ipc.hpp"
+#endif
 #include "ipc/context_ipc_tmpl_device.hpp"
 #endif
 
@@ -66,6 +69,12 @@ namespace rocshmem {
 __device__  rocshmem_ctx_t __attribute__((visibility("default"))) ROCSHMEM_CTX_DEFAULT{};
 
 __constant__ Backend *device_backend_proxy;
+
+#ifdef ENABLE_IPC_BITCODE
+  typedef IPCContext ContextTy;
+#else
+  typedef Context ContextTy;
+#endif
 
 __device__ void rocshmem_wg_init() {
   int provided;
@@ -294,8 +303,8 @@ __host__ void set_internal_ctx(rocshmem_ctx_t *ctx) {
                               hipMemcpyHostToDevice));
 }
 
-__device__ Context *get_internal_ctx(rocshmem_ctx_t ctx) {
-  return reinterpret_cast<Context *>(ctx.ctx_opaque);
+__device__ ContextTy *get_internal_ctx(rocshmem_ctx_t ctx) {
+  return reinterpret_cast<ContextTy *>(ctx.ctx_opaque);
 }
 
 __device__ int rocshmem_wg_ctx_create(long options, rocshmem_ctx_t *ctx) {
