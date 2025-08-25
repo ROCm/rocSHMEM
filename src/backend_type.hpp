@@ -148,7 +148,7 @@ enum class BackendType { RO_BACKEND, IPC_BACKEND, GDA_BACKEND };
   void *ret_val{nullptr};                              \
   ret_val = static_cast<ROHostContext *>(this)->Func;  \
   return ret_val;
-#elif defined(USE_RO)
+#elif defined(USE_IPC)
 #define HOST_DISPATCH_RET_PTR(Func)                    \
   void *ret_val{nullptr};                              \
   ret_val = static_cast<IPCHostContext *>(this)->Func; \
