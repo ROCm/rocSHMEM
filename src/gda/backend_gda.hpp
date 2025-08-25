@@ -423,7 +423,7 @@ class GDABackend : public Backend {
    * @brief Array containing the addresses of the work/sync buffer bases
    * of other PEs
   */
-  char** Wrk_Sync_buffer_bases_{nullptr};//TODO UNUSED
+  char** Wrk_Sync_buffer_bases_{nullptr};//TODO UNUSED, maybe used again later when we decouple the sync from the main heap
 
   /**
    * @brief Initialize memory required for work/sync buffers and open GDA

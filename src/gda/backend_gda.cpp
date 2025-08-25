@@ -273,6 +273,7 @@ GDABackend::GDABackend(TcpBootstrap *bootstrap):  Backend(bootstrap) {
 void GDABackend::init() {
   type = BackendType::GDA_BACKEND;
   read_env();
+
   //TODO setup_host_interface();
   /* Initialize the host interface */
   if (MPI_COMM_NULL != backend_comm)
@@ -283,24 +284,23 @@ void GDABackend::init() {
     host_interface = std::make_shared<HostInterface>(hdp_proxy_.get(), //TODO: need an hdp proxy?
                                                      backend_bootstr,
                                                      &heap);
+
+  setup_wrk_sync_buffer();
+  setup_fence_buffer();
+  setup_collectives();
   setup_teams();
   setup_team_world();
+
   //TODO setup_host_ctx
   default_host_ctx = std::make_unique<GDAHostContext>(this, 0);
   ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque = default_host_ctx.get();
 
+  //TODO setup_default_ctx?
   TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
   default_context_proxy_ = GDADefaultContextProxyT(this, tinfo); //TODO: this seems to never be destructed
-
-  setup_fence_buffers();
-
-  setup_wrk_sync_buffers();
-
-  setup_collectives();
   rte_barrier();
 
   setup_ibv();
-  rte_barrier();
 
   heap_memory_rkey();
   setup_gpu_qps();
@@ -365,6 +365,7 @@ void GDABackend::setup_ibv() {
     change_status_rts(qps[i], &dest_info[i]);
     dump_ibv_qp(qps[i], i);
   }
+  rte_barrier();
 }
 
 GDABackend::~GDABackend() {
@@ -616,14 +617,6 @@ void GDABackend::cleanup_teams() {
   free(team_reduced_bitmask_);
 }
 
-void GDABackend::setup_fence_buffer() { //TODO is this used?
-  /*
-  * Allocate memory for fence
-  */
-  fence_pool = reinterpret_cast<int *>(temp_Wrk_Sync_buff_ptr_);
-  temp_Wrk_Sync_buff_ptr_ += sizeof(int) * num_pes;
-}
-
 void GDABackend::setup_wrk_sync_buffer() {
   /**
    * compute work/sync buffer size
@@ -668,6 +661,14 @@ void GDABackend::setup_wrk_sync_buffer() {
 
 void GDABackend::cleanup_wrk_sync_buffer() {
   heap.free(Wrk_Sync_buffer_ptr_);
+}
+
+void GDABackend::setup_fence_buffer() { //TODO is this used?
+  /*
+   * Reserve memory for fence
+   */
+  fence_pool = reinterpret_cast<int *>(temp_Wrk_Sync_buff_ptr_);
+  temp_Wrk_Sync_buff_ptr_ += sizeof(int) * num_pes;
 }
 
 void GDABackend::setup_collectives() {
