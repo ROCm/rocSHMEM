@@ -155,11 +155,6 @@ class GDABackend : public Backend {
   void ctx_destroy(Context *ctx) override;
 
   /**
-   * @brief Allocation and initialization of backend contexts.
-   */
-  void setup_ctxs();
-
-  /**
    * @brief initialize context fields with shared backend structures during context contructor.
    */
   void initialize_context(GDAContext *ctx, int context_id);
@@ -278,6 +273,13 @@ class GDABackend : public Backend {
    * @brief Destruct the resources required to support teams
    */
   void cleanup_teams();
+
+  /**
+   * @brief Allocation and initialization of backend contexts.
+   */
+  void setup_ctxs();
+  void setup_host_ctx();
+  void setup_default_ctx();
 
   /**
    * @brief Allocate and initialize barrier operation addresses on

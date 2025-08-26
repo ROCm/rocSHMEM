@@ -288,22 +288,15 @@ void GDABackend::init() {
   setup_wrk_sync_buffer();
   setup_fence_buffer();
   setup_collectives();
+
   setup_teams();
   setup_team_world();
-
-  //TODO setup_host_ctx
-  default_host_ctx = std::make_unique<GDAHostContext>(this, 0);
-  ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque = default_host_ctx.get();
-
-  //TODO setup_default_ctx?
-  TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
-  default_context_proxy_ = GDADefaultContextProxyT(this, tinfo); //TODO: this seems to never be destructed
   rte_barrier();
 
   setup_ibv();
-
   heap_memory_rkey();
   setup_gpu_qps();
+
   setup_ctxs();
   rte_barrier();
 }
@@ -332,9 +325,9 @@ void GDABackend::setup_ibv() {
   int ib_devices{0};
   dev_list = ibv_get_device_list(&ib_devices);
   CHECK_NNULL(dev_list, "ibv_get_device");
-  struct ibv_device* ib_dev = dev_list[0];
+  struct ibv_device* ib_dev = dev_list[0]; //TODO default to HIP selected device?
   if (requested_dev) {
-    for (int i{0}; i < ib_devices; i++) {
+    for (int i = 0; i < ib_devices; i++) {
       const char* select_dev{ibv_get_device_name(dev_list[i])};
       CHECK_NNULL(select_dev, "ibv_get_device_name");
       if (strstr(select_dev, requested_dev)) {
@@ -400,7 +393,20 @@ GDABackend::~GDABackend() {
     free(requested_dev);
 }
 
+void GDABackend::setup_host_ctx() {
+  default_host_ctx = std::make_unique<GDAHostContext>(this, 0);
+  ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque = default_host_ctx.get();
+}
+
+void GDABackend::setup_default_ctx() {
+  TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
+  default_context_proxy_ = GDADefaultContextProxyT(this, tinfo); //TODO: this seems to never be destructed
+}
+
 void GDABackend::setup_ctxs() {
+  setup_host_ctx();
+  setup_default_ctx();
+
   CHECK_HIP(hipMalloc(&ctx_array, sizeof(GDAContext) * maximum_num_contexts_ + 1)); //TODO: double check if +1 needed, and if default_ctx should also be in that array
   // 0th context is default context
   for (size_t i = 0; i < maximum_num_contexts_; i++) {
