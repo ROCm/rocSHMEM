@@ -24,6 +24,6 @@
 target_sources(
   ${PROJECT_NAME}
   PRIVATE
-    gda_device_bnxt.cpp
+    backend_gda_bnxt.cpp
     queue_pair_bnxt.cpp
 )

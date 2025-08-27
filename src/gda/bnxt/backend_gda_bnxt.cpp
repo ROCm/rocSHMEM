@@ -22,13 +22,13 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "gpu_ib/gda_device.hpp"
-#include "utils.hpp"
+#include "gda/backend_gda.hpp"
+#include "util.hpp"
 #include <unistd.h> // getpagesize()
 
 namespace rocshmem {
 
-int GDADevice::ibv_mtu_to_int(enum ibv_mtu mtu) {
+int GDABackend::ibv_mtu_to_int(enum ibv_mtu mtu) {
   switch (mtu) {
     case IBV_MTU_256:  return 256;
     case IBV_MTU_512:  return 512;
@@ -42,7 +42,7 @@ int GDADevice::ibv_mtu_to_int(enum ibv_mtu mtu) {
   }
 }
 
-void GDADevice::ib_init(struct ibv_device* ib_dev, uint8_t port) {
+void GDABackend::ib_init(struct ibv_device* ib_dev, uint8_t port) {
   int err;
 
   ib_state = new ib_state_t;
@@ -60,7 +60,7 @@ void GDADevice::ib_init(struct ibv_device* ib_dev, uint8_t port) {
   init_gid_index(port);
 }
 
-void GDADevice::init_qp_status(uint8_t port) {
+void GDABackend::init_qp_status(uint8_t port) {
   int err;
   struct ibv_qp_attr attr;
   int attr_mask;
@@ -86,7 +86,7 @@ void GDADevice::init_qp_status(uint8_t port) {
   }
 }
 
-void GDADevice::change_status_rtr(ibv_qp *qp, dest_info_t *dest, uint8_t port) {
+void GDABackend::change_status_rtr(ibv_qp *qp, dest_info_t *dest, uint8_t port) {
   int err;
   struct ibv_qp_attr attr;
   int attr_mask;
@@ -119,7 +119,7 @@ void GDADevice::change_status_rtr(ibv_qp *qp, dest_info_t *dest, uint8_t port) {
   CHECK_ZERO(err, "bnxt_re_dv_modify_qp");
 }
 
-void GDADevice::change_status_rts(ibv_qp* qp, dest_info_t* dest) {
+void GDABackend::change_status_rts(ibv_qp* qp, dest_info_t* dest) {
   int err;
   struct ibv_qp_attr attr;
   int attr_mask;
@@ -143,7 +143,7 @@ void GDADevice::change_status_rts(ibv_qp* qp, dest_info_t* dest) {
   CHECK_ZERO(err, "bnxt_re_dv_modify_qp");
 }
 
-void GDADevice::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
+void GDABackend::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
   int resize_length = (maximum_num_contexts_ + 1) * num_pes;
 
   cqs.resize(resize_length);
@@ -164,7 +164,7 @@ void GDADevice::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
   }
 }
 
-void GDADevice::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
+void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   struct bnxt_re_dv_obj dv_obj;
   struct bnxt_re_dv_cq dv_cq;
   struct bnxt_re_dv_qp dv_qp;
@@ -225,7 +225,7 @@ void GDADevice::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   gpu_qp->rkey = heap_rkey[conn_num % num_pes];
 }
 
-void GDADevice::create_cqs(int ncqs, int cqe) {
+void GDABackend::create_cqs(int ncqs, int cqe) {
   struct bnxt_re_dv_cq_attr cq_attr;
   struct bnxt_re_dv_cq_init_attr cq_init_attr;
   struct bnxt_re_dv_umem_reg_attr umem_attr;
@@ -264,7 +264,7 @@ void GDADevice::create_cqs(int ncqs, int cqe) {
   }
 }
 
-void GDADevice::create_qps_impl(int nqps) {
+void GDABackend::create_qps_impl(int nqps) {
   struct ibv_pd *pd;
   struct ibv_context *context;
   struct ibv_qp_init_attr ib_qp_attr;

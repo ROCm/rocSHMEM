@@ -43,7 +43,7 @@ extern "C" {
 #include <infiniband/ionic_fw.h>
 }
 #elif defined(GDA_BNXT)
-#include "bnxt/gda_provider_bnxt.hpp"
+#include "bnxt/provider_gda_bnxt.hpp"
 #else
 #include <infiniband/mlx5dv.h>
 #endif
