@@ -37,8 +37,6 @@
 #elif defined(USE_GDA)
 #include "gda/context_gda_device.hpp"
 #include "gda/context_gda_host.hpp"
-//TODO needed? #include "gda/context_gda_tmpl_device.hpp"
-//TODO needed? #include "gda/context_gda_tmpl_host.hpp"
 #else
 #error "Select one backend among USE_RO, USE_IPC, USE_GDA"
 #endif
