@@ -71,6 +71,8 @@ __device__ void GDAContext::putmem(void *dest, const void *source, size_t nelems
 
 __device__ void GDAContext::getmem(void *dest, const void *source, size_t nelems,
                                   int pe) {
+  printf("rocshmem::gda:getmem not implemented\n");
+  abort();
 }
 
 __device__ void GDAContext::putmem_nbi(void *dest, const void *source,
@@ -91,6 +93,8 @@ __device__ void GDAContext::putmem_nbi(void *dest, const void *source,
 
 __device__ void GDAContext::getmem_nbi(void *dest, const void *source,
                                       size_t nelems, int pe) {
+  printf("rocshmem::gda:getmem_nbi  not implemented\n");
+  abort();
 }
 
 __device__ void GDAContext::fence() { //TODO: optimize
@@ -116,18 +120,34 @@ __device__ void *GDAContext::shmem_ptr(const void *dest, int pe) {
 
 __device__ void GDAContext::putmem_wg(void *dest, const void *source,
                                      size_t nelems, int pe) {
+  if (is_thread_zero_in_block()) {
+    printf("rocshmem::gda:putmem_wg not implemented\n");
+    abort();
+  }
 }
 
 __device__ void GDAContext::getmem_wg(void *dest, const void *source,
                                      size_t nelems, int pe) {
+  if (is_thread_zero_in_block()) {
+    printf("rocshmem::gda:getmem_wg not implemented\n");
+    abort();
+  }
 }
 
 __device__ void GDAContext::putmem_nbi_wg(void *dest, const void *source,
                                          size_t nelems, int pe) {
+  if (is_thread_zero_in_block()) {
+    printf("rocshmem::gda:putmem_nbi_wg not implemented\n");
+    abort();
+  }
 }
 
 __device__ void GDAContext::getmem_nbi_wg(void *dest, const void *source,
                                          size_t nelems, int pe) {
+  if (is_thread_zero_in_block()) {
+    printf("rocshmem::gda:getmem_nbi_wg not implemented\n");
+    abort();
+  }
 }
 
 __device__ void GDAContext::putmem_wave(void *dest, const void *source,
@@ -141,6 +161,10 @@ __device__ void GDAContext::putmem_wave(void *dest, const void *source,
 
 __device__ void GDAContext::getmem_wave(void *dest, const void *source,
                                        size_t nelems, int pe) {
+  if (is_thread_zero_in_wave()) {
+    printf("rocshmem::gda:getmem_wave not implemented\n");
+    abort();
+  }
 }
 
 __device__ void GDAContext::putmem_nbi_wave(void *dest, const void *source,
@@ -153,6 +177,10 @@ __device__ void GDAContext::putmem_nbi_wave(void *dest, const void *source,
 
 __device__ void GDAContext::getmem_nbi_wave(void *dest, const void *source,
                                            size_t nelems, int pe) {
+  if (is_thread_zero_in_wave()) {
+    printf("rocshmem::gda:getmem_nbi_wave not implemented\n");
+    abort();
+  }
 }
 
 
