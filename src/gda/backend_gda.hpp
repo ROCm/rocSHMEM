@@ -329,9 +329,9 @@ class GDABackend : public Backend {
   template <typename T>
   void try_to_modify_qp(ibv_qp* qp, T state);
 
-  static void* buf_alloc(ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type);
+  static void* pd_alloc(ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type);
 
-  static void buf_release(ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type);
+  static void pd_release(ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type);
 
   void init_parent_domain_attr(ibv_parent_domain_init_attr* attr);
 

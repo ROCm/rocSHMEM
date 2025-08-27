@@ -61,8 +61,7 @@ int get_ls_non_zero_bit(char *bitmask, int mask_length) {
   return position;
 }
 
-IPCBackend::IPCBackend(MPI_Comm comm)
-    :  Backend(comm) {
+IPCBackend::IPCBackend(MPI_Comm comm):  Backend(comm) {
   type = BackendType::IPC_BACKEND;
 
   initIPC();
@@ -83,8 +82,7 @@ IPCBackend::IPCBackend(MPI_Comm comm)
   init();
 }
 
-IPCBackend::IPCBackend(TcpBootstrap *bootstrap)
-    :  Backend(bootstrap) {
+IPCBackend::IPCBackend(TcpBootstrap *bootstrap):  Backend(bootstrap) {
   type = BackendType::IPC_BACKEND;
 
   initIPC(bootstrap); // no MPI involved

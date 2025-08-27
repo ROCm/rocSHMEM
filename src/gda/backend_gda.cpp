@@ -61,207 +61,6 @@ int get_ls_non_zero_bit(char *bitmask, int mask_length) {
   return position;
 }
 
-static void dump_ibv_context(struct ibv_context* x) {
-  /*
-   * struct ibv_context {
-   *   struct ibv_device      *device;
-   *   struct ibv_context_ops  ops;
-   *   int                     cmd_fd;
-   *   int                     async_fd;
-   *   int                     num_comp_vectors;
-   *   pthread_mutex_t         mutex;
-   *   void                   *abi_compat;
-   * };
-   */
-  DPRINTF("\n"
-         "===============================================\n"
-         "                IBV_CONTEXT\n"
-         "===============================================\n"
-         "  (ibv_device*)        device              = %p\n"
-         "  (int)                cmd_fd              = %d\n"
-         "  (int)                async_fd            = %d\n"
-         "  (int)                num_comp_vectors    = %d\n"
-         "  (void*)              abi_compat          = %p\n",
-         x->device, x->cmd_fd, x->async_fd, x->num_comp_vectors, x->abi_compat);
-};
-
-static void dump_ibv_device(struct ibv_device* x) {
-  /*
-   * struct ibv_device {
-   *   struct _ibv_device_ops  _ops;
-   *   enum ibv_node_type node_type;
-   *   enum ibv_transport_type transport_type;
-   *   char name[IBV_SYSFS_NAME_MAX];
-   *   char dev_name[IBV_SYSFS_NAME_MAX];
-   *   char dev_path[IBV_SYSFS_PATH_MAX];
-   *   char ibdev_path[IBV_SYSFS_PATH_MAX];
-   * };
-   */
-  DPRINTF("\n"
-         "===============================================\n"
-         "               IBV_DEVICE\n"
-         "===============================================\n"
-         "  (enum ibv_node_type)      node_type      = %d\n"
-         "  (enum ibv_transport_type) transport_type = %d\n"
-         "  (char[])                  name           = %s\n"
-         "  (char[])                  dev_name       = %s\n"
-         "  (char[])                  dev_path       = %s\n"
-         "  (char[])                  ibdev_path     = %s\n",
-         x->node_type, x->transport_type, x->name, x->dev_name, x->dev_path, x->ibdev_path);
-}
-
-static void dump_ibv_pd(struct ibv_pd* x) {
-  /*
-   * struct ibv_pd {
-   *   struct ibv_context     *context;
-   *   uint32_t                handle;
-   * };
-   */
-  DPRINTF("\n"
-         "===============================================\n"
-         "               IBV_PD\n"
-         "===============================================\n"
-         "  (ibv_context*) context = %p\n"
-         "  (uint32_t)     handle  = 0x%x\n",
-         x->context, x->handle);
-}
-
-static void dump_ibv_port_attr(struct ibv_port_attr* x) {
-  /*
-   * struct ibv_port_attr {
-   *   enum ibv_port_state     state;
-   *   enum ibv_mtu            max_mtu;
-   *   enum ibv_mtu            active_mtu;
-   *   int                     gid_tbl_len;
-   *   uint32_t                port_cap_flags;
-   *   uint32_t                max_msg_sz;
-   *   uint32_t                bad_pkey_cntr;
-   *   uint32_t                qkey_viol_cntr;
-   *   uint16_t                pkey_tbl_len;
-   *   uint16_t                lid;
-   *   uint16_t                sm_lid;
-   *   uint8_t                 lmc;
-   *   uint8_t                 max_vl_num;
-   *   uint8_t                 sm_sl;
-   *   uint8_t                 subnet_timeout;
-   *   uint8_t                 init_type_reply;
-   *   uint8_t                 active_width;
-   *   uint8_t                 active_speed;
-   *   uint8_t                 phys_state;
-   *   uint8_t                 link_layer;
-   *   uint8_t                 flags;
-   *   uint16_t                port_cap_flags2;
-   * };
-   */
-  DPRINTF("\n"
-         "===============================================\n"
-         "               IBV_PORT_ATTR\n"
-         "===============================================\n"
-         "  (enum ibv_port_state) state           = %u\n"
-         "  (enum ibv_mtu)        max_mtu         = %u\n"
-         "  (enum ibv_mtu)        active_mtu      = %u\n"
-         "  (int)                 gid_tbl_len     = %u\n"
-         "  (uint32_t)            port_cap_flags  = 0x%x\n"
-         "  (uint32_t)            max_msg_sz      = %u\n"
-         "  (uint32_t)            bad_pkey_cntr   = %u\n"
-         "  (uint32_t)            qkey_viol_cntr  = %u\n"
-         "  (uint16_t)            pkey_tbl_len    = %u\n"
-         "  (uint16_t)            lid             = 0x%x\n"
-         "  (uint16_t)            sm_lid          = 0x%x\n"
-         "  (uint8_t)             lmc             = 0x%x\n"
-         "  (uint8_t)             max_vl_num      = 0x%x\n"
-         "  (uint8_t)             sm_sl           = 0x%x\n"
-         "  (uint8_t)             subnet_timeout  = 0x%x\n"
-         "  (uint8_t)             init_type_reply = 0x%x\n"
-         "  (uint8_t)             active_width    = 0x%x\n"
-         "  (uint8_t)             active_speed    = 0x%x\n"
-         "  (uint8_t)             phys_state      = 0x%x\n"
-         "  (uint8_t)             link_layer      = 0x%x\n"
-         "  (uint8_t)             flags           = 0x%x\n"
-         "  (uint16_t)            port_cap_flags2 = 0x%x\n",
-         x->state, x->max_mtu, x->active_mtu, x->gid_tbl_len, x->port_cap_flags, x->max_msg_sz,
-         x->bad_pkey_cntr, x->qkey_viol_cntr, x->pkey_tbl_len, x->lid, x->sm_lid, x->lmc, x->max_vl_num,
-         x->sm_sl, x->subnet_timeout, x->init_type_reply, x->active_width, x->active_speed, x->phys_state,
-         x->link_layer, x->flags, x->port_cap_flags2);
-}
-
-void dump_ibv_qp(struct ibv_qp *qp, int conn_num) {
-  /*
-   * struct ibv_qp {
-   *   struct ibv_context     *context;
-   *   void                   *qp_context;
-   *   struct ibv_pd          *pd;
-   *   struct ibv_cq          *send_cq;
-   *   struct ibv_cq          *recv_cq;
-   *   struct ibv_srq         *srq;
-   *   uint32_t                handle;
-   *   uint32_t                qp_num;
-   *   enum ibv_qp_state       state;
-   *   enum ibv_qp_type        qp_type;
-   *   pthread_mutex_t         mutex;
-   *   pthread_cond_t          cond;
-   *   uint32_t                events_completed;
-   * };
-   */
-  DPRINTF("\n");
-  DPRINTF("============== QP_DUMP CONNECTION#%d ==========\n", conn_num);
-  DPRINTF("  (ibv_context*)      context          = %p\n",   qp->context);
-  DPRINTF("  (void*)             qp_context       = %p\n",   qp->qp_context);
-  DPRINTF("  (ibv_pd*)           pd               = %p\n",   qp->pd);
-  DPRINTF("  (ibv_cq*)           send_cq          = %p\n",   qp->send_cq);
-  DPRINTF("  (ibv_cq*)           recv_cq          = %p\n",   qp->recv_cq);
-  DPRINTF("  (ibv_srq*)          srq              = %p\n",   qp->srq);
-  DPRINTF("  (uint32_t)          handle           = 0x%x\n", qp->handle);
-  DPRINTF("  (uint32_t)          qp_num           = 0x%x\n", qp->qp_num);
-  DPRINTF("  (enum ibv_qp_state) state            = %u\n",   qp->state);
-  DPRINTF("  (enum_ibv_qp_type)  qp_type          = %u\n",   qp->qp_type);
-  DPRINTF("  (uint32_t)          events_completed = %u\n",   qp->events_completed);
-  DPRINTF("=========== QP_DUMP_END CONNECTION#%d  ========\n", conn_num);
-}
-
-#if !defined(GDA_IONIC) && !defined(GDA_BNXT)
-void dump_mlx5dv_qp(struct mlx5dv_qp *qp_dv, int conn_num) {
-  DPRINTF("\n");
-  DPRINTF("===============================================\n");
-  DPRINTF("     INITIALIZED MLXDV_QP FOR CONNECTION#%d\n", conn_num);
-  DPRINTF("===============================================\n");
-  DPRINTF("=================== QP_DUMP ===================\n");
-  DPRINTF("  (__be32*)  dbrec           = %p\n",     qp_dv->dbrec);
-  DPRINTF("  (void*)    sq.buf          = %p\n",     qp_dv->sq.buf);
-  DPRINTF("  (uint32_t) sq.wqe_cnt      = %u\n",     qp_dv->sq.wqe_cnt);
-  DPRINTF("  (uint32_t) sq.stride       = %u\n",     qp_dv->sq.stride);
-  DPRINTF("  (void*)    rq.buf          = %p\n",     qp_dv->rq.buf);
-  DPRINTF("  (uint32_t) rq.wqe_cnt      = %u\n",     qp_dv->rq.wqe_cnt);
-  DPRINTF("  (uint32_t) rq.stride       = %u\n",     qp_dv->rq.stride);
-  DPRINTF("  (void*)    bf.reg          = %p\n",     qp_dv->bf.reg);
-  DPRINTF("  (uint32_t) bf.size         = 0x%x\n",   qp_dv->bf.size);
-  DPRINTF("  (uint64_t) comp_mask       = 0x%lx\n",  qp_dv->comp_mask);
-  DPRINTF("  (off_t)    uar_mmap_offset = 0x%lx\n",  qp_dv->uar_mmap_offset);
-  DPRINTF("  (uint32_t) tirn            = 0x%x\n",   qp_dv->tirn);
-  DPRINTF("  (uint32_t) tisn            = 0x%x\n",   qp_dv->tisn);
-  DPRINTF("  (uint32_t) rqn             = 0x%x\n",   qp_dv->rqn);
-  DPRINTF("  (uint32_t) sqn             = 0x%x\n",   qp_dv->sqn);
-  DPRINTF("  (uint64_t) tir_icm_addr    = 0x%lx\n",  qp_dv->tir_icm_addr);
-  DPRINTF("================== QP_DUMP_END ================\n");
-}
-
-void dump_mlx5dv_cq(struct mlx5dv_cq *cq_dv, int conn_num) {
-  DPRINTF("\n");
-  DPRINTF("===============================================\n");
-  DPRINTF("     INITIALIZED MLX5DV_CQ FOR CONNECTION#%d\n", conn_num);
-  DPRINTF("===============================================\n");
-  DPRINTF("=================== CQ_DUMP ===================\n");
-  DPRINTF("  (void*)    buf             = %p\n",     cq_dv->buf);
-  DPRINTF("  (__be32*)  dbrec           = %p\n",     cq_dv->dbrec);
-  DPRINTF("  (uint32_t) cqe_cnt         = %u\n",     cq_dv->cqe_cnt);
-  DPRINTF("  (uint32_t) cqe_size        = %u\n",     cq_dv->cqe_size);
-  DPRINTF("  (void*)    cq_uar          = %p\n",     cq_dv->cq_uar);
-  DPRINTF("  (uint32_t) cqn             = 0x%x\n",   cq_dv->cqn);
-  DPRINTF("  (uint64_t) comp_mask       = 0x%lx\n",  cq_dv->comp_mask);
-  DPRINTF("================== CQ_DUMP_END ================\n");
-}
-#endif // !GDA_IONIC
-
 GDABackend::GDABackend(MPI_Comm comm):  Backend(comm) {
   init();
 }
@@ -301,6 +100,37 @@ void GDABackend::init() {
   rte_barrier();
 }
 
+GDABackend::~GDABackend() {
+  //TODO: delete the contextproxy?, undo initialize_context?
+  /**
+   * Destroy teams infrastructure
+   * and team world
+   */
+  cleanup_teams();
+  cleanup_wrk_sync_buffer();
+  auto *team_world{team_tracker.get_team_world()};
+  team_world->~Team();
+  CHECK_HIP(hipFree(team_world));
+
+  CHECK_HIP(hipFree(gpu_qps));
+  gpu_qps = nullptr;
+
+  CHECK_HIP(hipHostFree(heap_rkey));
+
+  ibv_free_device_list(dev_list);
+
+  int ret = ibv_dereg_mr(heap_mr);
+  CHECK_ZERO(ret, "ibv_dereg_mr");
+
+  CHECK_HIP(hipFree(ctx_array));
+
+  heap.free(reinterpret_cast<void**>(&barrier_sync)); //TODO incorrect should free pworkpsync
+
+  delete ib_state;
+  if (requested_dev != nullptr)
+    free(requested_dev);
+}
+
 void GDABackend::read_env() {
   if (auto maximum_num_contexts_str = getenv("ROCSHMEM_MAX_NUM_CONTEXTS")) {
     std::stringstream sstream(maximum_num_contexts_str);
@@ -320,78 +150,6 @@ void GDABackend::read_env() {
   }
 }
 
-void GDABackend::setup_ibv() {
-  dest_info.resize(num_pes * (maximum_num_contexts_ + 1));
-  int ib_devices{0};
-  dev_list = ibv_get_device_list(&ib_devices);
-  CHECK_NNULL(dev_list, "ibv_get_device");
-  struct ibv_device* ib_dev = dev_list[0]; //TODO default to HIP selected device?
-  if (requested_dev) {
-    for (int i = 0; i < ib_devices; i++) {
-      const char* select_dev{ibv_get_device_name(dev_list[i])};
-      CHECK_NNULL(select_dev, "ibv_get_device_name");
-      if (strstr(select_dev, requested_dev)) {
-        ib_dev = dev_list[i];
-        break;
-      }
-    }
-  }
-  uint8_t port{1};
-  ib_init(ib_dev, port);
-  create_qps(port, &ib_state->portinfo);
-
-  auto npes = num_pes;
-  auto dinfo = dest_info.data();
-  for (int i = 0; i < maximum_num_contexts_ + 1; i++) {
-    if (backend_comm != MPI_COMM_NULL) {
-      MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t), MPI_CHAR, dinfo + i * npes, sizeof(dest_info_t), MPI_CHAR, backend_comm);
-    } else {
-      Alltoall_char_inplace(reinterpret_cast<char*>(dinfo + i * npes), sizeof(dest_info_t), ROCSHMEM_TEAM_WORLD);
-    }
-  }
-
-  for (int i{0}; i < qps.size(); i++) {
-    change_status_rtr(qps[i], &dest_info[i], port);
-  }
-  rte_barrier();
-  for (int i{0}; i < qps.size(); i++) {
-    change_status_rts(qps[i], &dest_info[i]);
-    dump_ibv_qp(qps[i], i);
-  }
-  rte_barrier();
-}
-
-GDABackend::~GDABackend() {
-  /**
-   * Destroy teams infrastructure
-   * and team world
-   */
-  cleanup_teams();
-  cleanup_wrk_sync_buffer();
-  auto *team_world{team_tracker.get_team_world()};
-  team_world->~Team();
-  CHECK_HIP(hipFree(team_world));
-
-  //TODO: delete the contextproxy?, undo initialize_context?
-
-  CHECK_HIP(hipFree(gpu_qps));
-  gpu_qps = nullptr;
-
-  CHECK_HIP(hipHostFree(heap_rkey));
-
-  ibv_free_device_list(dev_list);
-
-  int ret = ibv_dereg_mr(heap_mr);
-  CHECK_ZERO(ret, "ibv_dereg_mr");
-
-  CHECK_HIP(hipFree(ctx_array));
-
-  heap.free(reinterpret_cast<void**>(&barrier_sync));
-
-  delete ib_state;
-  if (requested_dev != nullptr)
-    free(requested_dev);
-}
 
 void GDABackend::setup_host_ctx() {
   default_host_ctx = std::make_unique<GDAHostContext>(this, 0);
@@ -800,6 +558,55 @@ void GDABackend::rte_barrier() {
   }
 }
 
+static void dump_ibv_context(struct ibv_context *x);
+static void dump_ibv_device(struct ibv_device *x);
+static void dump_ibv_pd(struct ibv_pd *x);
+static void dump_ibv_port_attr(struct ibv_port_attr *x);
+static void dump_ibv_qp(struct ibv_qp *qp, int conn_num);
+static void dump_mlx5dv_qp(struct mlx5dv_qp *qp_dv, int conn_num);
+static void dump_mlx5dv_cq(struct mlx5dv_cq *cq_dv, int conn_num);
+
+void GDABackend::setup_ibv() {
+  dest_info.resize(num_pes * (maximum_num_contexts_ + 1));
+  int ib_devices{0};
+  dev_list = ibv_get_device_list(&ib_devices);
+  CHECK_NNULL(dev_list, "ibv_get_device");
+  struct ibv_device* ib_dev = dev_list[0]; //TODO default to HIP selected device?
+  if (requested_dev) {
+    for (int i = 0; i < ib_devices; i++) {
+      const char* select_dev{ibv_get_device_name(dev_list[i])};
+      CHECK_NNULL(select_dev, "ibv_get_device_name");
+      if (strstr(select_dev, requested_dev)) {
+        ib_dev = dev_list[i];
+        break;
+      }
+    }
+  }
+  uint8_t port{1};
+  ib_init(ib_dev, port);
+  create_qps(port, &ib_state->portinfo);
+
+  auto npes = num_pes;
+  auto dinfo = dest_info.data();
+  for (int i = 0; i < maximum_num_contexts_ + 1; i++) {
+    if (backend_comm != MPI_COMM_NULL) {
+      MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t), MPI_CHAR, dinfo + i * npes, sizeof(dest_info_t), MPI_CHAR, backend_comm);
+    } else {
+      Alltoall_char_inplace(reinterpret_cast<char*>(dinfo + i * npes), sizeof(dest_info_t), ROCSHMEM_TEAM_WORLD);
+    }
+  }
+
+  for (int i = 0; i < qps.size(); i++) {
+    change_status_rtr(qps[i], &dest_info[i], port);
+  }
+  rte_barrier();
+  for (int i = 0; i < qps.size(); i++) {
+    change_status_rts(qps[i], &dest_info[i]);
+    dump_ibv_qp(qps[i], i);
+  }
+  rte_barrier();
+}
+
 void GDABackend::heap_memory_rkey() {
   auto *base_heap = heap.get_local_heap_base();
   int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
@@ -833,7 +640,7 @@ void GDABackend::heap_memory_rkey() {
 
 void GDABackend::setup_gpu_qps() {
   CHECK_HIP(hipMalloc(&gpu_qps, sizeof(QueuePair) * (maximum_num_contexts_ + 1) * num_pes));
-  for (int i{0}; i < (maximum_num_contexts_ + 1) * num_pes; i++) {
+  for (int i = 0; i < (maximum_num_contexts_ + 1) * num_pes; i++) {
     QueuePair qp(ib_state->pd_orig);
     CHECK_HIP(hipMemcpy(&gpu_qps[i], &qp, sizeof(QueuePair), hipMemcpyDefault));
     initialize_gpu_qp(&gpu_qps[i], i);
@@ -945,7 +752,7 @@ void GDABackend::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
   cqs.resize((maximum_num_contexts_ + 1) * num_pes);
   qps.resize((maximum_num_contexts_ + 1) * num_pes);
   int max_num_cqe = qp_init_attr.attr.cap.max_send_wr;
-  for (int i{0}; i < qps.size(); i++) {
+  for (int i = 0; i < qps.size(); i++) {
 #ifdef GDA_IONIC
     int uxdma_i = ((i + 1) / 2) & 1;
     cqs[i] = create_cq(ib_state->context, ib_state->pd_uxdma[uxdma_i], max_num_cqe << 1);
@@ -965,10 +772,11 @@ void GDABackend::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
   }
 }
 
-//TODO: is this needed? canm we use allocator class?
-void* GDABackend::buf_alloc(struct ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type) {
+void* GDABackend::pd_alloc(struct ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type) {
   void* dev_ptr{nullptr};
+  //TODO make this configurable, presumably we want it on device for all types?
 #ifdef GDA_IONIC
+  //TODO use the hip allocator class?
   CHECK_HIP(hipExtMallocWithFlags(reinterpret_cast<void**>(&dev_ptr), size, hipDeviceMallocUncached));
 #else
   CHECK_HIP(hipHostMalloc(reinterpret_cast<void**>(&dev_ptr), size, hipHostMallocDefault));
@@ -977,8 +785,7 @@ void* GDABackend::buf_alloc(struct ibv_pd* pd, void* pd_context, size_t size, si
   return dev_ptr;
 }
 
-//TODO: is this needed (see buf_alloc)
-void GDABackend::buf_release(struct ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type) {
+void GDABackend::pd_release(struct ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type) {
   CHECK_HIP(hipFree(ptr));
 }
 
@@ -986,8 +793,8 @@ void GDABackend::init_parent_domain_attr(ibv_parent_domain_init_attr* attr1) {
   attr1->pd = ib_state->pd_orig;
   attr1->td = nullptr;
   attr1->comp_mask = IBV_PARENT_DOMAIN_INIT_ATTR_ALLOCATORS;
-  attr1->alloc = GDABackend::buf_alloc;
-  attr1->free = GDABackend::buf_release;
+  attr1->alloc = GDABackend::pd_alloc;
+  attr1->free = GDABackend::pd_release;
   attr1->pd_context = nullptr;
 }
 
@@ -1223,5 +1030,206 @@ void GDABackend::init_gid_index(uint8_t port_num) {
 
   free(gid_entries);
 }
+
+static void dump_ibv_context(struct ibv_context* x) {
+  /*
+   * struct ibv_context {
+   *   struct ibv_device      *device;
+   *   struct ibv_context_ops  ops;
+   *   int                     cmd_fd;
+   *   int                     async_fd;
+   *   int                     num_comp_vectors;
+   *   pthread_mutex_t         mutex;
+   *   void                   *abi_compat;
+   * };
+   */
+  DPRINTF("\n"
+         "===============================================\n"
+         "                IBV_CONTEXT\n"
+         "===============================================\n"
+         "  (ibv_device*)        device              = %p\n"
+         "  (int)                cmd_fd              = %d\n"
+         "  (int)                async_fd            = %d\n"
+         "  (int)                num_comp_vectors    = %d\n"
+         "  (void*)              abi_compat          = %p\n",
+         x->device, x->cmd_fd, x->async_fd, x->num_comp_vectors, x->abi_compat);
+};
+
+static void dump_ibv_device(struct ibv_device* x) {
+  /*
+   * struct ibv_device {
+   *   struct _ibv_device_ops  _ops;
+   *   enum ibv_node_type node_type;
+   *   enum ibv_transport_type transport_type;
+   *   char name[IBV_SYSFS_NAME_MAX];
+   *   char dev_name[IBV_SYSFS_NAME_MAX];
+   *   char dev_path[IBV_SYSFS_PATH_MAX];
+   *   char ibdev_path[IBV_SYSFS_PATH_MAX];
+   * };
+   */
+  DPRINTF("\n"
+         "===============================================\n"
+         "               IBV_DEVICE\n"
+         "===============================================\n"
+         "  (enum ibv_node_type)      node_type      = %d\n"
+         "  (enum ibv_transport_type) transport_type = %d\n"
+         "  (char[])                  name           = %s\n"
+         "  (char[])                  dev_name       = %s\n"
+         "  (char[])                  dev_path       = %s\n"
+         "  (char[])                  ibdev_path     = %s\n",
+         x->node_type, x->transport_type, x->name, x->dev_name, x->dev_path, x->ibdev_path);
+}
+
+static void dump_ibv_pd(struct ibv_pd* x) {
+  /*
+   * struct ibv_pd {
+   *   struct ibv_context     *context;
+   *   uint32_t                handle;
+   * };
+   */
+  DPRINTF("\n"
+         "===============================================\n"
+         "               IBV_PD\n"
+         "===============================================\n"
+         "  (ibv_context*) context = %p\n"
+         "  (uint32_t)     handle  = 0x%x\n",
+         x->context, x->handle);
+}
+
+static void dump_ibv_port_attr(struct ibv_port_attr* x) {
+  /*
+   * struct ibv_port_attr {
+   *   enum ibv_port_state     state;
+   *   enum ibv_mtu            max_mtu;
+   *   enum ibv_mtu            active_mtu;
+   *   int                     gid_tbl_len;
+   *   uint32_t                port_cap_flags;
+   *   uint32_t                max_msg_sz;
+   *   uint32_t                bad_pkey_cntr;
+   *   uint32_t                qkey_viol_cntr;
+   *   uint16_t                pkey_tbl_len;
+   *   uint16_t                lid;
+   *   uint16_t                sm_lid;
+   *   uint8_t                 lmc;
+   *   uint8_t                 max_vl_num;
+   *   uint8_t                 sm_sl;
+   *   uint8_t                 subnet_timeout;
+   *   uint8_t                 init_type_reply;
+   *   uint8_t                 active_width;
+   *   uint8_t                 active_speed;
+   *   uint8_t                 phys_state;
+   *   uint8_t                 link_layer;
+   *   uint8_t                 flags;
+   *   uint16_t                port_cap_flags2;
+   * };
+   */
+  DPRINTF("\n"
+         "===============================================\n"
+         "               IBV_PORT_ATTR\n"
+         "===============================================\n"
+         "  (enum ibv_port_state) state           = %u\n"
+         "  (enum ibv_mtu)        max_mtu         = %u\n"
+         "  (enum ibv_mtu)        active_mtu      = %u\n"
+         "  (int)                 gid_tbl_len     = %u\n"
+         "  (uint32_t)            port_cap_flags  = 0x%x\n"
+         "  (uint32_t)            max_msg_sz      = %u\n"
+         "  (uint32_t)            bad_pkey_cntr   = %u\n"
+         "  (uint32_t)            qkey_viol_cntr  = %u\n"
+         "  (uint16_t)            pkey_tbl_len    = %u\n"
+         "  (uint16_t)            lid             = 0x%x\n"
+         "  (uint16_t)            sm_lid          = 0x%x\n"
+         "  (uint8_t)             lmc             = 0x%x\n"
+         "  (uint8_t)             max_vl_num      = 0x%x\n"
+         "  (uint8_t)             sm_sl           = 0x%x\n"
+         "  (uint8_t)             subnet_timeout  = 0x%x\n"
+         "  (uint8_t)             init_type_reply = 0x%x\n"
+         "  (uint8_t)             active_width    = 0x%x\n"
+         "  (uint8_t)             active_speed    = 0x%x\n"
+         "  (uint8_t)             phys_state      = 0x%x\n"
+         "  (uint8_t)             link_layer      = 0x%x\n"
+         "  (uint8_t)             flags           = 0x%x\n"
+         "  (uint16_t)            port_cap_flags2 = 0x%x\n",
+         x->state, x->max_mtu, x->active_mtu, x->gid_tbl_len, x->port_cap_flags, x->max_msg_sz,
+         x->bad_pkey_cntr, x->qkey_viol_cntr, x->pkey_tbl_len, x->lid, x->sm_lid, x->lmc, x->max_vl_num,
+         x->sm_sl, x->subnet_timeout, x->init_type_reply, x->active_width, x->active_speed, x->phys_state,
+         x->link_layer, x->flags, x->port_cap_flags2);
+}
+
+void dump_ibv_qp(struct ibv_qp *qp, int conn_num) {
+  /*
+   * struct ibv_qp {
+   *   struct ibv_context     *context;
+   *   void                   *qp_context;
+   *   struct ibv_pd          *pd;
+   *   struct ibv_cq          *send_cq;
+   *   struct ibv_cq          *recv_cq;
+   *   struct ibv_srq         *srq;
+   *   uint32_t                handle;
+   *   uint32_t                qp_num;
+   *   enum ibv_qp_state       state;
+   *   enum ibv_qp_type        qp_type;
+   *   pthread_mutex_t         mutex;
+   *   pthread_cond_t          cond;
+   *   uint32_t                events_completed;
+   * };
+   */
+  DPRINTF("\n");
+  DPRINTF("============== QP_DUMP CONNECTION#%d ==========\n", conn_num);
+  DPRINTF("  (ibv_context*)      context          = %p\n",   qp->context);
+  DPRINTF("  (void*)             qp_context       = %p\n",   qp->qp_context);
+  DPRINTF("  (ibv_pd*)           pd               = %p\n",   qp->pd);
+  DPRINTF("  (ibv_cq*)           send_cq          = %p\n",   qp->send_cq);
+  DPRINTF("  (ibv_cq*)           recv_cq          = %p\n",   qp->recv_cq);
+  DPRINTF("  (ibv_srq*)          srq              = %p\n",   qp->srq);
+  DPRINTF("  (uint32_t)          handle           = 0x%x\n", qp->handle);
+  DPRINTF("  (uint32_t)          qp_num           = 0x%x\n", qp->qp_num);
+  DPRINTF("  (enum ibv_qp_state) state            = %u\n",   qp->state);
+  DPRINTF("  (enum_ibv_qp_type)  qp_type          = %u\n",   qp->qp_type);
+  DPRINTF("  (uint32_t)          events_completed = %u\n",   qp->events_completed);
+  DPRINTF("=========== QP_DUMP_END CONNECTION#%d  ========\n", conn_num);
+}
+
+#if !defined(GDA_IONIC) && !defined(GDA_BNXT)
+void dump_mlx5dv_qp(struct mlx5dv_qp *qp_dv, int conn_num) {
+  DPRINTF("\n");
+  DPRINTF("===============================================\n");
+  DPRINTF("     INITIALIZED MLXDV_QP FOR CONNECTION#%d\n", conn_num);
+  DPRINTF("===============================================\n");
+  DPRINTF("=================== QP_DUMP ===================\n");
+  DPRINTF("  (__be32*)  dbrec           = %p\n",     qp_dv->dbrec);
+  DPRINTF("  (void*)    sq.buf          = %p\n",     qp_dv->sq.buf);
+  DPRINTF("  (uint32_t) sq.wqe_cnt      = %u\n",     qp_dv->sq.wqe_cnt);
+  DPRINTF("  (uint32_t) sq.stride       = %u\n",     qp_dv->sq.stride);
+  DPRINTF("  (void*)    rq.buf          = %p\n",     qp_dv->rq.buf);
+  DPRINTF("  (uint32_t) rq.wqe_cnt      = %u\n",     qp_dv->rq.wqe_cnt);
+  DPRINTF("  (uint32_t) rq.stride       = %u\n",     qp_dv->rq.stride);
+  DPRINTF("  (void*)    bf.reg          = %p\n",     qp_dv->bf.reg);
+  DPRINTF("  (uint32_t) bf.size         = 0x%x\n",   qp_dv->bf.size);
+  DPRINTF("  (uint64_t) comp_mask       = 0x%lx\n",  qp_dv->comp_mask);
+  DPRINTF("  (off_t)    uar_mmap_offset = 0x%lx\n",  qp_dv->uar_mmap_offset);
+  DPRINTF("  (uint32_t) tirn            = 0x%x\n",   qp_dv->tirn);
+  DPRINTF("  (uint32_t) tisn            = 0x%x\n",   qp_dv->tisn);
+  DPRINTF("  (uint32_t) rqn             = 0x%x\n",   qp_dv->rqn);
+  DPRINTF("  (uint32_t) sqn             = 0x%x\n",   qp_dv->sqn);
+  DPRINTF("  (uint64_t) tir_icm_addr    = 0x%lx\n",  qp_dv->tir_icm_addr);
+  DPRINTF("================== QP_DUMP_END ================\n");
+}
+
+void dump_mlx5dv_cq(struct mlx5dv_cq *cq_dv, int conn_num) {
+  DPRINTF("\n");
+  DPRINTF("===============================================\n");
+  DPRINTF("     INITIALIZED MLX5DV_CQ FOR CONNECTION#%d\n", conn_num);
+  DPRINTF("===============================================\n");
+  DPRINTF("=================== CQ_DUMP ===================\n");
+  DPRINTF("  (void*)    buf             = %p\n",     cq_dv->buf);
+  DPRINTF("  (__be32*)  dbrec           = %p\n",     cq_dv->dbrec);
+  DPRINTF("  (uint32_t) cqe_cnt         = %u\n",     cq_dv->cqe_cnt);
+  DPRINTF("  (uint32_t) cqe_size        = %u\n",     cq_dv->cqe_size);
+  DPRINTF("  (void*)    cq_uar          = %p\n",     cq_dv->cq_uar);
+  DPRINTF("  (uint32_t) cqn             = 0x%x\n",   cq_dv->cqn);
+  DPRINTF("  (uint64_t) comp_mask       = 0x%lx\n",  cq_dv->comp_mask);
+  DPRINTF("================== CQ_DUMP_END ================\n");
+}
+#endif // !GDA_IONIC
 
 }  // namespace rocshmem
