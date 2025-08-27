@@ -255,7 +255,8 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t length, uintptr_t *laddr
 
       /* Populate Header Segment */
       wqe_size  = BNXT_RE_HDR_WS_MASK    & rma_slots;
-      hdr_flags = BNXT_RE_HDR_FLAGS_MASK & BNXT_RE_WR_FLAGS_SIGNALED;
+      hdr_flags = ((uint32_t) BNXT_RE_HDR_FLAGS_MASK)
+                & ((uint32_t) BNXT_RE_WR_FLAGS_SIGNALED);
       wqe_type  = BNXT_RE_HDR_WT_MASK    & opcode;
 
       hdr.rsv_ws_fl_wt  = (wqe_size  << BNXT_RE_HDR_WS_SHIFT)
@@ -332,7 +333,8 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t length, uintptr_t *r
 
       /* Populate Header Segment */
       wqe_size  = BNXT_RE_HDR_WS_MASK    & amo_slots;
-      hdr_flags = BNXT_RE_HDR_FLAGS_MASK & BNXT_RE_WR_FLAGS_SIGNALED;
+      hdr_flags = ((uint32_t) BNXT_RE_HDR_FLAGS_MASK)
+                & ((uint32_t) BNXT_RE_WR_FLAGS_SIGNALED);
       wqe_type  = BNXT_RE_HDR_WT_MASK    & opcode;
 
       hdr.rsv_ws_fl_wt  = (wqe_size  << BNXT_RE_HDR_WS_SHIFT)
