@@ -24,10 +24,6 @@
 
 #include <hip/hip_runtime.h>
 #include <hip/amd_detail/amd_device_functions.h>
-//#include <unistd.h> //TODO needed?
-
-//#include <cstdio> //TODO needed?
-//#include <cstdlib> //TODO needed?
 
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "rocshmem/rocshmem.hpp"
