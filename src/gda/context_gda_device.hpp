@@ -282,7 +282,7 @@ class GDAContext : public Context {
    * @brief Array containing the addresses of the work/sync buffer bases
    * of other PEs
   */
-  char **Wrk_Sync_buffer_bases_{nullptr};
+  char **wrk_sync_pool_bases_{nullptr};
 
   /**
    * @brief Device context Id

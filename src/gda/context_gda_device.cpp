@@ -44,7 +44,7 @@ __host__ GDAContext::GDAContext(Backend *b, unsigned int ctx_id)
   base_heap = backend->heap.get_heap_bases().data();
   backend->initialize_context(this, ctx_id);
   barrier_sync = backend->barrier_sync;
-  Wrk_Sync_buffer_bases_ = backend->get_wrk_sync_bases();
+  wrk_sync_pool_bases_ = backend->get_wrk_sync_bases();
   ctx_id_ = ctx_id;
 }
 

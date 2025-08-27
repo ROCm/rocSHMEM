@@ -208,7 +208,7 @@ void IPCBackend::team_destroy(rocshmem_team_t team) {
 }
 
 void IPCBackend::Allreduce_char_BAND (char* inbuf, char *outbuf, size_t num_bytes,
-				      Team *team) {
+                                      Team *team) {
 
   // Implement an Allreduce outside of MPI. This is specialized for the scenario
   // required for the team creation, i.e. assuming bytes and using BAND operation.
@@ -250,7 +250,7 @@ void IPCBackend::create_new_team([[maybe_unused]] Team *parent_team,
    */
   if (team_comm != MPI_COMM_NULL) {
     NET_CHECK(MPI_Allreduce(team_pool_bitmask_, team_reduced_bitmask_, team_bitmask_size_,
-			    MPI_CHAR, MPI_BAND, team_comm));
+                            MPI_CHAR, MPI_BAND, team_comm));
   } else {
     Allreduce_char_BAND (team_pool_bitmask_, team_reduced_bitmask_, team_bitmask_size_, parent_team);
   }
@@ -340,12 +340,12 @@ void IPCBackend::setup_wrk_sync_buffers() {
   /**
    * size of barrier sync
    */
-  Wrk_Sync_buffer_size_ += sizeof(*barrier_sync) * ROCSHMEM_BARRIER_SYNC_SIZE;
+  wrk_sync_pool_size_ += sizeof(*barrier_sync) * ROCSHMEM_BARRIER_SYNC_SIZE;
 
   /**
    * Size of sync arrays for the teams
   */
-  Wrk_Sync_buffer_size_ += sizeof(long) * max_num_teams *
+  wrk_sync_pool_size_ += sizeof(long) * max_num_teams *
                            (ROCSHMEM_BARRIER_SYNC_SIZE +
                             ROCSHMEM_REDUCE_SYNC_SIZE +
                             ROCSHMEM_BCAST_SYNC_SIZE +
@@ -355,23 +355,23 @@ void IPCBackend::setup_wrk_sync_buffers() {
    * Size of work arrays for the teams
    * Accommodate largest possible data type for pWrk
   */
-  Wrk_Sync_buffer_size_ += sizeof(double) * max_num_teams *
+  wrk_sync_pool_size_ += sizeof(double) * max_num_teams *
                            (ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE +
                             ROCSHMEM_ATA_MAX_WRKDATA_SIZE);
 
   /**
    * Size of fence array
   */
-  Wrk_Sync_buffer_size_ += sizeof(int) * num_pes;
+  wrk_sync_pool_size_ += sizeof(int) * num_pes;
 
   /**
-   * Allocate a buffer of size Wrk_Sync_buffer_size_, using fine-grained
+   * Allocate a buffer of size wrk_sync_pool_size_, using fine-grained
    * memory allocator
   */
-  fine_grained_allocator_.allocate((void**)&Wrk_Sync_buffer_ptr_,
-                                   Wrk_Sync_buffer_size_);
-  assert(Wrk_Sync_buffer_ptr_);
-  temp_Wrk_Sync_buff_ptr_ = Wrk_Sync_buffer_ptr_;
+  fine_grained_allocator_.allocate((void**)&wrk_sync_pool_,
+                                   wrk_sync_pool_size_);
+  assert(wrk_sync_pool_);
+  wrk_sync_pool_top_ = wrk_sync_pool_;
 
   /*
    * Allocate a c-array to hold the IPC handles
@@ -381,16 +381,16 @@ void IPCBackend::setup_wrk_sync_buffers() {
 
   /*
    * Call into the hip runtime to get an IPC handle for the allocated
-   * Wrk_Sync_buffer_ and store that IPC handle
+   * wrk_sync_pool_ buffer and store that IPC handle
    */
-  CHECK_HIP(hipIpcGetMemHandle(&ipc_handle[my_pe], Wrk_Sync_buffer_ptr_));
+  CHECK_HIP(hipIpcGetMemHandle(&ipc_handle[my_pe], wrk_sync_pool_));
 
   /*
    * all-to-all exchange with each PE to share the IPC handles.
    */
   if (backend_comm != MPI_COMM_NULL) {
     MPI_Allgather(MPI_IN_PLACE, sizeof(hipIpcMemHandle_t), MPI_CHAR,
-		  ipc_handle, sizeof(hipIpcMemHandle_t), MPI_CHAR, backend_comm);
+                  ipc_handle, sizeof(hipIpcMemHandle_t), MPI_CHAR, backend_comm);
   } else {
     assert (backend_bootstr != nullptr);
     backend_bootstr->allGather(ipc_handle, sizeof(hipIpcMemHandle_t));
@@ -401,9 +401,9 @@ void IPCBackend::setup_wrk_sync_buffers() {
    * work/sync buffers
    */
   fine_grained_allocator_.allocate(
-    reinterpret_cast<void**>(&Wrk_Sync_buffer_bases_),
+    reinterpret_cast<void**>(&wrk_sync_pool_bases_),
     num_pes * sizeof(char*));
-  assert(Wrk_Sync_buffer_bases_);
+  assert(wrk_sync_pool_bases_);
 
   /*
    * For all local processing elements, initialize the device-side array
@@ -412,11 +412,11 @@ void IPCBackend::setup_wrk_sync_buffers() {
   for (int i = 0; i < num_pes; i++) {
     if (i != my_pe) {
       CHECK_HIP(hipIpcOpenMemHandle(
-          reinterpret_cast<void**>(&Wrk_Sync_buffer_bases_[i]),
+          reinterpret_cast<void**>(&wrk_sync_pool_bases_[i]),
           ipc_handle[i],
           hipIpcMemLazyEnablePeerAccess));
     } else {
-      Wrk_Sync_buffer_bases_[i] = Wrk_Sync_buffer_ptr_;
+      wrk_sync_pool_bases_[i] = wrk_sync_pool_;
     }
   }
 }
@@ -424,19 +424,19 @@ void IPCBackend::setup_wrk_sync_buffers() {
 void IPCBackend::cleanup_wrk_sync_buffer() {
   for (int i = 0; i < num_pes; i++) {
     if (i != my_pe) {
-      CHECK_HIP(hipIpcCloseMemHandle(Wrk_Sync_buffer_bases_[i]));
+      CHECK_HIP(hipIpcCloseMemHandle(wrk_sync_pool_bases_[i]));
     }
   }
-  fine_grained_allocator_.deallocate(Wrk_Sync_buffer_bases_);
-  fine_grained_allocator_.deallocate(Wrk_Sync_buffer_ptr_);
+  fine_grained_allocator_.deallocate(wrk_sync_pool_bases_);
+  fine_grained_allocator_.deallocate(wrk_sync_pool_);
 }
 
 void IPCBackend::setup_fence_buffer() {
   /*
   * Allocate memory for fence
   */
-  fence_pool = reinterpret_cast<int *>(temp_Wrk_Sync_buff_ptr_);
-  temp_Wrk_Sync_buff_ptr_ += sizeof(int) * num_pes;
+  fence_pool = reinterpret_cast<int *>(wrk_sync_pool_top_);
+  wrk_sync_pool_top_ += sizeof(int) * num_pes;
 }
 
 void IPCBackend::rocshmem_collective_init() {
@@ -446,8 +446,8 @@ void IPCBackend::rocshmem_collective_init() {
   size_t one_sync_size_bytes {sizeof(*barrier_sync)};
   size_t sync_size_bytes {one_sync_size_bytes * ROCSHMEM_BARRIER_SYNC_SIZE};
 
-  barrier_sync = reinterpret_cast<int64_t*>(temp_Wrk_Sync_buff_ptr_);
-  temp_Wrk_Sync_buff_ptr_ += sync_size_bytes;
+  barrier_sync = reinterpret_cast<int64_t*>(wrk_sync_pool_top_);
+  wrk_sync_pool_top_ += sync_size_bytes;
 
   /*
    * Initialize the barrier synchronization array with default values.
@@ -473,30 +473,30 @@ void IPCBackend::teams_init() {
    */
   auto max_num_teams{team_tracker.get_max_num_teams()};
 
-  barrier_pSync_pool = reinterpret_cast<long *>(temp_Wrk_Sync_buff_ptr_);
-  temp_Wrk_Sync_buff_ptr_ += sizeof(long) * ROCSHMEM_BARRIER_SYNC_SIZE
+  barrier_pSync_pool = reinterpret_cast<long *>(wrk_sync_pool_top_);
+  wrk_sync_pool_top_ += sizeof(long) * ROCSHMEM_BARRIER_SYNC_SIZE
                             * max_num_teams;
 
-  reduce_pSync_pool = reinterpret_cast<long *>(temp_Wrk_Sync_buff_ptr_);
-  temp_Wrk_Sync_buff_ptr_ += sizeof(long) * ROCSHMEM_REDUCE_SYNC_SIZE
+  reduce_pSync_pool = reinterpret_cast<long *>(wrk_sync_pool_top_);
+  wrk_sync_pool_top_ += sizeof(long) * ROCSHMEM_REDUCE_SYNC_SIZE
                             * max_num_teams;
 
-  bcast_pSync_pool = reinterpret_cast<long *>(temp_Wrk_Sync_buff_ptr_);
-  temp_Wrk_Sync_buff_ptr_ += sizeof(long) * ROCSHMEM_BCAST_SYNC_SIZE
+  bcast_pSync_pool = reinterpret_cast<long *>(wrk_sync_pool_top_);
+  wrk_sync_pool_top_ += sizeof(long) * ROCSHMEM_BCAST_SYNC_SIZE
                             * max_num_teams;
 
-  alltoall_pSync_pool = reinterpret_cast<long *>(temp_Wrk_Sync_buff_ptr_);
-  temp_Wrk_Sync_buff_ptr_ += sizeof(long) * ROCSHMEM_BCAST_SYNC_SIZE
+  alltoall_pSync_pool = reinterpret_cast<long *>(wrk_sync_pool_top_);
+  wrk_sync_pool_top_ += sizeof(long) * ROCSHMEM_BCAST_SYNC_SIZE
                             * max_num_teams;
 
   /* Accommodating for largest possible data type for pWrk */
-  pWrk_pool = reinterpret_cast<void *>(temp_Wrk_Sync_buff_ptr_);
-  temp_Wrk_Sync_buff_ptr_ += sizeof(double) * ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE
+  pWrk_pool = reinterpret_cast<void *>(wrk_sync_pool_top_);
+  wrk_sync_pool_top_ += sizeof(double) * ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE
                             * max_num_teams;
 
 
-  pAta_pool = reinterpret_cast<void *>(temp_Wrk_Sync_buff_ptr_);
-  temp_Wrk_Sync_buff_ptr_ += sizeof(double) * ROCSHMEM_ATA_MAX_WRKDATA_SIZE
+  pAta_pool = reinterpret_cast<void *>(wrk_sync_pool_top_);
+  wrk_sync_pool_top_ += sizeof(double) * ROCSHMEM_ATA_MAX_WRKDATA_SIZE
                             * max_num_teams;
 
   /**

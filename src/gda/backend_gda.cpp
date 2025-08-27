@@ -124,8 +124,6 @@ GDABackend::~GDABackend() {
 
   CHECK_HIP(hipFree(ctx_array));
 
-  heap.free(reinterpret_cast<void**>(&barrier_sync)); //TODO incorrect should free pworkpsync
-
   delete ib_state;
   if (requested_dev != nullptr)
     free(requested_dev);
@@ -390,12 +388,12 @@ void GDABackend::setup_wrk_sync_buffer() {
   /**
    * size of barrier sync
    */
-  Wrk_Sync_buffer_size_ += sizeof(*barrier_sync) * ROCSHMEM_BARRIER_SYNC_SIZE;
+  wrk_sync_pool_size_ += sizeof(*barrier_sync) * ROCSHMEM_BARRIER_SYNC_SIZE;
 
   /**
    * Size of sync arrays for the teams
   */
-  Wrk_Sync_buffer_size_ += sizeof(long) * max_num_teams *
+  wrk_sync_pool_size_ += sizeof(long) * max_num_teams *
                            (ROCSHMEM_BARRIER_SYNC_SIZE +
                             ROCSHMEM_REDUCE_SYNC_SIZE +
                             ROCSHMEM_BCAST_SYNC_SIZE +
@@ -405,34 +403,34 @@ void GDABackend::setup_wrk_sync_buffer() {
    * Size of work arrays for the teams
    * Accommodate largest possible data type for pWrk
   */
-  Wrk_Sync_buffer_size_ += sizeof(double) * max_num_teams *
+  wrk_sync_pool_size_ += sizeof(double) * max_num_teams *
                            (ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE +
                             ROCSHMEM_ATA_MAX_WRKDATA_SIZE);
 
   /**
    * Size of fence array
    */
-  Wrk_Sync_buffer_size_ += sizeof(int) * num_pes; //TODO: do we need a fence array?
+  wrk_sync_pool_size_ += sizeof(int) * num_pes; //TODO: do we need a fence array?
 
   /**
-   * Allocate a buffer of size Wrk_Sync_buffer_size_, using heap memory
+   * Allocate a buffer of size wrk_sync_pool_size_, using heap memory
    * (should be uncached fine-grained ideally)
   */
-  heap.malloc((void**)&Wrk_Sync_buffer_ptr_, Wrk_Sync_buffer_size_);
-  assert(Wrk_Sync_buffer_ptr_);
-  temp_Wrk_Sync_buff_ptr_ = Wrk_Sync_buffer_ptr_;
+  heap.malloc((void**)&wrk_sync_pool_, wrk_sync_pool_size_);
+  assert(wrk_sync_pool_);
+  wrk_sync_pool_top_ = wrk_sync_pool_;
 }
 
 void GDABackend::cleanup_wrk_sync_buffer() {
-  heap.free(Wrk_Sync_buffer_ptr_);
+  heap.free(wrk_sync_pool_);
 }
 
 void GDABackend::setup_fence_buffer() { //TODO is this used?
   /*
    * Reserve memory for fence
    */
-  fence_pool = reinterpret_cast<int *>(temp_Wrk_Sync_buff_ptr_);
-  temp_Wrk_Sync_buff_ptr_ += sizeof(int) * num_pes;
+  fence_pool = reinterpret_cast<int *>(wrk_sync_pool_top_);
+  wrk_sync_pool_top_ += sizeof(int) * num_pes;
 }
 
 void GDABackend::setup_collectives() {
@@ -442,8 +440,8 @@ void GDABackend::setup_collectives() {
   size_t one_sync_size_bytes {sizeof(*barrier_sync)};
   size_t sync_size_bytes {one_sync_size_bytes * ROCSHMEM_BARRIER_SYNC_SIZE};
 
-  barrier_sync = reinterpret_cast<int64_t*>(temp_Wrk_Sync_buff_ptr_);
-  temp_Wrk_Sync_buff_ptr_ += sync_size_bytes;
+  barrier_sync = reinterpret_cast<int64_t*>(wrk_sync_pool_top_);
+  wrk_sync_pool_top_ += sync_size_bytes;
 
   /*
    * Initialize the barrier synchronization array with default values.
@@ -465,30 +463,30 @@ void GDABackend::setup_teams() {
    */
   auto max_num_teams{team_tracker.get_max_num_teams()};
 
-  barrier_pSync_pool = reinterpret_cast<long *>(temp_Wrk_Sync_buff_ptr_);
-  temp_Wrk_Sync_buff_ptr_ += sizeof(long) * ROCSHMEM_BARRIER_SYNC_SIZE
+  barrier_pSync_pool = reinterpret_cast<long *>(wrk_sync_pool_top_);
+  wrk_sync_pool_top_ += sizeof(long) * ROCSHMEM_BARRIER_SYNC_SIZE
                             * max_num_teams;
 
-  reduce_pSync_pool = reinterpret_cast<long *>(temp_Wrk_Sync_buff_ptr_);
-  temp_Wrk_Sync_buff_ptr_ += sizeof(long) * ROCSHMEM_REDUCE_SYNC_SIZE
+  reduce_pSync_pool = reinterpret_cast<long *>(wrk_sync_pool_top_);
+  wrk_sync_pool_top_ += sizeof(long) * ROCSHMEM_REDUCE_SYNC_SIZE
                             * max_num_teams;
 
-  bcast_pSync_pool = reinterpret_cast<long *>(temp_Wrk_Sync_buff_ptr_);
-  temp_Wrk_Sync_buff_ptr_ += sizeof(long) * ROCSHMEM_BCAST_SYNC_SIZE
+  bcast_pSync_pool = reinterpret_cast<long *>(wrk_sync_pool_top_);
+  wrk_sync_pool_top_ += sizeof(long) * ROCSHMEM_BCAST_SYNC_SIZE
                             * max_num_teams;
 
-  alltoall_pSync_pool = reinterpret_cast<long *>(temp_Wrk_Sync_buff_ptr_);
-  temp_Wrk_Sync_buff_ptr_ += sizeof(long) * ROCSHMEM_BCAST_SYNC_SIZE
+  alltoall_pSync_pool = reinterpret_cast<long *>(wrk_sync_pool_top_);
+  wrk_sync_pool_top_ += sizeof(long) * ROCSHMEM_BCAST_SYNC_SIZE
                             * max_num_teams;
 
   /* Accommodating for largest possible data type for pWrk */
-  pWrk_pool = reinterpret_cast<void *>(temp_Wrk_Sync_buff_ptr_);
-  temp_Wrk_Sync_buff_ptr_ += sizeof(double) * ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE
+  pWrk_pool = reinterpret_cast<void *>(wrk_sync_pool_top_);
+  wrk_sync_pool_top_ += sizeof(double) * ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE
                             * max_num_teams;
 
 
-  pAta_pool = reinterpret_cast<void *>(temp_Wrk_Sync_buff_ptr_);
-  temp_Wrk_Sync_buff_ptr_ += sizeof(double) * ROCSHMEM_ATA_MAX_WRKDATA_SIZE
+  pAta_pool = reinterpret_cast<void *>(wrk_sync_pool_top_);
+  wrk_sync_pool_top_ += sizeof(double) * ROCSHMEM_ATA_MAX_WRKDATA_SIZE
                             * max_num_teams;
 
   /**
