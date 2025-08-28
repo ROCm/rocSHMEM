@@ -25,8 +25,6 @@
 #ifndef ROCSHMEM_FREE_LIST_GTEST_HPP
 #define ROCSHMEM_FREE_LIST_GTEST_HPP
 
-#include <thrust/device_vector.h>
-
 #include <numeric>
 #include <vector>
 
@@ -41,7 +39,6 @@ class FreeListTestFixture : public ::testing::Test {
  public:
   FreeListTestFixture() : h_input(num_elements) {
     std::iota(h_input.begin(), h_input.end(), T{1});
-    d_input = h_input;
     free_list = list_proxy.get();
   }
 
@@ -52,9 +49,9 @@ class FreeListTestFixture : public ::testing::Test {
 
   using T = ValueType;
   using Allocator = HIPAllocator;
+  Allocator hip_allocator_ {};
   const std::size_t num_elements{32};
   std::vector<T> h_input{};
-  thrust::device_vector<T> d_input{};
 
   FreeListProxy<Allocator, T> list_proxy{};
   FreeList<T, Allocator>* free_list{};
