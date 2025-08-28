@@ -49,14 +49,12 @@ __device__ void GDAContext::p(T *dest, T value, int pe) {
 }
 
 template <typename T>
-__device__ void GDAContext::put(T *dest, const T *source, size_t nelems,
-                                int pe) {
+__device__ void GDAContext::put(T *dest, const T *source, size_t nelems, int pe) {
   putmem(dest, source, nelems * sizeof(T), pe);
 }
 
 template <typename T>
-__device__ void GDAContext::put_nbi(T *dest, const T *source, size_t nelems,
-                                    int pe) {
+__device__ void GDAContext::put_nbi(T *dest, const T *source, size_t nelems, int pe) {
   putmem_nbi(dest, source, sizeof(T) * nelems, pe);
 }
 
@@ -71,14 +69,12 @@ __device__ T GDAContext::g(const T *source, int pe) {
 }
 
 template <typename T>
-__device__ void GDAContext::get(T *dest, const T *source, size_t nelems,
-                                int pe) {
+__device__ void GDAContext::get(T *dest, const T *source, size_t nelems, int pe) {
   getmem(dest, source, sizeof(T) * nelems, pe);
 }
 
 template <typename T>
-__device__ void GDAContext::get_nbi(T *dest, const T *source, size_t nelems,
-                                    int pe) {
+__device__ void GDAContext::get_nbi(T *dest, const T *source, size_t nelems, int pe) {
   getmem_nbi(dest, source, sizeof(T) * nelems, pe);
 }
 
@@ -201,8 +197,7 @@ __device__ T GDAContext::amo_fetch_cas(void *dst, T value, T cond, int pe) {
 
 // Collectives TODO: loosely adapted from IPC, needs review
 template <typename T, ROCSHMEM_OP Op>
-__device__ void compute_reduce(T *src, T *dst, int size, int wg_id,
-                               int wg_size) {
+__device__ void compute_reduce(T *src, T *dst, int size, int wg_id, int wg_size) {
   for (int i = wg_id; i < size; i += wg_size) {
     OpWrap<Op>::Calc(src, dst, i);
   }
@@ -578,50 +573,42 @@ __device__ void GDAContext::fcollect_linear(rocshmem_team_t team, T *dst,
 
 // Block/wave functions
 template <typename T>
-__device__ void GDAContext::put_wg(T *dest, const T *source, size_t nelems,
-                                   int pe) {
+__device__ void GDAContext::put_wg(T *dest, const T *source, size_t nelems, int pe) {
   putmem_wg(dest, source, nelems * sizeof(T), pe);
 }
 
 template <typename T>
-__device__ void GDAContext::put_nbi_wg(T *dest, const T *source,
-                                       size_t nelems, int pe) {
+__device__ void GDAContext::put_nbi_wg(T *dest, const T *source, size_t nelems, int pe) {
   putmem_nbi_wg(dest, source, nelems * sizeof(T), pe);
 }
 
   template <typename T>
-__device__ void GDAContext::put_wave(T *dest, const T *source, size_t nelems,
-                                     int pe) {
+__device__ void GDAContext::put_wave(T *dest, const T *source, size_t nelems, int pe) {
   putmem_wave(dest, source, nelems * sizeof(T), pe);
 }
 
 template <typename T>
-__device__ void GDAContext::put_nbi_wave(T *dest, const T *source,
-                                         size_t nelems, int pe) {
+__device__ void GDAContext::put_nbi_wave(T *dest, const T *source, size_t nelems, int pe) {
   putmem_nbi_wave(dest, source, nelems * sizeof(T), pe);
 }
 
 template <typename T>
-__device__ void GDAContext::get_wg(T *dest, const T *source, size_t nelems,
-                                   int pe) {
+__device__ void GDAContext::get_wg(T *dest, const T *source, size_t nelems, int pe) {
   getmem_wg(dest, source, nelems * sizeof(T), pe);
 }
 
 template <typename T>
-__device__ void GDAContext::get_nbi_wg(T *dest, const T *source,
-                                       size_t nelems, int pe) {
+__device__ void GDAContext::get_nbi_wg(T *dest, const T *source, size_t nelems, int pe) {
   getmem_nbi_wg(dest, source, nelems * sizeof(T), pe);
 }
 
 template <typename T>
-__device__ void GDAContext::get_wave(T *dest, const T *source, size_t nelems,
-                                     int pe) {
+__device__ void GDAContext::get_wave(T *dest, const T *source, size_t nelems, int pe) {
   getmem_wave(dest, source, nelems * sizeof(T), pe);
 }
 
 template <typename T>
-__device__ void GDAContext::get_nbi_wave(T *dest, const T *source,
-                                         size_t nelems, int pe) {
+__device__ void GDAContext::get_nbi_wave(T *dest, const T *source, size_t nelems, int pe) {
   getmem_nbi_wave(dest, source, nelems * sizeof(T), pe);
 }
 

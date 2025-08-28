@@ -35,7 +35,7 @@
 namespace rocshmem {
 
 __host__ GDAHostContext::GDAHostContext(Backend *backend,
-                                            [[maybe_unused]] int64_t options)
+                                        [[maybe_unused]] int64_t options)
     : Context(backend, true) {
   GDABackend *b{static_cast<GDABackend *>(backend)};
 
@@ -49,22 +49,22 @@ __host__ GDAHostContext::~GDAHostContext() {
 }
 
 __host__ void GDAHostContext::putmem_nbi(void *dest, const void *source,
-                                           size_t nelems, int pe) {
+                                         size_t nelems, int pe) {
   host_interface->putmem_nbi(dest, source, nelems, pe, context_window_info);
 }
 
 __host__ void GDAHostContext::getmem_nbi(void *dest, const void *source,
-                                           size_t nelems, int pe) {
+                                         size_t nelems, int pe) {
   host_interface->getmem_nbi(dest, source, nelems, pe, context_window_info);
 }
 
 __host__ void GDAHostContext::putmem(void *dest, const void *source,
-                                       size_t nelems, int pe) {
+                                     size_t nelems, int pe) {
   host_interface->putmem(dest, source, nelems, pe, context_window_info);
 }
 
 __host__ void GDAHostContext::getmem(void *dest, const void *source,
-                                       size_t nelems, int pe) {
+                                     size_t nelems, int pe) {
   host_interface->getmem(dest, source, nelems, pe, context_window_info);
 }
 

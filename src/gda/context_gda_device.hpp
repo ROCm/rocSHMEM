@@ -231,8 +231,8 @@ class GDAContext : public Context {
   //internal functions used by collective operations
   template <typename T>
   __device__ void internal_broadcast(T *dest, const T *source, int nelems, int pe_root,
-                            int pe_start, int stride, int pe_size,
-                            long *p_sync);  // NOLINT(runtime/int)
+                                     int pe_start, int stride, int pe_size,
+                                     long *p_sync);  // NOLINT(runtime/int)
 
   template <typename T>
   __device__ void internal_put_broadcast(T *dst, const T *src, int nelems,

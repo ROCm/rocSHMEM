@@ -116,9 +116,9 @@ class GDAHostContext : public Context {
 
   template <typename T>
   __host__ size_t wait_until_some(T *ivars, size_t nelems,
-                                size_t* indices,
-                                const int *status,
-                                int cmp, T val);
+                                  size_t* indices,
+                                  const int *status,
+                                  int cmp, T val);
 
   template <typename T>
   __host__ void wait_until_all_vector(T *ivars, size_t nelems,
