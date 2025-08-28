@@ -657,7 +657,6 @@ void GDABackend::cleanup_gpu_qps() {
 }
 
 //TODO this ifdef sequence should go in a nic-specific file, like it is for bnxt, maybe whats above too?
-#ifndef GDA_BNXT
 void GDABackend::ib_init(struct ibv_device* ib_dev, uint8_t port) {
   ib_state = new ib_state_t;
   CHECK_NNULL(ib_state, "ib_state object create");
@@ -671,11 +670,13 @@ void GDABackend::ib_init(struct ibv_device* ib_dev, uint8_t port) {
   CHECK_NNULL(ib_state->pd_orig, "ib allocate pd");
   dump_ibv_pd(ib_state->pd_orig);
 
+#ifndef GDA_BNXT
   ibv_parent_domain_init_attr pattr{};
   init_parent_domain_attr(&pattr);
   ib_state->pd_parent = ibv_alloc_parent_domain(ib_state->context, &pattr);
   CHECK_NNULL(ib_state->pd_parent, "ibv_alloc_parent_domain");
   dump_ibv_pd(ib_state->pd_parent);
+#endif
 
 #ifdef GDA_IONIC
   ionic_dv_pd_set_sqcmb(ib_state->pd_parent, false, false, false);
@@ -719,6 +720,7 @@ void GDABackend::ib_init(struct ibv_device* ib_dev, uint8_t port) {
 #endif
 }
 
+#ifndef GDA_BNXT
 template <typename StateType>
 void GDABackend::try_to_modify_qp(ibv_qp* qp, StateType state) {
   int err = ibv_modify_qp(qp, &state.exp_qp_attr, state.exp_attr_mask);

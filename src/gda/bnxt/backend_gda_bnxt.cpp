@@ -42,24 +42,6 @@ int GDABackend::ibv_mtu_to_int(enum ibv_mtu mtu) {
   }
 }
 
-void GDABackend::ib_init(struct ibv_device* ib_dev, uint8_t port) {
-  int err;
-
-  ib_state = new ib_state_t;
-  CHECK_NNULL(ib_state, "ib_state object create");
-
-  ib_state->context = ibv_open_device(ib_dev);
-  CHECK_NNULL(ib_state->context, "ibv_open_device");
-
-  ib_state->pd_orig = ibv_alloc_pd(ib_state->context);
-  CHECK_NNULL(ib_state->pd_orig, "ibv_alloc_pd");
-
-  err = ibv_query_port(ib_state->context, port, &ib_state->portinfo);
-  CHECK_ZERO(err, "ibv_query_port");
-
-  init_gid_index(port);
-}
-
 void GDABackend::init_qp_status(uint8_t port) {
   int err;
   struct ibv_qp_attr attr;
