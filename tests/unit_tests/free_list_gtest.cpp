@@ -24,8 +24,6 @@
 
 #include "free_list_gtest.hpp"
 
-#include <thrust/sort.h>
-
 #include "../src/util.hpp"
 
 using namespace rocshmem;
@@ -76,16 +74,22 @@ TYPED_TEST(FreeListTestFixture, pop_empty_device) {
   using T = typename TestFixture::T;
 
   auto& h_input = this->h_input;
-  auto& d_input = this->d_input;
   auto& free_list = this->free_list;
+  auto& hip_allocator_ = this->hip_allocator_;
 
+  bool *is_empty {nullptr};
+  hip_allocator_.allocate(reinterpret_cast<void**>(&is_empty),
+                          sizeof(bool));
+
+  CHECK_HIP(hipMemset(is_empty, 0, sizeof(bool)));
   FreeListProxy<Allocator, T> empty_list_proxy{};
   FreeList<T, Allocator>* empty_free_list{empty_list_proxy.get()};
 
-  thrust::device_vector<bool> is_empty(1);
-  rocshmem::pop_empty<<<1, 1>>>(empty_free_list, is_empty.data().get());
+  rocshmem::pop_empty<<<1, 1>>>(empty_free_list, is_empty);
   CHECK_HIP(hipDeviceSynchronize());
   EXPECT_TRUE(is_empty[0]);
+
+  hip_allocator_.deallocate(is_empty);
 }
 
 TYPED_TEST(FreeListTestFixture, push_host_pop_device) {
@@ -93,24 +97,30 @@ TYPED_TEST(FreeListTestFixture, push_host_pop_device) {
   using T = typename TestFixture::T;
 
   auto& h_input = this->h_input;
-  auto& d_input = this->d_input;
   auto& free_list = this->free_list;
+  auto& hip_allocator_ = this->hip_allocator_;
 
-  thrust::device_vector<T> results(h_input.size());
+  T *results {nullptr};
+  bool *is_empty {nullptr};
+  size_t size_bytes = sizeof(T) * h_input.size() + sizeof(bool);
+  hip_allocator_.allocate(reinterpret_cast<void**>(&results),
+                          size_bytes);
+
+  CHECK_HIP(hipMemset(results, 0, size_bytes));
+  is_empty = reinterpret_cast<bool*>(results + h_input.size());
   const auto block_size = WF_SIZE;
-  rocshmem::pop_all<<<1, block_size>>>(free_list, results.data().get(),
-                                       results.size());
+  rocshmem::pop_all<<<1, block_size>>>(free_list, results, h_input.size());
   CHECK_HIP(hipDeviceSynchronize());
 
-  for (std::size_t i = 0; i < results.size(); i++) {
+  for (std::size_t i = 0; i < h_input.size(); i++) {
     EXPECT_EQ(results[i], h_input[i]);
   }
 
-  thrust::device_vector<bool> is_empty(1);
-  rocshmem::pop_empty<<<1, 1>>>(free_list, is_empty.data().get());
+  rocshmem::pop_empty<<<1, 1>>>(free_list, is_empty);
   CHECK_HIP(hipDeviceSynchronize());
 
   EXPECT_TRUE(is_empty[0]);
+  hip_allocator_.deallocate(results);
 }
 
 TYPED_TEST(FreeListTestFixture, push_host_concurrent_pop_device) {
@@ -118,29 +128,41 @@ TYPED_TEST(FreeListTestFixture, push_host_concurrent_pop_device) {
   using T = typename TestFixture::T;
 
   auto& h_input = this->h_input;
-  auto& d_input = this->d_input;
   auto& free_list = this->free_list;
+  auto& hip_allocator_ = this->hip_allocator_;
 
-  thrust::device_vector<T> results(h_input.size());
+  T *results {nullptr};
+  bool *is_empty {nullptr};
+  size_t size_bytes = sizeof(T) * h_input.size() + sizeof(bool);
+  hip_allocator_.allocate(reinterpret_cast<void**>(&results),
+                          size_bytes);
+
+  CHECK_HIP(hipMemset(results, 0, size_bytes));
+  is_empty = reinterpret_cast<bool*>(results + h_input.size());
   const auto num_blocks = h_input.size();
   const auto block_size = WF_SIZE;
-  rocshmem::pop_all<<<num_blocks, block_size>>>(free_list, results.data().get(),
-                                                results.size());
+  rocshmem::pop_all<<<num_blocks, block_size>>>(
+            free_list, results, h_input.size());
   CHECK_HIP(hipDeviceSynchronize());
 
-  // sort to guarantee that the ordering is correct
-  thrust::sort(results.begin(), results.end());
-  thrust::sort(h_input.begin(), h_input.end());
+  std::vector<T> h_results(h_input.size());
+  CHECK_HIP(hipMemcpy(h_results.data(), results, sizeof(T) * h_input.size(),
+                      hipMemcpyDeviceToHost));
 
-  for (std::size_t i = 0; i < results.size(); i++) {
-    EXPECT_EQ(results[i], h_input[i]);
+  // sort to guarantee that the ordering is correct
+  std::sort(h_input.begin(), h_input.end());
+  std::sort(h_results.begin(), h_results.end());
+
+
+  for (std::size_t i = 0; i < h_results.size(); i++) {
+    EXPECT_EQ(h_results[i], h_input[i]);
   }
 
-  thrust::device_vector<bool> is_empty(1);
-  rocshmem::pop_empty<<<1, 1>>>(free_list, is_empty.data().get());
+  rocshmem::pop_empty<<<1, 1>>>(free_list, is_empty);
   CHECK_HIP(hipDeviceSynchronize());
 
   EXPECT_TRUE(is_empty[0]);
+  hip_allocator_.deallocate(results);
 }
 
 TYPED_TEST(FreeListTestFixture, push_host_pop_push_device) {
@@ -149,24 +171,39 @@ TYPED_TEST(FreeListTestFixture, push_host_pop_push_device) {
   using FreeListType = FreeList<T, Allocator>;
 
   auto& h_input = this->h_input;
-  auto& d_input = this->d_input;
   auto& free_list = this->free_list;
+  auto& hip_allocator_ = this->hip_allocator_;
 
+  T *results {nullptr};
+  T *d_input {nullptr};
+  bool *is_empty {nullptr};
+  size_t size_bytes = 2 * sizeof(T) * h_input.size() + sizeof(bool);
+  hip_allocator_.allocate(reinterpret_cast<void**>(&results),
+                          size_bytes);
+
+  CHECK_HIP(hipMemset(results, 0, size_bytes));
+  d_input = reinterpret_cast<T*>(results + h_input.size());
+  is_empty = reinterpret_cast<bool*>(d_input + h_input.size());
   const auto block_size = WF_SIZE;
 
-  rocshmem::pop_all<FreeListType, T><<<1, block_size>>>(free_list, nullptr, 0);
+  CHECK_HIP(hipMemcpy(d_input, h_input.data(), sizeof(T) * h_input.size(),
+                      hipMemcpyHostToDevice));
+
+  rocshmem::pop_all<FreeListType, T><<<1, block_size>>>(
+            free_list, nullptr, h_input.size());
   CHECK_HIP(hipDeviceSynchronize());
 
-  rocshmem::push_all<<<1, 1>>>(free_list, d_input.data().get(), d_input.size());
+  rocshmem::push_all<<<1, block_size>>>(free_list, d_input, h_input.size());
   CHECK_HIP(hipDeviceSynchronize());
 
-  thrust::device_vector<T> results(d_input.size());
-  rocshmem::pop_all<<<1, block_size>>>(free_list, results.data().get(),
-                                       results.size());
+  rocshmem::pop_all<<<1, block_size>>>(free_list, results, h_input.size());
+  CHECK_HIP(hipDeviceSynchronize());
 
-  for (std::size_t i = 0; i < results.size(); i++) {
+  for (std::size_t i = 0; i < h_input.size(); i++) {
     EXPECT_EQ(results[i], h_input[i]);
   }
+
+  hip_allocator_.deallocate(results);
 }
 
 TYPED_TEST(FreeListTestFixture, push_host_pop_concurrent_push_device) {
@@ -175,30 +212,48 @@ TYPED_TEST(FreeListTestFixture, push_host_pop_concurrent_push_device) {
   using FreeListType = FreeList<T, Allocator>;
 
   auto& h_input = this->h_input;
-  auto& d_input = this->d_input;
   auto& free_list = this->free_list;
+  auto& hip_allocator_ = this->hip_allocator_;
 
+  T *results {nullptr};
+  T *d_input {nullptr};
+  size_t size_bytes = 2 * sizeof(T) * h_input.size();
+  hip_allocator_.allocate(reinterpret_cast<void**>(&results),
+                          size_bytes);
+
+  CHECK_HIP(hipMemset(results, 0, size_bytes));
+  d_input = reinterpret_cast<T*>(results + h_input.size());
   const auto block_size = WF_SIZE;
-  rocshmem::pop_all<FreeListType, T><<<1, block_size>>>(free_list, nullptr, 0);
+
+  CHECK_HIP(hipMemcpy(d_input, h_input.data(), sizeof(T) * h_input.size(),
+                      hipMemcpyHostToDevice));
+
+  rocshmem::pop_all<FreeListType, T><<<1, block_size>>>(
+            free_list, nullptr,h_input.size());
   CHECK_HIP(hipDeviceSynchronize());
 
   // Concurrently push all values
   const auto num_blocks = h_input.size();
   rocshmem::push_all<<<num_blocks, block_size>>>(
-      free_list, d_input.data().get(), d_input.size());
+      free_list, d_input, h_input.size());
   CHECK_HIP(hipDeviceSynchronize());
 
-  thrust::device_vector<T> results(d_input.size());
-  rocshmem::pop_all<<<1, block_size>>>(free_list, results.data().get(),
-                                       results.size());
+  rocshmem::pop_all<<<1, block_size>>>(free_list, results, h_input.size());
+  CHECK_HIP(hipDeviceSynchronize());
 
-  // Sort to guarantee that the ordering is correct
-  thrust::sort(results.begin(), results.end());
-  thrust::sort(h_input.begin(), h_input.end());
+  std::vector<T> h_results(h_input.size());
+  CHECK_HIP(hipMemcpy(h_results.data(), results, sizeof(T) * h_input.size(),
+                      hipMemcpyDeviceToHost));
 
-  for (std::size_t i = 0; i < results.size(); i++) {
-    EXPECT_EQ(results[i], h_input[i]);
+  // sort to guarantee that the ordering is correct
+  std::sort(h_input.begin(), h_input.end());
+  std::sort(h_results.begin(), h_results.end());
+
+  for (std::size_t i = 0; i < h_results.size(); i++) {
+    EXPECT_EQ(h_results[i], h_input[i]);
   }
+
+  hip_allocator_.deallocate(results);
 }
 
 TYPED_TEST(FreeListTestFixture, push_host_concurrent_pop_push_device) {
@@ -207,29 +262,48 @@ TYPED_TEST(FreeListTestFixture, push_host_concurrent_pop_push_device) {
   using FreeListType = FreeList<T, Allocator>;
 
   auto& h_input = this->h_input;
-  auto& d_input = this->d_input;
   auto& free_list = this->free_list;
+  auto& hip_allocator_ = this->hip_allocator_;
+
+  T *results {nullptr};
+  T *d_input {nullptr};
+  size_t size_bytes = 2 * sizeof(T) * h_input.size();
+  hip_allocator_.allocate(reinterpret_cast<void**>(&results),
+                          size_bytes);
+
+  CHECK_HIP(hipMemset(results, 0, size_bytes));
+  d_input = reinterpret_cast<T*>(results + h_input.size());
+
+  CHECK_HIP(hipMemcpy(d_input, h_input.data(), sizeof(T) * h_input.size(),
+                      hipMemcpyHostToDevice));
 
   const auto block_size = WF_SIZE;
-  rocshmem::pop_all<FreeListType, T><<<1, block_size>>>(free_list, nullptr, 0);
+  rocshmem::pop_all<FreeListType, T><<<1, block_size>>>(
+            free_list, nullptr, h_input.size());
   CHECK_HIP(hipDeviceSynchronize());
 
   // Concurrently push all values
   const auto num_blocks = h_input.size();
   rocshmem::push_all<<<num_blocks, block_size>>>(
-      free_list, d_input.data().get(), d_input.size());
+      free_list, d_input, h_input.size());
   CHECK_HIP(hipDeviceSynchronize());
 
   // Concurrently pop all values
-  thrust::device_vector<T> results(d_input.size());
-  rocshmem::pop_all<<<num_blocks, block_size>>>(free_list, results.data().get(),
-                                                results.size());
+  rocshmem::pop_all<<<num_blocks, block_size>>>(
+            free_list, results, h_input.size());
+  CHECK_HIP(hipDeviceSynchronize());
 
-  // Sort to guarantee that the ordering is correct
-  thrust::sort(results.begin(), results.end());
-  thrust::sort(h_input.begin(), h_input.end());
+  std::vector<T> h_results(h_input.size());
+  CHECK_HIP(hipMemcpy(h_results.data(), results, sizeof(T) * h_input.size(),
+                      hipMemcpyDeviceToHost));
 
-  for (std::size_t i = 0; i < results.size(); i++) {
-    EXPECT_EQ(results[i], h_input[i]);
+  // sort to guarantee that the ordering is correct
+  std::sort(h_input.begin(), h_input.end());
+  std::sort(h_results.begin(), h_results.end());
+
+  for (std::size_t i = 0; i < h_results.size(); i++) {
+    EXPECT_EQ(h_results[i], h_input[i]);
   }
+
+  hip_allocator_.deallocate(results);
 }
