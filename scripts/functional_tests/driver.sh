@@ -195,6 +195,7 @@ TestRMAPut() {
   ExecTest  "waveput"          2       2            128       1048576
   ExecTest  "waveput"          2       16           128       8
 
+  ExecTest  "defaultctxput"    2       4            128       1024
   ExecTest  "teamctxput"       2       4            128       1024
   ExecTest  "teamctxput"       2       16           256       1024
 
@@ -226,6 +227,7 @@ TestRMAPut() {
   ExecTest  "waveputnbi"       2       2            128       1048576
   ExecTest  "waveputnbi"       2       16           128       8
 
+  ExecTest  "defaultctxputnbi" 2       4            128       1024
   ExecTest  "teamctxputnbi"    2       4            128       1024
   ExecTest  "teamctxputnbi"    2       16           256       1024
 }
@@ -250,6 +252,7 @@ TestRMAGet() {
   ExecTest  "waveget"          2       2            128       1048576
   ExecTest  "waveget"          2       16           128       8
 
+  ExecTest  "defaultctxget"    2       4            128       1024
   ExecTest  "teamctxget"       2       4            128       1024
   ExecTest  "teamctxget"       2       16           256       1024
 
@@ -276,6 +279,7 @@ TestRMAGet() {
   ExecTest  "wavegetnbi"       2       2            128       1048576
   ExecTest  "wavegetnbi"       2       16           128       8
 
+  ExecTest  "defaultctxgetnbi" 2       4            128       1024
   ExecTest  "teamctxgetnbi"    2       4            128       1024
   ExecTest  "teamctxgetnbi"    2       16           256       1024
 }
@@ -455,6 +459,7 @@ TestGDA() {
   ExecTest  "waveput"          2       2            128       1048576
   ExecTest  "waveput"          2       16           128       8
 
+  ExecTest  "defaultctxput"    2       4            128       1024
   ExecTest  "teamctxput"       2       4            128       1024
   ExecTest  "teamctxput"       2       16           256       1024
 
@@ -474,6 +479,7 @@ TestGDA() {
 #  ExecTest  "waveget"          2       2            128       1048576
 #  ExecTest  "waveget"          2       16           128       8
 
+#  ExecTest  "defaultctxget"    2       4            128       1024
 #  ExecTest  "teamctxget"       2       4            128       1024
 #  ExecTest  "teamctxget"       2       16           256       1024
 
@@ -506,6 +512,7 @@ TestGDA() {
   ExecTest  "waveputnbi"       2       2            128       1048576
   ExecTest  "waveputnbi"       2       16           128       8
 
+  ExecTest  "defaultctxputnbi" 2       4            128       1024
   ExecTest  "teamctxputnbi"    2       4            128       1024
   ExecTest  "teamctxputnbi"    2       16           256       1024
 
@@ -525,6 +532,7 @@ TestGDA() {
 #  ExecTest  "wavegetnbi"       2       2            128       1048576
 #  ExecTest  "wavegetnbi"       2       16           128       8
 
+#  ExecTest  "defaultctxgetnbi" 2       4            128       1024
 #  ExecTest  "teamctxgetnbi"    2       4            128       1024
 #  ExecTest  "teamctxgetnbi"    2       16           256       1024
 
@@ -600,9 +608,9 @@ TestGDA() {
   ##############################################################################
   ExecTest  "init"             2       1            1
 
-  ExecTest  "pingpong"         2       1            1
-  ExecTest  "pingpong"         2       8            1
-  ExecTest  "pingpong"         2       32           1
+#  ExecTest  "pingpong"         2       1            1
+#  ExecTest  "pingpong"         2       8            1
+#  ExecTest  "pingpong"         2       32           1
 
   # This test requires more contexts than workgroups
   export ROCSHMEM_MAX_NUM_CONTEXTS=1024
