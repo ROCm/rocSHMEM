@@ -76,38 +76,6 @@ class GDABackend : public Backend {
     uint64_t exp_attr_mask{};
   };
 
-  class InitQPState : public State {
-   public:
-    InitQPState() {
-      exp_qp_attr.qp_state = IBV_QPS_INIT;
-      exp_qp_attr.qp_access_flags = IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
-      exp_attr_mask = IBV_QP_STATE | IBV_QP_PKEY_INDEX | IBV_QP_PORT;
-    }
-  };
-
-  class RtrState : public State {
-   public:
-    RtrState() {
-      exp_qp_attr.qp_state = IBV_QPS_RTR;
-      exp_qp_attr.ah_attr.sl = 1;
-      exp_qp_attr.max_dest_rd_atomic = GDA_MAX_ATOMIC;
-      exp_qp_attr.min_rnr_timer = 12;
-      exp_attr_mask = IBV_QP_STATE | IBV_QP_AV | IBV_QP_PATH_MTU;
-    }
-  };
-
-  class RtsState : public State {
-   public:
-    RtsState() {
-      exp_qp_attr.qp_state = IBV_QPS_RTS;
-      exp_qp_attr.timeout = 14;
-      exp_qp_attr.retry_cnt = 7;
-      exp_qp_attr.rnr_retry = 7;
-      exp_qp_attr.max_rd_atomic = GDA_MAX_ATOMIC;
-      exp_attr_mask = IBV_QP_STATE | IBV_QP_TIMEOUT | IBV_QP_RETRY_CNT | IBV_QP_RNR_RETRY | IBV_QP_MAX_QP_RD_ATOMIC;
-    }
-  };
-
   class QPInitAttr {
    public:
     explicit QPInitAttr(ibv_qp_cap cap) {
@@ -300,16 +268,10 @@ class GDABackend : public Backend {
   void initialize_gpu_qp(QueuePair* qp, int conn_num);
 
 #ifndef GDA_BNXT
-  InitQPState initqp(uint8_t port);
-
-  RtrState rtr(dest_info_t* dest, uint8_t port);
-
-  RtsState rts(dest_info_t* dest);
-
   QPInitAttr qpattr(ibv_qp_cap cap);
-
-  void init_qp_status(ibv_qp* qp, uint8_t port);
 #endif
+
+  void init_qp_status(uint8_t port);
 
   void change_status_rtr(ibv_qp* qp, dest_info_t* dest, uint8_t port);
 
@@ -318,17 +280,12 @@ class GDABackend : public Backend {
   void create_qps(uint8_t port, ibv_port_attr* ib_port_att);
 
 #ifdef GDA_BNXT
-  void init_qp_status(uint8_t port);
-
   void create_cqs(int ncqs, int cqe);
 
   void create_qps_impl(int nqps);
 
   int ibv_mtu_to_int(enum ibv_mtu mtu);
 #else
-  template <typename T>
-  void try_to_modify_qp(ibv_qp* qp, T state);
-
   static void* pd_alloc(ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type);
 
   static void pd_release(ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type);

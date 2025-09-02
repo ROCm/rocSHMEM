@@ -720,25 +720,105 @@ void GDABackend::ib_init(struct ibv_device* ib_dev, uint8_t port) {
 #endif
 }
 
-#ifndef GDA_BNXT
-template <typename StateType>
-void GDABackend::try_to_modify_qp(ibv_qp* qp, StateType state) {
-  int err = ibv_modify_qp(qp, &state.exp_qp_attr, state.exp_attr_mask);
-  CHECK_ZERO(err, "ibv_modify_qp");
+void GDABackend::init_qp_status(uint8_t port) {
+  int err;
+  struct ibv_qp_attr attr;
+  int attr_mask;
+
+  memset(&attr, 0, sizeof(struct ibv_qp_attr));
+
+  attr.qp_state        = IBV_QPS_INIT;
+  attr.pkey_index      = 0;
+  attr.port_num        = port;
+  attr.qp_access_flags = IBV_ACCESS_REMOTE_WRITE
+                       | IBV_ACCESS_LOCAL_WRITE
+                       | IBV_ACCESS_REMOTE_READ
+                       | IBV_ACCESS_REMOTE_ATOMIC;
+
+  attr_mask = IBV_QP_STATE
+            | IBV_QP_PKEY_INDEX
+            | IBV_QP_PORT
+            | IBV_QP_ACCESS_FLAGS;
+
+  for (int i =0; i < qps.size() ; i++) {
+#ifdef GDA_BNXT
+    err = bnxt_re_dv_modify_qp(qps[i], &attr, attr_mask, 0, 0);
+#else
+    err = ibv_modify_qp(qps[i], &attr, attr_mask);
+#endif
+    CHECK_ZERO(err, "modify_qp (INIT)");
+  }
 }
 
-void GDABackend::init_qp_status(ibv_qp* qp, uint8_t port) {
-  try_to_modify_qp<InitQPState>(qp, initqp(port));
-}
+void GDABackend::change_status_rtr(ibv_qp *qp, dest_info_t *dest, uint8_t port) {
+  int err;
+  struct ibv_qp_attr attr;
+  int attr_mask;
 
-void GDABackend::change_status_rtr(ibv_qp* qp, dest_info_t* dest, uint8_t port) {
-  try_to_modify_qp<RtrState>(qp, rtr(dest, port));
+  memset(&attr, 0, sizeof(struct ibv_qp_attr));
+  attr.qp_state               = IBV_QPS_RTR;
+  attr.path_mtu               = ib_state->portinfo.active_mtu;
+  attr.rq_psn                 = dest->psn;
+  attr.dest_qp_num            = dest->qpn;
+  attr.max_dest_rd_atomic     = GDA_MAX_ATOMIC;
+  attr.min_rnr_timer          = 12;
+  attr.ah_attr.port_num       = port;
+
+  if (ib_state->portinfo.link_layer == IBV_LINK_LAYER_INFINIBAND) {
+    attr.ah_attr.dlid = dest->lid;
+  } else {
+    memcpy(&attr.ah_attr.grh.dgid, &dest->gid, 16);
+    attr.ah_attr.grh.sgid_index = gid_index;
+    attr.ah_attr.is_global      = 1;
+    attr.ah_attr.grh.hop_limit  = 1;
+    attr.ah_attr.sl             = 1;
+  }
+
+  attr_mask = IBV_QP_STATE
+            | IBV_QP_PATH_MTU
+            | IBV_QP_RQ_PSN
+            | IBV_QP_DEST_QPN
+            | IBV_QP_AV
+            | IBV_QP_MAX_DEST_RD_ATOMIC
+            | IBV_QP_MIN_RNR_TIMER;
+
+#ifdef GDA_BNXT
+    err = bnxt_re_dv_modify_qp(qp, &attr, attr_mask, 0, 0);
+#else
+    err = ibv_modify_qp(qp, &attr, attr_mask);
+#endif
+    CHECK_ZERO(err, "modify_qp (RTR)");
 }
 
 void GDABackend::change_status_rts(ibv_qp* qp, dest_info_t* dest) {
-  try_to_modify_qp<RtsState>(qp, rts(dest));
+  int err;
+  struct ibv_qp_attr attr;
+  int attr_mask;
+
+  memset(&attr, 0, sizeof(struct ibv_qp_attr));
+  attr.qp_state      = IBV_QPS_RTS;
+  attr.sq_psn        = dest->psn;
+  attr.max_rd_atomic = GDA_MAX_ATOMIC;
+  attr.timeout       = 14;
+  attr.retry_cnt     = 7;
+  attr.rnr_retry     = 7;
+
+  attr_mask = IBV_QP_STATE
+            | IBV_QP_SQ_PSN
+            | IBV_QP_MAX_QP_RD_ATOMIC
+            | IBV_QP_TIMEOUT
+            | IBV_QP_RETRY_CNT
+            | IBV_QP_RNR_RETRY;
+
+#ifdef GDA_BNXT
+    err = bnxt_re_dv_modify_qp(qp, &attr, attr_mask, 0, 0);
+#else
+    err = ibv_modify_qp(qp, &attr, attr_mask);
+#endif
+    CHECK_ZERO(err, "modify_qp (RTS)");
 }
 
+#ifndef GDA_BNXT
 void GDABackend::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
   ibv_qp_cap cap{};
   cap.max_send_wr = sq_size;
@@ -764,12 +844,13 @@ void GDABackend::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
     qps[i] = create_qp(ib_state->pd_parent, ib_state->context, &qp_init_attr.attr, cqs[i]);
 #endif
     CHECK_NNULL(qps[i], "create_qp");
-    init_qp_status(qps[i], port);
     dest_info[i].lid = ib_port_att->lid;
     dest_info[i].qpn = qps[i]->qp_num;
     dest_info[i].psn = 0;
     dest_info[i].gid = gid;
   }
+
+  init_qp_status(port);
 }
 
 void* GDABackend::pd_alloc(struct ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type) {
@@ -925,39 +1006,6 @@ ibv_qp* GDABackend::create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr
   qp = ibv_create_qp_ex(context, qp_attr);
   CHECK_NNULL(qp, "ibv_create_qp_ex");
   return qp;
-}
-
-GDABackend::InitQPState GDABackend::initqp(uint8_t port) {
-  InitQPState init{};
-  init.exp_qp_attr.qp_access_flags = IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
-  init.exp_qp_attr.port_num = port;
-  init.exp_attr_mask |= IBV_QP_ACCESS_FLAGS;
-  return init;
-}
-
-GDABackend::RtrState GDABackend::rtr(dest_info_t* dest, uint8_t port) {
-  RtrState rtr{};
-  rtr.exp_qp_attr.dest_qp_num = dest->qpn;
-  rtr.exp_qp_attr.rq_psn = dest->psn;
-  rtr.exp_qp_attr.ah_attr.port_num = port;
-  rtr.exp_qp_attr.path_mtu = ib_state->portinfo.active_mtu;
-  if (ib_state->portinfo.link_layer == IBV_LINK_LAYER_INFINIBAND) {
-    rtr.exp_qp_attr.ah_attr.dlid = dest->lid;
-  } else {
-    rtr.exp_qp_attr.ah_attr.is_global = 1;
-    rtr.exp_qp_attr.ah_attr.grh.dgid = dest->gid;
-    rtr.exp_qp_attr.ah_attr.grh.sgid_index = gid_index;
-    rtr.exp_qp_attr.ah_attr.grh.hop_limit = 1;
-  }
-  rtr.exp_attr_mask |= IBV_QP_DEST_QPN | IBV_QP_RQ_PSN | IBV_QP_MAX_DEST_RD_ATOMIC | IBV_QP_MIN_RNR_TIMER;
-  return rtr;
-}
-
-GDABackend::RtsState GDABackend::rts(dest_info_t* dest) {
-  RtsState rts{};
-  rts.exp_qp_attr.sq_psn = dest->psn;
-  rts.exp_attr_mask |= IBV_QP_SQ_PSN;
-  return rts;
 }
 
 GDABackend::QPInitAttr GDABackend::qpattr(ibv_qp_cap cap) {
