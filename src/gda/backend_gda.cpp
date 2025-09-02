@@ -675,26 +675,6 @@ void GDABackend::ib_init(struct ibv_device* ib_dev) {
 
   /* Must init after querying port */
   init_gid_index();
-
-#ifdef GDA_IONIC
-  ionic_dv_ctx dvctx;
-  ionic_dv_get_ctx(&dvctx, context);
-
-  int hip_dev_id = 0;
-  CHECK_HIP(hipGetDevice(&hip_dev_id));
-
-  void* gpu_db_page = nullptr;
-  rocm_memory_lock_to_fine_grain(dvctx.db_page, 0x1000, &gpu_db_page, hip_dev_id);
-
-  uint64_t *db_page_u64 = reinterpret_cast<uint64_t*>(dvctx.db_page);
-  uint64_t *gpu_db_page_u64 = reinterpret_cast<uint64_t*>(gpu_db_page);
-
-  uint64_t *gpu_db_ptr = &gpu_db_page_u64[dvctx.db_ptr - db_page_u64];
-
-  gpu_db_page = gpu_db_page;
-  gpu_db_cq = &gpu_db_ptr[dvctx.cq_qtype];
-  gpu_db_sq = &gpu_db_ptr[dvctx.sq_qtype];
-#endif
 }
 
 void GDABackend::init_qp_status() {
@@ -900,6 +880,21 @@ void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   CHECK_HIP(hipGetDevice(&hip_dev_id));
 
 #ifdef GDA_IONIC
+  ionic_dv_ctx dvctx;
+  ionic_dv_get_ctx(&dvctx, context);
+
+  void* gpu_db_page = nullptr;
+  rocm_memory_lock_to_fine_grain(dvctx.db_page, 0x1000, &gpu_db_page, hip_dev_id);
+
+  uint64_t *db_page_u64 = reinterpret_cast<uint64_t*>(dvctx.db_page);
+  uint64_t *gpu_db_page_u64 = reinterpret_cast<uint64_t*>(gpu_db_page);
+
+  uint64_t *gpu_db_ptr = &gpu_db_page_u64[dvctx.db_ptr - db_page_u64];
+
+  gpu_db_page = gpu_db_page;
+  gpu_db_cq = &gpu_db_ptr[dvctx.cq_qtype];
+  gpu_db_sq = &gpu_db_ptr[dvctx.sq_qtype];
+
   uint8_t udma_idx = ionic_dv_qp_get_udma_idx(qps[conn_num]);
 
   ionic_dv_cq dvcq;
