@@ -42,7 +42,7 @@ int GDABackend::ibv_mtu_to_int(enum ibv_mtu mtu) {
   }
 }
 
-void GDABackend::create_qps() {
+void GDABackend::create_queues() {
   int resize_length = (maximum_num_contexts_ + 1) * num_pes;
 
   cqs.resize(resize_length);
@@ -52,15 +52,7 @@ void GDABackend::create_qps() {
   qps.resize(resize_length);
 
   create_cqs(sq_size);
-  create_qps_impl(qps.size());
-  init_qp_status();
-
-  for (int i{0}; i < qps.size(); i++) {
-    dest_info[i].lid = portinfo.lid;
-    dest_info[i].qpn = qps[i]->qp_num;
-    dest_info[i].psn = 0;
-    dest_info[i].gid = gid;
-  }
+  create_qps(sq_size);
 }
 
 void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
@@ -122,7 +114,7 @@ void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   gpu_qp->rkey = heap_rkey[conn_num % num_pes];
 }
 
-void GDABackend::create_cqs(int ncqs, int cqe) {
+void GDABackend::create_cqs(int cqe) {
   struct bnxt_re_dv_cq_attr cq_attr;
   struct bnxt_re_dv_cq_init_attr cq_init_attr;
   struct bnxt_re_dv_umem_reg_attr umem_attr;
@@ -158,7 +150,7 @@ void GDABackend::create_cqs(int ncqs, int cqe) {
   }
 }
 
-void GDABackend::create_qps_impl(int nqps) {
+void GDABackend::create_qps(int sq_length) {
   struct ibv_qp_init_attr ib_qp_attr;
   struct bnxt_re_dv_umem_reg_attr umem_attr;
   void *sq_ptr;
@@ -169,12 +161,12 @@ void GDABackend::create_qps_impl(int nqps) {
   uint64_t msntbl_offset;
   int err;
 
-  for (int i = 0; i < nqps; i++) {
+  for (int i = 0; i < qps.size(); i++) {
     /* IB QP Init Attr */
     memset(&ib_qp_attr, 0, sizeof(struct ibv_qp_init_attr));
     ib_qp_attr.send_cq             = cqs[i];
     ib_qp_attr.recv_cq             = cqs[i];
-    ib_qp_attr.cap.max_send_wr     = sq_size;
+    ib_qp_attr.cap.max_send_wr     = sq_length;
     ib_qp_attr.cap.max_recv_wr     = 0;
     ib_qp_attr.cap.max_send_sge    = 1;
     ib_qp_attr.cap.max_recv_sge    = 0;

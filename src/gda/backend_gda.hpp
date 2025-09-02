@@ -264,20 +264,42 @@ class GDABackend : public Backend {
 
   void initialize_gpu_qp(QueuePair* qp, int conn_num);
 
-  void init_qp_status();
+  /**
+   * @brief Create all CQs and QPs
+   */
+  void create_queues();
 
-  void change_status_rtr(ibv_qp* qp, dest_info_t* dest);
+  /**
+   * @brief Create all CQs with a of length ncqes
+   */
+  void create_cqs(int ncqes);
 
-  void change_status_rts(ibv_qp* qp, dest_info_t* dest);
+  /**
+   * @brief Create all QPs with a SQ of length sq_length
+   */
+  void create_qps(int sq_length);
 
-  void create_qps();
+  /**
+   * @brief Exchange QP information for connection
+   */
+  void exchange_qp_dest_info();
 
-  void create_cqs(int cqe);
+  /**
+   * @brief Modify all QPs from RESET to INIT state
+   */
+  void modify_qps_reset_to_init();
+
+  /**
+   * @brief Modify all QPs from INIT to RTR state
+   */
+  void modify_qps_init_to_rtr();
+
+  /**
+   * @brief Modify all QPs from RTR to RTs state
+   */
+  void modify_qps_rtr_to_rts();
 
 #ifdef GDA_BNXT
-
-  void create_qps_impl(int nqps);
-
   int ibv_mtu_to_int(enum ibv_mtu mtu);
 #else
   static void* pd_alloc(ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type);
@@ -285,8 +307,6 @@ class GDABackend : public Backend {
   static void pd_release(ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type);
 
   void create_parent_domain();
-
-  struct ibv_qp* create_qp(struct ibv_pd *pd, struct ibv_qp_init_attr_ex *qp_attr, struct ibv_cq *rcq);
 #endif
 
   void ib_init(ibv_device* ib_dev);

@@ -562,26 +562,14 @@ void GDABackend::setup_ibv() {
     }
   }
   ib_init(ib_dev);
-  create_qps();
+  create_queues();
 
-  auto npes = num_pes;
-  auto dinfo = dest_info.data();
-  for (int i = 0; i < maximum_num_contexts_ + 1; i++) {
-    if (backend_comm != MPI_COMM_NULL) {
-      MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t), MPI_CHAR, dinfo + i * npes, sizeof(dest_info_t), MPI_CHAR, backend_comm);
-    } else {
-      Alltoall_char_inplace(reinterpret_cast<char*>(dinfo + i * npes), sizeof(dest_info_t), ROCSHMEM_TEAM_WORLD);
-    }
-  }
+  exchange_qp_dest_info();
 
-  for (int i = 0; i < qps.size(); i++) {
-    change_status_rtr(qps[i], &dest_info[i]);
-  }
-  rte_barrier();
-  for (int i = 0; i < qps.size(); i++) {
-    change_status_rts(qps[i], &dest_info[i]);
-    dump_ibv_qp(qps[i], i);
-  }
+  modify_qps_reset_to_init();
+  modify_qps_init_to_rtr();
+  modify_qps_rtr_to_rts();
+
   rte_barrier();
 }
 
@@ -592,6 +580,23 @@ void GDABackend::cleanup_ibv() {
     free(requested_dev);
 }
 
+
+void GDABackend::exchange_qp_dest_info() {
+  for (int i = 0; i < qps.size(); i++) {
+    dest_info[i].lid = portinfo.lid;
+    dest_info[i].qpn = qps[i]->qp_num;
+    dest_info[i].psn = 0;
+    dest_info[i].gid = gid;
+  }
+
+  for (int i = 0; i < maximum_num_contexts_ + 1; i++) {
+    if (backend_comm != MPI_COMM_NULL) {
+      MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t), MPI_CHAR, dest_info.data() + i * num_pes, sizeof(dest_info_t), MPI_CHAR, backend_comm);
+    } else {
+      Alltoall_char_inplace(reinterpret_cast<char*>(dest_info.data() + i * num_pes), sizeof(dest_info_t), ROCSHMEM_TEAM_WORLD);
+    }
+  }
+}
 
 void GDABackend::setup_heap_memory_rkey() {
   auto *base_heap = heap.get_local_heap_base();
@@ -669,7 +674,7 @@ void GDABackend::ib_init(struct ibv_device* ib_dev) {
   init_gid_index();
 }
 
-void GDABackend::init_qp_status() {
+void GDABackend::modify_qps_reset_to_init() {
   int err;
   struct ibv_qp_attr attr;
   int attr_mask;
@@ -699,24 +704,19 @@ void GDABackend::init_qp_status() {
   }
 }
 
-void GDABackend::change_status_rtr(ibv_qp *qp, dest_info_t *dest) {
-  int err;
+void GDABackend::modify_qps_init_to_rtr() {
   struct ibv_qp_attr attr;
   int attr_mask;
+  int err;
 
   memset(&attr, 0, sizeof(struct ibv_qp_attr));
   attr.qp_state               = IBV_QPS_RTR;
   attr.path_mtu               = portinfo.active_mtu;
-  attr.rq_psn                 = dest->psn;
-  attr.dest_qp_num            = dest->qpn;
   attr.max_dest_rd_atomic     = GDA_MAX_ATOMIC;
   attr.min_rnr_timer          = 12;
   attr.ah_attr.port_num       = port;
 
-  if (portinfo.link_layer == IBV_LINK_LAYER_INFINIBAND) {
-    attr.ah_attr.dlid = dest->lid;
-  } else {
-    memcpy(&attr.ah_attr.grh.dgid, &dest->gid, 16);
+  if (portinfo.link_layer == IBV_LINK_LAYER_ETHERNET) {
     attr.ah_attr.grh.sgid_index = gid_index;
     attr.ah_attr.is_global      = 1;
     attr.ah_attr.grh.hop_limit  = 1;
@@ -731,22 +731,32 @@ void GDABackend::change_status_rtr(ibv_qp *qp, dest_info_t *dest) {
             | IBV_QP_MAX_DEST_RD_ATOMIC
             | IBV_QP_MIN_RNR_TIMER;
 
+  for (int i = 0; i < qps.size(); i++) {
+    attr.rq_psn      = dest_info[i].psn;
+    attr.dest_qp_num = dest_info[i].qpn;
+
+    if (portinfo.link_layer == IBV_LINK_LAYER_ETHERNET) {
+      memcpy(&attr.ah_attr.grh.dgid, &dest_info[i].gid, 16);
+    } else {
+      attr.ah_attr.dlid = dest_info[i].lid;
+    }
+
 #ifdef GDA_BNXT
-    err = bnxt_re_dv_modify_qp(qp, &attr, attr_mask, 0, 0);
+    err = bnxt_re_dv_modify_qp(qps[i], &attr, attr_mask, 0, 0);
 #else
-    err = ibv_modify_qp(qp, &attr, attr_mask);
+    err = ibv_modify_qp(qps[i], &attr, attr_mask);
 #endif
     CHECK_ZERO(err, "modify_qp (RTR)");
+  }
 }
 
-void GDABackend::change_status_rts(ibv_qp* qp, dest_info_t* dest) {
-  int err;
+void GDABackend::modify_qps_rtr_to_rts() {
   struct ibv_qp_attr attr;
   int attr_mask;
+  int err;
 
   memset(&attr, 0, sizeof(struct ibv_qp_attr));
   attr.qp_state      = IBV_QPS_RTS;
-  attr.sq_psn        = dest->psn;
   attr.max_rd_atomic = GDA_MAX_ATOMIC;
   attr.timeout       = 14;
   attr.retry_cnt     = 7;
@@ -759,53 +769,35 @@ void GDABackend::change_status_rts(ibv_qp* qp, dest_info_t* dest) {
             | IBV_QP_RETRY_CNT
             | IBV_QP_RNR_RETRY;
 
+  for (int i = 0; i < qps.size(); i++) {
+    attr.sq_psn = dest_info[i].psn;
+
 #ifdef GDA_BNXT
-    err = bnxt_re_dv_modify_qp(qp, &attr, attr_mask, 0, 0);
+    err = bnxt_re_dv_modify_qp(qps[i], &attr, attr_mask, 0, 0);
 #else
-    err = ibv_modify_qp(qp, &attr, attr_mask);
+    err = ibv_modify_qp(qps[i], &attr, attr_mask);
 #endif
     CHECK_ZERO(err, "modify_qp (RTS)");
+  }
 }
 
 #ifndef GDA_BNXT
-void GDABackend::create_qps() {
-  ibv_qp_init_attr_ex attr{};
-  attr.cap.max_send_wr     = sq_size;
-  attr.cap.max_send_sge    = 1;
-  attr.cap.max_inline_data = 0;
+void GDABackend::create_queues() {
+  int ncqes;
+
 #ifdef GDA_IONIC
-  // TODO allow zero sges in the driver
-  attr.cap.max_recv_sge = 1;
+  ncqes = sq_size << 1;
+#else
+  ncqes = sq_size;
 #endif
-  attr.sq_sig_all = 0;
-  attr.qp_type = IBV_QPT_RC;
 
   cqs.resize((maximum_num_contexts_ + 1) * num_pes);
   qps.resize((maximum_num_contexts_ + 1) * num_pes);
 
-#ifdef GDA_IONIC
-  create_cqs(attr.cap.max_send_wr << 1);
-#else
-  create_cqs(attr.cap.max_send_wr);
-#endif
-
-  for (int i = 0; i < qps.size(); i++) {
-#ifdef GDA_IONIC
-    int uxdma_i = ((i + 1) / 2) & 1;
-    qps[i] = create_qp(pd_uxdma[uxdma_i], &attr, cqs[i]);
-#else
-    qps[i] = create_qp(pd_parent, &attr, cqs[i]);
-#endif
-    CHECK_NNULL(qps[i], "create_qp");
-
-    dest_info[i].lid = portinfo.lid;
-    dest_info[i].qpn = qps[i]->qp_num;
-    dest_info[i].psn = 0;
-    dest_info[i].gid = gid;
-  }
-
-  init_qp_status();
+  create_cqs(ncqes);
+  create_qps(sq_size);
 }
+
 
 void* GDABackend::pd_alloc(struct ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type) {
   void* dev_ptr{nullptr};
@@ -993,18 +985,31 @@ void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
 #endif // !GDA_IONIC
 }
 
-struct ibv_qp* GDABackend::create_qp(struct ibv_pd* pd, struct ibv_qp_init_attr_ex* qp_attr, struct ibv_cq* cq) {
-  ibv_qp* qp{nullptr};
-  assert(pd);
-  assert(context);
-  assert(qp_attr);
-  qp_attr->send_cq = cq;
-  qp_attr->recv_cq = cq;
-  qp_attr->pd = pd;
-  qp_attr->comp_mask = IBV_QP_INIT_ATTR_PD;
-  qp = ibv_create_qp_ex(context, qp_attr);
-  CHECK_NNULL(qp, "ibv_create_qp_ex");
-  return qp;
+void GDABackend::create_qps(int sq_length) {
+  struct ibv_qp_init_attr_ex attr;
+
+  memset(&attr, 0, sizeof(struct ibv_qp_init_attr_ex));
+  attr.cap.max_send_wr     = sq_length;
+  attr.cap.max_send_sge    = 1;
+  attr.cap.max_inline_data = 0;
+#ifdef GDA_IONIC
+  attr.cap.max_recv_sge    = 1; // TODO allow zero sges in the driver
+#endif
+  attr.sq_sig_all          = 0;
+  attr.qp_type             = IBV_QPT_RC;
+  attr.comp_mask           = IBV_QP_INIT_ATTR_PD;
+  attr.pd                  = pd_parent;
+
+  for (int i = 0; i < qps.size(); i++) {
+#ifdef GDA_IONIC
+    attr.pd      = pd_uxdma[((i + 1) / 2) & 1];
+#endif
+    attr.send_cq = cqs[i];
+    attr.recv_cq = cqs[i];
+
+    qps[i] = ibv_create_qp_ex(context, &attr);
+    CHECK_NNULL(qps[i], "ibv_create_qp_ex");
+  }
 }
 #endif
 
