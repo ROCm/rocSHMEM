@@ -36,7 +36,9 @@ class GDAContext : public Context {
  public:
   __host__ GDAContext(Backend *b, unsigned int ctx_id);
 
-  __device__ GDAContext(Backend *b, unsigned int ctx_id);
+  __host__ ~GDAContext();
+
+  __device__ GDAContext(Backend *b, unsigned int ctx_id); //TODO is this used?
 
   __device__ void ctx_create();
 

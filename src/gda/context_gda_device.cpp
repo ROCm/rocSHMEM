@@ -38,13 +38,25 @@ __host__ GDAContext::GDAContext(Backend *b, unsigned int ctx_id)
     : Context(b, false) {
   GDABackend *backend{static_cast<GDABackend *>(b)};
   base_heap = backend->heap.get_heap_bases().data();
-  backend->initialize_context(this, ctx_id);
+
   barrier_sync = backend->barrier_sync;
   wrk_sync_pool_bases_ = backend->get_wrk_sync_bases();
+
+  CHECK_HIP(hipMalloc(&qps, sizeof(QueuePair) * num_pes));
+  CHECK_HIP(hipMemset(qps, 0, sizeof(QueuePair) * num_pes));
+  for (int i = 0; i < num_pes; i++) {
+    int offset = num_pes * ctx_id + i;
+    CHECK_HIP(hipMemcpy(&qps[i], &backend->gpu_qps[offset], sizeof(QueuePair), hipMemcpyDefault));
+    qps[i].base_heap = base_heap;
+  }
   ctx_id_ = ctx_id;
 }
 
-//TODO no destructor?
+__host__ GDAContext::~GDAContext() {
+  //TODO the default context destructor is called during the copy-init of the context proxy during init
+  // that causes this qps to be freed for the default context before finalization
+//  CHECK_HIP(hipFree(qps));
+}
 
 __device__ void GDAContext::ctx_create() {
 }

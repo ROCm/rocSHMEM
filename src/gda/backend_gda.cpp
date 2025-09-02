@@ -93,7 +93,7 @@ void GDABackend::init() {
   rte_barrier();
 
   setup_ibv();
-  heap_memory_rkey();
+  setup_heap_memory_rkey();
   setup_gpu_qps();
 
   setup_ctxs();
@@ -101,32 +101,18 @@ void GDABackend::init() {
 }
 
 GDABackend::~GDABackend() {
-  //TODO: delete the contextproxy?, undo initialize_context?
-  /**
-   * Destroy teams infrastructure
-   * and team world
-   */
+  cleanup_ctxs();
+
   cleanup_teams();
-  cleanup_wrk_sync_buffer();
   auto *team_world{team_tracker.get_team_world()};
   team_world->~Team();
   CHECK_HIP(hipFree(team_world));
 
-  CHECK_HIP(hipFree(gpu_qps));
-  gpu_qps = nullptr;
+  cleanup_wrk_sync_buffer();
 
-  CHECK_HIP(hipHostFree(heap_rkey));
-
-  ibv_free_device_list(dev_list);
-
-  int ret = ibv_dereg_mr(heap_mr);
-  CHECK_ZERO(ret, "ibv_dereg_mr");
-
-  CHECK_HIP(hipFree(ctx_array));
-
-  delete ib_state;
-  if (requested_dev != nullptr)
-    free(requested_dev);
+  cleanup_gpu_qps();
+  cleanup_heap_memory_rkey();
+  cleanup_ibv();
 }
 
 void GDABackend::read_env() {
@@ -141,7 +127,7 @@ void GDABackend::read_env() {
     int gpu_dev = 0;
     CHECK_HIP(hipGetDevice(&gpu_dev));
     int nic_dev = rocshmem::GetClosestNicToGpu(gpu_dev, &requested_dev);
-    assert (nic_dev != -1); //TODO nic_dev is local, write only??? missing requested_dev=nic_dev?
+    assert (nic_dev != -1);
   }
   if ((value = getenv("ROCSHMEM_SQ_SIZE"))) {
     sq_size = atoi(value);
@@ -156,19 +142,28 @@ void GDABackend::setup_host_ctx() {
 
 void GDABackend::setup_default_ctx() {
   TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
-  default_context_proxy_ = GDADefaultContextProxyT(this, tinfo); //TODO: this seems to never be destructed
+  default_context_proxy_ = GDADefaultContextProxyT(this, tinfo);
 }
 
 void GDABackend::setup_ctxs() {
   setup_host_ctx();
   setup_default_ctx();
 
-  CHECK_HIP(hipMalloc(&ctx_array, sizeof(GDAContext) * maximum_num_contexts_ + 1)); //TODO: double check if +1 needed, and if default_ctx should also be in that array
+  CHECK_HIP(hipMalloc(&ctx_array, sizeof(GDAContext) * maximum_num_contexts_));
   // 0th context is default context
   for (size_t i = 0; i < maximum_num_contexts_; i++) {
     new (&ctx_array[i]) GDAContext(this, i + 1);
     ctx_free_list.get()->push_back(ctx_array + i);
   }
+}
+
+void GDABackend::cleanup_ctxs() {
+  ctx_free_list.~FreeListProxy();
+  for (size_t i = 0; i < maximum_num_contexts_; i++) {
+    ctx_array[i].~GDAContext();
+  }
+
+  CHECK_HIP(hipFree(ctx_array));
 }
 
 __device__ bool GDABackend::create_ctx(int64_t options, rocshmem_ctx_t *ctx) {
@@ -605,7 +600,16 @@ void GDABackend::setup_ibv() {
   rte_barrier();
 }
 
-void GDABackend::heap_memory_rkey() {
+void GDABackend::cleanup_ibv() {
+  ibv_free_device_list(dev_list);
+
+  delete ib_state;
+  if (requested_dev != nullptr)
+    free(requested_dev);
+}
+
+
+void GDABackend::setup_heap_memory_rkey() {
   auto *base_heap = heap.get_local_heap_base();
   int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
 
@@ -636,6 +640,13 @@ void GDABackend::heap_memory_rkey() {
   free(host_rkey_cpy);
 }
 
+void GDABackend::cleanup_heap_memory_rkey() {
+  int ret = ibv_dereg_mr(heap_mr);
+  CHECK_ZERO(ret, "ibv_dereg_mr");
+
+  CHECK_HIP(hipHostFree(heap_rkey));
+}
+
 void GDABackend::setup_gpu_qps() {
   CHECK_HIP(hipMalloc(&gpu_qps, sizeof(QueuePair) * (maximum_num_contexts_ + 1) * num_pes));
   for (int i = 0; i < (maximum_num_contexts_ + 1) * num_pes; i++) {
@@ -645,15 +656,10 @@ void GDABackend::setup_gpu_qps() {
   }
 }
 
-//TODO: we should also do the opposite of this, didn't find it
-void GDABackend::initialize_context(GDAContext *ctx, int context_id) {
-  CHECK_HIP(hipMalloc(&ctx->qps, sizeof(QueuePair) * num_pes));
-  CHECK_HIP(hipMemset(ctx->qps, 0, sizeof(QueuePair) * num_pes));
-  for (int i = 0; i < num_pes; i++) {
-    int offset = num_pes * context_id + i;
-    CHECK_HIP(hipMemcpy(&ctx->qps[i], &gpu_qps[offset], sizeof(QueuePair), hipMemcpyDefault));
-    ctx->qps[i].base_heap = ctx->base_heap;
-  }
+void GDABackend::cleanup_gpu_qps() {
+  //TODO need to destruct qp[i]?
+  CHECK_HIP(hipFree(gpu_qps));
+  gpu_qps = nullptr;
 }
 
 //TODO this ifdef sequence should go in a nic-specific file, like it is for bnxt, maybe whats above too?
@@ -774,7 +780,6 @@ void* GDABackend::pd_alloc(struct ibv_pd* pd, void* pd_context, size_t size, siz
   void* dev_ptr{nullptr};
   //TODO make this configurable, presumably we want it on device for all types?
 #ifdef GDA_IONIC
-  //TODO use the hip allocator class?
   CHECK_HIP(hipExtMallocWithFlags(reinterpret_cast<void**>(&dev_ptr), size, hipDeviceMallocUncached));
 #else
   CHECK_HIP(hipHostMalloc(reinterpret_cast<void**>(&dev_ptr), size, hipHostMallocDefault));

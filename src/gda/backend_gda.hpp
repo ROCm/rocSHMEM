@@ -123,8 +123,11 @@ class GDABackend : public Backend {
    */
   void read_env();
   void setup_ibv();
+  void cleanup_ibv();
 
  public:
+  friend GDAContext;
+
   /**
    * @copydoc Backend::Backend(unsigned)
    */
@@ -153,11 +156,6 @@ class GDABackend : public Backend {
    * @copydoc Backend::ctx_destroy
    */
   void ctx_destroy(Context *ctx) override;
-
-  /**
-   * @brief initialize context fields with shared backend structures during context contructor.
-   */
-  void initialize_context(GDAContext *ctx, int context_id);
 
   /**
    * @brief Abort the application.
@@ -278,6 +276,7 @@ class GDABackend : public Backend {
    * @brief Allocation and initialization of backend contexts.
    */
   void setup_ctxs();
+  void cleanup_ctxs();
   void setup_host_ctx();
   void setup_default_ctx();
 
@@ -295,7 +294,8 @@ class GDABackend : public Backend {
    */
   void setup_fence_buffer();
 
-  void heap_memory_rkey();
+  void setup_heap_memory_rkey();
+  void cleanup_heap_memory_rkey();
 
   void initialize_gpu_qp(QueuePair* qp, int conn_num);
 
@@ -345,6 +345,7 @@ class GDABackend : public Backend {
   void init_gid_index(uint8_t port);
 
   void setup_gpu_qps();
+  void cleanup_gpu_qps();
 
   char* requested_dev{nullptr};
 
