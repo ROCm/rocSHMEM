@@ -43,24 +43,37 @@ class HostInterface;
 
 class GDABackend : public Backend {
  private:
-  typedef struct ib_state {
-    struct ibv_context* context;
-    struct ibv_pd* pd_orig;
-#ifndef GDA_BNXT
-    struct ibv_pd* pd_parent;
+  struct ibv_context *context = nullptr;;
+  struct ibv_pd *pd_orig = nullptr;
+
+  struct ibv_port_attr portinfo;
+  union ibv_gid gid;
+  int port = 1;
+  int gid_index;
+
+  uint32_t *heap_rkey{nullptr};
+  struct ibv_mr *heap_mr = nullptr;
+
+  uint32_t sq_size{1024};
+  QueuePair *gpu_qps{nullptr};
+  std::vector<ibv_qp*> qps;
+  std::vector<ibv_cq*> cqs;
+
+#ifdef GDA_BNXT
+  std::vector<struct bnxt_host_qp> bnxt_qps;
+  std::vector<struct bnxt_host_cq> bnxt_cqs;
+
+  struct bnxt_re_dv_db_region_attr db_region_attr;
+#else
+  struct ibv_pd *pd_parent;
 #endif
-#ifdef GDA_IONIC
-    struct ibv_pd* pd_uxdma[2];
-#endif
-    struct ibv_mr* mr;
-    struct ibv_port_attr portinfo;
 
 #ifdef GDA_IONIC
-    void *gpu_db_page;
-    uint64_t *gpu_db_cq;
-    uint64_t *gpu_db_sq;
+  struct ibv_pd *pd_uxdma[2];
+  void *gpu_db_page;
+  uint64_t *gpu_db_cq;
+  uint64_t *gpu_db_sq;
 #endif
-  } ib_state_t;
 
   typedef struct dest_info {
     int lid;
@@ -68,23 +81,6 @@ class GDABackend : public Backend {
     int psn;
     union ibv_gid gid;
   } dest_info_t;
-
-#ifndef GDA_BNXT
-  class State {
-   public:
-    ibv_qp_attr exp_qp_attr{};
-    uint64_t exp_attr_mask{};
-  };
-
-  class QPInitAttr {
-   public:
-    explicit QPInitAttr(ibv_qp_cap cap) {
-      attr.cap = cap;
-      attr.sq_sig_all = 0;
-    }
-    ibv_qp_init_attr_ex attr{};
-  };
-#endif
 
  /**
    * @brief Common code invoked from the different constructors
@@ -267,17 +263,13 @@ class GDABackend : public Backend {
 
   void initialize_gpu_qp(QueuePair* qp, int conn_num);
 
-#ifndef GDA_BNXT
-  QPInitAttr qpattr(ibv_qp_cap cap);
-#endif
+  void init_qp_status();
 
-  void init_qp_status(uint8_t port);
-
-  void change_status_rtr(ibv_qp* qp, dest_info_t* dest, uint8_t port);
+  void change_status_rtr(ibv_qp* qp, dest_info_t* dest);
 
   void change_status_rts(ibv_qp* qp, dest_info_t* dest);
 
-  void create_qps(uint8_t port, ibv_port_attr* ib_port_att);
+  void create_qps();
 
 #ifdef GDA_BNXT
   void create_cqs(int ncqs, int cqe);
@@ -292,14 +284,14 @@ class GDABackend : public Backend {
 
   void init_parent_domain_attr(ibv_parent_domain_init_attr* attr);
 
-  ibv_cq* create_cq(ibv_context* context, ibv_pd* pd, int cqe);
+  struct ibv_cq* create_cq(struct ibv_pd *pd, int cqe);
 
-  ibv_qp* create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr_ex* qp_attr, ibv_cq* rcq);
+  struct ibv_qp* create_qp(struct ibv_pd *pd, struct ibv_qp_init_attr_ex *qp_attr, struct ibv_cq *rcq);
 #endif
 
-  void ib_init(ibv_device* ib_dev, uint8_t port);
+  void ib_init(ibv_device* ib_dev);
 
-  void init_gid_index(uint8_t port);
+  void init_gid_index();
 
   void setup_gpu_qps();
   void cleanup_gpu_qps();
@@ -307,8 +299,6 @@ class GDABackend : public Backend {
   char* requested_dev{nullptr};
 
   ibv_device** dev_list{nullptr};
-
-  ib_state_t* ib_state{nullptr};
 
   std::vector<dest_info_t> dest_info;
 
@@ -413,28 +403,6 @@ class GDABackend : public Backend {
    * @brief rte barrier for initialization
    */
   void rte_barrier();
-
-  QueuePair *gpu_qps{nullptr};
-
-  std::vector<ibv_qp*> qps;
-
-  std::vector<ibv_cq*> cqs;
-
-  uint32_t sq_size{1024};
-
-  uint32_t *heap_rkey{nullptr};
-
-  ibv_mr *heap_mr{nullptr};
-
-  union ibv_gid gid;
-  int gid_index;
-
-#ifdef GDA_BNXT
-  std::vector<struct bnxt_host_qp> bnxt_qps;
-  std::vector<struct bnxt_host_cq> bnxt_cqs;
-
-  struct bnxt_re_dv_db_region_attr db_region_attr;
-#endif
 };
 
 }  // namespace rocshmem

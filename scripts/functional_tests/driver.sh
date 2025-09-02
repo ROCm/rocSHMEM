@@ -138,6 +138,7 @@ ExecTest() {
   LAUNCHER=mpirun
   OPTIONS=" -n $NUM_RANKS -mca pml ucx -mca osc ucx"
   OPTIONS+=" -x ROCSHMEM_MAX_NUM_CONTEXTS=$ROCSHMEM_MAX_NUM_CONTEXTS"
+  OPTIONS+=" -x ROCSHMEM_HEAP_SIZE=$((32 * 1024 * 1024 * 1024))"
   OPTIONS+=" -x UCX_ROCM_IPC_SIGPOOL_MAX_ELEMS=16384"
   OPTIONS+=" --map-by numa --timeout $TIMEOUT"
 

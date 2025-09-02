@@ -569,9 +569,8 @@ void GDABackend::setup_ibv() {
       }
     }
   }
-  uint8_t port{1};
-  ib_init(ib_dev, port);
-  create_qps(port, &ib_state->portinfo);
+  ib_init(ib_dev);
+  create_qps();
 
   auto npes = num_pes;
   auto dinfo = dest_info.data();
@@ -584,7 +583,7 @@ void GDABackend::setup_ibv() {
   }
 
   for (int i = 0; i < qps.size(); i++) {
-    change_status_rtr(qps[i], &dest_info[i], port);
+    change_status_rtr(qps[i], &dest_info[i]);
   }
   rte_barrier();
   for (int i = 0; i < qps.size(); i++) {
@@ -597,7 +596,6 @@ void GDABackend::setup_ibv() {
 void GDABackend::cleanup_ibv() {
   ibv_free_device_list(dev_list);
 
-  delete ib_state;
   if (requested_dev != nullptr)
     free(requested_dev);
 }
@@ -607,7 +605,7 @@ void GDABackend::setup_heap_memory_rkey() {
   auto *base_heap = heap.get_local_heap_base();
   int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
 
-  heap_mr = ibv_reg_mr(ib_state->pd_orig, base_heap, heap.get_size(), access);
+  heap_mr = ibv_reg_mr(pd_orig, base_heap, heap.get_size(), access);
   CHECK_NNULL(heap_mr, "ibv_reg_mr");
 
   const size_t rkeys_size = sizeof(uint32_t) * num_pes;
@@ -644,7 +642,7 @@ void GDABackend::cleanup_heap_memory_rkey() {
 void GDABackend::setup_gpu_qps() {
   CHECK_HIP(hipMalloc(&gpu_qps, sizeof(QueuePair) * (maximum_num_contexts_ + 1) * num_pes));
   for (int i = 0; i < (maximum_num_contexts_ + 1) * num_pes; i++) {
-    QueuePair qp(ib_state->pd_orig);
+    QueuePair qp(pd_orig);
     CHECK_HIP(hipMemcpy(&gpu_qps[i], &qp, sizeof(QueuePair), hipMemcpyDefault));
     initialize_gpu_qp(&gpu_qps[i], i);
   }
@@ -657,51 +655,48 @@ void GDABackend::cleanup_gpu_qps() {
 }
 
 //TODO this ifdef sequence should go in a nic-specific file, like it is for bnxt, maybe whats above too?
-void GDABackend::ib_init(struct ibv_device* ib_dev, uint8_t port) {
-  ib_state = new ib_state_t;
-  CHECK_NNULL(ib_state, "ib_state object create");
+void GDABackend::ib_init(struct ibv_device* ib_dev) {
+  context = ibv_open_device(ib_dev);
+  CHECK_NNULL(context, "ib open device");
+  dump_ibv_context(context);
+  dump_ibv_device(context->device);
 
-  ib_state->context = ibv_open_device(ib_dev);
-  CHECK_NNULL(ib_state->context, "ib open device");
-  dump_ibv_context(ib_state->context);
-  dump_ibv_device(ib_state->context->device);
-
-  ib_state->pd_orig = ibv_alloc_pd(ib_state->context);
-  CHECK_NNULL(ib_state->pd_orig, "ib allocate pd");
-  dump_ibv_pd(ib_state->pd_orig);
+  pd_orig = ibv_alloc_pd(context);
+  CHECK_NNULL(pd_orig, "ib allocate pd");
+  dump_ibv_pd(pd_orig);
 
 #ifndef GDA_BNXT
   ibv_parent_domain_init_attr pattr{};
   init_parent_domain_attr(&pattr);
-  ib_state->pd_parent = ibv_alloc_parent_domain(ib_state->context, &pattr);
-  CHECK_NNULL(ib_state->pd_parent, "ibv_alloc_parent_domain");
-  dump_ibv_pd(ib_state->pd_parent);
+  pd_parent = ibv_alloc_parent_domain(context, &pattr);
+  CHECK_NNULL(pd_parent, "ibv_alloc_parent_domain");
+  dump_ibv_pd(pd_parent);
 #endif
 
 #ifdef GDA_IONIC
-  ionic_dv_pd_set_sqcmb(ib_state->pd_parent, false, false, false);
-  ionic_dv_pd_set_rqcmb(ib_state->pd_parent, false, false, false);
+  ionic_dv_pd_set_sqcmb(pd_parent, false, false, false);
+  ionic_dv_pd_set_rqcmb(pd_parent, false, false, false);
 
   for (int uxdma_i = 0; uxdma_i < 2; ++uxdma_i) {
-    ib_state->pd_uxdma[uxdma_i] = ibv_alloc_parent_domain(ib_state->context, &pattr);
-    CHECK_NNULL(ib_state->pd_uxdma[uxdma_i], "ibv_alloc_parent_domain (uxdma)");
+    pd_uxdma[uxdma_i] = ibv_alloc_parent_domain(context, &pattr);
+    CHECK_NNULL(pd_uxdma[uxdma_i], "ibv_alloc_parent_domain (uxdma)");
 
-    ionic_dv_pd_set_sqcmb(ib_state->pd_uxdma[uxdma_i], false, false, false);
-    ionic_dv_pd_set_rqcmb(ib_state->pd_uxdma[uxdma_i], false, false, false);
-    ionic_dv_pd_set_udma_mask(ib_state->pd_uxdma[uxdma_i], 1u << uxdma_i);
+    ionic_dv_pd_set_sqcmb(pd_uxdma[uxdma_i], false, false, false);
+    ionic_dv_pd_set_rqcmb(pd_uxdma[uxdma_i], false, false, false);
+    ionic_dv_pd_set_udma_mask(pd_uxdma[uxdma_i], 1u << uxdma_i);
   }
 #endif
 
-  int err = ibv_query_port(ib_state->context, port, &ib_state->portinfo);
+  int err = ibv_query_port(context, port, &portinfo);
   CHECK_ZERO(err, "ibv_query_port");
-  dump_ibv_port_attr(&ib_state->portinfo);
+  dump_ibv_port_attr(&portinfo);
 
   /* Must init after querying port */
-  init_gid_index(port);
+  init_gid_index();
 
 #ifdef GDA_IONIC
   ionic_dv_ctx dvctx;
-  ionic_dv_get_ctx(&dvctx, ib_state->context);
+  ionic_dv_get_ctx(&dvctx, context);
 
   int hip_dev_id = 0;
   CHECK_HIP(hipGetDevice(&hip_dev_id));
@@ -714,13 +709,13 @@ void GDABackend::ib_init(struct ibv_device* ib_dev, uint8_t port) {
 
   uint64_t *gpu_db_ptr = &gpu_db_page_u64[dvctx.db_ptr - db_page_u64];
 
-  ib_state->gpu_db_page = gpu_db_page;
-  ib_state->gpu_db_cq = &gpu_db_ptr[dvctx.cq_qtype];
-  ib_state->gpu_db_sq = &gpu_db_ptr[dvctx.sq_qtype];
+  gpu_db_page = gpu_db_page;
+  gpu_db_cq = &gpu_db_ptr[dvctx.cq_qtype];
+  gpu_db_sq = &gpu_db_ptr[dvctx.sq_qtype];
 #endif
 }
 
-void GDABackend::init_qp_status(uint8_t port) {
+void GDABackend::init_qp_status() {
   int err;
   struct ibv_qp_attr attr;
   int attr_mask;
@@ -750,21 +745,21 @@ void GDABackend::init_qp_status(uint8_t port) {
   }
 }
 
-void GDABackend::change_status_rtr(ibv_qp *qp, dest_info_t *dest, uint8_t port) {
+void GDABackend::change_status_rtr(ibv_qp *qp, dest_info_t *dest) {
   int err;
   struct ibv_qp_attr attr;
   int attr_mask;
 
   memset(&attr, 0, sizeof(struct ibv_qp_attr));
   attr.qp_state               = IBV_QPS_RTR;
-  attr.path_mtu               = ib_state->portinfo.active_mtu;
+  attr.path_mtu               = portinfo.active_mtu;
   attr.rq_psn                 = dest->psn;
   attr.dest_qp_num            = dest->qpn;
   attr.max_dest_rd_atomic     = GDA_MAX_ATOMIC;
   attr.min_rnr_timer          = 12;
   attr.ah_attr.port_num       = port;
 
-  if (ib_state->portinfo.link_layer == IBV_LINK_LAYER_INFINIBAND) {
+  if (portinfo.link_layer == IBV_LINK_LAYER_INFINIBAND) {
     attr.ah_attr.dlid = dest->lid;
   } else {
     memcpy(&attr.ah_attr.grh.dgid, &dest->gid, 16);
@@ -819,38 +814,40 @@ void GDABackend::change_status_rts(ibv_qp* qp, dest_info_t* dest) {
 }
 
 #ifndef GDA_BNXT
-void GDABackend::create_qps(uint8_t port, ibv_port_attr* ib_port_att) {
-  ibv_qp_cap cap{};
-  cap.max_send_wr = sq_size;
-  cap.max_send_sge = 1;
-  cap.max_inline_data = 0;
+void GDABackend::create_qps() {
+  ibv_qp_init_attr_ex attr{};
+  attr.cap.max_send_wr     = sq_size;
+  attr.cap.max_send_sge    = 1;
+  attr.cap.max_inline_data = 0;
 #ifdef GDA_IONIC
   // TODO allow zero sges in the driver
-  cap.max_recv_sge = 1;
+  attr.cap.max_recv_sge = 1;
 #endif
-  QPInitAttr qp_init_attr{qpattr(cap)};
+  attr.sq_sig_all = 0;
+  attr.qp_type = IBV_QPT_RC;
+
   cqs.resize((maximum_num_contexts_ + 1) * num_pes);
   qps.resize((maximum_num_contexts_ + 1) * num_pes);
-  int max_num_cqe = qp_init_attr.attr.cap.max_send_wr;
+
   for (int i = 0; i < qps.size(); i++) {
 #ifdef GDA_IONIC
     int uxdma_i = ((i + 1) / 2) & 1;
-    cqs[i] = create_cq(ib_state->context, ib_state->pd_uxdma[uxdma_i], max_num_cqe << 1);
+    cqs[i] = create_cq(pd_uxdma[uxdma_i], attr.cap.max_send_wr << 1);
     CHECK_NNULL(cqs[i], "create_cq");
-    qps[i] = create_qp(ib_state->pd_uxdma[uxdma_i], ib_state->context, &qp_init_attr.attr, cqs[i]);
+    qps[i] = create_qp(pd_uxdma[uxdma_i], &attr, cqs[i]);
 #else
-    cqs[i] = create_cq(ib_state->context, ib_state->pd_parent, max_num_cqe);
+    cqs[i] = create_cq(pd_parent, attr.cap.max_send_wr);
     CHECK_NNULL(cqs[i], "create_cq");
-    qps[i] = create_qp(ib_state->pd_parent, ib_state->context, &qp_init_attr.attr, cqs[i]);
+    qps[i] = create_qp(pd_parent, &attr, cqs[i]);
 #endif
     CHECK_NNULL(qps[i], "create_qp");
-    dest_info[i].lid = ib_port_att->lid;
+    dest_info[i].lid = portinfo.lid;
     dest_info[i].qpn = qps[i]->qp_num;
     dest_info[i].psn = 0;
     dest_info[i].gid = gid;
   }
 
-  init_qp_status(port);
+  init_qp_status();
 }
 
 void* GDABackend::pd_alloc(struct ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type) {
@@ -870,7 +867,7 @@ void GDABackend::pd_release(struct ibv_pd* pd, void* pd_context, void* ptr, uint
 }
 
 void GDABackend::init_parent_domain_attr(ibv_parent_domain_init_attr* attr1) {
-  attr1->pd = ib_state->pd_orig;
+  attr1->pd = pd_orig;
   attr1->td = nullptr;
   attr1->comp_mask = IBV_PARENT_DOMAIN_INIT_ATTR_ALLOCATORS;
   attr1->alloc = GDABackend::pd_alloc;
@@ -878,7 +875,7 @@ void GDABackend::init_parent_domain_attr(ibv_parent_domain_init_attr* attr1) {
   attr1->pd_context = nullptr;
 }
 
-ibv_cq* GDABackend::create_cq(ibv_context* context, ibv_pd* pd, int cqe) {
+struct ibv_cq* GDABackend::create_cq(struct ibv_pd *pd, int cqe) {
   ibv_cq_init_attr_ex cq_attr;
   memset(&cq_attr, 0, sizeof(ibv_cq_init_attr_ex));
   cq_attr.cqe = cqe;
@@ -905,7 +902,7 @@ void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   ionic_dv_cq dvcq;
   ionic_dv_get_cq(&dvcq, cqs[conn_num], udma_idx);
 
-  gpu_qp->cq_dbreg = ib_state->gpu_db_cq;
+  gpu_qp->cq_dbreg = gpu_db_cq;
   gpu_qp->cq_dbval = dvcq.q.db_val;
   gpu_qp->cq_mask = dvcq.q.mask;
 
@@ -914,7 +911,7 @@ void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   ionic_dv_qp dvqp;
   ionic_dv_get_qp(&dvqp, qps[conn_num]);
 
-  gpu_qp->sq_dbreg = ib_state->gpu_db_sq;
+  gpu_qp->sq_dbreg = gpu_db_sq;
   gpu_qp->sq_dbval = dvqp.sq.db_val;
   gpu_qp->sq_mask = dvqp.sq.mask;
   gpu_qp->sq_buf = reinterpret_cast<ionic_v1_wqe *>(dvqp.sq.ptr);
@@ -994,7 +991,7 @@ void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
 #endif // !GDA_IONIC
 }
 
-ibv_qp* GDABackend::create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr_ex* qp_attr, ibv_cq* cq) {
+struct ibv_qp* GDABackend::create_qp(struct ibv_pd* pd, struct ibv_qp_init_attr_ex* qp_attr, struct ibv_cq* cq) {
   ibv_qp* qp{nullptr};
   assert(pd);
   assert(context);
@@ -1007,15 +1004,9 @@ ibv_qp* GDABackend::create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr
   CHECK_NNULL(qp, "ibv_create_qp_ex");
   return qp;
 }
-
-GDABackend::QPInitAttr GDABackend::qpattr(ibv_qp_cap cap) {
-  QPInitAttr qpattr(cap);
-  qpattr.attr.qp_type = IBV_QPT_RC;
-  return qpattr;
-}
 #endif
 
-void GDABackend::init_gid_index(uint8_t port_num) {
+void GDABackend::init_gid_index() {
   struct ibv_gid_entry *gid_entries;
   struct ibv_gid_entry *gid_entry;
   union ibv_gid current_gid;
@@ -1028,12 +1019,11 @@ void GDABackend::init_gid_index(uint8_t port_num) {
   int selected_gid_index            = -1;
   ssize_t gid_tbl_entries           = 0;
 
-  int gid_tbl_len         = ib_state->portinfo.gid_tbl_len;
-  struct ibv_context *ctx = ib_state->context;
+  int gid_tbl_len         = portinfo.gid_tbl_len;
 
   gid_entries = (struct ibv_gid_entry*) calloc(gid_tbl_len, sizeof(struct ibv_gid_entry));
 
-  gid_tbl_entries = ibv_query_gid_table(ctx, gid_entries, gid_tbl_len, 0);
+  gid_tbl_entries = ibv_query_gid_table(context, gid_entries, gid_tbl_len, 0);
   if (gid_tbl_entries < 0) {
     fprintf(stderr, "[Warning] ibv_query_gid_table failed. No available GIDs\n");
     free(gid_entries);
@@ -1050,7 +1040,7 @@ void GDABackend::init_gid_index(uint8_t port_num) {
 
     current_gid = gid_entries[i].gid;
 
-    err = ibv_query_gid(ctx, port_num, i, &current_gid);
+    err = ibv_query_gid(context, port, i, &current_gid);
     CHECK_ZERO(err, "ibv_query_gid");
 
     /* We don't want local GIDs */
