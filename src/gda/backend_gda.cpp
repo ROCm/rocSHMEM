@@ -666,25 +666,7 @@ void GDABackend::ib_init(struct ibv_device* ib_dev) {
   dump_ibv_pd(pd_orig);
 
 #ifndef GDA_BNXT
-  ibv_parent_domain_init_attr pattr{};
-  init_parent_domain_attr(&pattr);
-  pd_parent = ibv_alloc_parent_domain(context, &pattr);
-  CHECK_NNULL(pd_parent, "ibv_alloc_parent_domain");
-  dump_ibv_pd(pd_parent);
-#endif
-
-#ifdef GDA_IONIC
-  ionic_dv_pd_set_sqcmb(pd_parent, false, false, false);
-  ionic_dv_pd_set_rqcmb(pd_parent, false, false, false);
-
-  for (int uxdma_i = 0; uxdma_i < 2; ++uxdma_i) {
-    pd_uxdma[uxdma_i] = ibv_alloc_parent_domain(context, &pattr);
-    CHECK_NNULL(pd_uxdma[uxdma_i], "ibv_alloc_parent_domain (uxdma)");
-
-    ionic_dv_pd_set_sqcmb(pd_uxdma[uxdma_i], false, false, false);
-    ionic_dv_pd_set_rqcmb(pd_uxdma[uxdma_i], false, false, false);
-    ionic_dv_pd_set_udma_mask(pd_uxdma[uxdma_i], 1u << uxdma_i);
-  }
+  create_parent_domain();
 #endif
 
   int err = ibv_query_port(context, port, &portinfo);
@@ -866,13 +848,34 @@ void GDABackend::pd_release(struct ibv_pd* pd, void* pd_context, void* ptr, uint
   CHECK_HIP(hipFree(ptr));
 }
 
-void GDABackend::init_parent_domain_attr(ibv_parent_domain_init_attr* attr1) {
-  attr1->pd = pd_orig;
-  attr1->td = nullptr;
-  attr1->comp_mask = IBV_PARENT_DOMAIN_INIT_ATTR_ALLOCATORS;
-  attr1->alloc = GDABackend::pd_alloc;
-  attr1->free = GDABackend::pd_release;
-  attr1->pd_context = nullptr;
+void GDABackend::create_parent_domain() {
+  struct ibv_parent_domain_init_attr pattr;
+
+  memset(&pattr, 0, sizeof(struct ibv_parent_domain_init_attr));
+  pattr.pd         = pd_orig,
+  pattr.td         = nullptr,
+  pattr.comp_mask  = IBV_PARENT_DOMAIN_INIT_ATTR_ALLOCATORS,
+  pattr.alloc      = GDABackend::pd_alloc,
+  pattr.free       = GDABackend::pd_release,
+  pattr.pd_context = nullptr,
+
+  pd_parent = ibv_alloc_parent_domain(context, &pattr);
+  CHECK_NNULL(pd_parent, "ibv_alloc_parent_domain");
+  dump_ibv_pd(pd_parent);
+
+#ifdef GDA_IONIC
+  ionic_dv_pd_set_sqcmb(pd_parent, false, false, false);
+  ionic_dv_pd_set_rqcmb(pd_parent, false, false, false);
+
+  for (int uxdma_i = 0; uxdma_i < 2; ++uxdma_i) {
+    pd_uxdma[uxdma_i] = ibv_alloc_parent_domain(context, &pattr);
+    CHECK_NNULL(pd_uxdma[uxdma_i], "ibv_alloc_parent_domain (uxdma)");
+
+    ionic_dv_pd_set_sqcmb(pd_uxdma[uxdma_i], false, false, false);
+    ionic_dv_pd_set_rqcmb(pd_uxdma[uxdma_i], false, false, false);
+    ionic_dv_pd_set_udma_mask(pd_uxdma[uxdma_i], 1u << uxdma_i);
+  }
+#endif
 }
 
 struct ibv_cq* GDABackend::create_cq(struct ibv_pd *pd, int cqe) {

@@ -282,7 +282,7 @@ class GDABackend : public Backend {
 
   static void pd_release(ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type);
 
-  void init_parent_domain_attr(ibv_parent_domain_init_attr* attr);
+  void create_parent_domain();
 
   struct ibv_cq* create_cq(struct ibv_pd *pd, int cqe);
 
