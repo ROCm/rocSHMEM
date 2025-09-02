@@ -783,18 +783,21 @@ void GDABackend::create_qps() {
   cqs.resize((maximum_num_contexts_ + 1) * num_pes);
   qps.resize((maximum_num_contexts_ + 1) * num_pes);
 
+#ifdef GDA_IONIC
+  create_cqs(attr.cap.max_send_wr << 1);
+#else
+  create_cqs(attr.cap.max_send_wr);
+#endif
+
   for (int i = 0; i < qps.size(); i++) {
 #ifdef GDA_IONIC
     int uxdma_i = ((i + 1) / 2) & 1;
-    cqs[i] = create_cq(pd_uxdma[uxdma_i], attr.cap.max_send_wr << 1);
-    CHECK_NNULL(cqs[i], "create_cq");
     qps[i] = create_qp(pd_uxdma[uxdma_i], &attr, cqs[i]);
 #else
-    cqs[i] = create_cq(pd_parent, attr.cap.max_send_wr);
-    CHECK_NNULL(cqs[i], "create_cq");
     qps[i] = create_qp(pd_parent, &attr, cqs[i]);
 #endif
     CHECK_NNULL(qps[i], "create_qp");
+
     dest_info[i].lid = portinfo.lid;
     dest_info[i].qpn = qps[i]->qp_num;
     dest_info[i].psn = 0;
@@ -850,21 +853,30 @@ void GDABackend::create_parent_domain() {
 #endif
 }
 
-struct ibv_cq* GDABackend::create_cq(struct ibv_pd *pd, int cqe) {
-  ibv_cq_init_attr_ex cq_attr;
-  memset(&cq_attr, 0, sizeof(ibv_cq_init_attr_ex));
-  cq_attr.cqe = cqe;
-  cq_attr.cq_context = nullptr;
-  cq_attr.channel = nullptr;
-  cq_attr.comp_vector = 0;
-  cq_attr.flags = 0;  // see ibv_exp_cq_create_flags
-  cq_attr.comp_mask = IBV_CQ_INIT_ATTR_MASK_PD;
-  cq_attr.parent_domain = pd;
-  ibv_cq_ex* cq_ex = ibv_create_cq_ex(context, &cq_attr);
-  CHECK_NNULL(cq_ex, "ibv_create_cq_ex");
-  ibv_cq *cq = ibv_cq_ex_to_cq(cq_ex);
-  CHECK_NNULL(cq, "ibv_cq_ex_to_cq");
-  return cq;
+void GDABackend::create_cqs(int cqe) {
+  struct ibv_cq_init_attr_ex cq_attr;
+  struct ibv_cq_ex *cq_ex;
+
+  memset(&cq_attr, 0, sizeof(struct ibv_cq_init_attr_ex));
+  cq_attr.cqe           = cqe;
+  cq_attr.cq_context    = nullptr;
+  cq_attr.channel       = nullptr;
+  cq_attr.comp_vector   = 0;
+  cq_attr.flags         = 0;
+  cq_attr.comp_mask     = IBV_CQ_INIT_ATTR_MASK_PD;
+  cq_attr.parent_domain = pd_parent;
+
+  for (int i = 0; i < qps.size(); i++) {
+#ifdef GDA_IONIC
+    cq_attr.parent_domain = pd_uxdma[((i + 1) / 2) & 1];
+#endif
+
+    cq_ex = ibv_create_cq_ex(context, &cq_attr);
+    CHECK_NNULL(cq_ex, "ibv_create_cq_ex");
+
+    cqs[i] = ibv_cq_ex_to_cq(cq_ex);
+    CHECK_NNULL(cqs[i], "ibv_cq_ex_to_cq");
+  }
 }
 
 void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {

@@ -51,7 +51,7 @@ void GDABackend::create_qps() {
   bnxt_qps.resize(resize_length);
   qps.resize(resize_length);
 
-  create_cqs(qps.size(), sq_size);
+  create_cqs(sq_size);
   create_qps_impl(qps.size());
   init_qp_status();
 
@@ -127,7 +127,7 @@ void GDABackend::create_cqs(int ncqs, int cqe) {
   struct bnxt_re_dv_cq_init_attr cq_init_attr;
   struct bnxt_re_dv_umem_reg_attr umem_attr;
 
-  for (int i = 0; i < ncqs; i++) {
+  for (int i = 0; i < qps.size(); i++) {
     /* Allocate CQ mem */
     memset(&cq_attr, 0, sizeof(struct bnxt_re_dv_cq_attr));
     bnxt_cqs[i].handle = bnxt_re_dv_cq_mem_alloc(context, cqe, &cq_attr);

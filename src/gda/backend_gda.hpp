@@ -272,8 +272,9 @@ class GDABackend : public Backend {
 
   void create_qps();
 
+  void create_cqs(int cqe);
+
 #ifdef GDA_BNXT
-  void create_cqs(int ncqs, int cqe);
 
   void create_qps_impl(int nqps);
 
@@ -284,8 +285,6 @@ class GDABackend : public Backend {
   static void pd_release(ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type);
 
   void create_parent_domain();
-
-  struct ibv_cq* create_cq(struct ibv_pd *pd, int cqe);
 
   struct ibv_qp* create_qp(struct ibv_pd *pd, struct ibv_qp_init_attr_ex *qp_attr, struct ibv_cq *rcq);
 #endif
