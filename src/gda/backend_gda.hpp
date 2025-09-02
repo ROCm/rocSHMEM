@@ -33,6 +33,7 @@
 #include "gda_context_proxy.hpp"
 #include "queue_pair.hpp"
 #include "bootstrap/bootstrap.hpp"
+#include "debug_gda.hpp"
 
 namespace rocshmem {
 
