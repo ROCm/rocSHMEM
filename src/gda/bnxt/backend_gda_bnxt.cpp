@@ -28,20 +28,6 @@
 
 namespace rocshmem {
 
-int GDABackend::ibv_mtu_to_int(enum ibv_mtu mtu) {
-  switch (mtu) {
-    case IBV_MTU_256:  return 256;
-    case IBV_MTU_512:  return 512;
-    case IBV_MTU_1024: return 1024;
-    case IBV_MTU_2048: return 2048;
-    case IBV_MTU_4096: return 4096;
-    default: {
-      fprintf(stderr, "[ERROR] Invalid ibv_mtu\n");
-      return 0;
-    }
-  }
-}
-
 void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   struct bnxt_re_dv_obj dv_obj;
   struct bnxt_re_dv_cq dv_cq;

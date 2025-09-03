@@ -299,9 +299,12 @@ class GDABackend : public Backend {
    */
   void modify_qps_rtr_to_rts();
 
-#ifdef GDA_BNXT
+  /**
+   * @brief Converts an ibv_mtu to an integer
+   */
   int ibv_mtu_to_int(enum ibv_mtu mtu);
-#else
+
+#ifndef GDA_BNXT
   static void* pd_alloc(ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type);
 
   static void pd_release(ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type);
