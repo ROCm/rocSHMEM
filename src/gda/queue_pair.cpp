@@ -37,37 +37,53 @@
 namespace rocshmem {
 
 QueuePair::QueuePair(struct ibv_pd* pd) {
+  int access = IBV_ACCESS_LOCAL_WRITE
+             | IBV_ACCESS_REMOTE_WRITE
+             | IBV_ACCESS_REMOTE_READ
+             | IBV_ACCESS_REMOTE_ATOMIC;
+
   allocator.allocate((void**)&nonfetching_atomic, 8);
-  CHECK_HIP(hipMemset(nonfetching_atomic, 0, 8));
-  int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
-
-  ibv_mr *mr = ibv_reg_mr(pd, nonfetching_atomic, 8, access);
-  CHECK_NNULL(mr, "ibv_reg_mr");
-
-#if defined(GDA_IONIC) || defined(GDA_BNXT)
-  nonfetching_atomic_lkey = mr->lkey;
-#else
-  nonfetching_atomic_lkey = htobe32(mr->lkey);
-#endif
-
   allocator.allocate((void**)&fetching_atomic, 8 * FETCHING_ATOMIC_CNT);
-  CHECK_HIP(hipMemset(fetching_atomic, 0, 8 * FETCHING_ATOMIC_CNT));
-  access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
-  mr = ibv_reg_mr(pd, fetching_atomic, 8 * FETCHING_ATOMIC_CNT, access);
-  CHECK_NNULL(mr, "ibv_reg_mr");
-#if defined(GDA_IONIC) || defined(GDA_BNXT)
-  fetching_atomic_lkey = mr->lkey;
-#else
-  fetching_atomic_lkey = htobe32(mr->lkey);
-#endif
-
   allocator.allocate((void**)&fetching_atomic_freelist, sizeof(FreeListT*));
   new (fetching_atomic_freelist) FreeListT();
+
+  CHECK_HIP(hipMemset(nonfetching_atomic, 0, 8));
+  CHECK_HIP(hipMemset(fetching_atomic, 0, 8 * FETCHING_ATOMIC_CNT));
+
+  mr_nonfetching_atomic = ibv_reg_mr(pd, nonfetching_atomic, 8, access);
+  CHECK_NNULL(mr_nonfetching_atomic, "ibv_reg_mr");
+
+  mr_fetching_atomic = ibv_reg_mr(pd, fetching_atomic, 8 * FETCHING_ATOMIC_CNT, access);
+  CHECK_NNULL(mr_fetching_atomic, "ibv_reg_mr");
+
+#if defined(GDA_IONIC) || defined(GDA_BNXT)
+  nonfetching_atomic_lkey = mr_nonfetching_atomic->lkey;
+  fetching_atomic_lkey = mr_fetching_atomic->lkey;
+#else
+  nonfetching_atomic_lkey = htobe32(mr_nonfetching_atomic->lkey);
+  fetching_atomic_lkey = htobe32(mr_fetching_atomic->lkey);
+#endif
+
   for(int i{0}; i < FETCHING_ATOMIC_CNT; i+=WF_SIZE) {
     fetching_atomic_freelist->push_back(fetching_atomic + i);
   }
 }
 
+QueuePair::~QueuePair() {
+  int err;
+
+  err = ibv_dereg_mr(mr_nonfetching_atomic);
+  CHECK_ZERO(err, "ibv_dereg_mr (nonfetching_atomic)");
+
+  err = ibv_dereg_mr(mr_fetching_atomic);
+  CHECK_ZERO(err, "ibv_dereg_mr (fetching_atomic)");
+
+  allocator.deallocate((void*)nonfetching_atomic);
+  allocator.deallocate((void*)fetching_atomic);
+
+  fetching_atomic_freelist->~FreeListT();
+  allocator.deallocate((void*)fetching_atomic_freelist);
+}
 
 /******************************************************************************
  ************************ PROVIDER-SPECIFIC HELPERS ***************************

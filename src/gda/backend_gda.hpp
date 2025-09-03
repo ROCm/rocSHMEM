@@ -89,8 +89,6 @@ class GDABackend : public Backend {
    * @brief Common code invoked from the different constructors
    */
   void read_env();
-  void setup_ibv();
-  void cleanup_ibv();
 
  public:
   friend GDAContext;
@@ -265,6 +263,16 @@ class GDABackend : public Backend {
   void cleanup_heap_memory_rkey();
 
   void initialize_gpu_qp(QueuePair* qp, int conn_num);
+
+  /**
+   * @brief Setup InfiniBand Resources
+   */
+  void setup_ibv();
+
+  /**
+   * @brief Cleanup InfiniBand Resources
+   */
+  void cleanup_ibv();
 
   /**
    * @brief Open InfiniBand Device and create common structures

@@ -560,10 +560,59 @@ void GDABackend::setup_ibv() {
 }
 
 void GDABackend::cleanup_ibv() {
-  if (requested_dev != nullptr)
-    free(requested_dev);
-}
+  int err;
 
+#ifdef GDA_BNXT
+  CHECK_HIP(hipHostUnregister(db_region_attr.dbr));
+
+  for (int i = 0; i < qps.size(); i++) {
+    err = bnxt_re_dv_destroy_qp(qps[i]);
+    CHECK_ZERO(err, "bnxt_re_dv_destroy_qp");
+
+    err = bnxt_re_dv_umem_dereg(bnxt_qps[i].attr.rq_umem_handle);
+    CHECK_ZERO(err, "bnxt_re_dv_umem_dereg (RQ)");
+
+    err = bnxt_re_dv_umem_dereg(bnxt_qps[i].attr.sq_umem_handle);
+    CHECK_ZERO(err, "bnxt_re_dv_umem_dereg (SQ)");
+
+    CHECK_HIP(hipFree(bnxt_qps[i].sq_buf));
+    CHECK_HIP(hipFree(bnxt_qps[i].rq_buf));
+
+    err = bnxt_re_dv_destroy_cq(cqs[i]);
+    CHECK_ZERO(err, "bnxt_re_dv_destroy_cq");
+
+    err = bnxt_re_dv_umem_dereg(bnxt_cqs[i].umem_handle);
+    CHECK_ZERO(err, "bnxt_re_dv_umem_dereg");
+
+    CHECK_HIP(hipFree(bnxt_cqs[i].buf));
+  }
+#else
+  for (int i = 0; i < qps.size(); i++) {
+    err = ibv_destroy_qp(qps[i]);
+    CHECK_ZERO(err, "ibv_destroy_qp");
+
+    err = ibv_destroy_cq(cqs[i]);
+    CHECK_ZERO(err, "ibv_destroy_cqs");
+  }
+
+#ifdef GDA_IONIC
+  err = ibv_dealloc_pd(pd_uxdma[0]);
+  CHECK_ZERO(err, "ibv_dealloc_pd (uxdma[0])");
+
+  err = ibv_dealloc_pd(pd_uxdma[1]);
+  CHECK_ZERO(err, "ibv_dealloc_pd (uxdma[1])");
+#endif
+
+  err = ibv_dealloc_pd(pd_parent);
+  CHECK_ZERO(err, "ibv_dealloc_pd (pd_parent)");
+#endif
+
+  err = ibv_dealloc_pd(pd_orig);
+  CHECK_ZERO(err, "ibv_dealloc_pd (pd_orig)");
+
+  err = ibv_close_device(context);
+  CHECK_ZERO(err, "ibv_close_device");
+}
 
 void GDABackend::exchange_qp_dest_info() {
   for (int i = 0; i < qps.size(); i++) {

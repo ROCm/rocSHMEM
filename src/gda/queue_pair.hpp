@@ -86,6 +86,11 @@ class QueuePair {
   explicit QueuePair(struct ibv_pd* pd);
 
   /**
+   * @brief Destructor.
+   */
+  virtual ~QueuePair();
+
+  /**
    * @brief Create and enqueue a non-blocking put work queue entry (wqe).
    *
    * @param[in] dest Destination address for data transmission.
@@ -303,6 +308,9 @@ class QueuePair {
   FreeListT* fetching_atomic_freelist{nullptr};
 
   HIPAllocator allocator{};
+
+  struct ibv_mr *mr_nonfetching_atomic;
+  struct ibv_mr *mr_fetching_atomic;
 };
 
 }  // namespace rocshmem
