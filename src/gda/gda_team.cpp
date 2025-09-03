@@ -46,7 +46,6 @@ GDATeam::GDATeam(Backend *backend, TeamInfo *team_info_parent,
   alltoall_pSync = &(b->alltoall_pSync_pool[pool_index * ROCSHMEM_ALLTOALL_SYNC_SIZE]);
 
   pWrk = reinterpret_cast<char *>(b->pWrk_pool) + ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE * sizeof(double) * pool_index;
-  pAta = reinterpret_cast<char *>(b->pAta_pool) + ROCSHMEM_ATA_MAX_WRKDATA_SIZE * sizeof(double) * pool_index;
 }
 
 GDATeam::~GDATeam() {}
