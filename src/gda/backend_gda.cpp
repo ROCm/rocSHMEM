@@ -546,22 +546,8 @@ void GDABackend::rte_barrier() {
 }
 
 void GDABackend::setup_ibv() {
-  dest_info.resize(num_pes * (maximum_num_contexts_ + 1));
-  int ib_devices{0};
-  dev_list = ibv_get_device_list(&ib_devices);
-  CHECK_NNULL(dev_list, "ibv_get_device");
-  struct ibv_device* ib_dev = dev_list[0]; //TODO default to HIP selected device?
-  if (requested_dev) {
-    for (int i = 0; i < ib_devices; i++) {
-      const char* select_dev{ibv_get_device_name(dev_list[i])};
-      CHECK_NNULL(select_dev, "ibv_get_device_name");
-      if (strstr(select_dev, requested_dev)) {
-        ib_dev = dev_list[i];
-        break;
-      }
-    }
-  }
-  ib_init(ib_dev);
+  open_ib_device();
+
   create_queues();
 
   exchange_qp_dest_info();
@@ -574,8 +560,6 @@ void GDABackend::setup_ibv() {
 }
 
 void GDABackend::cleanup_ibv() {
-  ibv_free_device_list(dev_list);
-
   if (requested_dev != nullptr)
     free(requested_dev);
 }
@@ -652,8 +636,30 @@ void GDABackend::cleanup_gpu_qps() {
 }
 
 //TODO this ifdef sequence should go in a nic-specific file, like it is for bnxt, maybe whats above too?
-void GDABackend::ib_init(struct ibv_device* ib_dev) {
-  context = ibv_open_device(ib_dev);
+void GDABackend::open_ib_device() {
+  struct ibv_device **device_list = nullptr;
+  struct ibv_device *device = nullptr;
+  int num_devices = 0;
+  int err;
+
+  device_list = ibv_get_device_list(&num_devices);
+  CHECK_NNULL(device_list, "ibv_get_device_list");
+
+  device = device_list[0]; //TODO default to HIP selected device?
+
+  if (requested_dev) {
+    for (int i = 0; i < num_devices; i++) {
+      const char *select_device = ibv_get_device_name(device_list[i]);
+      CHECK_NNULL(select_device, "ibv_get_device_name");
+
+      if (strstr(select_device, requested_dev)) {
+        device = device_list[i];
+        break;
+      }
+    }
+  }
+
+  context = ibv_open_device(device);
   CHECK_NNULL(context, "ib open device");
   dump_ibv_context(context);
   dump_ibv_device(context->device);
@@ -666,12 +672,14 @@ void GDABackend::ib_init(struct ibv_device* ib_dev) {
   create_parent_domain();
 #endif
 
-  int err = ibv_query_port(context, port, &portinfo);
+  err = ibv_query_port(context, port, &portinfo);
   CHECK_ZERO(err, "ibv_query_port");
   dump_ibv_port_attr(&portinfo);
 
   /* Must init after querying port */
-  init_gid_index();
+  select_gid_index();
+
+  ibv_free_device_list(device_list);
 }
 
 void GDABackend::modify_qps_reset_to_init() {
@@ -793,6 +801,7 @@ void GDABackend::create_queues() {
 
   resize_length = (maximum_num_contexts_ + 1) * num_pes;
 
+  dest_info.resize(resize_length);
   cqs.resize(resize_length);
   qps.resize(resize_length);
 
@@ -1020,7 +1029,7 @@ void GDABackend::create_qps(int sq_length) {
 }
 #endif
 
-void GDABackend::init_gid_index() {
+void GDABackend::select_gid_index() {
   struct ibv_gid_entry *gid_entries;
   struct ibv_gid_entry *gid_entry;
   union ibv_gid current_gid;

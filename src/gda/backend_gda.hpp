@@ -44,6 +44,14 @@ class HostInterface;
 
 class GDABackend : public Backend {
  private:
+  typedef struct dest_info {
+    int lid;
+    int qpn;
+    int psn;
+    union ibv_gid gid;
+  } dest_info_t;
+
+  char *requested_dev = nullptr;
   struct ibv_context *context = nullptr;;
   struct ibv_pd *pd_orig = nullptr;
 
@@ -52,13 +60,14 @@ class GDABackend : public Backend {
   int port = 1;
   int gid_index;
 
-  uint32_t *heap_rkey{nullptr};
+  uint32_t *heap_rkey = nullptr;
   struct ibv_mr *heap_mr = nullptr;
 
-  uint32_t sq_size{1024};
-  QueuePair *gpu_qps{nullptr};
+  uint32_t sq_size = 1024;
+  QueuePair *gpu_qps = nullptr;
   std::vector<ibv_qp*> qps;
   std::vector<ibv_cq*> cqs;
+  std::vector<dest_info_t> dest_info;
 
 #ifdef GDA_BNXT
   std::vector<struct bnxt_host_qp> bnxt_qps;
@@ -66,22 +75,15 @@ class GDABackend : public Backend {
 
   struct bnxt_re_dv_db_region_attr db_region_attr;
 #else
-  struct ibv_pd *pd_parent;
+  struct ibv_pd *pd_parent = nullptr;
 #endif
 
 #ifdef GDA_IONIC
   struct ibv_pd *pd_uxdma[2];
-  void *gpu_db_page;
-  uint64_t *gpu_db_cq;
-  uint64_t *gpu_db_sq;
+  void *gpu_db_page = nullptr;
+  uint64_t *gpu_db_cq = nullptr;
+  uint64_t *gpu_db_sq = nullptr;
 #endif
-
-  typedef struct dest_info {
-    int lid;
-    int qpn;
-    int psn;
-    union ibv_gid gid;
-  } dest_info_t;
 
  /**
    * @brief Common code invoked from the different constructors
@@ -265,6 +267,16 @@ class GDABackend : public Backend {
   void initialize_gpu_qp(QueuePair* qp, int conn_num);
 
   /**
+   * @brief Open InfiniBand Device and create common structures
+   */
+  void open_ib_device();
+
+  /**
+   * @brief Selects the best GID index
+   */
+  void select_gid_index();
+
+  /**
    * @brief Create all CQs and QPs
    */
   void create_queues();
@@ -312,18 +324,8 @@ class GDABackend : public Backend {
   void create_parent_domain();
 #endif
 
-  void ib_init(ibv_device* ib_dev);
-
-  void init_gid_index();
-
   void setup_gpu_qps();
   void cleanup_gpu_qps();
-
-  char* requested_dev{nullptr};
-
-  ibv_device** dev_list{nullptr};
-
-  std::vector<dest_info_t> dest_info;
 
  private:
   /**
