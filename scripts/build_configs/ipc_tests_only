@@ -1,3 +1,4 @@
+#!/bin/bash
 ###############################################################################
 # Copyright (c) Advanced Micro Devices, Inc. All rights reserved.
 #
@@ -22,27 +23,22 @@
 # IN THE SOFTWARE.
 ###############################################################################
 
-#!/bin/bash
-
 set -e
-
-if [ -z $1 ]
-then
-  install_path=~/rocshmem
-else
-  install_path=$1
-fi
 
 src_path=$(dirname "$(realpath $0)")/../../
 
-# If as specific rocSHMEM version is required, the recommended approach
-# is to set environment variable 'rocshmem_ROOT'
 cmake \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=$install_path \
+    -DBUILD_CODE_COVERAGE=${CODE_COV:-OFF} \
+    -DCMAKE_BUILD_TYPE=${BUILD_TYPE:-Release} \
+    -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX:-~/rocshmem} \
     -DCMAKE_VERBOSE_MAKEFILE=OFF \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    -DBUILD_FUNCTIONAL_TESTS=ON \
+    -DBUILD_EXAMPLES=ON \
+    -DBUILD_UNIT_TESTS=OFF \
     -DDEBUG=OFF \
     -DPROFILE=OFF \
+    -DUSE_GDA=OFF \
     -DUSE_RO=OFF \
     -DUSE_IPC=ON \
     -DUSE_THREADS=OFF \
@@ -50,10 +46,6 @@ cmake \
     -DUSE_SINGLE_NODE=ON \
     -DUSE_HDP_FLUSH=OFF \
     -DUSE_HDP_FLUSH_HOST_SIDE=OFF \
-    -DBUILD_LOCAL_GPU_TARGET_ONLY=OFF \
     -DBUILD_TESTS_ONLY=ON \
-    -DBUILD_FUNCTIONAL_TESTS=ON \
-    -DBUILD_EXAMPLES=ON \
-    -DBUILD_UNIT_TESTS=OFF \
-    $src_path
+    $* $src_path
 cmake --build . --parallel 8
