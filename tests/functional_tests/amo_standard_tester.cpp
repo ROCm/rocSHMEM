@@ -156,10 +156,11 @@ void AMOStandardTester<T>::verifyResults(size_t size) {
         default:                                                                                                          \
           break;                                                                                                          \
       }                                                                                                                   \
-      rocshmem_ctx_quiet(ctx);                                                                                            \
-      end_time[wg_id] = wall_clock64();                                                                                   \
-      __hip_atomic_fetch_max(&wf_ret_val[wf_id], ret, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_WORKGROUP);                    \
     }                                                                                                                     \
+    rocshmem_ctx_quiet(ctx);                                                                                              \
+    end_time[wg_id] = wall_clock64();                                                                                     \
+    rocshmem_ctx_getmem(ctx, &s_buf[wg_id], r_buf, sizeof(T), 1);                                                         \
+    __hip_atomic_fetch_max(&wf_ret_val[wf_id], ret, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_WORKGROUP);                      \
     __syncthreads();                                                                                                      \
     int num_wfs = (get_flat_block_size() - 1 ) / wf_size + 1;                                                             \
     for (int i = num_wfs / 2; i > 0; i >>= 1 ) {                                                                          \
