@@ -781,9 +781,9 @@ void GDABackend::modify_qps_rtr_to_rts() {
   }
 }
 
-#ifndef GDA_BNXT
 void GDABackend::create_queues() {
   int ncqes;
+  int resize_length;
 
 #ifdef GDA_IONIC
   ncqes = sq_size << 1;
@@ -791,14 +791,21 @@ void GDABackend::create_queues() {
   ncqes = sq_size;
 #endif
 
-  cqs.resize((maximum_num_contexts_ + 1) * num_pes);
-  qps.resize((maximum_num_contexts_ + 1) * num_pes);
+  resize_length = (maximum_num_contexts_ + 1) * num_pes;
+
+  cqs.resize(resize_length);
+  qps.resize(resize_length);
+
+#ifdef GDA_BNXT
+  bnxt_cqs.resize(resize_length);
+  bnxt_qps.resize(resize_length);
+#endif
 
   create_cqs(ncqes);
   create_qps(sq_size);
 }
 
-
+#ifndef GDA_BNXT
 void* GDABackend::pd_alloc(struct ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type) {
   void* dev_ptr{nullptr};
   //TODO make this configurable, presumably we want it on device for all types?

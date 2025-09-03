@@ -42,19 +42,6 @@ int GDABackend::ibv_mtu_to_int(enum ibv_mtu mtu) {
   }
 }
 
-void GDABackend::create_queues() {
-  int resize_length = (maximum_num_contexts_ + 1) * num_pes;
-
-  cqs.resize(resize_length);
-  bnxt_cqs.resize(resize_length);
-
-  bnxt_qps.resize(resize_length);
-  qps.resize(resize_length);
-
-  create_cqs(sq_size);
-  create_qps(sq_size);
-}
-
 void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   struct bnxt_re_dv_obj dv_obj;
   struct bnxt_re_dv_cq dv_cq;
