@@ -53,9 +53,7 @@ __host__ GDAContext::GDAContext(Backend *b, unsigned int ctx_id)
 }
 
 __host__ GDAContext::~GDAContext() {
-  //TODO the default context destructor is called during the copy-init of the context proxy during init
-  // that causes this qps to be freed for the default context before finalization
-//  CHECK_HIP(hipFree(qps));
+  CHECK_HIP(hipFree(qps));
 }
 
 __device__ void GDAContext::ctx_create() {

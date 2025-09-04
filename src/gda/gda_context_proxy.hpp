@@ -69,7 +69,14 @@ class GDADefaultContextProxy {
 
   GDADefaultContextProxy(GDADefaultContextProxy&& other) = default;
 
-  GDADefaultContextProxy& operator=(GDADefaultContextProxy&& other) = default;
+  GDADefaultContextProxy& operator=(GDADefaultContextProxy&& other) {
+    if (this != &other) {
+      proxy_ = std::move(other.proxy_);
+      constructed_ = true;
+      other.constructed_ = false;
+    }
+    return *this;
+  }
 
   /*
    * @brief Provide access to the memory referenced by the proxy
