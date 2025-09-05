@@ -72,8 +72,8 @@ void AMOStandardTester<T>::launchKernel(dim3 gridsize, dim3 blocksize, int loop,
                      _ret_val, _type, _shmem_context);
 
   _gridSize = gridsize;
-  num_msgs = (loop + args.skip) * gridsize.x;
-  num_timed_msgs = loop;
+  num_msgs = (loop + args.skip) * gridsize.x * blocksize.x;
+  num_timed_msgs = loop * gridsize.x * blocksize.x;
 }
 
 template <typename T>
@@ -81,7 +81,6 @@ void AMOStandardTester<T>::verifyResults(size_t size) {
   T ret;
   if (args.myid == 0) {
     T expected_val = 0;
-
     switch (_type) {
       case AMO_FAddTestType:
         expected_val = 2 * (num_msgs - 1);
@@ -102,7 +101,7 @@ void AMOStandardTester<T>::verifyResults(size_t size) {
         break;
     }
 
-    int fetch_op = (_type == AMO_FAddTestType || _type == AMO_FIncTestType || _type == AMO_FCswapTestType) ? 1: 0;
+    int fetch_op = (_type == AMO_FAddTestType || _type == AMO_FIncTestType || _type == AMO_FCswapTestType) ? 1 : 0;
 
     if (fetch_op == 1) {
       ret = *std::max_element(_ret_val, _ret_val + args.num_wgs);
@@ -117,55 +116,71 @@ void AMOStandardTester<T>::verifyResults(size_t size) {
   }
 }
 
-#define AMO_STANDARD_DEF_GEN(T, TNAME)                                         \
-  template <>                                                                  \
-  __global__ void AMOStandardTest<T>(                                          \
-      int loop, int skip, long long int *start_time,                           \
-      long long int *end_time, char *r_buf, T *s_buf, T *ret_val,              \
-      TestType type, ShmemContextType ctx_type) {                              \
-    __shared__ rocshmem_ctx_t ctx;                                             \
-    int wg_id = get_flat_grid_id();                                            \
-    rocshmem_wg_init();                                                        \
-    rocshmem_wg_ctx_create(ctx_type, &ctx);                                    \
-    if (hipThreadIdx_x == 0) {                                                 \
-      T ret = 0;                                                               \
-      T cond = 0;                                                              \
-      for (int i = 0; i < loop + skip; i++) {                                  \
-        if (i == skip) {                                                       \
-          start_time[wg_id] = wall_clock64();                                  \
-        }                                                                      \
-        switch (type) {                                                        \
-          case AMO_FAddTestType:                                               \
-            ret = rocshmem_ctx_##TNAME##_atomic_fetch_add(ctx, (T *)r_buf, 2,  \
-                                                           1);                 \
-            break;                                                             \
-          case AMO_FIncTestType:                                               \
-            ret =                                                              \
-                rocshmem_ctx_##TNAME##_atomic_fetch_inc(ctx, (T *)r_buf, 1);   \
-            break;                                                             \
-          case AMO_FCswapTestType:                                             \
-            ret = rocshmem_ctx_##TNAME##_atomic_compare_swap(ctx, (T *)r_buf,  \
-                                                              cond, (T)i, 1);  \
-            cond = i;                                                          \
-            break;                                                             \
-          case AMO_AddTestType:                                                \
-            rocshmem_ctx_##TNAME##_atomic_add(ctx, (T *)r_buf, 2, 1);          \
-            break;                                                             \
-          case AMO_IncTestType:                                                \
-            rocshmem_ctx_##TNAME##_atomic_inc(ctx, (T *)r_buf, 1);             \
-            break;                                                             \
-          default:                                                             \
-            break;                                                             \
-        }                                                                      \
-      }                                                                        \
-      rocshmem_ctx_quiet(ctx);                                                 \
-      end_time[wg_id] = wall_clock64();                                        \
-      ret_val[wg_id] = ret;                                                    \
-      rocshmem_ctx_getmem(ctx, &s_buf[wg_id], r_buf, sizeof(T), 1);            \
-    }                                                                          \
-    rocshmem_wg_ctx_destroy(&ctx);                                             \
-    rocshmem_wg_finalize();                                                    \
-  }                                                                            \
+#define AMO_STANDARD_DEF_GEN(T, TNAME)                                                                                    \
+  template <>                                                                                                             \
+  __global__ void AMOStandardTest<T>(int loop, int skip, long long int *start_time, long long int *end_time, char *r_buf, \
+                                     T *s_buf, T *ret_val, TestType type, ShmemContextType ctx_type) {                    \
+    __shared__ rocshmem_ctx_t ctx;                                                                                        \
+    rocshmem_wg_init();                                                                                                   \
+    rocshmem_wg_ctx_create(ctx_type, &ctx);                                                                               \
+    __shared__ long long int wf_start_time[16];                                                                           \
+    __shared__ long long int wf_ret_val[16];                                                                              \
+    int wg_id = get_flat_grid_id();                                                                                       \
+    int t_id  = get_flat_block_id();                                                                                      \
+    int wf_size = 64;                                                                                                     \
+    int wf_id = t_id / wf_size;                                                                                           \
+    wf_ret_val[wf_id] = 0;                                                                                                \
+    T ret = 0;                                                                                                            \
+    T cond = 0;                                                                                                           \
+    for (int i = 0; i < loop + skip; i++) {                                                                               \
+      if (i == skip) {                                                                                                    \
+        wf_start_time[wf_id] = wall_clock64();                                                                            \
+      }                                                                                                                   \
+      switch (type) {                                                                                                     \
+        case AMO_FAddTestType:                                                                                            \
+          ret = rocshmem_ctx_##TNAME##_atomic_fetch_add(ctx, (T *)r_buf, 2, 1);                                           \
+          break;                                                                                                          \
+        case AMO_FCswapTestType:                                                                                          \
+          ret = rocshmem_ctx_##TNAME##_atomic_compare_swap(ctx, (T *)r_buf, cond, (T)i, 1);                               \
+          cond = i;                                                                                                       \
+          break;                                                                                                          \
+        case AMO_FIncTestType:                                                                                            \
+          ret = rocshmem_ctx_##TNAME##_atomic_fetch_inc(ctx, (T *)r_buf, 1);                                              \
+          break;                                                                                                          \
+        case AMO_AddTestType:                                                                                             \
+          rocshmem_ctx_##TNAME##_atomic_add(ctx, (T *)r_buf, 2, 1);                                                       \
+          break;                                                                                                          \
+        case AMO_IncTestType:                                                                                             \
+          rocshmem_ctx_##TNAME##_atomic_inc(ctx, (T *)r_buf, 1);                                                          \
+          break;                                                                                                          \
+        default:                                                                                                          \
+          break;                                                                                                          \
+      }                                                                                                                   \
+    }                                                                                                                     \
+    rocshmem_ctx_quiet(ctx);                                                                                              \
+    end_time[wg_id] = wall_clock64();                                                                                     \
+    rocshmem_ctx_getmem(ctx, &s_buf[wg_id], r_buf, sizeof(T), 1);                                                         \
+    __hip_atomic_fetch_max(&wf_ret_val[wf_id], ret, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_WORKGROUP);                      \
+    __syncthreads();                                                                                                      \
+    int num_wfs = (get_flat_block_size() - 1 ) / wf_size + 1;                                                             \
+    for (int i = num_wfs / 2; i > 0; i >>= 1 ) {                                                                          \
+      if (t_id < i) {                                                                                                     \
+        wf_ret_val[t_id] = max(wf_ret_val[t_id], wf_ret_val[t_id + i]);                                                   \
+      }                                                                                                                   \
+    }                                                                                                                     \
+    ret_val[wg_id] = wf_ret_val[0];                                                                                       \
+    for (int i = num_wfs / 2; i > 0; i >>= 1 ) {                                                                          \
+      if (t_id < i) {                                                                                                     \
+        wf_start_time[t_id] = min(wf_start_time[t_id], wf_start_time[t_id + i]);                                          \
+      }                                                                                                                   \
+    }                                                                                                                     \
+    __syncthreads();                                                                                                      \
+    if (t_id == 0) {                                                                                                      \
+      start_time[wg_id] = wf_start_time[0];                                                                               \
+    }                                                                                                                     \
+    rocshmem_wg_ctx_destroy(&ctx);                                                                                        \
+    rocshmem_wg_finalize();                                                                                               \
+  }                                                                                                                       \
   template class AMOStandardTester<T>;
 
 AMO_STANDARD_DEF_GEN(int, int)
