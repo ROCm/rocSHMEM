@@ -46,7 +46,7 @@ namespace rocshmem {
  * @note Derived classes which use Backend as a base class must add
  * themselves to this enum class to support static polymorphism.
  */
-enum class BackendType { RO_BACKEND, IPC_BACKEND };
+enum class BackendType { RO_BACKEND, IPC_BACKEND, GDA_BACKEND };
 
 /**
  * @brief Helper macro for some dispatch calls
@@ -56,39 +56,51 @@ enum class BackendType { RO_BACKEND, IPC_BACKEND };
 /**
  * @brief Device static dispatch method call.
  */
-#ifdef USE_RO
+#if defined(USE_RO)
 #define DISPATCH(Func)                     \
   static_cast<ROContext *>(this)->Func;
-#else
+#elif defined(USE_IPC)
 #define DISPATCH(Func)                     \
   static_cast<IPCContext *>(this)->Func;
+#elif defined(USE_GDA)
+#define DISPATCH(Func)                     \
+  static_cast<GDAContext *>(this)->Func;
 #endif
 
 /**
  * @brief Device static dispatch method call with a return value.
  */
-#ifdef USE_RO
+#if defined(USE_RO)
 #define DISPATCH_RET(Func)                             \
   auto ret_val = static_cast<ROContext *>(this)->Func; \
   return ret_val;
-#else
-#define DISPATCH_RET(Func)                         \
-  auto ret_val{0};                                 \
-  ret_val = static_cast<IPCContext *>(this)->Func; \
+#elif defined(USE_IPC)
+#define DISPATCH_RET(Func)                              \
+  auto ret_val = static_cast<IPCContext *>(this)->Func; \
+  return ret_val;
+#elif defined(USE_GDA)
+#define DISPATCH_RET(Func)                              \
+  auto ret_val = static_cast<GDAContext *>(this)->Func; \
   return ret_val;
 #endif
+
 /**
  * @brief Device static dispatch method call with a return type of pointer.
  */
-#ifdef USE_RO
+#if defined(USE_RO)
 #define DISPATCH_RET_PTR(Func)                    \
   void *ret_val{nullptr};                         \
   ret_val = static_cast<ROContext *>(this)->Func; \
   return ret_val;
-#else
+#elif defined(USE_IPC)
 #define DISPATCH_RET_PTR(Func)                     \
   void *ret_val{nullptr};                          \
   ret_val = static_cast<IPCContext *>(this)->Func; \
+  return ret_val;
+#elif defined(USE_GDA)
+#define DISPATCH_RET_PTR(Func)                     \
+  void *ret_val{nullptr};                          \
+  ret_val = static_cast<GDAContext *>(this)->Func; \
   return ret_val;
 #endif
 
@@ -99,11 +111,14 @@ enum class BackendType { RO_BACKEND, IPC_BACKEND };
  * MPI_THREAD_MULTIPLE (for RMA and AMO operations) and the ordering and
  * threading semantics of collectives in OpenSHMEM match those of MPI.
  */
-#ifdef USE_RO
+#if defined(USE_RO)
 #define HOST_DISPATCH(Func) static_cast<ROHostContext *>(this)->Func;
-#else
+#elif defined(USE_IPC)
 #define HOST_DISPATCH(Func) static_cast<IPCHostContext *>(this)->Func;
+#elif defined(USE_GDA)
+#define HOST_DISPATCH(Func) static_cast<GDAHostContext *>(this)->Func;
 #endif
+
 /**
  * @brief Host static dispatch method call with return value.
  *
@@ -111,30 +126,37 @@ enum class BackendType { RO_BACKEND, IPC_BACKEND };
  * MPI_THREAD_MULTIPLE (for RMA and AMO operations) and the ordering and
  * threading semantics of collectives in OpenSHMEM match those of MPI.
  */
-
-#ifdef USE_RO
+#if defined(USE_RO)
 #define HOST_DISPATCH_RET(Func)                            \
   auto ret_val = static_cast<ROHostContext *>(this)->Func; \
   return ret_val;
-#else
-#define HOST_DISPATCH_RET(Func)                        \
-  auto ret_val{0};                                     \
-  ret_val = static_cast<IPCHostContext *>(this)->Func; \
+#elif defined(USE_IPC)
+#define HOST_DISPATCH_RET(Func)                             \
+  auto ret_val = static_cast<IPCHostContext *>(this)->Func; \
+  return ret_val;
+#elif defined(USE_GDA)
+#define HOST_DISPATCH_RET(Func)                             \
+  auto ret_val = static_cast<GDAHostContext *>(this)->Func; \
   return ret_val;
 #endif
 
 /**
  * @brief Host static dispatch method call with a return type of pointer.
  */
-#ifdef USE_RO
+#if defined(USE_RO)
 #define HOST_DISPATCH_RET_PTR(Func)                    \
   void *ret_val{nullptr};                              \
   ret_val = static_cast<ROHostContext *>(this)->Func;  \
   return ret_val;
-#else
+#elif defined(USE_IPC)
 #define HOST_DISPATCH_RET_PTR(Func)                    \
   void *ret_val{nullptr};                              \
   ret_val = static_cast<IPCHostContext *>(this)->Func; \
+  return ret_val;
+#elif defined(USE_GDA)
+#define HOST_DISPATCH_RET_PTR(Func)                    \
+  void *ret_val{nullptr};                              \
+  ret_val = static_cast<GDAHostContext *>(this)->Func; \
   return ret_val;
 #endif
 

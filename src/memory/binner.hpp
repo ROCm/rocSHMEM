@@ -30,7 +30,7 @@
 #include <iostream>
 #include <vector>
 
-#include "../constants.hpp"
+#include "constants.hpp"
 #include "bin.hpp"
 
 /**

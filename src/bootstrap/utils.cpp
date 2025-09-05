@@ -34,7 +34,7 @@
 #include <iostream>
 
 #include "utils.hpp"
-#include "../util.hpp"
+#include "util.hpp"
 
 constexpr char HOSTID_FILE[32] = "/proc/sys/kernel/random/boot_id";
 

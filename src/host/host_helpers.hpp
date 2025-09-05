@@ -26,7 +26,7 @@
 #define LIBRARY_SRC_HOST_HOST_HELPERS_HPP_
 
 #include "host.hpp"
-#include "../memory/window_info.hpp"
+#include "memory/window_info.hpp"
 
 #include <cassert>
 

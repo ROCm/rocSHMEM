@@ -32,7 +32,7 @@
 
 #include "hip_allocator.hpp"
 #include "window_info.hpp"
-#include "../bootstrap/bootstrap.hpp"
+#include "bootstrap/bootstrap.hpp"
 
 /**
  * @file remote_heap_info.hpp

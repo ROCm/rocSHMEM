@@ -26,8 +26,8 @@
 #define LIBRARY_SRC_REVERSE_OFFLOAD_CONTEXT_PROXY_HPP_
 
 #include "rocshmem/rocshmem.hpp"
-#include "../device_proxy.hpp"
-#include "../memory/hip_allocator.hpp"
+#include "device_proxy.hpp"
+#include "memory/hip_allocator.hpp"
 #include "context_ro_device.hpp"
 
 namespace rocshmem {

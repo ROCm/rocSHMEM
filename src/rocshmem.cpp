@@ -35,12 +35,17 @@
 
 #include "backend_bc.hpp"
 #include "context_incl.hpp"
-#ifdef USE_RO
+#if defined(USE_RO)
 #include "reverse_offload/backend_ro.hpp"
 #include "reverse_offload/context_ro_tmpl_host.hpp"
-#else
+#elif defined(USE_IPC)
 #include "ipc/backend_ipc.hpp"
 #include "ipc/context_ipc_tmpl_host.hpp"
+#elif defined(USE_GDA)
+#include "gda/backend_gda.hpp"
+#include "gda/context_gda_tmpl_host.hpp"
+#else
+#error "Select one backend among USE_RO, USE_IPC, USE_GDA"
 #endif
 #include "mpi_instance.hpp"
 #include "team.hpp"
@@ -89,12 +94,15 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
   mpi_instance = new MPIInstance(comm);
 
-#ifdef USE_RO
+#if defined(USE_RO)
   CHECK_HIP(hipHostMalloc(&backend, sizeof(ROBackend)));
   backend = new (backend) ROBackend(comm);
-#else
+#elif defined(USE_IPC)
   CHECK_HIP(hipHostMalloc(&backend, sizeof(IPCBackend)));
   backend = new (backend) IPCBackend(comm);
+#elif defined(USE_GDA)
+  CHECK_HIP(hipHostMalloc(&backend, sizeof(GDABackend)));
+  backend = new (backend) GDABackend(comm);
 #endif
 
   if (!backend) {
@@ -166,12 +174,15 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
   rocm_init();
 
-#ifdef USE_RO
+#if defined(USE_RO)
   printf("RO Backend requires MPI library to be initialized, even when using uniqueId initializations!\n");
   abort();
-#else
+#elif defined(USE_IPC)
   CHECK_HIP(hipHostMalloc(&backend, sizeof(IPCBackend)));
   backend = new (backend) IPCBackend(bootstrap);
+#elif defined(USE_GDA)
+  CHECK_HIP(hipHostMalloc(&backend, sizeof(GDABackend)));
+  backend = new (backend) GDABackend(bootstrap);
 #endif
 
   if (!backend) {

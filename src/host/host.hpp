@@ -39,10 +39,10 @@
 #include <map>
 
 #include "rocshmem/rocshmem.hpp"
-#include "../hdp_policy.hpp"
-#include "../memory/symmetric_heap.hpp"
-#include "../memory/window_info.hpp"
-#include "../bootstrap/bootstrap.hpp"
+#include "hdp_policy.hpp"
+#include "memory/symmetric_heap.hpp"
+#include "memory/window_info.hpp"
+#include "bootstrap/bootstrap.hpp"
 
 namespace rocshmem {
 

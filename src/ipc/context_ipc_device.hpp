@@ -25,9 +25,9 @@
 #ifndef LIBRARY_SRC_IPC_CONTEXT_DEVICE_HPP_
 #define LIBRARY_SRC_IPC_CONTEXT_DEVICE_HPP_
 
-#include "../context.hpp"
-#include "../atomic.hpp"
-#include "../team.hpp"
+#include "context.hpp"
+#include "atomic.hpp"
+#include "team.hpp"
 
 namespace rocshmem {
 
@@ -235,8 +235,8 @@ class IPCContext : public Context {
   //internal functions used by collective operations
   template <typename T>
   __device__ void internal_broadcast(T *dest, const T *source, int nelems, int pe_root,
-                            int pe_start, int stride, int pe_size,
-                            long *p_sync);  // NOLINT(runtime/int)
+                                     int pe_start, int stride, int pe_size,
+                                     long *p_sync);  // NOLINT(runtime/int)
 
   template <typename T>
   __device__ void internal_put_broadcast(T *dst, const T *src, int nelems,
@@ -311,7 +311,7 @@ class IPCContext : public Context {
    * @brief Array containing the addresses of the work/sync buffer bases
    * of other PEs
   */
-  char **Wrk_Sync_buffer_bases_{nullptr};
+  char **wrk_sync_pool_bases_{nullptr};
 
   /**
    * @brief Decive context Id

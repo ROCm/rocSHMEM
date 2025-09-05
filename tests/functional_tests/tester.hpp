@@ -187,14 +187,15 @@ class Tester {
   hipEvent_t stop_event;
 };
 
-#define CHECK_HIP(cmd)                                                        \
-  {                                                                           \
-    hipError_t error = cmd;                                                   \
-    if (error != hipSuccess) {                                                \
-      fprintf(stderr, "error: '%s'(%d) at %s:%d\n", hipGetErrorString(error), \
-              error, __FILE__, __LINE__);                                     \
-      exit(EXIT_FAILURE);                                                     \
-    }                                                                         \
-  }
+//TODO remove altogether? THere is a small difference in print format
+#undef CHECK_HIP
+#define CHECK_HIP(instr) do {                                               \
+  hipError_t error = (instr);                                               \
+  if (error != hipSuccess) {                                                \
+    fprintf(stderr, "error: " #instr ": %s (%d) at %s:%d\n",                \
+      hipGetErrorString(error), error, __FILE__, __LINE__);                 \
+    abort();                                                                \
+  }                                                                         \
+} while(0)
 
 #endif /* _TESTER_HPP */

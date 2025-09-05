@@ -36,7 +36,7 @@
 
 #include "socket.hpp"
 #include "utils.hpp"
-#include "../util.hpp"
+#include "util.hpp"
 
 namespace rocshmem {
 

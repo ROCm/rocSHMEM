@@ -25,8 +25,8 @@
 #ifndef LIBRARY_SRC_REVERSE_OFFLOAD_TEAM_INFO_PROXY_HPP_
 #define LIBRARY_SRC_REVERSE_OFFLOAD_TEAM_INFO_PROXY_HPP_
 
-#include "../device_proxy.hpp"
-#include "../team.hpp"
+#include "device_proxy.hpp"
+#include "team.hpp"
 
 namespace rocshmem {
 

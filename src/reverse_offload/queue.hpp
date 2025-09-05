@@ -25,7 +25,7 @@
 #ifndef LIBRARY_SRC_REVERSE_OFFLOAD_QUEUE_HPP_
 #define LIBRARY_SRC_REVERSE_OFFLOAD_QUEUE_HPP_
 
-#include "../hdp_proxy.hpp"
+#include "hdp_proxy.hpp"
 #include "queue_proxy.hpp"
 #include "queue_desc_proxy.hpp"
 

@@ -27,9 +27,9 @@
 #include <mpi.h>
 
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
-#include "../backend_type.hpp"
-#include "../context_incl.hpp"
-#include "../host/host.hpp"
+#include "backend_type.hpp"
+#include "context_incl.hpp"
+#include "host/host.hpp"
 #include "backend_ro.hpp"
 
 namespace rocshmem {

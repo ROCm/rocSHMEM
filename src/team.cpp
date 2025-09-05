@@ -46,6 +46,10 @@ IPCTeam* get_internal_ipc_team(rocshmem_team_t team) {
   return reinterpret_cast<IPCTeam*>(team);
 }
 
+GDATeam* get_internal_gda_team(rocshmem_team_t team) {
+  return reinterpret_cast<GDATeam*>(team);
+}
+
 __host__ __device__ int team_translate_pe(rocshmem_team_t src_team, int src_pe,
                                           rocshmem_team_t dst_team) {
   if (src_team == ROCSHMEM_TEAM_INVALID ||

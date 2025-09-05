@@ -32,7 +32,7 @@
 
 #include "bootstrap.hpp"
 #include "utils.hpp"
-#include "../util.hpp"
+#include "util.hpp"
 #include "socket.hpp"
 
 namespace rocshmem {

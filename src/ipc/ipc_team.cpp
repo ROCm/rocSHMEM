@@ -24,14 +24,15 @@
 
 #include "ipc_team.hpp"
 
-#include "../backend_type.hpp"
+#include "constants.hpp"
+#include "backend_type.hpp"
 #include "backend_ipc.hpp"
 
 namespace rocshmem {
 
 IPCTeam::IPCTeam(Backend *backend, TeamInfo *team_info_parent,
-                     TeamInfo *team_info_world, int num_pes, int my_pe,
-                     MPI_Comm mpi_comm, int pool_index)
+                 TeamInfo *team_info_world, int num_pes, int my_pe,
+                 MPI_Comm mpi_comm, int pool_index)
     : Team(backend, team_info_parent, team_info_world, num_pes, my_pe,
            mpi_comm) {
   type = BackendType::IPC_BACKEND;
@@ -39,18 +40,13 @@ IPCTeam::IPCTeam(Backend *backend, TeamInfo *team_info_parent,
 
   pool_index_ = pool_index;
 
-  barrier_pSync =
-      &(b->barrier_pSync_pool[pool_index * ROCSHMEM_BARRIER_SYNC_SIZE]);
-  reduce_pSync =
-      &(b->reduce_pSync_pool[pool_index * ROCSHMEM_REDUCE_SYNC_SIZE]);
+  barrier_pSync = &(b->barrier_pSync_pool[pool_index * ROCSHMEM_BARRIER_SYNC_SIZE]);
+  reduce_pSync = &(b->reduce_pSync_pool[pool_index * ROCSHMEM_REDUCE_SYNC_SIZE]);
   bcast_pSync = &(b->bcast_pSync_pool[pool_index * ROCSHMEM_BCAST_SYNC_SIZE]);
-  alltoall_pSync =
-      &(b->alltoall_pSync_pool[pool_index * ROCSHMEM_ALLTOALL_SYNC_SIZE]);
+  alltoall_pSync = &(b->alltoall_pSync_pool[pool_index * ROCSHMEM_ALLTOALL_SYNC_SIZE]);
 
-  pWrk = reinterpret_cast<char *>(b->pWrk_pool) +
-         ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE * sizeof(double) * pool_index;
-  pAta = reinterpret_cast<char *>(b->pAta_pool) +
-         ROCSHMEM_ATA_MAX_WRKDATA_SIZE * sizeof(double) * pool_index;
+  pWrk = reinterpret_cast<char *>(b->pWrk_pool) + ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE * sizeof(double) * pool_index;
+  pAta = reinterpret_cast<char *>(b->pAta_pool) + ROCSHMEM_ATA_MAX_WRKDATA_SIZE * sizeof(double) * pool_index;
 }
 
 IPCTeam::~IPCTeam() {}

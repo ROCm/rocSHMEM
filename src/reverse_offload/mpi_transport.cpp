@@ -30,10 +30,10 @@
 #include <unistd.h>
 #include <cassert>
 
-#include "../host/host.hpp"
+#include "host/host.hpp"
 #include "backend_ro.hpp"
 #include "ro_net_team.hpp"
-#include "../util.hpp"
+#include "util.hpp"
 
 namespace rocshmem {
 

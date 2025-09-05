@@ -28,8 +28,8 @@
 
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "host_helpers.hpp"
-#include "../memory/window_info.hpp"
-#include "../util.hpp"
+#include "memory/window_info.hpp"
+#include "util.hpp"
 
 #include <cassert>
 

@@ -23,7 +23,7 @@
  *****************************************************************************/
 
 #include "share_strategy.hpp"
-#include "../constants.hpp"
+#include "constants.hpp"
 
 #include <hip/hip_runtime.h>
 

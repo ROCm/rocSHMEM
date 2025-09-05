@@ -27,11 +27,14 @@
 
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "backend_type.hpp"
-#ifdef USE_RO
+#if defined(USE_RO)
 #include "reverse_offload/context_ro_host.hpp"
-#else
+#elif defined(USE_IPC)
 #include "ipc/context_ipc_host.hpp"
+#elif defined(USE_GDA)
+#include "gda/context_gda_host.hpp"
 #endif
+
 namespace rocshmem {
 
 template <typename T>

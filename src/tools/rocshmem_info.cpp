@@ -1,5 +1,5 @@
 
-#include "../util.hpp"
+#include "util.hpp"
 
 #include <stdio.h>
 #include <fstream>

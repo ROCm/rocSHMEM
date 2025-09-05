@@ -25,7 +25,7 @@
 #ifndef LIBRARY_SRC_REVERSE_OFFLOAD_RO_NET_TEAM_HPP_
 #define LIBRARY_SRC_REVERSE_OFFLOAD_RO_NET_TEAM_HPP_
 
-#include "../team.hpp"
+#include "team.hpp"
 
 #define MAX_ATA_BUFF_SIZE (1024 * 1024 * 128)
 

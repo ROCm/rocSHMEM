@@ -23,6 +23,7 @@
  *****************************************************************************/
 
 #include "amo_standard_tester.hpp"
+#include "tester.hpp"
 
 #include <iostream>
 #include <rocshmem/rocshmem.hpp>
@@ -101,10 +102,7 @@ void AMOStandardTester<T>::verifyResults(size_t size) {
         break;
     }
 
-    int fetch_op = (_type == AMO_FAddTestType || _type == AMO_FIncTestType ||
-                    _type == AMO_FCswapTestType)
-                       ? 1
-                       : 0;
+    int fetch_op = (_type == AMO_FAddTestType || _type == AMO_FIncTestType || _type == AMO_FCswapTestType) ? 1: 0;
 
     if (fetch_op == 1) {
       ret = *std::max_element(_ret_val, _ret_val + args.num_wgs);

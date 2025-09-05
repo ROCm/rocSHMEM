@@ -31,24 +31,67 @@
 
 #include <cstdio>
 
-#include "assembly.hpp"
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "constants.hpp"
+#include "assembly.hpp"
 
 namespace rocshmem {
 
-#define LOAD(VAR) __atomic_load_n((VAR), __ATOMIC_SEQ_CST)
-#define STORE(DST, SRC) __atomic_store_n((DST), (SRC), __ATOMIC_SEQ_CST)
+#define LIKELY(X)   __builtin_expect(X, 1)
+#define UNLIKELY(X) __builtin_expect(X, 0)
 
-#define CHECK_HIP(cmd)                                                        \
-  {                                                                           \
-    hipError_t error = cmd;                                                   \
-    if (error != hipSuccess) {                                                \
-      fprintf(stderr, "error: '%s'(%d) at %s:%d\n", hipGetErrorString(error), \
-              error, __FILE__, __LINE__);                                     \
-      exit(EXIT_FAILURE);                                                     \
-    }                                                                         \
-  }
+/**
+ * @name CHECK_NNULL
+ * @brief Checks if value is NOT null. If it is null print errno and exit the program.
+ *
+ * @param[in] value    Value to check
+ * @param[in] fn_str   String describing checked function
+ *
+ */
+#define CHECK_NNULL(value, fn_str) do {                \
+  if (UNLIKELY(nullptr == (value))) {                  \
+    fprintf(stderr,                                    \
+      "Error: %s: %s (%d) at RocSHMEM::%s:%d\n",       \
+      fn_str, strerror(errno), errno,                  \
+      __FILE__, __LINE__);                             \
+    abort();                                           \
+  }                                                    \
+} while(0)
+
+/**
+ * @name CHECK_ZERO
+ * @brief Checks if value is zero. If it is not zero print errno and exit the program.
+ *
+ * @param[in] value    Value to check
+ * @param[in] fn_str   String describing checked function
+ *
+ */
+#define CHECK_ZERO(value, fn_str) do {                 \
+  if (UNLIKELY(0 != (value))) {                        \
+    fprintf(stderr,                                    \
+      "Error: %s: %s (%d) at RocSHMEM::%s:%d\n",       \
+      fn_str, strerror(errno), errno,             \
+      __FILE__, __LINE__);                             \
+    abort();                                           \
+  }                                                    \
+} while(0)
+
+/**
+ * @name CHECK_HIP
+ * @brief Checks if HIP command succeeded. If it is not not success then it exits the program.
+ *
+ * @param[in] instr    HIP function to run and check
+ *
+ */
+#define CHECK_HIP(instr) do {                               \
+  hipError_t error = (instr);                               \
+  if (error != hipSuccess) {                                \
+    fprintf(stderr,                                         \
+      "Error: " #instr ": %s (%d) at RocSHMEM::%s:%d\n",    \
+      hipGetErrorString(error), error, __FILE__, __LINE__); \
+    abort();                                                \
+  }                                                         \
+} while(0)
 
 #ifdef DEBUG
 #define DPRINTF(...)     \
@@ -132,7 +175,7 @@ __device__ __forceinline__ int get_flat_grid_id() {
  * Returns the flattened thread index of the calling thread within the grid.
  */
 __device__ __forceinline__ int get_flat_id() {
-    return get_flat_grid_id() * (hipBlockDim_x * hipBlockDim_y * hipBlockDim_z) + get_flat_block_id();
+  return get_flat_grid_id() * (hipBlockDim_x * hipBlockDim_y * hipBlockDim_z) + get_flat_block_id();
 }
 
 /*
@@ -141,6 +184,51 @@ __device__ __forceinline__ int get_flat_id() {
 __device__ __forceinline__ bool is_thread_zero_in_wave() {
   return (get_flat_block_id() % WF_SIZE) == 0;
 }
+
+__device__ __forceinline__ uint64_t get_active_lane_mask() {
+  return __ballot(true);
+}
+
+__device__ __forceinline__ unsigned int get_active_lane_count(uint64_t active_lane_mask) {
+  return __popcll(active_lane_mask);
+}
+
+__device__ __forceinline__ unsigned int get_active_lane_count() {
+  return get_active_lane_count(get_active_lane_mask());
+}
+
+__device__ __forceinline__ unsigned int get_active_lane_num(uint64_t active_lane_mask) {
+  return __popcll(active_lane_mask & __lanemask_lt());
+}
+
+__device__ __forceinline__ unsigned int get_active_lane_num() {
+  return get_active_lane_num(get_active_lane_mask());
+}
+
+__device__ __forceinline__ int get_first_active_lane_id(uint64_t active_lane_mask) {
+  return __ffsll((unsigned long long int)active_lane_mask) - 1;
+}
+
+__device__ __forceinline__ int get_first_active_lane_id() {
+  return get_first_active_lane_id(get_active_lane_mask());
+}
+
+__device__ __forceinline__ bool is_first_active_lane(uint64_t active_lane_mask) {
+  return get_active_lane_num(active_lane_mask) == 0;
+}
+
+__device__ __forceinline__ bool is_first_active_lane() {
+  return is_first_active_lane(get_active_lane_mask());
+}
+
+__device__ __forceinline__ bool is_last_active_lane(uint64_t active_lane_mask) {
+  return get_active_lane_num(active_lane_mask) == get_active_lane_count(active_lane_mask) - 1;
+}
+
+__device__ __forceinline__ bool is_last_active_lane() {
+  return is_last_active_lane(get_active_lane_mask());
+}
+
 
 extern __constant__ int* print_lock;
 
@@ -167,6 +255,9 @@ __device__ void gpu_dprintf(const char* fmt, const Args&... args) {
     }
   }
 }
+
+#define LOAD(VAR) __atomic_load_n((VAR), __ATOMIC_SEQ_CST)
+#define STORE(DST, SRC) __atomic_store_n((DST), (SRC), __ATOMIC_SEQ_CST)
 
 __device__ __forceinline__ void memcpy(void* dst, void* src, size_t size) {
   uint8_t* dst_bytes{static_cast<uint8_t*>(dst)};
@@ -264,8 +355,7 @@ __device__ __forceinline__ void memcpy_wave(void* dst, void* src, size_t size) {
 
 int rocm_init();
 
-void rocm_memory_lock_to_fine_grain(void* ptr, size_t size, void** gpu_ptr,
-                                    int gpu_id);
+void rocm_memory_lock_to_fine_grain(void* ptr, size_t size, void** gpu_ptr, int gpu_id);
 
 class rocshmem_env_config {
 public:

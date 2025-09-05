@@ -26,7 +26,7 @@
 
 #include <cassert>
 
-#include "../util.hpp"
+#include "util.hpp"
 
 namespace rocshmem {
 

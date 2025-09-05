@@ -25,14 +25,14 @@
 #ifndef LIBRARY_SRC_IPC_BACKEND_HPP_
 #define LIBRARY_SRC_IPC_BACKEND_HPP_
 
-#include "../backend_bc.hpp"
-#include "../containers/free_list_impl.hpp"
-#include "../hdp_proxy.hpp"
-#include "../memory/hip_allocator.hpp"
-#include "../context_incl.hpp"
+#include "backend_bc.hpp"
+#include "containers/free_list_impl.hpp"
+#include "hdp_proxy.hpp"
+#include "memory/hip_allocator.hpp"
+#include "context_incl.hpp"
 #include "ipc_context_proxy.hpp"
-#include "../ipc_policy.hpp"
-#include "../bootstrap/bootstrap.hpp"
+#include "ipc_policy.hpp"
+#include "bootstrap/bootstrap.hpp"
 
 namespace rocshmem {
 
@@ -113,7 +113,7 @@ class IPCBackend : public Backend {
    *
    * @return Vector containing the addresses of the work/sync bases
    */
-  char** get_wrk_sync_bases() { return Wrk_Sync_buffer_bases_; }
+  char** get_wrk_sync_bases() { return wrk_sync_pool_bases_; }
 
   /**
    * @brief The host-facing interface that will be used
@@ -244,7 +244,7 @@ class IPCBackend : public Backend {
   /**
    * @brief The bitmask representing the availability of teams in the pool
    */
-  char *pool_bitmask_{nullptr};
+  char *team_pool_bitmask_{nullptr};
 
   /**
    * @brief Bitmask to store the reduced result of bitmasks on pariticipating
@@ -253,12 +253,12 @@ class IPCBackend : public Backend {
    * With no thread-safety for this bitmask, multithreaded creation of teams is
    * not supported.
    */
-  char *reduced_bitmask_{nullptr};
+  char *team_reduced_bitmask_{nullptr};
 
   /**
    * @brief Size of the bitmask
    */
-  int bitmask_size_{-1};
+  int team_bitmask_size_{-1};
 
   /**
    * Fine grained memory allocator for buffers used in collectives Routines
@@ -268,31 +268,31 @@ class IPCBackend : public Backend {
   /**
    * @brief Collective routines work/sync buffer size
    */
-  size_t Wrk_Sync_buffer_size_{};
+  size_t wrk_sync_pool_size_{};
 
   /**
    * @brief Collective routines work/sync buffer base ptr
    */
-  char* const Wrk_Sync_buffer_ptr_{nullptr};
+  char* const wrk_sync_pool_{nullptr};
 
   /**
    * @brief Temporary buffer pointer pointing to the same address as
-   * Wrk_Sync_buffer_ptr_, used to calculate the starting addresses of
+   * wrk_sync_pool_, used to calculate the starting addresses of
    * different work and sync buffers.
   */
-  char *temp_Wrk_Sync_buff_ptr_{nullptr};
+  char *wrk_sync_pool_top_{nullptr};
 
   /**
    * @brief Array containing the addresses of the work/sync buffer bases
    * of other PEs
   */
-  char** Wrk_Sync_buffer_bases_{nullptr};
+  char** wrk_sync_pool_bases_{nullptr};
 
   /**
    * @brief Initialize memory required for work/sync buffers and open IPC
-   * handle on PE's Wrk_Sync_buffer_ptr.
+   * handle on PE's wrk_sync_pool.
    */
-  void init_wrk_sync_buffer();
+  void setup_wrk_sync_buffers();
 
   /**
    * @brief Close IPC memory handles for work/sync buffers and deallocate

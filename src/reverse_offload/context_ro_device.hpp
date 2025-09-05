@@ -25,7 +25,7 @@
 #ifndef LIBRARY_SRC_REVERSE_OFFLOAD_CONTEXT_RO_DEVICE_HPP_
 #define LIBRARY_SRC_REVERSE_OFFLOAD_CONTEXT_RO_DEVICE_HPP_
 
-#include "../context.hpp"
+#include "context.hpp"
 #include "block_handle.hpp"
 #include "commands_types.hpp"
 #include "queue.hpp"

@@ -26,6 +26,7 @@
 #cmakedefine PROFILE
 #cmakedefine USE_RO
 #cmakedefine USE_IPC
+#cmakedefine USE_GDA
 #cmakedefine USE_THREADS
 #cmakedefine USE_SHARED_CTX
 #cmakedefine USE_WF_COAL
@@ -41,3 +42,5 @@
 #cmakedefine USE_SINGLE_NODE
 #cmakedefine USE_HDP_FLUSH
 #cmakedefine USE_HDP_FLUSH_HOST_SIDE
+#cmakedefine GDA_IONIC
+#cmakedefine GDA_BNXT

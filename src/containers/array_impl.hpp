@@ -26,7 +26,7 @@
 #define LIBRARY_SRC_CONTAINERS_ARRAY_IMPL_HPP_
 
 #include "array.hpp"
-#include "../constants.hpp"
+#include "constants.hpp"
 
 #include <hip/hip_runtime.h>
 #include <cassert>

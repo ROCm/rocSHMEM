@@ -1,3 +1,4 @@
+#!/bin/bash
 ###############################################################################
 # Copyright (c) Advanced Micro Devices, Inc. All rights reserved.
 #
@@ -22,33 +23,8 @@
 # IN THE SOFTWARE.
 ###############################################################################
 
-#!/bin/bash
-
 set -e
 
-if [ -z $1 ]
-then
-  install_path=~/rocshmem
-else
-  install_path=$1
-fi
+script_path=$(dirname "$(realpath $0)")
 
-src_path=$(dirname "$(realpath $0)")/../../
-
-cmake \
-    -DCMAKE_BUILD_TYPE=Debug \
-    -DCMAKE_INSTALL_PREFIX=$install_path \
-    -DCMAKE_VERBOSE_MAKEFILE=OFF \
-    -DDEBUG=OFF \
-    -DPROFILE=OFF \
-    -DUSE_IPC=OFF \
-    -DUSE_THREADS=OFF \
-    -DUSE_WF_COAL=OFF \
-    -DUSE_HDP_FLUSH=OFF \
-    -DUSE_HDP_FLUSH_HOST_SIDE=OFF \
-    -DUSE_RO=ON \
-    -DBUILD_FUNCTIONAL_TESTS=ON \
-    -DBUILD_UNIT_TESTS=ON \
-    $src_path
-cmake --build . --parallel 8
-cmake --install .
+BUILD_TYPE=Debug source $script_path/ro_net $*

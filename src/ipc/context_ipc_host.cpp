@@ -27,15 +27,15 @@
 #include <mpi.h>
 
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
-#include "../backend_type.hpp"
-#include "../context_incl.hpp"
+#include "backend_type.hpp"
+#include "context_incl.hpp"
 #include "backend_ipc.hpp"
-#include "../host/host.hpp"
+#include "host/host.hpp"
 
 namespace rocshmem {
 
 __host__ IPCHostContext::IPCHostContext(Backend *backend,
-                                            [[maybe_unused]] int64_t options)
+                                        [[maybe_unused]] int64_t options)
     : Context(backend, true) {
   IPCBackend *b{static_cast<IPCBackend *>(backend)};
 
@@ -60,22 +60,22 @@ __host__ IPCHostContext::~IPCHostContext() {
 }
 
 __host__ void IPCHostContext::putmem_nbi(void *dest, const void *source,
-                                           size_t nelems, int pe) {
+                                         size_t nelems, int pe) {
   host_interface->putmem_nbi(dest, source, nelems, pe, context_window_info);
 }
 
 __host__ void IPCHostContext::getmem_nbi(void *dest, const void *source,
-                                           size_t nelems, int pe) {
+                                         size_t nelems, int pe) {
   host_interface->getmem_nbi(dest, source, nelems, pe, context_window_info);
 }
 
 __host__ void IPCHostContext::putmem(void *dest, const void *source,
-                                       size_t nelems, int pe) {
+                                     size_t nelems, int pe) {
   host_interface->putmem(dest, source, nelems, pe, context_window_info);
 }
 
 __host__ void IPCHostContext::getmem(void *dest, const void *source,
-                                       size_t nelems, int pe) {
+                                     size_t nelems, int pe) {
   host_interface->getmem(dest, source, nelems, pe, context_window_info);
 }
 

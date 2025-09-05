@@ -25,7 +25,7 @@
 #ifndef LIBRARY_SRC_IPC_CONTEXT_HOST_HPP_
 #define LIBRARY_SRC_IPC_CONTEXT_HOST_HPP_
 
-#include "../context.hpp"
+#include "context.hpp"
 
 namespace rocshmem {
 
@@ -116,9 +116,9 @@ class IPCHostContext : public Context {
 
   template <typename T>
   __host__ size_t wait_until_some(T *ivars, size_t nelems,
-                                size_t* indices,
-                                const int *status,
-                                int cmp, T val);
+                                  size_t* indices,
+                                  const int *status,
+                                  int cmp, T val);
 
   template <typename T>
   __host__ void wait_until_all_vector(T *ivars, size_t nelems,

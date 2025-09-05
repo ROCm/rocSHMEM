@@ -28,9 +28,9 @@
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "rocshmem/rocshmem.hpp"
 #include "context_ipc_device.hpp"
-#include "../util.hpp"
+#include "util.hpp"
 #include "ipc_team.hpp"
-#include "../rocshmem_calc.hpp"
+#include "rocshmem_calc.hpp"
 
 #include <hip/hip_runtime.h>
 
@@ -45,14 +45,12 @@ __device__ void IPCContext::p(T *dest, T value, int pe) {
 }
 
 template <typename T>
-__device__ void IPCContext::put(T *dest, const T *source, size_t nelems,
-                                int pe) {
+__device__ void IPCContext::put(T *dest, const T *source, size_t nelems, int pe) {
   putmem(dest, source, nelems * sizeof(T), pe);
 }
 
 template <typename T>
-__device__ void IPCContext::put_nbi(T *dest, const T *source, size_t nelems,
-                                    int pe) {
+__device__ void IPCContext::put_nbi(T *dest, const T *source, size_t nelems, int pe) {
   putmem_nbi(dest, source, sizeof(T) * nelems, pe);
 }
 
@@ -64,32 +62,26 @@ __device__ T IPCContext::g(const T *source, int pe) {
 }
 
 template <typename T>
-__device__ void IPCContext::get(T *dest, const T *source, size_t nelems,
-                                int pe) {
+__device__ void IPCContext::get(T *dest, const T *source, size_t nelems, int pe) {
   getmem(dest, source, sizeof(T) * nelems, pe);
 }
 
 template <typename T>
-__device__ void IPCContext::get_nbi(T *dest, const T *source, size_t nelems,
-                                    int pe) {
+__device__ void IPCContext::get_nbi(T *dest, const T *source, size_t nelems, int pe) {
   getmem_nbi(dest, source, sizeof(T) * nelems, pe);
 }
 
 // Atomics
 template <typename T>
 __device__ void IPCContext::amo_add(void *dest, T value, int pe) {
-  uint64_t L_offset =
-      reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
-  ipcImpl_.ipcAMOAdd(
-      reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), value);
+  uint64_t L_offset = reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
+  ipcImpl_.ipcAMOAdd(reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), value);
 }
 
 template <typename T>
 __device__ void IPCContext::amo_set(void *dest, T value, int pe) {
-  uint64_t L_offset =
-      reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
-  ipcImpl_.ipcAMOSet(
-      reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), value);
+  uint64_t L_offset = reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
+  ipcImpl_.ipcAMOSet(reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), value);
 }
 
 template <typename T>
@@ -140,34 +132,25 @@ __device__ void IPCContext::amo_xor(void *dst, T value, int pe) {
 
 template <typename T>
 __device__ void IPCContext::amo_cas(void *dest, T value, T cond, int pe) {
-  uint64_t L_offset =
-      reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
-  ipcImpl_.ipcAMOCas(
-      reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), cond,
-      value);
+  uint64_t L_offset = reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
+  ipcImpl_.ipcAMOCas(reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), cond, value);
 }
 
 template <typename T>
 __device__ T IPCContext::amo_fetch_add(void *dest, T value, int pe) {
-  uint64_t L_offset =
-      reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
-  return ipcImpl_.ipcAMOFetchAdd(
-      reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), value);
+  uint64_t L_offset = reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
+  return ipcImpl_.ipcAMOFetchAdd(reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), value);
 }
 
 template <typename T>
 __device__ T IPCContext::amo_fetch_cas(void *dest, T value, T cond, int pe) {
-  uint64_t L_offset =
-      reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
-  return ipcImpl_.ipcAMOFetchCas(
-      reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), cond,
-      value);
+  uint64_t L_offset = reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
+  return ipcImpl_.ipcAMOFetchCas(reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), cond, value);
 }
 
 // Collectives
 template <typename T, ROCSHMEM_OP Op>
-__device__ void compute_reduce(T *src, T *dst, int size, int wg_id,
-                               int wg_size) {
+__device__ void compute_reduce(T *src, T *dst, int size, int wg_id, int wg_size) {
   for (int i = wg_id; i < size; i += wg_size) {
     OpWrap<Op>::Calc(src, dst, i);
   }
@@ -543,50 +526,42 @@ __device__ void IPCContext::fcollect_linear(rocshmem_team_t team, T *dst,
 
 // Block/wave functions
 template <typename T>
-__device__ void IPCContext::put_wg(T *dest, const T *source, size_t nelems,
-                                   int pe) {
+__device__ void IPCContext::put_wg(T *dest, const T *source, size_t nelems, int pe) {
   putmem_wg(dest, source, nelems * sizeof(T), pe);
 }
 
 template <typename T>
-__device__ void IPCContext::put_nbi_wg(T *dest, const T *source,
-                                       size_t nelems, int pe) {
+__device__ void IPCContext::put_nbi_wg(T *dest, const T *source, size_t nelems, int pe) {
   putmem_nbi_wg(dest, source, nelems * sizeof(T), pe);
 }
 
   template <typename T>
-__device__ void IPCContext::put_wave(T *dest, const T *source, size_t nelems,
-                                     int pe) {
+__device__ void IPCContext::put_wave(T *dest, const T *source, size_t nelems, int pe) {
   putmem_wave(dest, source, nelems * sizeof(T), pe);
 }
 
 template <typename T>
-__device__ void IPCContext::put_nbi_wave(T *dest, const T *source,
-                                         size_t nelems, int pe) {
+__device__ void IPCContext::put_nbi_wave(T *dest, const T *source, size_t nelems, int pe) {
   putmem_nbi_wave(dest, source, nelems * sizeof(T), pe);
 }
 
 template <typename T>
-__device__ void IPCContext::get_wg(T *dest, const T *source, size_t nelems,
-                                   int pe) {
+__device__ void IPCContext::get_wg(T *dest, const T *source, size_t nelems, int pe) {
   getmem_wg(dest, source, nelems * sizeof(T), pe);
 }
 
 template <typename T>
-__device__ void IPCContext::get_nbi_wg(T *dest, const T *source,
-                                       size_t nelems, int pe) {
+__device__ void IPCContext::get_nbi_wg(T *dest, const T *source, size_t nelems, int pe) {
   getmem_nbi_wg(dest, source, nelems * sizeof(T), pe);
 }
 
 template <typename T>
-__device__ void IPCContext::get_wave(T *dest, const T *source, size_t nelems,
-                                     int pe) {
+__device__ void IPCContext::get_wave(T *dest, const T *source, size_t nelems, int pe) {
   getmem_wave(dest, source, nelems * sizeof(T), pe);
 }
 
 template <typename T>
-__device__ void IPCContext::get_nbi_wave(T *dest, const T *source,
-                                         size_t nelems, int pe) {
+__device__ void IPCContext::get_nbi_wave(T *dest, const T *source, size_t nelems, int pe) {
   getmem_nbi_wave(dest, source, nelems * sizeof(T), pe);
 }
 

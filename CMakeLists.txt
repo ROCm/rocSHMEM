@@ -41,8 +41,9 @@ endif()
 ###############################################################################
 option(DEBUG "Enable debug trace" OFF)
 option(PROFILE "Enable statistics and timing support" OFF)
-option(USE_RO "Enable RO conduit." ON)
+option(USE_RO "Enable RO conduit" ON)
 option(USE_IPC "Enable IPC support (using HIP)" OFF)
+option(USE_GDA "Enable GDA conduit" OFF)
 option(USE_THREADS "Enable workgroup threads to share network queues" OFF)
 option(USE_WF_COAL "Enable wavefront message coalescing" OFF)
 option(USE_HEAP_DEVICE_FINEGRAIN "Heap uses GPU memory in finegrain mode" ON)
@@ -68,6 +69,8 @@ option(BUILD_TOOLS "Build binary tools (e.g., rocshmem_info)" ON)
 option(BUILD_LOCAL_GPU_TARGET_ONLY "Build only for GPUs detected on this machine" OFF)
 option(BUILD_CODE_COVERAGE "Build with code coverage flags (gcc only)" OFF)
 
+option(GDA_IONIC "Build for AMD Pensando IONIC RDMA provider" OFF)
+option(GDA_BNXT "Build for Broadcom" OFF)
 
 ###############################################################################
 # PROJECT
@@ -162,7 +165,6 @@ if (NOT BUILD_TESTS_ONLY)
   target_compile_options(
     ${PROJECT_NAME}
     PUBLIC
-      ${offload_flags}
       -fgpu-rdc
   )
 
@@ -172,6 +174,7 @@ if (NOT BUILD_TESTS_ONLY)
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
       $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>            # rocshmem_config.h
       $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include/rocshmem>   # rocshmem_config.h from rocshmem.hpp
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
       $<INSTALL_INTERFACE:include>
   )
 
