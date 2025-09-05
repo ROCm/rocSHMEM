@@ -37,76 +37,79 @@
 
 namespace rocshmem {
 namespace config {
-namespace category {
-  // env var categories
-  // when adding a new category, make sure to add prefix<tag::CATEGORY>
-  enum class tag {
-    ROCSHMEM,
-    BOOTSTRAP,
-    REVERSE_OFFLOAD,
-  };
+  namespace category {
+    // env var categories
+    // when adding a new category, make sure to add prefix<tag::CATEGORY>
+    enum class tag {
+      ROCSHMEM,
+      BOOTSTRAP,
+      REVERSE_OFFLOAD,
+    };
 
-  // env var string prefixes
-  template <tag C> constexpr const char* prefix = "ROCSHMEM_";
-  template <> constexpr const char* prefix<tag::BOOTSTRAP> = "ROCSHMEM_BOOTSTRAP_";
-  template <> constexpr const char* prefix<tag::REVERSE_OFFLOAD> = "ROCSHMEM_RO_";
-}  // namespace category
+    // env var string prefixes
+    // prevent instantiation of default template; require specializations for each tag
+    // if P2041 (see https://wg21.link/P2041) gets merged, can be changed to just = delete instead
+    template <tag C> inline constexpr std::enable_if_t<!std::is_enum_v<decltype(C)>> prefix;
+    template <> inline constexpr const char* prefix<tag::ROCSHMEM> = "ROCSHMEM";
+    template <> inline constexpr const char* prefix<tag::BOOTSTRAP> = "ROCSHMEM_BOOTSTRAP";
+    template <> inline constexpr const char* prefix<tag::REVERSE_OFFLOAD> = "ROCSHMEM_RO";
+  }  // namespace category
 
-namespace parser {
-  // base parser template
-  // calls operator>>(std::istream&, T&)
-  template <typename T>
-  struct parse {
-    std::istream& operator()(std::istream& is, T& value) const {
-      // accept all bases for integer types
-      if constexpr (std::is_integral_v<T>) {
-        is >> std::setbase(0);
+  namespace parser {
+    // base parser template
+    // calls operator>>(std::istream&, T&)
+    template <typename T>
+    struct parse {
+      std::istream& operator()(std::istream& is, T& value) const {
+        // accept all bases for integer types
+        if constexpr (std::is_integral_v<T>) {
+          is >> std::setbase(0);
+        }
+        return is >> value;
       }
-      return is >> value;
-    }
-  };
+    };
 
-  // string parser specialization, parse entire line
-  // operator>>(std::istream&, std::string&) stops on the first whitespace character
-  template <>
-  std::istream& parse<std::string>::operator()(std::istream& is, std::string& value) const {
-    return std::getline(is, value);
-  }
-
-  // bool parser specialization, parse both false/true and 0/1
-  // to accept true/false, True/False, on/off, On/Off, ON/OFF, 0/1, etc.,
-  // can create a facet inheriting from std::num_get<char> and overriding do_get(..., bool& v)
-  // then use the locale with that facet: is.imbue(std::locale(is.getloc(), new bool_get{}))
-  // note that std::locale is responsible for reference-counting the facets, which is very silly
-  // can the locale (and/or facets) have static storage duration?
-  template <>
-  std::istream& parse<bool>::operator()(std::istream& is, bool& value) const {
-    auto pos = is.tellg();
-    is >> std::boolalpha >> value;
-    if (is.fail()) {
-      is.clear();
-      is.seekg(pos);
-      is >> std::noboolalpha >> value;
+    // string parser specialization, parse entire line
+    // operator>>(std::istream&, std::string&) stops on the first whitespace character
+    template <> inline
+    std::istream& parse<std::string>::operator()(std::istream& is, std::string& value) const {
+      return std::getline(is, value);
     }
-    return is;
-  }
 
-  // decimal integer parser
-  template <typename T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
-  struct parse_decimal {
-    std::istream& operator()(std::istream& is, T& value) const {
-      return is >> std::dec >> value;
+    // bool parser specialization, parse both false/true and 0/1
+    // to accept true/false, True/False, on/off, On/Off, ON/OFF, 0/1, etc.,
+    // can create a facet inheriting from std::num_get<char> and overriding do_get(..., bool& v)
+    // then use the locale with that facet: is.imbue(std::locale(is.getloc(), new bool_get{}))
+    // note that std::locale is responsible for reference-counting the facets, which is very silly
+    // can the locale (and/or facets) have static storage duration?
+    template <> inline
+    std::istream& parse<bool>::operator()(std::istream& is, bool& value) const {
+      auto pos = is.tellg();
+      is >> std::boolalpha >> value;
+      if (is.fail()) {
+        is.clear();
+        is.seekg(pos);
+        is >> std::noboolalpha >> value;
+      }
+      return is;
     }
-  };
 
-  // hexadecimal integer parser
-  template <typename T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
-  struct parse_hex {
-    std::istream& operator()(std::istream& is, T& value) const {
-      return is >> std::hex >> value;
-    }
-  };
-}  // namespace parser
+    // decimal integer parser
+    template <typename T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
+    struct parse_decimal {
+      std::istream& operator()(std::istream& is, T& value) const {
+        return is >> std::dec >> value;
+      }
+    };
+
+    // hexadecimal integer parser
+    template <typename T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
+    struct parse_hex {
+      std::istream& operator()(std::istream& is, T& value) const {
+        return is >> std::hex >> value;
+      }
+    };
+  }  // namespace parser
 
   // class var<Type, Category>
   // reads the specified environment variable using std::getenv()
