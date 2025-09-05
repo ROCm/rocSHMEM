@@ -30,10 +30,45 @@
 #include <iomanip>
 #include <iostream>
 #include <istream>
+#include <iterator>
+#include <list>
+#include <mutex>
 #include <ostream>
 #include <sstream>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
+#include <variant>
+
+// forward declarations
+namespace rocshmem {
+namespace config {
+  namespace detail {
+    template <typename T> class var;
+  }  // namespace detail
+
+  namespace category {
+    enum class tag;
+  }  // namespace category
+
+  template <typename T, category::tag> class var;
+
+  template <typename... T>
+  struct type_sequence {
+    using variant = std::variant<T...>;
+    using variant_ref = std::variant<std::reference_wrapper<T>...>;
+    using variant_cref = std::variant<std::reference_wrapper<const T>...>;
+    template <typename U> struct contains : std::disjunction<std::is_same<T, U>...> { };
+    template <typename U> static constexpr bool contains_v = contains<U>::value;
+
+    using var_variant = std::variant<detail::var<T>...>;
+    using var_variant_ref = std::variant<std::reference_wrapper<detail::var<T>>...>;
+    using var_variant_cref = std::variant<std::reference_wrapper<const detail::var<T>>...>;
+  };
+
+  using var_types = type_sequence<bool>;
+}  // namespace config
+}  // namespace rocshmem
 
 namespace rocshmem {
 namespace config {
@@ -111,82 +146,156 @@ namespace config {
     };
   }  // namespace parser
 
+  namespace detail {
+    template <typename T>
+    class var {
+      static_assert(var_types::contains_v<T>,
+                    "T is not in the list of environment variable types");
+    public:
+      using value_type = T;
+      using reference = value_type&;
+      using const_reference = const value_type&;
+
+      // primary constructor
+      template <typename Parser>
+      var(const std::string& _prefix, const std::string& _name, const std::string& _doc,
+          const_reference _default_value, Parser parse)
+          : name(_prefix + "_" + _name),
+            doc(_doc),
+            default_value(_default_value),
+            value(_default_value) {
+        const char* env_value = std::getenv(name.c_str());
+        if (env_value) {
+          std::istringstream iss{std::string(env_value)};
+          std::invoke(parse, iss, value);
+          if (iss.fail()) {
+            std::cerr << name << ": invalid argument '" << env_value << "'" << std::endl;
+            value = default_value;
+          }
+        }
+      }
+
+      // can't figure out how to do an out-of-line definition for this
+      template <typename CharT, typename Traits>
+      friend
+      std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os,
+                                                    const var<value_type>& v) {
+        return os << v.name << "=" << v.value;
+      }
+
+      // public accessors
+      const std::string& get_name() const {
+        return name;
+      }
+      const std::string& get_doc() const {
+        return doc;
+      }
+      const_reference get_default() const {
+        return default_value;
+      }
+      const_reference get_value() const {
+        return value;
+      }
+      operator const_reference() const {
+        return value;
+      }
+
+    private:
+      const std::string name;
+      const std::string doc;
+      const value_type default_value;
+      value_type value;
+    };
+
+    // var_list is a list<variant<var<T>...>> for all valid var types
+    // use std::visit for operations on the list elements
+    using var_list_t = std::list<var_types::var_variant_cref>;
+
+    // var_map is a map<category, var_list>
+    using var_map_t = std::unordered_map<category::tag, var_list_t>;
+
+    // returns a tuple<var_map&, mutex&>, where var_map& and mutex& are statically allocated
+    // in particular, the map is allocated so as to fix the static initialization order problem
+    // since these are used inside the constructor for config::var<T, C> to register variables
+    // which are expected to be allocated statically as well
+    std::tuple<var_map_t&, std::mutex&> get_var_map();
+
+    // register the var<T, C> with the global variable map
+    // map from category C to a list of variables in that category
+    // returns a const_iterator to the inserted variable
+    // list is heterogeneous over all valid variable types, using variant<detail::var<T>&...>
+    // locks mutex to ensure that there aren't race conditions due to parallel modifications
+    template <typename T, category::tag C>
+    auto register_variable(const config::var<T, C>& v) {
+      auto [var_map, map_mutex] = detail::get_var_map();
+      std::lock_guard map_lock(map_mutex);
+
+      // emplace variable to back of list
+      // conversion sequence:
+      //    const var<T, C>&
+      // => const detail::var<T>&
+      // => std::reference_wrapper<const detail::var<T>>
+      // => std::variant<std::reference_wrapper<const detail::var<T>>...>
+      auto& var_list = var_map[C];
+      var_list.emplace_back(v);
+      // std::list::cend() returns iterator to past-the-end
+      // since we just emplaced var to back of list, one before end() will be the back.
+      return std::prev(var_list.cend());
+    }
+
+    // deregister the variable at the const_iterator pos from the list for category C
+    // locks mutex to ensure that there aren't race conditions due to parallel modifications
+    template <category::tag C>
+    void deregister_variable(detail::var_list_t::const_iterator pos) {
+      auto [var_map, map_mutex] = detail::get_var_map();
+      std::lock_guard map_lock(map_mutex);
+      var_map[C].erase(pos);
+    }
+  }  // namespace detail
+
   // class var<Type, Category>
   // reads the specified environment variable using std::getenv()
   // if it set, the variable is parsed (using parser::parse<Type> by default)
   // if it is unset or parsing fails, a default value is used instead
   template <typename T, category::tag C = category::tag::ROCSHMEM>
-  class var {
+  class var : public detail::var<T> {
   public:
+    // type aliases aren't inherited, for some reason?
     using value_type = T;
     using reference = value_type&;
     using const_reference = const value_type&;
     static constexpr category::tag category = C;
 
     // primary constructor
+    // calls detail::var<T>::var() with the category prefix
+    // registers *this with var map and saves the iterator, so it can be deregistered later
     template <typename Parser>
-    var(const std::string& _name, const std::string& _doc, const_reference _default_value,
-        Parser parse);
+    var(const std::string& name, const std::string& doc,
+        const_reference default_value, Parser parse)
+        : detail::var<T>(category::prefix<C>, name, doc, default_value, parse),
+          var_map_pos(detail::register_variable(*this)) { }
 
     // convenience (delegating) constructors
-    template <typename Parser>
-    var(const std::string& _name, const std::string& _doc, Parser parse)
-      : var(_name, _doc, T{}, parse) { }
-    var(const std::string& _name, const std::string& _doc, const_reference _default_value)
-      : var(_name, _doc, _default_value, parser::parse<T>{}) { }
-    var(const std::string& _name, const std::string& _doc)
-      : var(_name, _doc, T{}, parser::parse<T>{}) { }
+    //
+    // ensure that var(name, doc, default_value) is called instead of var(name, doc, parse)
+    // remove the overload from consideration when Parser is not invocable
+    template <typename Parser,
+              typename = std::enable_if_t<std::is_invocable_v<Parser, std::istream&, reference>>>
+    var(const std::string& name, const std::string& doc, Parser parse)
+      : var(name, doc, T{}, parse) { }
+    var(const std::string& name, const std::string& doc, const_reference default_value)
+      : var(name, doc, default_value, parser::parse<T>{}) { }
+    var(const std::string& name, const std::string& doc)
+      : var(name, doc, T{}, parser::parse<T>{}) { }
 
-    // public accessors
-    const std::string& get_name() const {
-      return name;
-    }
-    const std::string& get_doc() const {
-      return doc;
-    }
-    const_reference get_default() const {
-      return default_value;
-    }
-    const_reference get_value() const {
-      return value;
-    }
-    operator const_reference() const {
-      return value;
-    }
-
-    // can't figure out how to do an out-of-line definition for this
-    template <typename CharT, typename Traits>
-    friend
-    std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os,
-                                                  const var<value_type, category>& v) {
-      return os << v.name << "=" << v.value;
+    // deregister *this from var map using saved iterator pos
+    ~var() {
+      detail::deregister_variable<C>(var_map_pos);
     }
 
   private:
-    const std::string name;
-    const std::string doc;
-    const value_type default_value;
-    value_type value;
+    detail::var_list_t::const_iterator var_map_pos;
   };
-
-  template <typename T, category::tag C>
-  template <typename Parser>
-  var<T, C>::var(const std::string& _name, const std::string& _doc, const_reference _default_value,
-                 Parser parse)
-      : name(category::prefix<C> + _name),
-        doc(_doc),
-        default_value(_default_value),
-        value(_default_value) {
-    const char* env_value = std::getenv(name.c_str());
-    if (env_value) {
-      std::istringstream iss{std::string(env_value)};
-      std::invoke(parse, iss, value);
-      if (iss.fail()) {
-        std::cerr << name << ": invalid argument '" << env_value << "'" << std::endl;
-        value = default_value;
-      }
-    }
-  }
 }  // namespace config
 }  // namespace rocshmem
 
