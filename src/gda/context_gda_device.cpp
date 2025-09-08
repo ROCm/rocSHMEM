@@ -130,9 +130,10 @@ __device__ void *GDAContext::shmem_ptr(const void *dest, int pe) {
 
 __device__ void GDAContext::putmem_wg(void *dest, const void *source,
                                      size_t nelems, int pe) {
+  uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
   if (is_thread_zero_in_block()) {
-    printf("rocshmem::gda:putmem_wg not implemented\n");
-    abort();
+    qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
+    qps[pe].quiet();
   }
 }
 
@@ -146,9 +147,9 @@ __device__ void GDAContext::getmem_wg(void *dest, const void *source,
 
 __device__ void GDAContext::putmem_nbi_wg(void *dest, const void *source,
                                          size_t nelems, int pe) {
+  uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
   if (is_thread_zero_in_block()) {
-    printf("rocshmem::gda:putmem_nbi_wg not implemented\n");
-    abort();
+    qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
   }
 }
 
