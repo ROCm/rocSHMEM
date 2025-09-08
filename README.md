@@ -25,10 +25,14 @@ The RO backend is provided as-is with limited support from AMD or AMD Research.
 rocSHMEM base requirements:
 * ROCm v6.2.2 onwards
     *  May work with other versions, but it has not been tested
-* AMD GPUs
+
+* The following AMD GPUs have been fully tested for compatibility with rocSHMEM:
   * MI250X
   * MI300X
   * MI350X (Requires ROCm 7.0 or later)
+
+  > **Note:** Other AMD GPUs might function with unknown limitations. For the complete list of supported hardware, see [ROCm System Requirements](https://rocm.docs.amd.com/projects/install-on-linux-internal/en/latest/reference/system-requirements.html).
+
 * ROCm-aware Open MPI and UCX as described in
   [Building the Dependencies](#building-the-dependencies)
 
