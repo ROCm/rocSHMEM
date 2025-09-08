@@ -450,9 +450,9 @@ TestGDA() {
   ExecTest  "put"              2       32           256       512
   ExecTest  "put"              2       64           1024      8
 
-#  ExecTest  "wgput"            2       1            64        1048576
-#  ExecTest  "wgput"            2       2            64        1048576
-#  ExecTest  "wgput"            2       16           64        8
+  ExecTest  "wgput"            2       1            64        1048576
+  ExecTest  "wgput"            2       2            64        1048576
+  ExecTest  "wgput"            2       16           64        8
 
   ExecTest  "waveput"          2       1            64        1048576
   ExecTest  "waveput"          2       2            64        1048576
@@ -503,9 +503,9 @@ TestGDA() {
   ExecTest  "putnbi"           2       32           256       512
   ExecTest  "putnbi"           2       64           1024      8
 
-#  ExecTest  "wgputnbi"         2       1            64        1048576
-#  ExecTest  "wgputnbi"         2       2            64        1048576
-#  ExecTest  "wgputnbi"         2       16           64        8
+  ExecTest  "wgputnbi"         2       1            64        1048576
+  ExecTest  "wgputnbi"         2       2            64        1048576
+  ExecTest  "wgputnbi"         2       16           64        8
 
   ExecTest  "waveputnbi"       2       1            64        1048576
   ExecTest  "waveputnbi"       2       2            64        1048576
