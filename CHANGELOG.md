@@ -1,6 +1,13 @@
 # Changelog for rocSHMEM
 
-## rocSHMEM 3.x.x for ROCm 7.x.x
+## Unreleased - rocSHMEM 3.x.x for ROCm 7.x.x
+### Added
+* Added the GDA conduit for different NIC vendors
+   * Mellanox ConnectX-7 (IB and RoCE)
+   * Broadcom Thor 2
+* Added new APIs:
+   * `rocshmem_get_device_ctx`
+   * `rocshmem_ptr`
 
 ### Changed
 
@@ -9,8 +16,14 @@
   * `rocshmem_wg_finalize`
   * `rocshmem_wg_init_thread`
 
-## rocSHMEM 3.0.0 for ROCm 7.0.0
+### Removed
 
+* rocSHMEM no-longer requires rocPRIM and rocThrust as dependencies
+
+### Known issues
+* Only a subset of rocSHMEM APIs are implemented for the GDA conduit
+
+## rocSHMEM 3.0.0 for ROCm 7.0.0
 ### Added
 
 * Added the Reverse Offload conduit

@@ -143,3 +143,18 @@ It can be called before ``rocshmem_init``.
 **Description:**
 This routine queries the PE ID of the caller.
 It can be called per thread with no performance penalty.
+
+ROCSHMEM_PTR
+--------------
+
+.. cpp:function:: __host__ void *rocshmem_ptr(void *dest, int pe);
+
+  :param dest: Local symmetric heap allocation pointer for current PE.
+  :param pe:   Remote PE.
+  :returns:    Returns remote symmetric heap device pointer from host-side API.
+               NULL is returned if a valid device pointer cannot be provided.
+               This pointer can be used to issue load/store from custom kernels
+               instead of using rocshmem device side get/put APIs for RMA operations.
+
+**Description:**
+Query rocSHMEM remote symmetric heap pointer
