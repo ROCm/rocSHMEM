@@ -28,7 +28,7 @@
 
 #include "backend_gda.hpp"
 #include "endian.hpp"
-#if !defined(GDA_IONIC) && !defined(GDA_BNXT)
+#if defined(GDA_MLX5)
 #include "segment_builder.hpp"
 #endif
 #include "util.hpp"
@@ -56,12 +56,12 @@ QueuePair::QueuePair(struct ibv_pd* pd) {
   mr_fetching_atomic = ibv_reg_mr(pd, fetching_atomic, 8 * FETCHING_ATOMIC_CNT, access);
   CHECK_NNULL(mr_fetching_atomic, "ibv_reg_mr");
 
-#if defined(GDA_IONIC) || defined(GDA_BNXT)
-  nonfetching_atomic_lkey = mr_nonfetching_atomic->lkey;
-  fetching_atomic_lkey = mr_fetching_atomic->lkey;
-#else
+#if defined(GDA_MLX5)
   nonfetching_atomic_lkey = htobe32(mr_nonfetching_atomic->lkey);
   fetching_atomic_lkey = htobe32(mr_fetching_atomic->lkey);
+#else
+  nonfetching_atomic_lkey = mr_nonfetching_atomic->lkey;
+  fetching_atomic_lkey = mr_fetching_atomic->lkey;
 #endif
 
   for(int i{0}; i < FETCHING_ATOMIC_CNT; i+=WF_SIZE) {
@@ -526,7 +526,7 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   }
   return ret;
 }
-#else // !GDA_IONIC || !GDA_BNXT
+#else // GDA_MLX5
 __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode,
                                             int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
   uint64_t activemask = get_active_lane_mask();

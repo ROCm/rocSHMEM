@@ -47,9 +47,10 @@ target_link_libraries(
     numa
 )
 
-if (GDA_IONIC)
-elseif (GDA_BNXT)
+if (GDA_BNXT)
   add_subdirectory(bnxt)
-else()
+endif()
+
+if (GDA_MLX5)
   target_sources(${PROJECT_NAME} PRIVATE segment_builder.cpp)
 endif()

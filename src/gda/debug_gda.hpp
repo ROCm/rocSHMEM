@@ -191,7 +191,7 @@ void dump_ibv_qp(struct ibv_qp *qp, int conn_num) {
   DPRINTF("=========== QP_DUMP_END CONNECTION#%d  ========\n", conn_num);
 }
 
-#if !defined(GDA_IONIC) && !defined(GDA_BNXT)
+#if defined(GDA_MLX5)
 void dump_mlx5dv_qp(struct mlx5dv_qp *qp_dv, int conn_num) {
   DPRINTF("\n");
   DPRINTF("===============================================\n");

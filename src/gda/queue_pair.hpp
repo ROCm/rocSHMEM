@@ -44,8 +44,10 @@ extern "C" {
 }
 #elif defined(GDA_BNXT)
 #include "bnxt/provider_gda_bnxt.hpp"
-#else
+#elif defined(GDA_MLX5)
 #include <infiniband/mlx5dv.h>
+#else
+#error "Please select an RDMA provider"
 #endif
 
 #include "containers/free_list.hpp"
@@ -56,7 +58,7 @@ extern "C" {
 #define GDA_OP_RDMA_WRITE  IONIC_V2_OP_RDMA_WRITE
 #define GDA_OP_ATOMIC_FA   IONIC_V2_OP_ATOMIC_FA
 #define GDA_OP_ATOMIC_CS   IONIC_V2_OP_ATOMIC_CS
-#elif !defined(GDA_BNXT)
+#elif defined(GDA_MLX5)
 #define GDA_MAX_ATOMIC     1
 #define GDA_OP_RDMA_WRITE  MLX5_OPCODE_RDMA_WRITE
 #define GDA_OP_ATOMIC_FA   MLX5_OPCODE_ATOMIC_FA
@@ -229,7 +231,7 @@ class QueuePair {
   struct bnxt_device_sq sq;
 
   __device__ int poll_cq();
-#else // !GDA_IONIC && !GDA_BNXT
+#else // GDA_MLX5
 
   db_reg_t db{};
 
