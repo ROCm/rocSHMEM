@@ -15,13 +15,17 @@ Requirements
 
 * ROCm 6.4.0 or later, including the :doc:`HIP runtime <hip:index>`. For more information, see `ROCm installation for Linux <https://rocm.docs.amd.com/projects/install-on-linux/en/latest/>`_.
 
-* AMD GPUs
+* The following AMD GPUs have been fully tested for compatibility with rocSHMEM: 
 
   * MI250X
 
   * MI300X
 
   * MI350X (Requires ROCm 7.0 or later)
+
+  .. note::
+
+    Other AMD GPUs might function with unknown limitations. For the complete list of supported hardware, see `ROCm System Requirements <https://rocm.docs.amd.com/projects/install-on-linux-internal/en/latest/reference/system-requirements.html>`_.
 
 * ROCm-aware Open MPI and UCX. For more information, see :ref:`install-dependencies`.
 
