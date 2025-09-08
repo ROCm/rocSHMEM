@@ -27,8 +27,6 @@
 
 #include "team.hpp"
 
-#define MAX_ATA_BUFF_SIZE (1024 * 1024 * 128)
-
 namespace rocshmem {
 
 class Backend;

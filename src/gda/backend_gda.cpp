@@ -399,8 +399,7 @@ void GDABackend::setup_wrk_sync_buffer() {
    * Accommodate largest possible data type for pWrk
   */
   wrk_sync_pool_size_ += sizeof(double) * max_num_teams *
-                           (ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE +
-                            ROCSHMEM_ATA_MAX_WRKDATA_SIZE);
+                           ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE;
 
   /**
    * Size of fence array
@@ -477,11 +476,6 @@ void GDABackend::setup_teams() {
   /* Accommodating for largest possible data type for pWrk */
   pWrk_pool = reinterpret_cast<void *>(wrk_sync_pool_top_);
   wrk_sync_pool_top_ += sizeof(double) * ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE
-                            * max_num_teams;
-
-
-  pAta_pool = reinterpret_cast<void *>(wrk_sync_pool_top_);
-  wrk_sync_pool_top_ += sizeof(double) * ROCSHMEM_ATA_MAX_WRKDATA_SIZE
                             * max_num_teams;
 
   /**

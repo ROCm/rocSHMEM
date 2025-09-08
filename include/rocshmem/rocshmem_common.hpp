@@ -88,7 +88,6 @@ typedef struct {
 } rocshmem_team_config_t;
 
 constexpr size_t ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE = 1024;
-constexpr size_t ROCSHMEM_ATA_MAX_WRKDATA_SIZE = (4 * 1024 * 1024);
 constexpr size_t ROCSHMEM_BARRIER_SYNC_SIZE = 256;
 constexpr size_t ROCSHMEM_REDUCE_SYNC_SIZE = 256;
 // Internally calls sync function, which matches barrier implementation
