@@ -18,7 +18,7 @@ to the host-side runtime, which calls into a traditional MPI or OpenSHMEM
 implementation. This forwarding of requests is transparent to the
 programmer, who only sees the GPU-side interface.
 
-The GPU Direct Async (GDA) backend allows for rocSHMEM to construct NIC operations directly
+The GPU Direct Async (GDA) backend allows for rocSHMEM to issue communication operations to the NIC directly from the device-side code, without involving a CPU proxy.
 within the GPU.
 During initialization we prepare network resources for each NIC vendor using the vendor-appropriate
 Direct Verbs APIs.
