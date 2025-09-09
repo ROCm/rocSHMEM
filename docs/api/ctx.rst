@@ -12,7 +12,9 @@ ROCSHMEM_CTX_CREATE
 -------------------
 
 .. cpp:function:: __device__ int rocshmem_wg_ctx_create(long options, rocshmem_ctx_t *ctx)
+.. cpp:function:: __device__ int rocshmem_wg_ctx_create(rocshmem_ctx_t *ctx)
 .. cpp:function:: __device__ int rocshmem_wg_team_create_ctx(rocshmem_team_t team, long options, rocshmem_ctx_t *ctx)
+.. cpp:function:: __device__ int rocshmem_wg_team_create_ctx(rocshmem_team_t team, rocshmem_ctx_t *ctx)
         
   :param team:    Team handle to derive the context from.
   :param options: Options for context creation. Ignored in current design; use the value ``0``.
