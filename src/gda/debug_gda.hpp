@@ -232,6 +232,6 @@ void dump_mlx5dv_cq(struct mlx5dv_cq *cq_dv, int conn_num) {
   DPRINTF("  (uint64_t) comp_mask       = 0x%lx\n",  cq_dv->comp_mask);
   DPRINTF("================== CQ_DUMP_END ================\n");
 }
-#endif // !GDA_IONIC
+#endif // GDA_MLX5
 
 #endif /* LIBRARY_SRC_GDA_DEBUG_GDA_HPP_ */
