@@ -526,7 +526,7 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   }
   return ret;
 }
-#else // GDA_MLX5
+#if defined(GDA_MLX5)
 __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode,
                                             int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
   uint64_t activemask = get_active_lane_mask();
