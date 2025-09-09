@@ -52,7 +52,7 @@
 
 namespace rocshmem {
 
-constexpr char VERSION[] = "3.0.0";
+constexpr char VERSION[] = "3.1.0";
 
 /******************************************************************************
  **************************** HOST INTERFACE **********************************
@@ -208,7 +208,8 @@ __host__ int rocshmem_my_pe();
  *
  * @return Zero on success and nonzero otherwise.
  */
-__host__ int rocshmem_ctx_create(int64_t options, rocshmem_ctx_t *ctx);
+__host__ int rocshmem_ctx_create(long options, rocshmem_ctx_t *ctx);
+__host__ int rocshmem_ctx_create(rocshmem_ctx_t *ctx);
 
 /**
  * @brief Destroys an OpenSHMEM context.
@@ -410,11 +411,14 @@ __device__ void rocshmem_query_thread(int *provided);
  * thread returns non-zero value, the operation failed and a higher number of
  * `ROCSHMEM_MAX_NUM_CONTEXTS` is required.
  */
-__device__ ATTR_NO_INLINE int rocshmem_wg_ctx_create(int64_t options,
-                                                      rocshmem_ctx_t *ctx);
+__device__ ATTR_NO_INLINE int rocshmem_wg_ctx_create(long options,
+                                                     rocshmem_ctx_t *ctx);
+__device__ ATTR_NO_INLINE int rocshmem_wg_ctx_create(rocshmem_ctx_t *ctx);
 
 __device__ ATTR_NO_INLINE int rocshmem_wg_team_create_ctx(
     rocshmem_team_t team, long options, rocshmem_ctx_t *ctx);
+__device__ ATTR_NO_INLINE int rocshmem_wg_team_create_ctx(
+    rocshmem_team_t team, rocshmem_ctx_t *ctx);
 
 /**
  * @brief Destroys an OpenSHMEM context.

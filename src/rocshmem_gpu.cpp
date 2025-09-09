@@ -324,6 +324,9 @@ __device__ int rocshmem_wg_ctx_create(long options, rocshmem_ctx_t *ctx) {
   __syncthreads();
   return result == true ? 0 : -1;
 }
+__device__ int rocshmem_wg_ctx_create(rocshmem_ctx_t *ctx) {
+  return rocshmem_wg_ctx_create(0, ctx);
+}
 
 __device__ int rocshmem_wg_team_create_ctx(rocshmem_team_t team, long options,
                                            rocshmem_ctx_t *ctx) {
@@ -346,6 +349,9 @@ __device__ int rocshmem_wg_team_create_ctx(rocshmem_team_t team, long options,
   __syncthreads();
 
   return result == true ? 0 : -1;
+}
+__device__ int rocshmem_wg_team_create_ctx(rocshmem_team_t team, rocshmem_ctx_t *ctx) {
+  return rocshmem_wg_team_create_ctx(team, 0, ctx);
 }
 
 __device__ void rocshmem_wg_ctx_destroy(

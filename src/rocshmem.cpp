@@ -653,7 +653,7 @@ __host__ Context *get_internal_ctx(rocshmem_ctx_t ctx) {
   return reinterpret_cast<Context *>(ctx.ctx_opaque);
 }
 
-__host__ int rocshmem_ctx_create(int64_t options, rocshmem_ctx_t *ctx) {
+__host__ int rocshmem_ctx_create(long options, rocshmem_ctx_t *ctx) {
   DPRINTF("Host function: rocshmem_ctx_create\n");
 
   void *phys_ctx;
@@ -668,7 +668,9 @@ __host__ int rocshmem_ctx_create(int64_t options, rocshmem_ctx_t *ctx) {
 
   return 0;
 }
-
+__host__ int rocshmem_ctx_create(rocshmem_ctx_t *ctx) {
+  return rocshmem_ctx_create(0, ctx);
+}
 __host__ void rocshmem_ctx_destroy(rocshmem_ctx_t ctx) {
   DPRINTF("Host function: rocshmem_ctx_destroy\n");
 
