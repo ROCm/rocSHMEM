@@ -74,7 +74,7 @@ custom install path by supplying it as an argument. For example:
 If you have built dependencies in a non-standard path (for example using instructions from [Building the Dependencies](#building-the-dependencies)), you may have to set the following variables to find the dependencies:
 
 ```
-MPI_ROOT=/path/to/openmpi UCX_ROOT=/path/to/ucx CMAKE_PREFIX_PATH="/path/to/rocm:$CMAKE_PREFIX_PATH" ../script/build_configs/ipc_single /path/to/install
+MPI_ROOT=/path/to/openmpi UCX_ROOT=/path/to/ucx CMAKE_PREFIX_PATH="/path/to/rocm:$CMAKE_PREFIX_PATH" ../scripts/build_configs/ipc_single /path/to/install
 ```
 
 ## Compiling/Linking and Running with rocSHMEM
