@@ -131,6 +131,23 @@ rocshmem_team_t team_world_dup[NUM_TEAMS];
     rocshmem_wg_ctx_destroy(&ctx[team_i]);
   }
 
+  /**
+   * Test 3: Create teams using team_create_ctx w/o ctx_type.
+   */
+  for (int team_i = 0; team_i < NUM_TEAMS; team_i++) {
+    rocshmem_wg_team_create_ctx(team[team_i], &ctx[team_i]);
+    if (nullptr == ctx[team_i].ctx_opaque) {
+      printf("Create ctx (w/o ctx_type) on team[%d] returned an invalid context!\n", team_i);
+      abort();
+    }
+  }
+
+  __syncthreads();
+
+  for (int team_i = 0; team_i < NUM_TEAMS; team_i++) {
+    rocshmem_wg_ctx_destroy(&ctx[team_i]);
+  }
+
   rocshmem_wg_finalize();
 }
 

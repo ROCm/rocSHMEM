@@ -37,7 +37,7 @@ __global__ void SyncTest(int loop, int skip, long long int *start_time,
   int wf_id = t_id / wf_size;
 
   rocshmem_wg_init();
-  rocshmem_wg_ctx_create(ctx_type, &ctx);
+  rocshmem_wg_ctx_create(&ctx);
 
   for (int i = 0; i < loop + skip; i++) {
     if (hipThreadIdx_x == 0 && i == skip) {
