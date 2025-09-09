@@ -71,9 +71,6 @@ target_sources(
 ###############################################################################
 # ROCSHMEM
 ###############################################################################
-include(${CMAKE_SOURCE_DIR}/cmake/find_pmix.cmake)
-check_pmix()
-
 if (BUILD_TESTS_ONLY)
   find_package(MPI REQUIRED)
   find_package(hip REQUIRED PATHS /opt/rocm)
@@ -87,21 +84,17 @@ if (BUILD_TESTS_ONLY)
   )
 endif()
 
+find_package(PMIx)
+
 target_compile_definitions(
   ${PROJECT_NAME}
   PRIVATE
     $<$<BOOL:${PMIx_FOUND}>:HAVE_PMIX=1>
 )
 
-target_include_directories(
-  ${PROJECT_NAME}
-  PRIVATE
-    ${PMIX_INCLUDE_DIRECTORIES}
-)
-
 target_link_libraries(
   ${PROJECT_NAME}
   PRIVATE
     roc::rocshmem
-    ${PMIX_LIBRARIES}
+    PMIx::pmix
 )
