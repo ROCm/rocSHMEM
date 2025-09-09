@@ -30,8 +30,11 @@ static void dump_ibv_device(struct ibv_device *x);
 static void dump_ibv_pd(struct ibv_pd *x);
 static void dump_ibv_port_attr(struct ibv_port_attr *x);
 static void dump_ibv_qp(struct ibv_qp *qp, int conn_num);
+
+#if defined(GDA_MLX5)
 static void dump_mlx5dv_qp(struct mlx5dv_qp *qp_dv, int conn_num);
 static void dump_mlx5dv_cq(struct mlx5dv_cq *cq_dv, int conn_num);
+#endif
 
 static void dump_ibv_context(struct ibv_context* x) {
   /*

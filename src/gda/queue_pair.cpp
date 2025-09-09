@@ -248,7 +248,6 @@ __device__ void QueuePair::quiet_internal(uint64_t activemask, uint32_t cons) {
 }
 #endif // GDA_IONIC
 
-#ifndef GDA_BNXT
 #ifdef GDA_IONIC
 __device__ void QueuePair::ring_doorbell(uint32_t pos) {
   // TODO When threads write at once to the same address, not all writes reach the bus.
@@ -260,7 +259,9 @@ __device__ void QueuePair::ring_doorbell(uint32_t pos) {
   }
   __threadfence();
 }
-#else // !GDA_IONIC
+#endif
+
+#if defined(GDA_MLX5)
 __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint64_t my_sq_counter) {
   swap_endian_store(const_cast<uint32_t*>(dbrec), (uint32_t)my_sq_counter);
   __atomic_signal_fence(__ATOMIC_SEQ_CST);
@@ -270,15 +271,15 @@ __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint64_t my_sq_counter
   db_uint ^= 0x100;
   __hip_atomic_store(&db.uint, db_uint, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
 }
-#endif // !GDA_IONIC
-#endif // !GDA_BNXT
+#endif // GDA_MLX5
 
-#ifndef GDA_BNXT
 #ifdef GDA_IONIC
 __device__ void QueuePair::quiet() {
   quiet_internal(get_same_qp_lane_mask(), sq_prod);
 }
-#else // !GDA_IONIC
+#endif
+
+#if defined(GDA_MLX5)
 __device__ void QueuePair::quiet() {
   constexpr size_t BROADCAST_SIZE = 1024 / WF_SIZE;
   __shared__ uint64_t wqe_broadcast[BROADCAST_SIZE];
@@ -360,10 +361,8 @@ __device__ void QueuePair::quiet() {
     }
   }
 }
-#endif // !GDA_IONIC
-#endif // !GDA_BNXT
+#endif // GDA_MLX5
 
-#ifndef GDA_BNXT
 #ifdef GDA_IONIC
 __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
   uint64_t activemask = get_same_qp_lane_mask();
@@ -408,7 +407,9 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
 
   commit_sq(is_last_active_lane(activemask), my_sq_prod, num_wqes, wqe);
 }
-#else // !GDA_IONIC
+#endif
+
+#if defined (GDA_MLX5)
 __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
   uint64_t activemask = get_active_lane_mask();
   uint8_t num_active_lanes = get_active_lane_count(activemask);
@@ -462,10 +463,8 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
     __hip_atomic_store(&sq_db_touched, wave_sq_counter + num_wqes, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
   }
 }
-#endif // !GDA_IONIC
-#endif // !GDA_BNXT
+#endif // GDA_MLX5
 
-#ifndef GDA_BNXT
 #ifdef GDA_IONIC
 __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode,
                                             int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
@@ -526,6 +525,8 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   }
   return ret;
 }
+#endif
+
 #if defined(GDA_MLX5)
 __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode,
                                             int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
@@ -614,8 +615,7 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   }
   return ret;
 }
-#endif // !GDA_IONIC
-#endif // !GDA_BNXT
+#endif // GDA_MLX5
 
 /******************************************************************************
  ****************************** SHMEM INTERFACE *******************************
