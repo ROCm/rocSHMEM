@@ -20,7 +20,7 @@ programmer, who only sees the GPU-side interface.
 
 The GPU Direct Async (GDA) backend allows for rocSHMEM to construct NIC operations directly
 within the GPU.
-During initialization we prepair network resources for each NIC vendor using their
+During initialization we prepare network resources for each NIC vendor using the vendor-appropriate
 Direct Verbs APIs.
 At runtime, we construct the relevent Work Queue Entries (WQEs) and post them our send queues.
 We also allow for device-side polling of our Compleation Queues (CQs).
