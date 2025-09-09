@@ -81,8 +81,20 @@ __device__ void GDAContext::putmem(void *dest, const void *source, size_t nelems
 
 __device__ void GDAContext::getmem(void *dest, const void *source, size_t nelems,
                                   int pe) {
-  printf("rocshmem::gda:getmem not implemented\n");
-  abort();
+  const char *src_typed = reinterpret_cast<const char *>(source);
+  uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
+  bool need_turn {true};
+  uint64_t turns = __ballot(need_turn);
+  while (turns) {
+    uint8_t lane = __ffsll((unsigned long long)turns) - 1;
+    int pe_turn = __shfl(pe, lane);
+    if (pe_turn == pe) {
+      qps[pe].get_nbi(dest, base_heap[pe] + L_offset, nelems, pe);
+      qps[pe].quiet();
+      need_turn = false;
+    }
+    turns = __ballot(need_turn);
+  }
 }
 
 __device__ void GDAContext::putmem_nbi(void *dest, const void *source,
@@ -103,8 +115,19 @@ __device__ void GDAContext::putmem_nbi(void *dest, const void *source,
 
 __device__ void GDAContext::getmem_nbi(void *dest, const void *source,
                                       size_t nelems, int pe) {
-  printf("rocshmem::gda:getmem_nbi  not implemented\n");
-  abort();
+  const char *src_typed = reinterpret_cast<const char *>(source);
+  uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
+  bool need_turn {true};
+  uint64_t turns = __ballot(need_turn);
+  while (turns) {
+    uint8_t lane = __ffsll((unsigned long long)turns) - 1;
+    int pe_turn = __shfl(pe, lane);
+    if (pe_turn == pe) {
+      qps[pe].get_nbi(dest, base_heap[pe] + L_offset, nelems, pe);
+      need_turn = false;
+    }
+    turns = __ballot(need_turn);
+  }
 }
 
 __device__ void GDAContext::fence() { //TODO: optimize
