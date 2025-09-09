@@ -23,7 +23,7 @@ within the GPU.
 During initialization we prepare network resources for each NIC vendor using the vendor-appropriate
 Direct Verbs APIs.
 When calling the device-side rocSHMEM API, the device threads are used to construct Work Queue Entries (WQEs) and post the communication to the send queues of the NIC directly.
-We also allow for device-side polling of our Compleation Queues (CQs).
+Completion Queues (CQs) are polled from the device-side code as well.
 
 The RO and GDA backend is provided as-is with limited support from AMD or AMD Research.
 
