@@ -210,7 +210,7 @@ BUILD_DIR=/path/to/not_rocshmem_src_or_build/dependencies /path/to/rocshmem_src/
 
 After compiling and installing UCX and Open MPI, please update your `PATH` and `LD_LIBRARY_PATH`
 to point to the installation locations.
-The exact locations will be printed if the script is run successfully.
+The exact locations will be printed if the script ran successfully.
 
 ## Building the Dependencies from Source
 To build and configure ROCm-Aware UCX (1.17.0 or later), you need to:
