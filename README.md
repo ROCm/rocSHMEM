@@ -200,7 +200,7 @@ Other MPI implementations, such as MPICH,
 _should_ be compatible with rocSHMEM but it has not been thoroughly tested.
 
 ## Building the Dependencies using our Helper Script
-We have script to install dependencies.
+We have a script to install dependencies.
 However, it is not guaranteed to work and perform optimally on all platforms.
 Configuration options are platform dependent.
 
