@@ -13,3 +13,4 @@
 - Avinash Kethineedi
 - Yiltan Temucin
 - Aurelien Bouteiller
+- Omri Mor
