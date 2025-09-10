@@ -115,6 +115,8 @@ void GDABackend::init() {
   setup_team_world();
   rte_barrier();
 
+  setup_ipc();
+
   setup_ibv();
   setup_heap_memory_rkey();
   setup_gpu_qps();
@@ -132,6 +134,8 @@ GDABackend::~GDABackend() {
   CHECK_HIP(hipFree(team_world));
 
   cleanup_wrk_sync_buffer();
+
+  cleanup_ipc();
 
   cleanup_gpu_qps();
   cleanup_heap_memory_rkey();
@@ -166,6 +170,18 @@ void GDABackend::read_env() {
   }
 }
 
+void GDABackend::setup_ipc() {
+  const auto &heap_bases{heap.get_heap_bases()};
+
+  if (MPI_COMM_NULL != backend_comm)
+    ipcImpl.ipcHostInit(my_pe, heap_bases, backend_comm);
+  else
+    ipcImpl.ipcHostInit(my_pe, heap_bases, backend_bootstr);
+}
+
+void GDABackend::cleanup_ipc() {
+  ipcImpl.ipcHostStop();
+}
 
 void GDABackend::setup_host_ctx() {
   default_host_ctx = std::make_unique<GDAHostContext>(this, 0);

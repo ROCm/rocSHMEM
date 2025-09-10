@@ -27,12 +27,12 @@
 #include "backend_type.hpp"
 #include "context_incl.hpp"
 
-#if defined(USE_RO)
+#if defined(USE_GDA)
+#include "gda/backend_gda.hpp"
+#elif defined(USE_RO)
 #include "reverse_offload/backend_ro.hpp"
 #elif defined(USE_IPC)
 #include "ipc/backend_ipc.hpp"
-#elif defined(USE_GDA)
-#include "gda/backend_gda.hpp"
 #endif
 
 #include <cassert>
@@ -249,22 +249,22 @@ void Backend::reset_stats() {
 }
 
 __device__ bool Backend::create_ctx(int64_t option, rocshmem_ctx_t* ctx) {
-#if defined(USE_RO)
+#if defined(USE_GDA)
+  return static_cast<GDABackend*>(this)->create_ctx(option, ctx);
+#elif defined(USE_RO)
   return static_cast<ROBackend*>(this)->create_ctx(option, ctx);
 #elif defined(USE_IPC)
   return static_cast<IPCBackend*>(this)->create_ctx(option, ctx);
-#elif defined(USE_GDA)
-  return static_cast<GDABackend*>(this)->create_ctx(option, ctx);
 #endif
 }
 
 __device__ void Backend::destroy_ctx(rocshmem_ctx_t* ctx) {
-#if defined(USE_RO)
+#if defined(USE_GDA)
+  static_cast<GDABackend*>(this)->destroy_ctx(ctx);
+#elif defined(USE_RO)
   static_cast<ROBackend*>(this)->destroy_ctx(ctx);
 #elif defined(USE_IPC)
   static_cast<IPCBackend*>(this)->destroy_ctx(ctx);
-#elif defined(USE_GDA)
-  static_cast<GDABackend*>(this)->destroy_ctx(ctx);
 #endif
 }
 

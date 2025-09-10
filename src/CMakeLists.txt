@@ -63,12 +63,12 @@ target_compile_options(${PROJECT_NAME} PUBLIC ${ROCSHMEM_COMPILE_FLAGS})
 ###############################################################################
 # ROCSHMEM TARGET FOR BACKENDS
 ###############################################################################
-if (USE_RO)
+if (USE_GDA)
+add_subdirectory(gda)
+elseif (USE_RO)
 add_subdirectory(reverse_offload)
 elseif (USE_IPC)
 add_subdirectory(ipc)
-elseif (USE_GDA)
-add_subdirectory(gda)
 endif()
 add_subdirectory(host)
 add_subdirectory(containers)

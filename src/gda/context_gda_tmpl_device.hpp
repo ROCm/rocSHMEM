@@ -42,6 +42,12 @@ namespace rocshmem {
  *****************************************************************************/
 template <typename T>
 __device__ void GDAContext::p(T *dest, T value, int pe) {
+  int local_pe{-1};
+  if (ipcImpl_.isIpcAvailable(my_pe, pe, &local_pe)) {
+    long L_offset{reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[ipcImpl_.shm_rank]};
+    ipcImpl_.ipcCopy(ipcImpl_.ipc_bases[local_pe] + L_offset, reinterpret_cast<void *>(&value), sizeof(T));
+    return;
+  }
   putmem_nbi(dest, &value, sizeof(T), pe);
 }
 
@@ -58,6 +64,13 @@ __device__ void GDAContext::put_nbi(T *dest, const T *source, size_t nelems, int
 template <typename T>
 __device__ T GDAContext::g(const T *source, int pe) {
   T ret;
+  int local_pe{-1};
+  if (ipcImpl_.isIpcAvailable(my_pe, pe, &local_pe)) {
+    const char *src_typed{reinterpret_cast<const char *>(source)};
+    long L_offset{const_cast<char *>(src_typed) - ipcImpl_.ipc_bases[ipcImpl_.shm_rank]};
+    ipcImpl_.ipcCopy(&ret, ipcImpl_.ipc_bases[local_pe] + L_offset, sizeof(T));
+    return ret;
+  }
   printf("rocshmem::gda:g not implemented\n");
   abort();
   //TODO the following is incorrect because ret is not ibv registered memory

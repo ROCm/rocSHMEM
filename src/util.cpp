@@ -127,9 +127,14 @@ void rocm_memory_lock_to_fine_grain(void* ptr, size_t size, void** gpu_ptr,
 rocshmem_env_config::rocshmem_env_config() {
   char* env_value = NULL;
 
+  env_value = getenv("ROCSHMEM_DISABLE_IPC");
+  if (NULL != env_value) {
+    disable_ipc = atoi(env_value);
+  }
+  // For backward compatibility, synonymous with ROCSHMEM_DISABLE_IPC
   env_value = getenv("ROCSHMEM_RO_DISABLE_IPC");
   if (NULL != env_value) {
-    ro_disable_ipc = atoi(env_value);
+    disable_ipc = atoi(env_value);
   }
 
   env_value = getenv("ROCSHMEM_RO_PROGRESS_DELAY");
@@ -163,8 +168,8 @@ rocshmem_env_config::rocshmem_env_config() {
   }
 }
 
-int rocshmem_env_config::get_ro_disable_ipc() {
-  return ro_disable_ipc;
+int rocshmem_env_config::get_disable_ipc() {
+  return disable_ipc;
 }
 
 int rocshmem_env_config::get_ro_progress_delay() {
