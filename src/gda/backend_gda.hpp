@@ -33,6 +33,7 @@
 #include "gda_context_proxy.hpp"
 #include "queue_pair.hpp"
 #include "bootstrap/bootstrap.hpp"
+#include "debug_gda.hpp"
 
 namespace rocshmem {
 
@@ -43,25 +44,6 @@ class HostInterface;
 
 class GDABackend : public Backend {
  private:
-  typedef struct ib_state {
-    struct ibv_context* context;
-    struct ibv_pd* pd_orig;
-#ifndef GDA_BNXT
-    struct ibv_pd* pd_parent;
-#endif
-#ifdef GDA_IONIC
-    struct ibv_pd* pd_uxdma[2];
-#endif
-    struct ibv_mr* mr;
-    struct ibv_port_attr portinfo;
-
-#ifdef GDA_IONIC
-    void *gpu_db_page;
-    uint64_t *gpu_db_cq;
-    uint64_t *gpu_db_sq;
-#endif
-  } ib_state_t;
-
   typedef struct dest_info {
     int lid;
     int qpn;
@@ -69,61 +51,44 @@ class GDABackend : public Backend {
     union ibv_gid gid;
   } dest_info_t;
 
-#ifndef GDA_BNXT
-  class State {
-   public:
-    ibv_qp_attr exp_qp_attr{};
-    uint64_t exp_attr_mask{};
-  };
+  char *requested_dev = nullptr;
+  struct ibv_context *context = nullptr;;
+  struct ibv_pd *pd_orig = nullptr;
 
-  class InitQPState : public State {
-   public:
-    InitQPState() {
-      exp_qp_attr.qp_state = IBV_QPS_INIT;
-      exp_qp_attr.qp_access_flags = IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
-      exp_attr_mask = IBV_QP_STATE | IBV_QP_PKEY_INDEX | IBV_QP_PORT;
-    }
-  };
+  struct ibv_port_attr portinfo;
+  union ibv_gid gid;
+  int port = 1;
+  int gid_index;
 
-  class RtrState : public State {
-   public:
-    RtrState() {
-      exp_qp_attr.qp_state = IBV_QPS_RTR;
-      exp_qp_attr.ah_attr.sl = 1;
-      exp_qp_attr.max_dest_rd_atomic = GDA_MAX_ATOMIC;
-      exp_qp_attr.min_rnr_timer = 12;
-      exp_attr_mask = IBV_QP_STATE | IBV_QP_AV | IBV_QP_PATH_MTU;
-    }
-  };
+  uint32_t *heap_rkey = nullptr;
+  struct ibv_mr *heap_mr = nullptr;
 
-  class RtsState : public State {
-   public:
-    RtsState() {
-      exp_qp_attr.qp_state = IBV_QPS_RTS;
-      exp_qp_attr.timeout = 14;
-      exp_qp_attr.retry_cnt = 7;
-      exp_qp_attr.rnr_retry = 7;
-      exp_qp_attr.max_rd_atomic = GDA_MAX_ATOMIC;
-      exp_attr_mask = IBV_QP_STATE | IBV_QP_TIMEOUT | IBV_QP_RETRY_CNT | IBV_QP_RNR_RETRY | IBV_QP_MAX_QP_RD_ATOMIC;
-    }
-  };
+  uint32_t sq_size = 1024;
+  QueuePair *gpu_qps = nullptr;
+  std::vector<ibv_qp*> qps;
+  std::vector<ibv_cq*> cqs;
+  std::vector<dest_info_t> dest_info;
 
-  class QPInitAttr {
-   public:
-    explicit QPInitAttr(ibv_qp_cap cap) {
-      attr.cap = cap;
-      attr.sq_sig_all = 0;
-    }
-    ibv_qp_init_attr_ex attr{};
-  };
+#ifdef GDA_BNXT
+  std::vector<struct bnxt_host_qp> bnxt_qps;
+  std::vector<struct bnxt_host_cq> bnxt_cqs;
+
+  struct bnxt_re_dv_db_region_attr db_region_attr;
+#else
+  struct ibv_pd *pd_parent = nullptr;
+#endif
+
+#ifdef GDA_IONIC
+  struct ibv_pd *pd_uxdma[2];
+  void *gpu_db_page = nullptr;
+  uint64_t *gpu_db_cq = nullptr;
+  uint64_t *gpu_db_sq = nullptr;
 #endif
 
  /**
    * @brief Common code invoked from the different constructors
    */
   void read_env();
-  void setup_ibv();
-  void cleanup_ibv();
 
  public:
   friend GDAContext;
@@ -299,61 +264,76 @@ class GDABackend : public Backend {
 
   void initialize_gpu_qp(QueuePair* qp, int conn_num);
 
-#ifndef GDA_BNXT
-  InitQPState initqp(uint8_t port);
+  /**
+   * @brief Setup InfiniBand Resources
+   */
+  void setup_ibv();
 
-  RtrState rtr(dest_info_t* dest, uint8_t port);
+  /**
+   * @brief Cleanup InfiniBand Resources
+   */
+  void cleanup_ibv();
 
-  RtsState rts(dest_info_t* dest);
+  /**
+   * @brief Open InfiniBand Device and create common structures
+   */
+  void open_ib_device();
 
-  QPInitAttr qpattr(ibv_qp_cap cap);
+  /**
+   * @brief Selects the best GID index
+   */
+  void select_gid_index();
 
-  void init_qp_status(ibv_qp* qp, uint8_t port);
-#endif
+  /**
+   * @brief Create all CQs and QPs
+   */
+  void create_queues();
 
-  void change_status_rtr(ibv_qp* qp, dest_info_t* dest, uint8_t port);
+  /**
+   * @brief Create all CQs with a of length ncqes
+   */
+  void create_cqs(int ncqes);
 
-  void change_status_rts(ibv_qp* qp, dest_info_t* dest);
+  /**
+   * @brief Create all QPs with a SQ of length sq_length
+   */
+  void create_qps(int sq_length);
 
-  void create_qps(uint8_t port, ibv_port_attr* ib_port_att);
+  /**
+   * @brief Exchange QP information for connection
+   */
+  void exchange_qp_dest_info();
 
-#ifdef GDA_BNXT
-  void init_qp_status(uint8_t port);
+  /**
+   * @brief Modify all QPs from RESET to INIT state
+   */
+  void modify_qps_reset_to_init();
 
-  void create_cqs(int ncqs, int cqe);
+  /**
+   * @brief Modify all QPs from INIT to RTR state
+   */
+  void modify_qps_init_to_rtr();
 
-  void create_qps_impl(int nqps);
+  /**
+   * @brief Modify all QPs from RTR to RTs state
+   */
+  void modify_qps_rtr_to_rts();
 
+  /**
+   * @brief Converts an ibv_mtu to an integer
+   */
   int ibv_mtu_to_int(enum ibv_mtu mtu);
-#else
-  template <typename T>
-  void try_to_modify_qp(ibv_qp* qp, T state);
 
+#ifndef GDA_BNXT
   static void* pd_alloc(ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type);
 
   static void pd_release(ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type);
 
-  void init_parent_domain_attr(ibv_parent_domain_init_attr* attr);
-
-  ibv_cq* create_cq(ibv_context* context, ibv_pd* pd, int cqe);
-
-  ibv_qp* create_qp(ibv_pd* pd, ibv_context* context, ibv_qp_init_attr_ex* qp_attr, ibv_cq* rcq);
+  void create_parent_domain();
 #endif
-
-  void ib_init(ibv_device* ib_dev, uint8_t port);
-
-  void init_gid_index(uint8_t port);
 
   void setup_gpu_qps();
   void cleanup_gpu_qps();
-
-  char* requested_dev{nullptr};
-
-  ibv_device** dev_list{nullptr};
-
-  ib_state_t* ib_state{nullptr};
-
-  std::vector<dest_info_t> dest_info;
 
  private:
   /**
@@ -456,28 +436,6 @@ class GDABackend : public Backend {
    * @brief rte barrier for initialization
    */
   void rte_barrier();
-
-  QueuePair *gpu_qps{nullptr};
-
-  std::vector<ibv_qp*> qps;
-
-  std::vector<ibv_cq*> cqs;
-
-  uint32_t sq_size{1024};
-
-  uint32_t *heap_rkey{nullptr};
-
-  ibv_mr *heap_mr{nullptr};
-
-  union ibv_gid gid;
-  int gid_index;
-
-#ifdef GDA_BNXT
-  std::vector<struct bnxt_host_qp> bnxt_qps;
-  std::vector<struct bnxt_host_cq> bnxt_cqs;
-
-  struct bnxt_re_dv_db_region_attr db_region_attr;
-#endif
 };
 
 }  // namespace rocshmem

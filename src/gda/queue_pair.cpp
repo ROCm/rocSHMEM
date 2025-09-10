@@ -28,7 +28,7 @@
 
 #include "backend_gda.hpp"
 #include "endian.hpp"
-#if !defined(GDA_IONIC) && !defined(GDA_BNXT)
+#if defined(GDA_MLX5)
 #include "segment_builder.hpp"
 #endif
 #include "util.hpp"
@@ -37,37 +37,53 @@
 namespace rocshmem {
 
 QueuePair::QueuePair(struct ibv_pd* pd) {
+  int access = IBV_ACCESS_LOCAL_WRITE
+             | IBV_ACCESS_REMOTE_WRITE
+             | IBV_ACCESS_REMOTE_READ
+             | IBV_ACCESS_REMOTE_ATOMIC;
+
   allocator.allocate((void**)&nonfetching_atomic, 8);
-  CHECK_HIP(hipMemset(nonfetching_atomic, 0, 8));
-  int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
-
-  ibv_mr *mr = ibv_reg_mr(pd, nonfetching_atomic, 8, access);
-  CHECK_NNULL(mr, "ibv_reg_mr");
-
-#if defined(GDA_IONIC) || defined(GDA_BNXT)
-  nonfetching_atomic_lkey = mr->lkey;
-#else
-  nonfetching_atomic_lkey = htobe32(mr->lkey);
-#endif
-
   allocator.allocate((void**)&fetching_atomic, 8 * FETCHING_ATOMIC_CNT);
-  CHECK_HIP(hipMemset(fetching_atomic, 0, 8 * FETCHING_ATOMIC_CNT));
-  access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
-  mr = ibv_reg_mr(pd, fetching_atomic, 8 * FETCHING_ATOMIC_CNT, access);
-  CHECK_NNULL(mr, "ibv_reg_mr");
-#if defined(GDA_IONIC) || defined(GDA_BNXT)
-  fetching_atomic_lkey = mr->lkey;
-#else
-  fetching_atomic_lkey = htobe32(mr->lkey);
-#endif
-
   allocator.allocate((void**)&fetching_atomic_freelist, sizeof(FreeListT*));
   new (fetching_atomic_freelist) FreeListT();
+
+  CHECK_HIP(hipMemset(nonfetching_atomic, 0, 8));
+  CHECK_HIP(hipMemset(fetching_atomic, 0, 8 * FETCHING_ATOMIC_CNT));
+
+  mr_nonfetching_atomic = ibv_reg_mr(pd, nonfetching_atomic, 8, access);
+  CHECK_NNULL(mr_nonfetching_atomic, "ibv_reg_mr");
+
+  mr_fetching_atomic = ibv_reg_mr(pd, fetching_atomic, 8 * FETCHING_ATOMIC_CNT, access);
+  CHECK_NNULL(mr_fetching_atomic, "ibv_reg_mr");
+
+#if defined(GDA_MLX5)
+  nonfetching_atomic_lkey = htobe32(mr_nonfetching_atomic->lkey);
+  fetching_atomic_lkey = htobe32(mr_fetching_atomic->lkey);
+#else
+  nonfetching_atomic_lkey = mr_nonfetching_atomic->lkey;
+  fetching_atomic_lkey = mr_fetching_atomic->lkey;
+#endif
+
   for(int i{0}; i < FETCHING_ATOMIC_CNT; i+=WF_SIZE) {
     fetching_atomic_freelist->push_back(fetching_atomic + i);
   }
 }
 
+QueuePair::~QueuePair() {
+  int err;
+
+  err = ibv_dereg_mr(mr_nonfetching_atomic);
+  CHECK_ZERO(err, "ibv_dereg_mr (nonfetching_atomic)");
+
+  err = ibv_dereg_mr(mr_fetching_atomic);
+  CHECK_ZERO(err, "ibv_dereg_mr (fetching_atomic)");
+
+  allocator.deallocate((void*)nonfetching_atomic);
+  allocator.deallocate((void*)fetching_atomic);
+
+  fetching_atomic_freelist->~FreeListT();
+  allocator.deallocate((void*)fetching_atomic_freelist);
+}
 
 /******************************************************************************
  ************************ PROVIDER-SPECIFIC HELPERS ***************************
@@ -232,7 +248,6 @@ __device__ void QueuePair::quiet_internal(uint64_t activemask, uint32_t cons) {
 }
 #endif // GDA_IONIC
 
-#ifndef GDA_BNXT
 #ifdef GDA_IONIC
 __device__ void QueuePair::ring_doorbell(uint32_t pos) {
   // TODO When threads write at once to the same address, not all writes reach the bus.
@@ -244,7 +259,9 @@ __device__ void QueuePair::ring_doorbell(uint32_t pos) {
   }
   __threadfence();
 }
-#else // !GDA_IONIC
+#endif
+
+#if defined(GDA_MLX5)
 __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint64_t my_sq_counter) {
   swap_endian_store(const_cast<uint32_t*>(dbrec), (uint32_t)my_sq_counter);
   __atomic_signal_fence(__ATOMIC_SEQ_CST);
@@ -254,15 +271,15 @@ __device__ void QueuePair::ring_doorbell(uint64_t db_val, uint64_t my_sq_counter
   db_uint ^= 0x100;
   __hip_atomic_store(&db.uint, db_uint, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
 }
-#endif // !GDA_IONIC
-#endif // !GDA_BNXT
+#endif // GDA_MLX5
 
-#ifndef GDA_BNXT
 #ifdef GDA_IONIC
 __device__ void QueuePair::quiet() {
   quiet_internal(get_same_qp_lane_mask(), sq_prod);
 }
-#else // !GDA_IONIC
+#endif
+
+#if defined(GDA_MLX5)
 __device__ void QueuePair::quiet() {
   constexpr size_t BROADCAST_SIZE = 1024 / WF_SIZE;
   __shared__ uint64_t wqe_broadcast[BROADCAST_SIZE];
@@ -344,10 +361,8 @@ __device__ void QueuePair::quiet() {
     }
   }
 }
-#endif // !GDA_IONIC
-#endif // !GDA_BNXT
+#endif // GDA_MLX5
 
-#ifndef GDA_BNXT
 #ifdef GDA_IONIC
 __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
   uint64_t activemask = get_same_qp_lane_mask();
@@ -392,7 +407,9 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
 
   commit_sq(is_last_active_lane(activemask), my_sq_prod, num_wqes, wqe);
 }
-#else // !GDA_IONIC
+#endif
+
+#if defined (GDA_MLX5)
 __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
   uint64_t activemask = get_active_lane_mask();
   uint8_t num_active_lanes = get_active_lane_count(activemask);
@@ -446,10 +463,8 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
     __hip_atomic_store(&sq_db_touched, wave_sq_counter + num_wqes, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
   }
 }
-#endif // !GDA_IONIC
-#endif // !GDA_BNXT
+#endif // GDA_MLX5
 
-#ifndef GDA_BNXT
 #ifdef GDA_IONIC
 __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode,
                                             int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
@@ -510,7 +525,9 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   }
   return ret;
 }
-#else // !GDA_IONIC || !GDA_BNXT
+#endif
+
+#if defined(GDA_MLX5)
 __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode,
                                             int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
   uint64_t activemask = get_active_lane_mask();
@@ -598,8 +615,7 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   }
   return ret;
 }
-#endif // !GDA_IONIC
-#endif // !GDA_BNXT
+#endif // GDA_MLX5
 
 /******************************************************************************
  ****************************** SHMEM INTERFACE *******************************

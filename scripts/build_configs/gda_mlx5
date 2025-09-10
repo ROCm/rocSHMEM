@@ -27,4 +27,4 @@ set -e
 
 script_path=$(dirname "$(realpath $0)")
 
-exec $script_path/gda $*
+source $script_path/gda -DGDA_MLX5=ON $*

@@ -44,3 +44,4 @@
 #cmakedefine USE_HDP_FLUSH_HOST_SIDE
 #cmakedefine GDA_IONIC
 #cmakedefine GDA_BNXT
+#cmakedefine GDA_MLX5

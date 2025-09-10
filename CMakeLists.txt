@@ -70,7 +70,8 @@ option(BUILD_LOCAL_GPU_TARGET_ONLY "Build only for GPUs detected on this machine
 option(BUILD_CODE_COVERAGE "Build with code coverage flags (gcc only)" OFF)
 
 option(GDA_IONIC "Build for AMD Pensando IONIC RDMA provider" OFF)
-option(GDA_BNXT "Build for Broadcom" OFF)
+option(GDA_BNXT "Build for Broadcom RDMA provider" OFF)
+option(GDA_MLX5 "Build for Mellanox MLX5 RDMA provider" OFF)
 
 ###############################################################################
 # PROJECT
