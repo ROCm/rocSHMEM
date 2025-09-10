@@ -42,10 +42,7 @@ namespace rocshmem {
  *****************************************************************************/
 template <typename T>
 __device__ void GDAContext::p(T *dest, T value, int pe) {
-  printf("rocshmem::gda:p not implemented\n");
-  abort();
-  //TODO the following is incorrect because value is not ibv registered memory
-  //putmem_nbi(dest, &value, sizeof(T), pe);
+  putmem_nbi(dest, &value, sizeof(T), pe);
 }
 
 template <typename T>

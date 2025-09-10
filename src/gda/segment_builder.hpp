@@ -42,6 +42,8 @@ class SegmentBuilder {
 
     __device__ void update_data_seg(uint64_t *laddr, uint32_t size, uint32_t lkey);
 
+    __device__ void update_inl_data_seg(uintptr_t *laddr, int32_t size);
+
     __device__ void update_atomic_seg(uint64_t atomic_data, uint64_t atomic_cmp);
 
   private:
@@ -51,6 +53,7 @@ class SegmentBuilder {
       mlx5_wqe_ctrl_seg ctrl_seg;
       mlx5_wqe_raddr_seg raddr_seg;
       mlx5_wqe_data_seg data_seg;
+      mlx5_wqe_inl_data_seg inl_data_seg;
       mlx5_wqe_atomic_seg atomic_seg;
     };
 

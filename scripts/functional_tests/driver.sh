@@ -488,11 +488,10 @@ TestGDA() {
 #  ExecTest  "g"                2       8            1         32
 #  ExecTest  "g"                2       16           128       4
 
-#Implemented but known incorrect
-#  ExecTest  "p"                2       1            1         128
-#  ExecTest  "p"                2       1            1024      2
-#  ExecTest  "p"                2       8            1         32
-#  ExecTest  "p"                2       16           128       4
+  ExecTest  "p"                2       1            1         128
+  ExecTest  "p"                2       1            1024      2
+  ExecTest  "p"                2       8            1         32
+  ExecTest  "p"                2       16           128       4
 
   ################################ Non-Blocking ################################
 
@@ -608,9 +607,9 @@ TestGDA() {
   ##############################################################################
   ExecTest  "init"             2       1            1
 
-#  ExecTest  "pingpong"         2       1            1
-#  ExecTest  "pingpong"         2       8            1
-#  ExecTest  "pingpong"         2       32           1
+  ExecTest  "pingpong"         2       1            1
+  ExecTest  "pingpong"         2       8            1
+  ExecTest  "pingpong"         2       32           1
 
   # This test requires more contexts than workgroups
   export ROCSHMEM_MAX_NUM_CONTEXTS=1024
