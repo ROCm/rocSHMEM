@@ -61,6 +61,7 @@ extern "C" {
 #elif defined(GDA_MLX5)
 #define GDA_MAX_ATOMIC     1
 #define GDA_OP_RDMA_WRITE  MLX5_OPCODE_RDMA_WRITE
+#define GDA_OP_RDMA_READ   MLX5_OPCODE_RDMA_READ
 #define GDA_OP_ATOMIC_FA   MLX5_OPCODE_ATOMIC_FA
 #define GDA_OP_ATOMIC_CS   MLX5_OPCODE_ATOMIC_CS
 #endif
@@ -101,6 +102,16 @@ class QueuePair {
    * @param[in] pe Destination processing element of data transmission.
    */
   __device__ void put_nbi(void *dest, const void *source, size_t nelems, int pe);
+
+  /**
+   * @brief Create and enqueue a non-blocking get work queue entry (wqe).
+   *
+   * @param[in] dest Destination address for data transmission.
+   * @param[in] source Source address for data transmission.
+   * @param[in] nelems Size in bytes of data transmission.
+   * @param[in] pe Destination processing element of data transmission.
+   */
+  __device__ void get_nbi(void *dest, const void *source, size_t nelems, int pe);
 
   /**
    * @brief Empty all completions from the completion queue.

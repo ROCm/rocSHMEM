@@ -463,25 +463,25 @@ TestGDA() {
   ExecTest  "teamctxput"       2       4            128       1024
   ExecTest  "teamctxput"       2       16           256       1024
 
-#  ExecTest  "get"              2       1            1         1048576
-#  ExecTest  "get"              2       1            1024      512
-#  ExecTest  "get"              2       8            1         1048576
-#  ExecTest  "get"              2       16           128       8
-#  ExecTest  "get"              2       32           256       512
-#  ExecTest  "get"              2       64           1024      8
+ ExecTest  "get"              2       1            1         1048576
+ ExecTest  "get"              2       1            1024      512
+ ExecTest  "get"              2       8            1         1048576
+ ExecTest  "get"              2       16           128       8
+ ExecTest  "get"              2       32           256       512
+ ExecTest  "get"              2       64           1024      8
 
-#  ExecTest  "wgget"            2       1            64        1048576
-#  ExecTest  "wgget"            2       2            64        1048576
-#  ExecTest  "wgget"            2       16           64        8
+ ExecTest  "wgget"            2       1            64        1048576
+ ExecTest  "wgget"            2       2            64        1048576
+ ExecTest  "wgget"            2       16           64        8
 
-#  ExecTest  "waveget"          2       1            64        1048576
-#  ExecTest  "waveget"          2       2            64        1048576
-#  ExecTest  "waveget"          2       2            128       1048576
-#  ExecTest  "waveget"          2       16           128       8
+ ExecTest  "waveget"          2       1            64        1048576
+ ExecTest  "waveget"          2       2            64        1048576
+ ExecTest  "waveget"          2       2            128       1048576
+ ExecTest  "waveget"          2       16           128       8
 
-#  ExecTest  "defaultctxget"    2       4            128       1024
-#  ExecTest  "teamctxget"       2       4            128       1024
-#  ExecTest  "teamctxget"       2       16           256       1024
+ ExecTest  "defaultctxget"    2       4            128       1024
+ ExecTest  "teamctxget"       2       4            128       1024
+ ExecTest  "teamctxget"       2       16           256       1024
 
 #  ExecTest  "g"                2       1            1         128
 #  ExecTest  "g"                2       1            1024      2
@@ -516,25 +516,25 @@ TestGDA() {
   ExecTest  "teamctxputnbi"    2       4            128       1024
   ExecTest  "teamctxputnbi"    2       16           256       1024
 
-#  ExecTest  "getnbi"           2       1            1         1048576
-#  ExecTest  "getnbi"           2       1            1024      512
-#  ExecTest  "getnbi"           2       8            1         1048576
-#  ExecTest  "getnbi"           2       16           128       8
-#  ExecTest  "getnbi"           2       32           256       512
-#  ExecTest  "getnbi"           2       64           1024      8
+ ExecTest  "getnbi"           2       1            1         1048576
+ ExecTest  "getnbi"           2       1            1024      512
+ ExecTest  "getnbi"           2       8            1         1048576
+ ExecTest  "getnbi"           2       16           128       8
+ ExecTest  "getnbi"           2       32           256       512
+ ExecTest  "getnbi"           2       64           1024      8
 
-#  ExecTest  "wggetnbi"         2       1            64        1048576
-#  ExecTest  "wggetnbi"         2       2            64        1048576
-#  ExecTest  "wggetnbi"         2       16           64        8
+ ExecTest  "wggetnbi"         2       1            64        1048576
+ ExecTest  "wggetnbi"         2       2            64        1048576
+ ExecTest  "wggetnbi"         2       16           64        8
 
-#  ExecTest  "wavegetnbi"       2       1            64        1048576
-#  ExecTest  "wavegetnbi"       2       2            64        1048576
-#  ExecTest  "wavegetnbi"       2       2            128       1048576
-#  ExecTest  "wavegetnbi"       2       16           128       8
+ ExecTest  "wavegetnbi"       2       1            64        1048576
+ ExecTest  "wavegetnbi"       2       2            64        1048576
+ ExecTest  "wavegetnbi"       2       2            128       1048576
+ ExecTest  "wavegetnbi"       2       16           128       8
 
-#  ExecTest  "defaultctxgetnbi" 2       4            128       1024
-#  ExecTest  "teamctxgetnbi"    2       4            128       1024
-#  ExecTest  "teamctxgetnbi"    2       16           256       1024
+ ExecTest  "defaultctxgetnbi" 2       4            128       1024
+ ExecTest  "teamctxgetnbi"    2       4            128       1024
+ ExecTest  "teamctxgetnbi"    2       16           256       1024
 
 #TestAMO() {
   ##############################################################################

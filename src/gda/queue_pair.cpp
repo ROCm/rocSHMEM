@@ -626,6 +626,12 @@ __device__ void QueuePair::put_nbi(void *dest, const void *source, size_t nelems
   post_wqe_rma(pe, nelems, src, dst, GDA_OP_RDMA_WRITE);
 }
 
+__device__ void QueuePair::get_nbi(void *dest, const void *source, size_t nelems, int pe) {
+  uintptr_t *src = reinterpret_cast<uintptr_t*>(const_cast<void*>(source));
+  uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
+  post_wqe_rma(pe, nelems, dst, src, GDA_OP_RDMA_READ);
+}
+
 __device__ int64_t QueuePair::atomic_fetch(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe, uint8_t atomic_op) {
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
   return post_wqe_amo(pe, sizeof(int64_t), dst, atomic_op, atomic_data, atomic_cmp, true);
