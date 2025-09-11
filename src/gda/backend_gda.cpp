@@ -139,9 +139,6 @@ void GDABackend::read_env() {
     int nic_dev = rocshmem::GetClosestNicToGpu(gpu_dev, &requested_dev);
     assert (nic_dev != -1);
   }
-  if ((value = getenv("ROCSHMEM_SQ_SIZE"))) {
-    sq_size = atoi(value);
-  }
 
   if ((value = getenv("ROCSHMEM_GDA_ALTERNATE_QP_PORTS"))) {
     alternate_qp_ports_enabled = atoi(value);
@@ -919,9 +916,9 @@ void GDABackend::create_queues() {
   size_t resize_length;
 
   if (gda_vendor == GDAVendor::IONIC) {
-    ncqes = sq_size << 1;
+    ncqes = config::sq_size << 1;
   } else {
-    ncqes = sq_size;
+    ncqes = config::sq_size;
   }
 
   resize_length = (config::max_num_contexts + 1) * num_pes;
@@ -935,10 +932,10 @@ void GDABackend::create_queues() {
 
   if (gda_vendor == GDAVendor::BNXT) {
     bnxt_create_cqs(ncqes);
-    bnxt_create_qps(sq_size);
+    bnxt_create_qps(config::sq_size);
   } else {
     create_cqs(ncqes);
-    create_qps(sq_size);
+    create_qps(config::sq_size);
   }
 
   alternate_qp_ports();

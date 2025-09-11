@@ -102,7 +102,6 @@ class GDABackend : public Backend {
   uint32_t *heap_rkey = nullptr;
   struct ibv_mr *heap_mr = nullptr;
 
-  uint32_t sq_size = 1024;
   uint32_t inline_threshold = 8;
   QueuePair *host_qps = nullptr;
   QueuePair *gpu_qps = nullptr;

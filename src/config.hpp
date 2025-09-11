@@ -104,6 +104,7 @@ namespace config {
   using var_types = unique_type_sequence_t<bool,
                                            size_t,
                                            int64_t,
+                                           uint32_t,
                                            useconds_t,
                                            std::string,
                                            types::socket_family>;
@@ -379,6 +380,8 @@ namespace config {
      * rocshmem atomic return buffers.
      */
     extern const var<size_t> max_wavefront_buffers;
+
+    extern const var<uint32_t> sq_size;
   }  // inline namespace _base
 
   namespace bootstrap {

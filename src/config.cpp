@@ -41,6 +41,7 @@ namespace config {
     const var<size_t> max_num_host_contexts("MAX_NUM_HOST_CONTEXTS", "", 1);
     const var<size_t> max_num_contexts("MAX_NUM_CONTEXTS", "", 32);
     const var<size_t> max_wavefront_buffers("MAX_WF_BUFFERS", "", 1024);
+    const var<uint32_t> sq_size("SQ_SIZE", "", 1024);
   }  // inline namespace _base
 
   namespace bootstrap {
