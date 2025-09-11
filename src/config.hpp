@@ -344,6 +344,15 @@ namespace config {
      * @brief Maximum number of contexts used in library
      */
     extern const var<size_t> max_num_contexts;
+
+    /**
+     * @brief Maximum number of wavefront buffer arrays supported in the default
+     * context.
+     *
+     * This value determines the size of the status flag, rocshmem_g return, and
+     * rocshmem atomic return buffers.
+     */
+    extern const var<size_t> max_wavefront_buffers;
   }  // inline namespace _base
 
   namespace bootstrap {

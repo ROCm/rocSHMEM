@@ -143,12 +143,7 @@ void ROBackend::setup_ctxs() {
 }
 
 void ROBackend::setup_default_ctx_buffers() {
-  if (auto maximum_wf_buffers_str = getenv("ROCSHMEM_MAX_WF_BUFFERS")) {
-    std::stringstream sstream(maximum_wf_buffers_str);
-    sstream >> max_wavefront_buffers_;
-  }
-
-  size_t num_buff_elems = max_wavefront_buffers_ * wf_size_;
+  size_t num_buff_elems = config::max_wavefront_buffers * wf_size_;
 
   g_ret_buffer_default_ctx_ = RetBufferProxyT(num_buff_elems);
 
@@ -156,17 +151,17 @@ void ROBackend::setup_default_ctx_buffers() {
 
   status_default_ctx_ = StatusProxyT(num_buff_elems);
 
-  default_ctx_status_.get()->allocate_queue(max_wavefront_buffers_);
-  default_ctx_g_ret_buffer_.get()->allocate_queue(max_wavefront_buffers_);
-  default_ctx_atomic_ret_buffer_.get()->allocate_queue(max_wavefront_buffers_);
+  default_ctx_status_.get()->allocate_queue(config::max_wavefront_buffers);
+  default_ctx_g_ret_buffer_.get()->allocate_queue(config::max_wavefront_buffers);
+  default_ctx_atomic_ret_buffer_.get()->allocate_queue(config::max_wavefront_buffers);
 
 
   char* status = status_default_ctx_.get();
   uint64_t* g_ret_buf = g_ret_buffer_default_ctx_.get();
   uint64_t* atomic_ret_buf = atomic_ret_buffer_default_ctx_.get();
 
-  for (int i{0}; i < max_wavefront_buffers_; i++) {
-    int offset {i * wf_size_};
+  for (size_t i = 0; i < config::max_wavefront_buffers; i++) {
+    size_t offset = i * wf_size_;
     default_ctx_status_.get()->push(status + offset);
     default_ctx_g_ret_buffer_.get()->push(g_ret_buf + offset);
     default_ctx_atomic_ret_buffer_.get()->push(atomic_ret_buf + offset);

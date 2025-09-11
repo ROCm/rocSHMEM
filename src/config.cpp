@@ -40,6 +40,7 @@ namespace config {
     const var<bool> uniqueid_with_mpi("UNIQUEID_WITH_MPI", "", false);
     const var<size_t> max_num_host_contexts("MAX_NUM_HOST_CONTEXTS", "", 1);
     const var<size_t> max_num_contexts("MAX_NUM_CONTEXTS", "", 32);
+    const var<size_t> max_wavefront_buffers("MAX_WF_BUFFERS", "", 1024);
   }  // inline namespace _base
 
   namespace bootstrap {
