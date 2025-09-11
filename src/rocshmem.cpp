@@ -230,7 +230,7 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
     assert (attr->rank < attr->nranks);
 
     bootstr = new TcpBootstrap(attr->rank, attr->nranks);
-    bootstr->initialize(attr->uid, rocshmem_env_.get_bootstrap_timeout());
+    bootstr->initialize(attr->uid, config::bootstrap::timeout);
 
     if (config::uniqueid_with_mpi) {
       library_init_subcomm(bootstr, attr->nranks, attr->rank);

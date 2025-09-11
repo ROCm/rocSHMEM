@@ -36,6 +36,10 @@ namespace config {
     const var<bool> uniqueid_with_mpi("UNIQUEID_WITH_MPI", "", false);
   }  // inline namespace _base
 
+  namespace bootstrap {
+    const var<int64_t> timeout("TIMEOUT", "", 5);
+  }  // namespace bootstrap
+
   namespace ro {
     const var<bool> disable_ipc("DISABLE_IPC", "", false);
   }  // namespace ro

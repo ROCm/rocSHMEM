@@ -66,7 +66,8 @@ namespace config {
     using var_variant_cref = std::variant<std::reference_wrapper<const _detail::var<T>>...>;
   };
 
-  using var_types = type_sequence<bool>;
+  using var_types = type_sequence<bool,
+                                  int64_t>;
 }  // namespace config
 }  // namespace rocshmem
 
@@ -307,6 +308,11 @@ namespace config {
   inline namespace _base {
     extern const var<bool> uniqueid_with_mpi;
   }  // inline namespace _base
+
+  namespace bootstrap {
+    template <typename T> using var = var<T, category::tag::BOOTSTRAP>;
+    extern const var<int64_t> timeout;
+  }  // namespace bootstrap
 
   namespace ro {
     template <typename T> using var = var<T, category::tag::REVERSE_OFFLOAD>;
