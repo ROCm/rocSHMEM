@@ -54,6 +54,7 @@ namespace config {
   namespace ro {
     const var<bool> disable_ipc("DISABLE_IPC", "", false);
     const var<useconds_t> progress_delay("PROGRESS_DELAY", "", 3);
+    const var<bool> net_cpu_queue("NET_CPU_QUEUE", "", false);
   }  // namespace ro
 
   namespace _detail {

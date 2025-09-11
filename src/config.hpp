@@ -396,6 +396,7 @@ namespace config {
     template <typename T> using var = var<T, category::tag::REVERSE_OFFLOAD>;
     extern const var<bool> disable_ipc;
     extern const var<useconds_t> progress_delay;
+    extern const var<bool> net_cpu_queue;
   }  // namespace ro
 }  // namespace config
 }  // namespace rocshmem
