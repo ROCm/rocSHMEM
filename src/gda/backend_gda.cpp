@@ -715,16 +715,35 @@ void GDABackend::cleanup_heap_memory_rkey() {
 }
 
 void GDABackend::setup_gpu_qps() {
-  CHECK_HIP(hipMalloc(&gpu_qps, sizeof(QueuePair) * (maximum_num_contexts_ + 1) * num_pes));
-  for (int i = 0; i < (maximum_num_contexts_ + 1) * num_pes; i++) {
-    QueuePair qp(pd_orig);
-    CHECK_HIP(hipMemcpy(&gpu_qps[i], &qp, sizeof(QueuePair), hipMemcpyDefault));
+  size_t qp_objs_count;
+  size_t qp_objs_mem_size;
+
+  qp_objs_count    = (maximum_num_contexts_ + 1) * num_pes;
+  qp_objs_mem_size = sizeof(QueuePair) * qp_objs_count;
+
+  CHECK_HIP(hipMalloc(&gpu_qps, qp_objs_mem_size));
+
+  host_qps = (QueuePair*) malloc(qp_objs_mem_size);
+  CHECK_NNULL(host_qps, "malloc (host_qps)");
+
+  for (int i = 0; i < qp_objs_count; i++) {
+    new (&host_qps[i]) QueuePair(pd_orig);
+    CHECK_HIP(hipMemcpy(&gpu_qps[i], &host_qps[i], sizeof(QueuePair), hipMemcpyDefault));
     initialize_gpu_qp(&gpu_qps[i], i);
   }
 }
 
 void GDABackend::cleanup_gpu_qps() {
-  //TODO need to destruct qp[i]?
+  size_t qp_objs_count;
+
+  qp_objs_count = (maximum_num_contexts_ + 1) * num_pes;
+
+  for (int i = 0; i < qp_objs_count; i++) {
+    host_qps[i].~QueuePair();
+  }
+
+  free(host_qps);
+
   CHECK_HIP(hipFree(gpu_qps));
   gpu_qps = nullptr;
 }
