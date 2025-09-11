@@ -32,7 +32,7 @@
 
 namespace rocshmem {
 namespace config {
-  namespace detail {
+  namespace _detail {
     std::tuple<var_map_t&, std::mutex&> get_var_map() {
       // construct on first use idiom
       // allocate variable_map on heap to prevent static initialization order fiasco
@@ -41,6 +41,6 @@ namespace config {
       // use std::tie to return a tuple of references
       return std::tie(*variable_map, map_mutex);
     }
-  }
+  }  // namespace _detail
 }  // namespace config
 }  // namespace rocshmem

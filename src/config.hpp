@@ -43,9 +43,9 @@
 // forward declarations
 namespace rocshmem {
 namespace config {
-  namespace detail {
+  namespace _detail {
     template <typename T> class var;
-  }  // namespace detail
+  }  // namespace _detail
 
   namespace category {
     enum class tag;
@@ -61,9 +61,9 @@ namespace config {
     template <typename U> struct contains : std::disjunction<std::is_same<T, U>...> { };
     template <typename U> static constexpr bool contains_v = contains<U>::value;
 
-    using var_variant = std::variant<detail::var<T>...>;
-    using var_variant_ref = std::variant<std::reference_wrapper<detail::var<T>>...>;
-    using var_variant_cref = std::variant<std::reference_wrapper<const detail::var<T>>...>;
+    using var_variant = std::variant<_detail::var<T>...>;
+    using var_variant_ref = std::variant<std::reference_wrapper<_detail::var<T>>...>;
+    using var_variant_cref = std::variant<std::reference_wrapper<const _detail::var<T>>...>;
   };
 
   using var_types = type_sequence<bool>;
@@ -146,7 +146,7 @@ namespace config {
     };
   }  // namespace parser
 
-  namespace detail {
+  namespace _detail {
     template <typename T>
     class var {
       static_assert(var_types::contains_v<T>,
@@ -223,19 +223,19 @@ namespace config {
     // register the var<T, C> with the global variable map
     // map from category C to a list of variables in that category
     // returns a const_iterator to the inserted variable
-    // list is heterogeneous over all valid variable types, using variant<detail::var<T>&...>
+    // list is heterogeneous over all valid variable types, using variant<_detail::var<T>&...>
     // locks mutex to ensure that there aren't race conditions due to parallel modifications
     template <typename T, category::tag C>
     auto register_variable(const config::var<T, C>& v) {
-      auto [var_map, map_mutex] = detail::get_var_map();
+      auto [var_map, map_mutex] = _detail::get_var_map();
       std::lock_guard map_lock(map_mutex);
 
       // emplace variable to back of list
       // conversion sequence:
       //    const var<T, C>&
-      // => const detail::var<T>&
-      // => std::reference_wrapper<const detail::var<T>>
-      // => std::variant<std::reference_wrapper<const detail::var<T>>...>
+      // => const _detail::var<T>&
+      // => std::reference_wrapper<const _detail::var<T>>
+      // => std::variant<std::reference_wrapper<const _detail::var<T>>...>
       auto& var_list = var_map[C];
       var_list.emplace_back(v);
       // std::list::cend() returns iterator to past-the-end
@@ -246,19 +246,19 @@ namespace config {
     // deregister the variable at the const_iterator pos from the list for category C
     // locks mutex to ensure that there aren't race conditions due to parallel modifications
     template <category::tag C>
-    void deregister_variable(detail::var_list_t::const_iterator pos) {
-      auto [var_map, map_mutex] = detail::get_var_map();
+    void deregister_variable(_detail::var_list_t::const_iterator pos) {
+      auto [var_map, map_mutex] = _detail::get_var_map();
       std::lock_guard map_lock(map_mutex);
       var_map[C].erase(pos);
     }
-  }  // namespace detail
+  }  // namespace _detail
 
   // class var<Type, Category>
   // reads the specified environment variable using std::getenv()
   // if it set, the variable is parsed (using parser::parse<Type> by default)
   // if it is unset or parsing fails, a default value is used instead
   template <typename T, category::tag C = category::tag::ROCSHMEM>
-  class var : public detail::var<T> {
+  class var : public _detail::var<T> {
   public:
     // type aliases aren't inherited, for some reason?
     using value_type = T;
@@ -267,13 +267,13 @@ namespace config {
     static constexpr category::tag category = C;
 
     // primary constructor
-    // calls detail::var<T>::var() with the category prefix
+    // calls _detail::var<T>::var() with the category prefix
     // registers *this with var map and saves the iterator, so it can be deregistered later
     template <typename Parser>
     var(const std::string& name, const std::string& doc,
         const_reference default_value, Parser parse)
-        : detail::var<T>(category::prefix<C>, name, doc, default_value, parse),
-          var_map_pos(detail::register_variable(*this)) { }
+        : _detail::var<T>(category::prefix<C>, name, doc, default_value, parse),
+          var_map_pos(_detail::register_variable(*this)) { }
 
     // convenience (delegating) constructors
     //
@@ -290,11 +290,11 @@ namespace config {
 
     // deregister *this from var map using saved iterator pos
     ~var() {
-      detail::deregister_variable<C>(var_map_pos);
+      _detail::deregister_variable<C>(var_map_pos);
     }
 
   private:
-    detail::var_list_t::const_iterator var_map_pos;
+    _detail::var_list_t::const_iterator var_map_pos;
   };
 }  // namespace config
 }  // namespace rocshmem
