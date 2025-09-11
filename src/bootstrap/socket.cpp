@@ -86,15 +86,8 @@ static uint16_t socketToPort(union SocketAddress* addr) {
 
 /* Allow the user to force the IPv4/IPv6 interface selection */
 static int envSocketFamily(void) {
-  int family = -1;  // Family selection is not forced, will use first one found
-  const std::string& socketFamily = rocshmem_env_.get_bootstrap_socket_family();
-  if (socketFamily == "") return family;
-
-  if (socketFamily == "AF_INET")
-    family = AF_INET;  // IPv4
-  else if (socketFamily == "AF_INET6")
-    family = AF_INET6;  // IPv6
-  return family;
+  // config::types::socket_family enum is defined directly from AF_* constants
+  return static_cast<int>(config::bootstrap::socket_family.get_value());
 }
 
 static int findInterfaces(const char* prefixList, char* names, union SocketAddress* addrs,
@@ -123,7 +116,7 @@ static int findInterfaces(const char* prefixList, char* names, union SocketAddre
           SocketToString((union SocketAddress*)interface->ifa_addr, line));
 
     /* Allow the caller to force the socket family type */
-    if (sock_family != -1 && family != sock_family) continue;
+    if (sock_family != AF_UNSPEC && family != sock_family) continue;
 
     /* We also need to skip IPv6 loopback interfaces */
     if (family == AF_INET6) {

@@ -40,6 +40,7 @@
 #include <unordered_map>
 #include <variant>
 
+#include <sys/socket.h>
 #include <unistd.h>
 
 // forward declarations
@@ -52,6 +53,12 @@ namespace config {
   namespace category {
     enum class tag;
   }  // namespace category
+
+  namespace types {
+    inline namespace _sf {
+      enum class socket_family;
+    }  // inline namespace _sf
+  }  // namespace types
 
   template <typename T, category::tag> class var;
 
@@ -71,7 +78,8 @@ namespace config {
   using var_types = type_sequence<bool,
                                   int64_t,
                                   useconds_t,
-                                  std::string>;
+                                  std::string,
+                                  types::socket_family>;
 }  // namespace config
 }  // namespace rocshmem
 
@@ -150,6 +158,20 @@ namespace config {
       }
     };
   }  // namespace parser
+
+  // namespace for defining custom types, for parsing (mostly enums)
+  namespace types {
+    // namespace to contain socket_family stuff
+    inline namespace _sf {
+      enum class socket_family : int {
+        UNSPEC = AF_UNSPEC,
+        INET = AF_INET,
+        INET6 = AF_INET6,
+      };
+      std::istream& operator>>(std::istream& is, socket_family& family);
+      std::ostream& operator<<(std::ostream& os, const socket_family& family);
+    }  // inline namespace _sf
+  }  // namespace types
 
   namespace _detail {
     template <typename T>
@@ -317,6 +339,7 @@ namespace config {
     template <typename T> using var = var<T, category::tag::BOOTSTRAP>;
     extern const var<int64_t> timeout;
     extern const var<std::string> hostid;
+    extern const var<types::socket_family> socket_family;
     extern const var<std::string> socket_ifname;
   }  // namespace bootstrap
 

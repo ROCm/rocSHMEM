@@ -24,8 +24,10 @@
 
 #include "config.hpp"
 
+#include <istream>
 #include <list>
 #include <mutex>
+#include <ostream>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -41,6 +43,7 @@ namespace config {
   namespace bootstrap {
     const var<int64_t> timeout("TIMEOUT", "", 5);
     const var<std::string> hostid("HOSTID", "");
+    const var<types::socket_family> socket_family("SOCKET_FAMILY", "", types::socket_family::UNSPEC);
     const var<std::string> socket_ifname("SOCKET_IFNAME", "");
   }  // namespace bootstrap
 
@@ -59,5 +62,40 @@ namespace config {
       return std::tie(*variable_map, map_mutex);
     }
   }  // namespace _detail
+
+  namespace types {
+    inline namespace _sf {
+      std::istream& operator>>(std::istream& is, socket_family& family) {
+        std::string family_str;
+        is >> family_str;
+        if (family_str == "AF_INET" ||
+            family_str == "INET") {
+          family = socket_family::INET;
+        } else if (family_str == "AF_INET6" ||
+                   family_str == "INET6") {
+          family = socket_family::INET6;
+        } else if (family_str == "AF_UNSPEC" ||
+                   family_str == "UNSPEC") {
+          family = socket_family::UNSPEC;
+        } else {
+          // all other inputs are invalid
+          is.setstate(std::ios_base::failbit);
+          family = socket_family::UNSPEC;
+        }
+        return is;
+      }
+
+      std::ostream& operator<<(std::ostream& os, const socket_family& family) {
+        switch (family) {
+        case socket_family::UNSPEC:
+          return os << "AF_UNSPEC";
+        case socket_family::INET:
+          return os << "AF_INET";
+        case socket_family::INET6:
+          return os << "AF_INET6";
+        }
+      }
+    }  // inline namespace _sf
+  }  // namespace types
 }  // namespace config
 }  // namespace rocshmem
