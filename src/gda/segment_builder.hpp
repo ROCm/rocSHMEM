@@ -32,58 +32,32 @@
 namespace rocshmem {
 
 class SegmentBuilder {
- public:
-  __device__ SegmentBuilder(uint64_t wqe_idx, void *base);
+  public:
+    __device__ SegmentBuilder(uint64_t wqe_idx, void *base);
 
-  /*
-   * struct mlx5_wqe_ctrl_seg {
-   *   __be32 opmod_idx_opcode;
-   *   __be32 qpn_ds;
-   *   uint8_t signature;
-   *   __be16 dci_stream_channel_id;
-   *   uint8_t fm_ce_se;
-   *   __be32 imm;
-   * } __attribute__((__packed__)) __attribute__((__aligned__(4)));
-   */
-  __device__ void update_ctrl_seg(uint16_t pi, uint8_t opcode, uint8_t opmod, uint32_t qp_num, uint8_t fm_ce_se, uint8_t ds, uint8_t signature, uint32_t imm);
+    __device__ void update_ctrl_seg(uint16_t pi, uint8_t opcode, uint8_t opmod, uint32_t qp_num,
+                                    uint8_t fm_ce_se, uint8_t ds, uint8_t signature, uint32_t imm);
 
-  /*
-   * struct mlx5_wqe_raddr_seg {
-   *   __be64 raddr;
-   *   __be32 rkey;
-   *   __be32 reserved;
-   * };
-   */
-  __device__ void update_raddr_seg(uint64_t *raddr, uint32_t rkey);
+    __device__ void update_raddr_seg(uint64_t *raddr, uint32_t rkey);
 
-  /*
-   * struct mlx5_wqe_data_seg {
-   * __be32 byte_count;
-   * __be32 lkey;
-   * __be64 addr;
-   * };
-   */
-  __device__ void update_data_seg(uint64_t *laddr, uint32_t size, uint32_t lkey);
+    __device__ void update_data_seg(uint64_t *laddr, uint32_t size, uint32_t lkey);
 
-  /*
-   * struct mlx5_wqe_atomic_seg {
-   *   __be64 swap_add;
-   *   __be64 compare;
-   * };
-   */
-  __device__ void update_atomic_seg(uint64_t atomic_data, uint64_t atomic_cmp);
+    __device__ void update_inl_data_seg(uintptr_t *laddr, int32_t size);
 
- private:
-  const int SEGMENTS_PER_WQE = 4;
+    __device__ void update_atomic_seg(uint64_t atomic_data, uint64_t atomic_cmp);
 
-  union mlx5_segment {
-    mlx5_wqe_ctrl_seg ctrl_seg;
-    mlx5_wqe_raddr_seg raddr_seg;
-    mlx5_wqe_data_seg data_seg;
-    mlx5_wqe_atomic_seg atomic_seg;
-  };
+  private:
+    const int SEGMENTS_PER_WQE = 4;
 
-  mlx5_segment *segp;
+    union mlx5_segment {
+      mlx5_wqe_ctrl_seg ctrl_seg;
+      mlx5_wqe_raddr_seg raddr_seg;
+      mlx5_wqe_data_seg data_seg;
+      mlx5_wqe_inl_data_seg inl_data_seg;
+      mlx5_wqe_atomic_seg atomic_seg;
+    };
+
+    mlx5_segment *segp;
 };
 
 }  // namespace rocshmem

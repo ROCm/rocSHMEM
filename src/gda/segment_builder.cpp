@@ -108,6 +108,14 @@ __device__ void SegmentBuilder::update_data_seg(uintptr_t *address, uint32_t len
   segp++;
 }
 
+__device__ void SegmentBuilder::update_inl_data_seg(uintptr_t *laddr, int32_t size) {
+  // size is masked with 0x3FF because only the first 10 bits of byte_count are valid
+  swap_endian_store(&segp->inl_data_seg.byte_count, ((size & 0x3FF) | MLX5_INLINE_SEG));
+  // + 1 because we start packing the segment with data after the byte_count parameter
+  memcpy(&segp->inl_data_seg + 1, laddr, size);
+  segp++;
+}
+
 __device__ void SegmentBuilder::update_atomic_seg(uint64_t atomic_data, uint64_t atomic_cmp) {
   segp->atomic_seg = {0};
   swap_endian_store(reinterpret_cast<uint64_t*>(&segp->atomic_seg.swap_add), atomic_data);

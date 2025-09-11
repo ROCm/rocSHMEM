@@ -247,17 +247,26 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t length, uintptr_t *laddr
       uint32_t wqe_size;
       uint32_t wqe_type;
       uint32_t hdr_flags;
-      uint32_t rma_slots = 3; // (Three slots: hdr, rdma)
+      uint32_t inline_msg;
+
+      uint32_t rma_slots  = 3; // (Three slots: hdr, rdma, sge)
+
+      inline_msg = length <= inline_threshold &&
+                   opcode == GDA_OP_RDMA_WRITE;
 
       hdr_ptr  = (struct bnxt_re_bsqe*) bnxt_re_get_hwqe(&sq, 0);
       rdma_ptr = (struct bnxt_re_rdma*) bnxt_re_get_hwqe(&sq, 1);
       sge_ptr  = (struct bnxt_re_sge*)  bnxt_re_get_hwqe(&sq, 2);
 
       /* Populate Header Segment */
-      wqe_size  = BNXT_RE_HDR_WS_MASK    & rma_slots;
+      wqe_type  = BNXT_RE_HDR_WT_MASK & opcode;
+      wqe_size  = BNXT_RE_HDR_WS_MASK & rma_slots;
       hdr_flags = ((uint32_t) BNXT_RE_HDR_FLAGS_MASK)
                 & ((uint32_t) BNXT_RE_WR_FLAGS_SIGNALED);
-      wqe_type  = BNXT_RE_HDR_WT_MASK    & opcode;
+
+      if (inline_msg) {
+        hdr_flags |= ((uint32_t) BNXT_RE_WR_FLAGS_INLINE);
+      }
 
       hdr.rsv_ws_fl_wt  = (wqe_size  << BNXT_RE_HDR_WS_SHIFT)
                         | (hdr_flags << BNXT_RE_HDR_FLAGS_SHIFT)
@@ -269,15 +278,22 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t length, uintptr_t *laddr
       rdma.rva  = (uint64_t) raddr;
       rdma.rkey = rkey;
 
-      /* Populate SG Segment */
-      sge.pa     = (uint64_t) laddr;
-      sge.lkey   = lkey;
-      sge.length = length;
+      if (!inline_msg) {
+        /* Populate SG Segment */
+        sge.pa     = (uint64_t) laddr;
+        sge.lkey   = lkey;
+        sge.length = length;
+      }
 
       /* Write WQE to SQ */
       memcpy(hdr_ptr,  &hdr,  sizeof(struct bnxt_re_bsqe));
       memcpy(rdma_ptr, &rdma, sizeof(struct bnxt_re_rdma));
-      memcpy(sge_ptr,  &sge,  sizeof(struct bnxt_re_sge));
+
+      if (inline_msg) {
+        memcpy(sge_ptr,  laddr,  length);
+      } else {
+        memcpy(sge_ptr,  &sge,  sizeof(struct bnxt_re_sge));
+      }
 
       /* Populate MSN Table */
       bnxt_re_fill_psns_for_msntbl(&sq, length);
