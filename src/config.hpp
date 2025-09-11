@@ -163,7 +163,8 @@ namespace config {
           : name(_prefix + "_" + _name),
             doc(_doc),
             default_value(_default_value),
-            value(_default_value) {
+            value(_default_value),
+            value_set(false) {
         const char* env_value = std::getenv(name.c_str());
         if (env_value) {
           std::istringstream iss{std::string(env_value)};
@@ -171,6 +172,8 @@ namespace config {
           if (iss.fail()) {
             std::cerr << name << ": invalid argument '" << env_value << "'" << std::endl;
             value = default_value;
+          } else {
+            value_set = true;
           }
         }
       }
@@ -199,12 +202,16 @@ namespace config {
       operator const_reference() const {
         return value;
       }
+      bool is_default() const {
+        return !value_set;
+      }
 
     private:
       const std::string name;
       const std::string doc;
       const value_type default_value;
       value_type value;
+      bool value_set;
     };
 
     // var_list is a list<variant<var<T>...>> for all valid var types
