@@ -34,6 +34,7 @@
 #include <fstream>
 #include <cstring>
 
+#include "config.hpp"
 #include "socket.hpp"
 #include "utils.hpp"
 #include "util.hpp"
@@ -334,7 +335,7 @@ int FindInterfaces(char* ifNames, union SocketAddress* ifAddrs, int ifNameMaxSiz
   int sock_family = envSocketFamily();
 
   // User specified interface
-  const std::string& socketIfname = rocshmem_env_.get_bootstrap_socket_ifname();
+  const std::string& socketIfname = config::bootstrap::socket_ifname;
   if (inputIfName) {
     DPRINTF("using iterface %s", inputIfName);
     nIfs = findInterfaces(inputIfName, ifNames, ifAddrs, sock_family, ifNameMaxSize, maxIfs);

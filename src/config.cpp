@@ -39,6 +39,7 @@ namespace config {
   namespace bootstrap {
     const var<int64_t> timeout("TIMEOUT", "", 5);
     const var<std::string> hostid("HOSTID", "");
+    const var<std::string> socket_ifname("SOCKET_IFNAME", "");
   }  // namespace bootstrap
 
   namespace ro {

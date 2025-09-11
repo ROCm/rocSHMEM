@@ -314,6 +314,7 @@ namespace config {
     template <typename T> using var = var<T, category::tag::BOOTSTRAP>;
     extern const var<int64_t> timeout;
     extern const var<std::string> hostid;
+    extern const var<std::string> socket_ifname;
   }  // namespace bootstrap
 
   namespace ro {
