@@ -36,6 +36,10 @@ namespace config {
     const var<bool> uniqueid_with_mpi("UNIQUEID_WITH_MPI", "", false);
   }  // inline namespace _base
 
+  namespace ro {
+    const var<bool> disable_ipc("DISABLE_IPC", "", false);
+  }  // namespace ro
+
   namespace _detail {
     std::tuple<var_map_t&, std::mutex&> get_var_map() {
       // construct on first use idiom

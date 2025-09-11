@@ -307,6 +307,11 @@ namespace config {
   inline namespace _base {
     extern const var<bool> uniqueid_with_mpi;
   }  // inline namespace _base
+
+  namespace ro {
+    template <typename T> using var = var<T, category::tag::REVERSE_OFFLOAD>;
+    extern const var<bool> disable_ipc;
+  }  // namespace ro
 }  // namespace config
 }  // namespace rocshmem
 
