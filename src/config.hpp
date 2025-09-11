@@ -381,6 +381,7 @@ namespace config {
      */
     extern const var<size_t> max_wavefront_buffers;
 
+    extern const var<std::string> requested_dev;
     extern const var<uint32_t> sq_size;
   }  // inline namespace _base
 

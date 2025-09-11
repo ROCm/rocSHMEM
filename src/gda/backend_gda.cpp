@@ -131,8 +131,8 @@ GDABackend::~GDABackend() {
 
 void GDABackend::read_env() {
   char* value{nullptr};
-  if ((value = getenv("ROCSHMEM_USE_IB_HCA"))) {
-    requested_dev = strdup(value);
+  if (!config::requested_dev.is_default()) {
+    requested_dev = config::requested_dev.get_value().c_str();
   } else {
     int gpu_dev = 0;
     CHECK_HIP(hipGetDevice(&gpu_dev));

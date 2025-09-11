@@ -89,7 +89,7 @@ class GDABackend : public Backend {
     union ibv_gid gid;
   } dest_info_t;
 
-  char *requested_dev = nullptr;
+  const char *requested_dev = nullptr;
   struct ibv_context *context = nullptr;;
   struct ibv_pd *pd_orig = nullptr;
   enum GDAVendor gda_vendor = GDAVendor::NONE;
