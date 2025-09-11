@@ -38,6 +38,7 @@ namespace rocshmem {
 namespace config {
   inline namespace _base {
     const var<bool> uniqueid_with_mpi("UNIQUEID_WITH_MPI", "", false);
+    const var<types::debug_level> debug_level("DEBUG_LEVEL", "", types::debug_level::NONE);
     const var<size_t> heap_size("HEAP_SIZE", "", 1L << 30);
     const var<size_t> max_num_teams("MAX_NUM_TEAMS", "", 40);
     const var<size_t> max_num_host_contexts("MAX_NUM_HOST_CONTEXTS", "", 1);
@@ -104,6 +105,44 @@ namespace config {
         }
       }
     }  // inline namespace _sf
+
+    inline namespace _debug {
+      std::istream& operator>>(std::istream& is, debug_level& level) {
+        std::string level_str;
+        is >> level_str;
+        if (level_str == "NONE") {
+          level = debug_level::NONE;
+        } else if (level_str == "VERSION") {
+          level = debug_level::VERSION;
+        } else if (level_str == "WARN") {
+          level = debug_level::WARN;
+        } else if (level_str == "INFO") {
+          level = debug_level::INFO;
+        } else if (level_str == "TRACE") {
+          level = debug_level::TRACE;
+        } else {
+          // all other inputs are invalid
+          is.setstate(std::ios_base::failbit);
+          level = debug_level::NONE;
+        }
+        return is;
+      }
+
+      std::ostream& operator<<(std::ostream& os, const debug_level& level) {
+        switch (level) {
+        case debug_level::NONE:
+          return os << "NONE";
+        case debug_level::VERSION:
+          return os << "VERSION";
+        case debug_level::WARN:
+          return os << "WARN";
+        case debug_level::INFO:
+          return os << "INFO";
+        case debug_level::TRACE:
+          return os << "TRACE";
+        }
+      }
+    }  // inline namespace _debug
   }  // namespace types
 }  // namespace config
 }  // namespace rocshmem

@@ -58,6 +58,9 @@ namespace config {
     inline namespace _sf {
       enum class socket_family;
     }  // inline namespace _sf
+    inline namespace _debug {
+      enum class debug_level;
+    }  // inline namespace _debug
   }  // namespace types
 
   template <typename T, category::tag> class var;
@@ -107,7 +110,8 @@ namespace config {
                                            uint32_t,
                                            useconds_t,
                                            std::string,
-                                           types::socket_family>;
+                                           types::socket_family,
+                                           types::debug_level>;
 }  // namespace config
 }  // namespace rocshmem
 
@@ -199,6 +203,18 @@ namespace config {
       std::istream& operator>>(std::istream& is, socket_family& family);
       std::ostream& operator<<(std::ostream& os, const socket_family& family);
     }  // inline namespace _sf
+
+    inline namespace _debug {
+      enum class debug_level {
+        NONE,
+        VERSION,
+        WARN,
+        INFO,
+        TRACE,
+      };
+      std::istream& operator>>(std::istream& is, debug_level& level);
+      std::ostream& operator<<(std::ostream& os, const debug_level& level);
+    }  // inline namespace _debug
   }  // namespace types
 
   namespace _detail {
@@ -361,6 +377,7 @@ namespace config {
 
   inline namespace _base {
     extern const var<bool> uniqueid_with_mpi;
+    extern const var<types::debug_level> debug_level;
     extern const var<size_t> heap_size;
     extern const var<size_t> max_num_teams;
 
