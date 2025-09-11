@@ -119,6 +119,7 @@ class GDABackend : public Backend {
 
   uint32_t sq_size = 1024;
   uint32_t inline_threshold = 8;
+  QueuePair *host_qps = nullptr;
   QueuePair *gpu_qps = nullptr;
   std::vector<ibv_qp*> qps;
   std::vector<ibv_cq*> cqs;
