@@ -286,9 +286,7 @@ TestRMAGet() {
 
 TestRMA() {
   TestRMAPut
-  if [ "0" == "$ROCSHMEM_DRIVER_DISABLE_GET" ]; then
-    TestRMAGet
-  fi
+  TestRMAGet
 }
 
 TestAMO() {
@@ -644,7 +642,6 @@ LOG_DIR=$3
 HOSTFILE=$4
 
 DRIVER_RETURN_STATUS=0
-ROCSHMEM_DRIVER_DISABLE_GET="${ROCSHMEM_DRIVER_DISABLE_GET:-1}"
 
 ValidateInput $#
 ValidateLogDir $LOG_DIR
@@ -662,6 +659,12 @@ case $TEST in
     ;;
   *"rma")
     TestRMA
+    ;;
+  *"put")
+    TestRMAPut
+    ;;
+  *"get")
+    TestRMAGet
     ;;
   *"amo")
     TestAMO
