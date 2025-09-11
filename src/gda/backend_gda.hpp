@@ -64,6 +64,7 @@ class GDABackend : public Backend {
   struct ibv_mr *heap_mr = nullptr;
 
   uint32_t sq_size = 1024;
+  uint32_t inline_threshold = 8;
   QueuePair *gpu_qps = nullptr;
   std::vector<ibv_qp*> qps;
   std::vector<ibv_cq*> cqs;

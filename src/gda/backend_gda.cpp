@@ -1043,6 +1043,7 @@ void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   gpu_qp->rkey = htobe32(heap_rkey[conn_num % num_pes]);
   gpu_qp->lkey = htobe32(heap_mr->lkey);
   gpu_qp->qp_num = qps[conn_num]->qp_num;
+  gpu_qp->inline_threshold = inline_threshold;
   // The 2 in qp_out.bf.size * 2 below facilitates the switching between blue flame registers
   void* gpu_ptr{nullptr};
   rocm_memory_lock_to_fine_grain(qp_out.bf.reg, qp_out.bf.size * 2, &gpu_ptr, hip_dev_id);
@@ -1056,7 +1057,7 @@ void GDABackend::create_qps(int sq_length) {
   memset(&attr, 0, sizeof(struct ibv_qp_init_attr_ex));
   attr.cap.max_send_wr     = sq_length;
   attr.cap.max_send_sge    = 1;
-  attr.cap.max_inline_data = 0;
+  attr.cap.max_inline_data = inline_threshold;
 #ifdef GDA_IONIC
   attr.cap.max_recv_sge    = 1; // TODO allow zero sges in the driver
 #endif

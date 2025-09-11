@@ -85,6 +85,9 @@ void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   /* Export Memory Keys */
   gpu_qp->lkey = heap_mr->lkey;
   gpu_qp->rkey = heap_rkey[conn_num % num_pes];
+
+  /* Export Inline Threshold */
+  gpu_qp->inline_threshold = inline_threshold;
 }
 
 void GDABackend::create_cqs(int cqe) {
@@ -143,7 +146,7 @@ void GDABackend::create_qps(int sq_length) {
     ib_qp_attr.cap.max_recv_wr     = 0;
     ib_qp_attr.cap.max_send_sge    = 1;
     ib_qp_attr.cap.max_recv_sge    = 0;
-    ib_qp_attr.cap.max_inline_data = 0;
+    ib_qp_attr.cap.max_inline_data = inline_threshold;
     ib_qp_attr.qp_type             = IBV_QPT_RC;
     ib_qp_attr.sq_sig_all          = 0;
 

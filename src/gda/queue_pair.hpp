@@ -234,8 +234,6 @@ class QueuePair {
   uint32_t sq_prod{0};
   uint32_t sq_msn{0};
 
-  uint32_t inline_threshold{0};
-
 #elif defined(GDA_BNXT)
   uint64_t *dbr;
   struct bnxt_device_cq cq;
@@ -304,6 +302,8 @@ class QueuePair {
   uint64_t outstanding_wqes[OUTSTANDING_TABLE_SIZE]{0};
 
 #endif // GDA_IONIC
+
+  uint32_t inline_threshold{0};
 
   uint32_t qp_num{0};
   uint32_t rkey{0};

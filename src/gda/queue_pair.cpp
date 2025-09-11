@@ -446,7 +446,13 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   SegmentBuilder seg_build(my_sq_index, sq_buf);
   seg_build.update_ctrl_seg(my_sq_counter, opcode, 0, qp_num, MLX5_WQE_CTRL_CQ_UPDATE, 3, 0, 0);
   seg_build.update_raddr_seg(raddr, rkey);
-  seg_build.update_data_seg(laddr, size, lkey);
+
+  if (size <= inline_threshold && opcode == GDA_OP_RDMA_WRITE) {
+    seg_build.update_inl_data_seg(laddr, size);
+  } else {
+    seg_build.update_data_seg(laddr, size, lkey);
+  }
+
   __atomic_signal_fence(__ATOMIC_SEQ_CST);
 
   if (is_leader) {
