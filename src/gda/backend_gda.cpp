@@ -29,6 +29,7 @@
 #include <cassert>
 
 #include "backend_gda.hpp"
+#include "config.hpp"
 #include "mpi_instance.hpp"
 #include "gda_team.hpp"
 #include "util.hpp"
@@ -129,10 +130,6 @@ GDABackend::~GDABackend() {
 }
 
 void GDABackend::read_env() {
-  if (auto maximum_num_contexts_str = getenv("ROCSHMEM_MAX_NUM_CONTEXTS")) {
-    std::stringstream sstream(maximum_num_contexts_str);
-    sstream >> maximum_num_contexts_;
-  }
   char* value{nullptr};
   if ((value = getenv("ROCSHMEM_USE_IB_HCA"))) {
     requested_dev = strdup(value);
@@ -178,9 +175,9 @@ void GDABackend::setup_ctxs() {
   setup_host_ctx();
   setup_default_ctx();
 
-  CHECK_HIP(hipMalloc(&ctx_array, sizeof(GDAContext) * maximum_num_contexts_));
+  CHECK_HIP(hipMalloc(&ctx_array, sizeof(GDAContext) * config::max_num_contexts));
   // 0th context is default context
-  for (size_t i = 0; i < maximum_num_contexts_; i++) {
+  for (size_t i = 0; i < config::max_num_contexts; i++) {
     new (&ctx_array[i]) GDAContext(this, i + 1);
     ctx_free_list.get()->push_back(ctx_array + i);
   }
@@ -188,7 +185,7 @@ void GDABackend::setup_ctxs() {
 
 void GDABackend::cleanup_ctxs() {
   ctx_free_list.~FreeListProxy();
-  for (size_t i = 0; i < maximum_num_contexts_; i++) {
+  for (size_t i = 0; i < config::max_num_contexts; i++) {
     ctx_array[i].~GDAContext();
   }
 
@@ -667,7 +664,7 @@ void GDABackend::exchange_qp_dest_info() {
     dest_info[i].gid = gid;
   }
 
-  for (int i = 0; i < maximum_num_contexts_ + 1; i++) {
+  for (size_t i = 0; i < config::max_num_contexts + 1; i++) {
     if (backend_comm != MPI_COMM_NULL) {
       mpilib_ftable_.Alltoall(MPI_IN_PLACE, sizeof(dest_info_t), MPI_CHAR, dest_info.data() + i * num_pes, sizeof(dest_info_t), MPI_CHAR, backend_comm);
     } else {
@@ -718,7 +715,7 @@ void GDABackend::setup_gpu_qps() {
   size_t qp_objs_count;
   size_t qp_objs_mem_size;
 
-  qp_objs_count    = (maximum_num_contexts_ + 1) * num_pes;
+  qp_objs_count    = (config::max_num_contexts + 1) * num_pes;
   qp_objs_mem_size = sizeof(QueuePair) * qp_objs_count;
 
   CHECK_HIP(hipMalloc(&gpu_qps, qp_objs_mem_size));
@@ -726,7 +723,7 @@ void GDABackend::setup_gpu_qps() {
   host_qps = (QueuePair*) malloc(qp_objs_mem_size);
   CHECK_NNULL(host_qps, "malloc (host_qps)");
 
-  for (int i = 0; i < qp_objs_count; i++) {
+  for (size_t i = 0; i < qp_objs_count; i++) {
     new (&host_qps[i]) QueuePair(pd_orig, gda_vendor);
     CHECK_HIP(hipMemcpy(&gpu_qps[i], &host_qps[i], sizeof(QueuePair), hipMemcpyDefault));
 
@@ -741,7 +738,7 @@ void GDABackend::setup_gpu_qps() {
 void GDABackend::cleanup_gpu_qps() {
   size_t qp_objs_count;
 
-  qp_objs_count = (maximum_num_contexts_ + 1) * num_pes;
+  qp_objs_count = (config::max_num_contexts + 1) * num_pes;
 
   for (int i = 0; i < qp_objs_count; i++) {
     host_qps[i].~QueuePair();
@@ -919,7 +916,7 @@ void GDABackend::modify_qps_rtr_to_rts() {
 
 void GDABackend::create_queues() {
   int ncqes;
-  int resize_length;
+  size_t resize_length;
 
   if (gda_vendor == GDAVendor::IONIC) {
     ncqes = sq_size << 1;
@@ -927,7 +924,7 @@ void GDABackend::create_queues() {
     ncqes = sq_size;
   }
 
-  resize_length = (maximum_num_contexts_ + 1) * num_pes;
+  resize_length = (config::max_num_contexts + 1) * num_pes;
 
   dest_info.resize(resize_length);
   cqs.resize(resize_length);
@@ -948,11 +945,11 @@ void GDABackend::create_queues() {
 }
 
 void GDABackend::alternate_qp_ports() {
-  int cur_qp_idx;
-  int new_qp_idx;
+  size_t cur_qp_idx;
+  size_t new_qp_idx;
 
   /* We can't remap anything */
-  if (maximum_num_contexts_ == 1) {
+  if (config::max_num_contexts == 1) {
     return;
   }
 
@@ -979,8 +976,8 @@ void GDABackend::alternate_qp_ports() {
      */
 
     /* Re-Map each context */
-    for (int i = 1; i < (maximum_num_contexts_ + 1); i+=2) {
-      for (int p = 0; p < num_pes; p+=2) {
+    for (size_t i = 1; i < (config::max_num_contexts + 1); i += 2) {
+      for (size_t p = 0; p < num_pes; p += 2) {
         cur_qp_idx = (i * num_pes) + p;
         new_qp_idx = cur_qp_idx + 1;
 

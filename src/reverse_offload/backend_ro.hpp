@@ -287,11 +287,6 @@ class ROBackend : public Backend {
   size_t max_wavefront_buffers_{1024};
 
   /**
-   * @brief Holds maximum number of contexts used in library
-   */
-  size_t maximum_num_contexts_{1024};
-
-  /**
    * @brief Holds maximum threads per work-group
    */
   int max_wg_size_{};

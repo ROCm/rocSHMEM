@@ -76,6 +76,7 @@ namespace config {
   };
 
   using var_types = type_sequence<bool,
+                                  size_t,
                                   int64_t,
                                   useconds_t,
                                   std::string,
@@ -333,6 +334,11 @@ namespace config {
 
   inline namespace _base {
     extern const var<bool> uniqueid_with_mpi;
+
+    /**
+     * @brief Maximum number of contexts used in library
+     */
+    extern const var<size_t> max_num_contexts;
   }  // inline namespace _base
 
   namespace bootstrap {

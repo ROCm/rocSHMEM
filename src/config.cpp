@@ -38,6 +38,7 @@ namespace rocshmem {
 namespace config {
   inline namespace _base {
     const var<bool> uniqueid_with_mpi("UNIQUEID_WITH_MPI", "", false);
+    const var<size_t> max_num_contexts("MAX_NUM_CONTEXTS", "", 32);
   }  // inline namespace _base
 
   namespace bootstrap {
