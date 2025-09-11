@@ -362,6 +362,7 @@ namespace config {
   inline namespace _base {
     extern const var<bool> uniqueid_with_mpi;
     extern const var<size_t> heap_size;
+    extern const var<size_t> max_num_teams;
 
     /**
      * @brief Maximum number of contexts for the application

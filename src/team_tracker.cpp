@@ -29,12 +29,7 @@
 
 namespace rocshmem {
 
-TeamTracker::TeamTracker() {
-  char* value{nullptr};
-  if ((value = getenv("ROCSHMEM_MAX_NUM_TEAMS"))) {
-    max_num_teams_ = atoi(value);
-  }
-}
+TeamTracker::TeamTracker() { }
 
 void TeamTracker::track(rocshmem_team_t team) {
   if (team == ROCSHMEM_TEAM_INVALID) {
