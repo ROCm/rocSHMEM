@@ -67,7 +67,8 @@ namespace config {
   };
 
   using var_types = type_sequence<bool,
-                                  int64_t>;
+                                  int64_t,
+                                  std::string>;
 }  // namespace config
 }  // namespace rocshmem
 
@@ -312,6 +313,7 @@ namespace config {
   namespace bootstrap {
     template <typename T> using var = var<T, category::tag::BOOTSTRAP>;
     extern const var<int64_t> timeout;
+    extern const var<std::string> hostid;
   }  // namespace bootstrap
 
   namespace ro {
