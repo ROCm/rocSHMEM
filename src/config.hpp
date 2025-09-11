@@ -303,6 +303,10 @@ namespace config {
   private:
     _detail::var_list_t::const_iterator var_map_pos;
   };
+
+  inline namespace _base {
+    extern const var<bool> uniqueid_with_mpi;
+  }  // inline namespace _base
 }  // namespace config
 }  // namespace rocshmem
 
