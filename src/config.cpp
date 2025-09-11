@@ -30,6 +30,8 @@
 #include <tuple>
 #include <unordered_map>
 
+#include <unistd.h>
+
 namespace rocshmem {
 namespace config {
   inline namespace _base {
@@ -44,6 +46,7 @@ namespace config {
 
   namespace ro {
     const var<bool> disable_ipc("DISABLE_IPC", "", false);
+    const var<useconds_t> progress_delay("PROGRESS_DELAY", "", 3);
   }  // namespace ro
 
   namespace _detail {

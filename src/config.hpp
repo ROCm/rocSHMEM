@@ -40,6 +40,8 @@
 #include <unordered_map>
 #include <variant>
 
+#include <unistd.h>
+
 // forward declarations
 namespace rocshmem {
 namespace config {
@@ -68,6 +70,7 @@ namespace config {
 
   using var_types = type_sequence<bool,
                                   int64_t,
+                                  useconds_t,
                                   std::string>;
 }  // namespace config
 }  // namespace rocshmem
@@ -320,6 +323,7 @@ namespace config {
   namespace ro {
     template <typename T> using var = var<T, category::tag::REVERSE_OFFLOAD>;
     extern const var<bool> disable_ipc;
+    extern const var<useconds_t> progress_delay;
   }  // namespace ro
 }  // namespace config
 }  // namespace rocshmem
