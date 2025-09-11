@@ -71,6 +71,29 @@ GDABackend::GDABackend(TcpBootstrap *bootstrap):  Backend(bootstrap) {
 
 void GDABackend::init() {
   type = BackendType::GDA_BACKEND;
+  int ret;
+
+#if defined(GDA_BNXT)
+  ret = bnxt_dv_dl_init();
+  if (ret != ROCSHMEM_SUCCESS) {
+    // Disable BNXT GDA support.
+    DPRINTF("Initializing rocSHMEM BNXT GDA support failed\n");
+    // We abort for now, but might remove that once we support
+    // multiple NIC types in the same build
+    abort();
+  }
+#endif
+#if defined(GDA_MLX5)
+  ret = mlx5_dv_dl_init();
+  if (ret != ROCSHMEM_SUCCESS) {
+    // Disable MLX5 GDA support.
+    DPRINTF("Initializing rocSHMEM MLX5 GDA support failed\n");
+    // We abort for now, but might remove that once we support
+    // multiple NIC types in the same build
+    abort();
+  }
+#endif
+
   read_env();
 
   //TODO setup_host_interface();
@@ -113,6 +136,15 @@ GDABackend::~GDABackend() {
   cleanup_gpu_qps();
   cleanup_heap_memory_rkey();
   cleanup_ibv();
+
+#if defined(GDA_BNXT)
+  if (bnxtdv_handle_ != nullptr)
+    dlclose(bnxtdv_handle_);
+#endif
+#if defined(GDA_MLX5)
+  if (mlx5dv_handle_ != nullptr)
+    dlclose(mlx5dv_handle_);
+#endif
 }
 
 void GDABackend::read_env() {
@@ -545,6 +577,19 @@ void GDABackend::rte_barrier() {
   }
 }
 
+#if defined(GDA_MLX5)
+int GDABackend::mlx5_dv_dl_init () {
+  mlx5dv_handle_ = dlopen("libmlx5.so", RTLD_NOW);
+  if (!mlx5dv_handle_) {
+    printf("Could not open libmlx5.so. Returning\n");
+    return ROCSHMEM_ERROR;
+  }
+
+  DLSYM_HELPER(mlx5dv_ftable_, mlx5dv_, mlx5dv_handle_, init_obj);
+  return ROCSHMEM_SUCCESS;
+}
+#endif
+
 void GDABackend::setup_ibv() {
   open_ib_device();
 
@@ -566,22 +611,22 @@ void GDABackend::cleanup_ibv() {
   CHECK_HIP(hipHostUnregister(db_region_attr.dbr));
 
   for (int i = 0; i < qps.size(); i++) {
-    err = bnxt_re_dv_destroy_qp(qps[i]);
+    err = bnxtdv_ftable_.destroy_qp(qps[i]);
     CHECK_ZERO(err, "bnxt_re_dv_destroy_qp");
 
-    err = bnxt_re_dv_umem_dereg(bnxt_qps[i].attr.rq_umem_handle);
+    err = bnxtdv_ftable_.umem_dereg(bnxt_qps[i].attr.rq_umem_handle);
     CHECK_ZERO(err, "bnxt_re_dv_umem_dereg (RQ)");
 
-    err = bnxt_re_dv_umem_dereg(bnxt_qps[i].attr.sq_umem_handle);
+    err = bnxtdv_ftable_.umem_dereg(bnxt_qps[i].attr.sq_umem_handle);
     CHECK_ZERO(err, "bnxt_re_dv_umem_dereg (SQ)");
 
     CHECK_HIP(hipFree(bnxt_qps[i].sq_buf));
     CHECK_HIP(hipFree(bnxt_qps[i].rq_buf));
 
-    err = bnxt_re_dv_destroy_cq(cqs[i]);
+    err = bnxtdv_ftable_.destroy_cq(cqs[i]);
     CHECK_ZERO(err, "bnxt_re_dv_destroy_cq");
 
-    err = bnxt_re_dv_umem_dereg(bnxt_cqs[i].umem_handle);
+    err = bnxtdv_ftable_.umem_dereg(bnxt_cqs[i].umem_handle);
     CHECK_ZERO(err, "bnxt_re_dv_umem_dereg");
 
     CHECK_HIP(hipFree(bnxt_cqs[i].buf));
@@ -753,7 +798,7 @@ void GDABackend::modify_qps_reset_to_init() {
 
   for (int i =0; i < qps.size() ; i++) {
 #ifdef GDA_BNXT
-    err = bnxt_re_dv_modify_qp(qps[i], &attr, attr_mask, 0, 0);
+    err = bnxtdv_ftable_.modify_qp(qps[i], &attr, attr_mask, 0, 0);
 #else
     err = ibv_modify_qp(qps[i], &attr, attr_mask);
 #endif
@@ -799,7 +844,7 @@ void GDABackend::modify_qps_init_to_rtr() {
     }
 
 #ifdef GDA_BNXT
-    err = bnxt_re_dv_modify_qp(qps[i], &attr, attr_mask, 0, 0);
+    err = bnxtdv_ftable_.modify_qp(qps[i], &attr, attr_mask, 0, 0);
 #else
     err = ibv_modify_qp(qps[i], &attr, attr_mask);
 #endif
@@ -830,7 +875,7 @@ void GDABackend::modify_qps_rtr_to_rts() {
     attr.sq_psn = dest_info[i].psn;
 
 #ifdef GDA_BNXT
-    err = bnxt_re_dv_modify_qp(qps[i], &attr, attr_mask, 0, 0);
+    err = bnxtdv_ftable_.modify_qp(qps[i], &attr, attr_mask, 0, 0);
 #else
     err = ibv_modify_qp(qps[i], &attr, attr_mask);
 #endif
@@ -984,7 +1029,7 @@ void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   mlx5dv_obj mlx_obj;
   mlx_obj.cq.in = cqs[conn_num];
   mlx_obj.cq.out = &cq_out;
-  mlx5dv_init_obj(&mlx_obj, MLX5DV_OBJ_CQ);
+  mlx5dv_ftable_.init_obj(&mlx_obj, MLX5DV_OBJ_CQ);
   dump_mlx5dv_cq(&cq_out, conn_num);
 
   /*
@@ -1007,7 +1052,7 @@ void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   mlx5dv_qp qp_out;
   mlx_obj.qp.in = qps[conn_num];
   mlx_obj.qp.out = &qp_out;
-  mlx5dv_init_obj(&mlx_obj, MLX5DV_OBJ_QP);
+  mlx5dv_ftable_.init_obj(&mlx_obj, MLX5DV_OBJ_QP);
   dump_mlx5dv_qp(&qp_out, conn_num);
 
   /*
