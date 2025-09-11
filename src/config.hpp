@@ -336,6 +336,11 @@ namespace config {
     extern const var<bool> uniqueid_with_mpi;
 
     /**
+     * @brief Maximum number of contexts for the application
+     */
+    extern const var<size_t> max_num_host_contexts;
+
+    /**
      * @brief Maximum number of contexts used in library
      */
     extern const var<size_t> max_num_contexts;
