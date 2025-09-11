@@ -657,6 +657,13 @@ case $TEST in
     TestColl
     TestOther
     ;;
+  *"all-ro")
+    TestRMAPut
+    TestAMO
+    TestSigOps
+    TestColl
+    TestOther
+    ;;
   *"rma")
     TestRMA
     ;;
