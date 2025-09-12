@@ -110,13 +110,29 @@ template <typename T>
 __device__ void GDAContext::amo_set(void *dst, T value, int pe) {
   if constexpr (sizeof(T) != 8) { printf("rocshmem::gda:amo_set not implemented for non-64bit types.\n"); abort(); }//TODO:support for non-uint64t
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
+  bool need_turn {true};
+  uint64_t turns = __ballot(need_turn);
   T ret_val;
   T cond = 0;
-  for (int i = 0; i < WF_SIZE; i++) { //TODO: this looks wrong
-    while ((ret_val = qps[pe].atomic_fetch(base_heap[pe] + L_offset, value, cond, pe, GDA_OP_ATOMIC_CS))) {
-      if (ret_val == cond) { break; }
-      cond = ret_val;
+  while (turns) {
+    uint8_t lane = __ffsll((unsigned long long)turns) - 1;
+    int pe_turn = __shfl(pe, lane);
+    if (pe_turn == pe) {
+      /**
+       * Guess that the remote memory is zero by setting condition to zero.
+       * The compare-and-swap loop will execute at least twice if wrong.
+       * It may run additional times if contention on memory location.
+       */
+      while ((ret_val = qps[pe].atomic_fetch(base_heap[pe] + L_offset, value,
+                                             cond, pe, GDA_OP_ATOMIC_CS))) {
+        if (ret_val == cond) {
+          need_turn = false;
+          break;
+        }
+        cond = ret_val;
+      }
     }
+    turns = __ballot(need_turn);
   }
 }
 
