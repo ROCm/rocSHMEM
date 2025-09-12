@@ -75,12 +75,38 @@ namespace config {
     using var_variant_cref = std::variant<std::reference_wrapper<const _detail::var<T>>...>;
   };
 
-  using var_types = type_sequence<bool,
-                                  size_t,
-                                  int64_t,
-                                  useconds_t,
-                                  std::string,
-                                  types::socket_family>;
+  // primary template: start with an empty type_sequence<> on the left
+  template <typename... T>
+  struct unique_type_sequence {
+    using type = typename unique_type_sequence<type_sequence<>, T...>::type;
+  };
+
+  // convenience alias
+  template <typename... T>
+  using unique_type_sequence_t = typename unique_type_sequence<T...>::type;
+
+  // base case: the type of a type_sequence is a type_sequence
+  template <typename... T>
+  struct unique_type_sequence<type_sequence<T...>> {
+    using type = type_sequence<T...>;
+  };
+
+  // recursion: type_sequence<T...> is already filtered
+  //            if type_sequence<T...> contains U, discard U and recurse with remaining V...
+  //            else, add U to form type_sequence<T..., U> and recurse with remaining V...
+  template <typename... T, typename U, typename... V>
+  struct unique_type_sequence<type_sequence<T...>, U, V...> {
+    using type = std::conditional_t<type_sequence<T...>::template contains_v<U>,
+                                    unique_type_sequence_t<type_sequence<T...>, V...>,
+                                    unique_type_sequence_t<type_sequence<T..., U>, V...>>;
+  };
+
+  using var_types = unique_type_sequence_t<bool,
+                                           size_t,
+                                           int64_t,
+                                           useconds_t,
+                                           std::string,
+                                           types::socket_family>;
 }  // namespace config
 }  // namespace rocshmem
 
