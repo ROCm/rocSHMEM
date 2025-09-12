@@ -311,9 +311,12 @@ class QueuePair {
 
   uint64_t* nonfetching_atomic{nullptr};
   uint32_t nonfetching_atomic_lkey{0};
+  struct ibv_mr *mr_nonfetching_atomic;
 
   uint64_t* fetching_atomic{nullptr};
   uint32_t fetching_atomic_lkey{0};
+  uint32_t fetching_atomic_idx{0};
+  struct ibv_mr *mr_fetching_atomic;
 
   static const uint32_t FETCHING_ATOMIC_CNT{1024};
   static_assert(FETCHING_ATOMIC_CNT % WF_SIZE == 0);
@@ -322,8 +325,6 @@ class QueuePair {
 
   HIPAllocator allocator{};
 
-  struct ibv_mr *mr_nonfetching_atomic;
-  struct ibv_mr *mr_fetching_atomic;
 };
 
 }  // namespace rocshmem

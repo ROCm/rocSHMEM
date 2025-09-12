@@ -550,7 +550,7 @@ TestGDA() {
 #  ExecTest  "amo_fcswap"       2       32           1
 #  ExecTest  "amo_fcswap"       2       8            1
 
-#Works on CX7, not implemented on BNXT
+#This works but tester requires 32bit amos to be implemented
 #  ExecTest  "amo_finc"         2       1            1
 #  ExecTest  "amo_finc"         2       1            1024
 #  ExecTest  "amo_finc"         2       8            1
@@ -562,7 +562,7 @@ TestGDA() {
 #  ExecTest  "amo_inc"          2       8            1
 #  ExecTest  "amo_inc"          2       32           128
 
-#Works on CX7, not implemented on BNXT
+#This works but tester requires 32bit amos to be implemented
 #  ExecTest  "amo_fadd"         2       1            1
 #  ExecTest  "amo_fadd"         2       1            1024
 #  ExecTest  "amo_fadd"         2       8            1
