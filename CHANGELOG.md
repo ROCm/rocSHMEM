@@ -3,11 +3,10 @@
 ## Unreleased - rocSHMEM 3.x.x for ROCm 7.x.x
 ### Added
 * Added the GDA conduit for different NIC vendors
-   * Mellanox ConnectX-7 (IB and RoCE)
-   * Broadcom Thor 2
+   * Mellanox MLX5 (IB and RoCE ConnectX-7)
+   * Broadcom BNXT\_RE (Thor 2)
 * Added new APIs:
    * `rocshmem_get_device_ctx`
-   * `rocshmem_ptr`
 
 ### Changed
 
@@ -19,6 +18,11 @@
 ### Removed
 
 * rocSHMEM no-longer requires rocPRIM and rocThrust as dependencies
+
+### Changed
+* `rocshmem_ptr`  has an implementation that can return non-null pointer to
+   a shared memory region when the IPC transport is available to reach that region.
+   Previously, it would return a null pointer.
 
 ### Known issues
 * Only a subset of rocSHMEM APIs are implemented for the GDA conduit
