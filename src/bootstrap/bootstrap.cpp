@@ -95,7 +95,7 @@ struct ExtInfo {
 
    DPRINTF("groupAllGather: rank %d nranks %d size %d\n", rank, nRanks, size);
 
-   int sendto = rank_pos + 1 % nRanks;
+   int sendto = (rank_pos + 1 + nRanks) % nRanks;
    int recvfrom = (rank_pos - 1 + nRanks) % nRanks;
    for (int i = 0; i < nRanks - 1; i++) {
      size_t rSlice = (rank_pos - i - 1 + nRanks) % nRanks;
