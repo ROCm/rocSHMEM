@@ -114,9 +114,16 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
 
     CHECK_HIP(hipMalloc(reinterpret_cast<void**>(&pes_with_ipc_avail), shm_size * sizeof(int)));
 
-    //TODO: replace with group_translate_rank
-    MPI_Comm_rank(thread_comm, &thread_comm_rank);
-    MPI_Allgather(&thread_comm_rank, 1, MPI_INT, pes_with_ipc_avail, 1, MPI_INT, shmcomm);
+    MPI_Group thread_grp, shm_grp;
+    MPI_Comm_group(thread_comm, &thread_grp);
+    MPI_Comm_group(shmcomm, &shm_grp);
+    int *seqranks = new int[shm_size];
+    for(int i = 0; i < shm_size; i++)
+      seqranks[i] = i;
+    MPI_Group_translate_ranks(shm_grp, shm_size, seqranks, thread_grp, pes_with_ipc_avail);
+    delete [] seqranks;
+    MPI_Group_free(&shm_grp);
+    MPI_Group_free(&thread_grp);
   }
 }
 
