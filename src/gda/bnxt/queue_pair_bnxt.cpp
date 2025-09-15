@@ -365,9 +365,7 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t length, uintptr_t *r
 
       /* Populate SG Segment - (Return address of atomic) */
       if (fetching) {
-        atomic_idx = __hip_atomic_fetch_add(&fetching_atomic_idx, 1, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
-        atomic_idx = atomic_idx % FETCHING_ATOMIC_CNT;
-
+        atomic_idx = fetching_atomic_idx++ % FETCHING_ATOMIC_CNT;
         sge.pa     = (uint64_t) &fetching_atomic[atomic_idx];
         sge.lkey   = fetching_atomic_lkey;
       } else {
