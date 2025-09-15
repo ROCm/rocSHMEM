@@ -122,9 +122,9 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
 
 __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
                                      TcpBootstrap *bootstr) {
-  auto shm_size = bootstr->getNranksPerNode();
+  shm_size = bootstr->getNranksPerNode();
   auto shm_ranks = bootstr->getLocalRanks();
-  auto shm_rank = std::find(shm_ranks.begin(), shm_ranks.end(), my_pe) - shm_ranks.begin();
+  shm_rank = std::find(shm_ranks.begin(), shm_ranks.end(), my_pe) - shm_ranks.begin();
 
   /*
    * Allocate a host-side c-array to hold the IPC handles.
