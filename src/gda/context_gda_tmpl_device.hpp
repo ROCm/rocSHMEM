@@ -331,8 +331,16 @@ template <typename T>
 __device__ void GDAContext::amo_cas(void *dst, T value, T cond, int pe) {
   if constexpr (sizeof(T) != 8) { printf("rocshmem::gda:amo_cas not implemented for non-64bit types.\n"); abort(); }//TODO:support for non-uint64t
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
-  for (int i = 0; i < WF_SIZE; i++) { //TODO: this looks wrong
-    qps[pe].atomic_nofetch(base_heap[pe] + L_offset, value, cond, pe, GDA_OP_ATOMIC_CS);
+  bool need_turn {true};
+  uint64_t turns = __ballot(need_turn);
+  while (turns) {
+    uint8_t lane = __ffsll((unsigned long long)turns) - 1;
+    int pe_turn = __shfl(pe, lane);
+    if (pe_turn == pe) {
+      qps[pe].atomic_nofetch(base_heap[pe] + L_offset, value, cond, pe, GDA_OP_ATOMIC_CS);
+      need_turn = false;
+    }
+    turns = __ballot(need_turn);
   }
 }
 
