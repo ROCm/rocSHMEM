@@ -138,9 +138,28 @@ __device__ void GDAContext::amo_set(void *dst, T value, int pe) {
 
 template <typename T>
 __device__ T GDAContext::amo_swap(void *dst, T value, int pe) {
-  printf("rocshmem::gda:amo_swap not implemented\n");
-  abort();
-  return 0;
+  if constexpr (sizeof(T) != 8) { printf("rocshmem::gda:amo_set not implemented for non-64bit types.\n"); abort(); }//TODO:support for non-uint64t
+  uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
+  bool need_turn {true};
+  uint64_t turns = __ballot(need_turn);
+  T ret_val;
+  T cond = 0;
+  while (turns) {
+    uint8_t lane = __ffsll((unsigned long long)turns) - 1;
+    int pe_turn = __shfl(pe, lane);
+    if (pe_turn == pe) {
+      while ((ret_val = qps[pe].atomic_fetch(base_heap[pe] + L_offset, value,
+                                             cond, pe, GDA_OP_ATOMIC_CS))) {
+        if (ret_val == cond) {
+          need_turn = false;
+          break;
+        }
+        cond = ret_val;
+      }
+    }
+    turns = __ballot(need_turn);
+  }
+  return ret_val;
 }
 
 template <typename T>
