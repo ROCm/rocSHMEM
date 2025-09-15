@@ -114,20 +114,28 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
 
     CHECK_HIP(hipMalloc(reinterpret_cast<void**>(&pes_with_ipc_avail), shm_size * sizeof(int)));
 
+    //TODO: replace with group_translate_rank
     MPI_Comm_rank(thread_comm, &thread_comm_rank);
     MPI_Allgather(&thread_comm_rank, 1, MPI_INT, pes_with_ipc_avail, 1, MPI_INT, shmcomm);
+    printf("rank %d:%d IPC_AVAIL:\n", my_pe, shm_rank);
+    for(int i = 0; i < shm_size; i++) printf(" %d",pes_with_ipc_avail[i]);
+    printf("\n");
   }
 }
 
 __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
                                      TcpBootstrap *bootstr) {
-  /*
-   * The non-MPI based version only works for ipc conduit for now,
-   * i.e. total number of ranks and number of local ranks have to match.
-   */
-  shm_size = bootstr->getNranksPerNode();
-  assert (shm_size == bootstr->getNranks());
-  shm_rank = my_pe;
+  auto shm_size = bootstr->getNranksPerNode();
+  auto shm_ranks = bootstr->getLocalRanks();
+  auto shm_rank = std::find(shm_ranks.begin(), shm_ranks.end(), my_pe) - shm_ranks.begin();
+
+  printf("rank:%d shm_rank:%d shm_size: %d\n", my_pe, shm_rank, shm_size);
+  for(int i: shm_ranks) printf(" %d", i);
+  printf("\n");
+  if (0 == my_pe) {
+    printf("rank %d %d\n", my_pe, getpid());
+//    int spin=0; do {} while(spin);
+  }
 
   /*
    * Allocate a host-side c-array to hold the IPC handles.
@@ -144,11 +152,13 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
   char *base_heap = heap_bases[my_pe];
   CHECK_HIP(hipIpcGetMemHandle(&vec_ipc_handle[shm_rank], base_heap));
 
+  printf("rank %d:%d ALLGATHER\n", my_pe, shm_rank);
   /*
    * Do an all-to-all exchange with each local processing element to
    * share the symmetric heap IPC handles.
    */
-  bootstr->allGather(vec_ipc_handle, sizeof(hipIpcMemHandle_t));
+  bootstr->groupAllGather(vec_ipc_handle, sizeof(hipIpcMemHandle_t), shm_ranks);
+  printf("rank %d:%d ALLGATHER DONE\n", my_pe, shm_rank);
 
   /*
    * Allocate device-side array to hold the IPC symmetric heap base
@@ -182,6 +192,16 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
    * addresses.
    */
   free(vec_ipc_handle);
+
+  if (0 == rocshmem_env_.get_disable_ipc()) {
+    int thread_comm_rank {-1};
+
+    CHECK_HIP(hipMalloc(reinterpret_cast<void**>(&pes_with_ipc_avail), shm_size * sizeof(int)));
+    std::copy(shm_ranks.begin(), shm_ranks.end(), pes_with_ipc_avail);
+    printf("rank %d:%d IPC_AVAIL:\n", my_pe, shm_rank);
+    for(int i = 0; i < shm_size; i++) printf(" %d",pes_with_ipc_avail[i]);
+    printf("\n");
+  }
 }
 
 __host__ void IpcOnImpl::ipcHostStop() {
