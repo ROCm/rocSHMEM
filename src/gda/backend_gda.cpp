@@ -115,6 +115,8 @@ void GDABackend::init() {
   setup_team_world();
   rte_barrier();
 
+  setup_ipc();
+
   setup_ibv();
   setup_heap_memory_rkey();
   setup_gpu_qps();
@@ -132,6 +134,8 @@ GDABackend::~GDABackend() {
   CHECK_HIP(hipFree(team_world));
 
   cleanup_wrk_sync_buffer();
+
+  cleanup_ipc();
 
   cleanup_gpu_qps();
   cleanup_heap_memory_rkey();
@@ -166,6 +170,18 @@ void GDABackend::read_env() {
   }
 }
 
+void GDABackend::setup_ipc() {
+  const auto &heap_bases{heap.get_heap_bases()};
+
+  if (MPI_COMM_NULL != backend_comm)
+    ipcImpl.ipcHostInit(my_pe, heap_bases, backend_comm);
+  else
+    ipcImpl.ipcHostInit(my_pe, heap_bases, backend_bootstr);
+}
+
+void GDABackend::cleanup_ipc() {
+  ipcImpl.ipcHostStop();
+}
 
 void GDABackend::setup_host_ctx() {
   default_host_ctx = std::make_unique<GDAHostContext>(this, 0);
@@ -258,41 +274,12 @@ void GDABackend::team_destroy(rocshmem_team_t team) {
 void GDABackend::Alltoall_char_inplace (char *inoutbuf, size_t num_bytes, rocshmem_team_t team) {
   // Implement an Alltoall outside of MPI assuming in_place communication
   GDATeam *team_obj = reinterpret_cast<GDATeam *>(team);
-  int num_pes = team_obj->num_pes;
-  int my_pe = team_obj->my_pe;
-  int *pes_in_world = new int[num_pes];
+  std::vector<int> pes_in_world;
 
-  int my_pe_in_world = team_obj->my_pe_in_world;
   for (int i = 0; i < num_pes; i++) {
-      pes_in_world[i] = team_obj->get_pe_in_world(i);
+    pes_in_world.push_back(team_obj->get_pe_in_world(i));
   }
-
-  // Since this is an in-place algorithm, allocate the temporary receive buffer first
-  char *recv_buf = new char[num_bytes * num_pes];
-  std::memset(recv_buf, 0, num_pes * num_bytes);
-
-  // Perform pairwise exchange - local copy is ommitted
-  for (int step = 1; step < num_pes; step++) {
-    int sendto_team  = (my_pe + step) % num_pes;
-    int recvfrom_team = (my_pe + num_pes - step) % num_pes;
-
-    char *tmpsend = (char*)inoutbuf + (ptrdiff_t)sendto_team * num_bytes;
-    char *tmprecv = (char*)recv_buf + (ptrdiff_t)recvfrom_team * num_bytes;
-
-    // similarly to the allGather in the bootstrap code, we do send first
-    // followed by the receive.
-    // There is a chance for deadlock in my opinion for large messages.
-    backend_bootstr->send(tmpsend, num_bytes, pes_in_world[sendto_team], step /* used as tag */);
-    backend_bootstr->recv(tmprecv, num_bytes, pes_in_world[recvfrom_team], step);
-  }
-  //Since this is an in_place all-to-all, copy data back into the user buffer
-  for (int step = 0; step < num_pes; step++) {
-    if (step == my_pe) continue;
-    std::memcpy(&inoutbuf[step*num_bytes], &recv_buf[step*num_bytes], num_bytes);
-  }
-
-  delete[] recv_buf;
-  delete[] pes_in_world;
+  backend_bootstr->groupAlltoall(inoutbuf, num_bytes, pes_in_world);
 }
 
 //TODO: factorize somewhere else, maybe backend_bc?
@@ -305,18 +292,16 @@ void GDABackend::Allreduce_char_BAND (char* inbuf, char *outbuf, size_t num_byte
 
   GDATeam *team_obj = reinterpret_cast<GDATeam *>(team);
   int num_pes = team_obj->num_pes;
-  int my_pe = team_obj->my_pe;
+  std::vector<int> pes_in_world;
 
   char *tmp_buffer = new char[num_pes * num_bytes];
   std::memset(tmp_buffer, 0, num_pes * num_bytes);
-  std::memcpy (&tmp_buffer[my_pe * num_bytes], inbuf, num_bytes);
+  std::memcpy(&tmp_buffer[my_pe * num_bytes], inbuf, num_bytes);
 
-  if (num_pes == backend_bootstr->getNranks() ) {
-    backend_bootstr->allGather(tmp_buffer, num_bytes);
-  } else {
-    printf("GDABackend::create_new_team: non-mpi version only supports parent_teams that contain all processes. Aborting.\n");
-    abort();
+  for (int i = 0; i < num_pes; i++) {
+    pes_in_world.push_back(team_obj->get_pe_in_world(i));
   }
+  backend_bootstr->groupAllGather(tmp_buffer, num_bytes, pes_in_world);
 
   for (int i = 0; i < num_bytes; i++) {
     outbuf[i] = tmp_buffer[i];

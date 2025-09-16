@@ -361,7 +361,7 @@ class rocshmem_env_config {
 public:
   rocshmem_env_config();
 
-  int get_ro_disable_ipc();
+  int get_disable_ipc();
   int get_ro_progress_delay();
   int get_uniqueid_with_mpi();
   int get_bootstrap_timeout();
@@ -370,7 +370,7 @@ public:
   std::string get_bootstrap_socket_ifname();
 
 private:
-  int ro_disable_ipc = 0;
+  int disable_ipc = 0;
   int ro_progress_delay = 3;
   int bootstrap_timeout = 5;
   int uniqueid_with_mpi = 0;

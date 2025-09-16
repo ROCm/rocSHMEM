@@ -301,6 +301,14 @@ class GDABackend : public Backend {
   void setup_host_ctx();
   void setup_default_ctx();
 
+
+  /**
+   * @brief Allocation and initialization of resources required to
+   * support IPC handover.
+   */
+  void setup_ipc();
+  void cleanup_ipc();
+
   /**
    * @brief Allocate and initialize barrier operation addresses on
    * symmetric heap.

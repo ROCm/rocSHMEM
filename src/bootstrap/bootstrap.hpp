@@ -49,12 +49,15 @@ class Bootstrap {
   virtual int getRank() = 0;
   virtual int getNranks() = 0;
   virtual int getNranksPerNode() = 0;
+  virtual std::vector<int> getLocalRanks() = 0;
   virtual void send(void* data, int size, int peer, int tag) = 0;
   virtual void recv(void* data, int size, int peer, int tag) = 0;
   virtual void allGather(void* allData, int size) = 0;
   virtual void barrier() = 0;
 
   void groupBarrier(const std::vector<int>& ranks);
+  void groupAllGather(void* allData, int size, const std::vector<int>& ranks);
+  void groupAlltoall(void* allData, int size, const std::vector<int>& ranks);
   void send(const std::vector<char>& data, int peer, int tag);
   void recv(std::vector<char>& data, int peer, int tag);
 };
@@ -118,6 +121,9 @@ class TcpBootstrap : public Bootstrap {
   /// @param peer The rank of the process to receive the data from.
   /// @param tag The tag to receive the data with.
   void recv(void* data, int size, int peer, int tag) override;
+
+  /// Provide list of ranks that are local to the calling process
+  std::vector<int> getLocalRanks() override;
 
   /// Gather data from all processes.
   ///

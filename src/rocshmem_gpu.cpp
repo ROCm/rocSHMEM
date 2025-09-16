@@ -51,15 +51,15 @@
 #include "templates.hpp"
 #include "util.hpp"
 
-#if defined(USE_RO)
+#if defined(USE_GDA)
+#include "gda/context_gda_tmpl_device.hpp"
+#elif defined(USE_RO)
 #include "reverse_offload/context_ro_tmpl_device.hpp"
 #elif defined(USE_IPC)
 # if defined(ENABLE_IPC_BITCODE)
 #  include "ipc/backend_ipc.hpp"
 # endif
 #include "ipc/context_ipc_tmpl_device.hpp"
-#elif defined(USE_GDA)
-#include "gda/context_gda_tmpl_device.hpp"
 #else
 #error "Select one backend among USE_RO, USE_IPC, USE_GDA"
 #endif

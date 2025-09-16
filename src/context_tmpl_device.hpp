@@ -27,12 +27,12 @@
 
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "backend_type.hpp"
-#if defined(USE_RO)
+#if defined(USE_GDA)
+#include "gda/context_gda_device.hpp"
+#elif defined(USE_RO)
 #include "reverse_offload/context_ro_device.hpp"
 #elif defined(USE_IPC)
 #include "ipc/context_ipc_device.hpp"
-#elif defined(USE_GDA)
-#include "gda/context_gda_device.hpp"
 #endif
 
 namespace rocshmem {
