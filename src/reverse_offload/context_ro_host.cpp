@@ -44,17 +44,16 @@ __host__ ROHostContext::ROHostContext(Backend *backend, long options)
 
   int *pes_with_ipc_avail = new int[backend->ipcImpl.shm_size];
   char** ipc_bases = new char*[b->ipcImpl.shm_size];
-
-  CHECK_HIP(hipMemcpy(pes_with_ipc_avail,
+  if (backend->ipcImpl.pes_with_ipc_avail != nullptr) {
+    CHECK_HIP(hipMemcpy(pes_with_ipc_avail,
                   backend->ipcImpl.pes_with_ipc_avail,
                   backend->ipcImpl.shm_size * sizeof(int),
                   hipMemcpyDeviceToHost));
-
-  CHECK_HIP(hipMemcpy(ipc_bases,
+    CHECK_HIP(hipMemcpy(ipc_bases,
                   backend->ipcImpl.ipc_bases,
                   backend->ipcImpl.shm_size * sizeof(char *),
                   hipMemcpyDeviceToHost));
-
+  }
   ipcImpl_.pes_with_ipc_avail = pes_with_ipc_avail;
   ipcImpl_.ipc_bases = ipc_bases;
   ipcImpl_.shm_size = backend->ipcImpl.shm_size;
@@ -62,9 +61,9 @@ __host__ ROHostContext::ROHostContext(Backend *backend, long options)
 }
 
 __host__ ROHostContext::~ROHostContext() {
-  // host_interface->release_window_context(context_window_info);
   delete[] ipcImpl_.pes_with_ipc_avail;
   delete[] ipcImpl_.ipc_bases;
+  // host_interface->release_window_context(context_window_info);
 }
 
 __host__ void ROHostContext::putmem_nbi(void *dest, const void *source,
