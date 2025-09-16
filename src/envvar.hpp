@@ -22,8 +22,8 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_CONFIG_HPP_
-#define LIBRARY_SRC_CONFIG_HPP_
+#ifndef LIBRARY_SRC_ENVVAR_HPP_
+#define LIBRARY_SRC_ENVVAR_HPP_
 
 #include <cstdlib>
 #include <functional>
@@ -45,7 +45,7 @@
 
 // forward declarations
 namespace rocshmem {
-namespace config {
+namespace envvar {
   namespace _detail {
     template <typename T> class var;
   }  // namespace _detail
@@ -112,11 +112,11 @@ namespace config {
                                            std::string,
                                            types::socket_family,
                                            types::debug_level>;
-}  // namespace config
+}  // namespace envvar
 }  // namespace rocshmem
 
 namespace rocshmem {
-namespace config {
+namespace envvar {
   namespace category {
     // env var categories
     // when adding a new category, make sure to add prefix<tag::CATEGORY>
@@ -294,7 +294,7 @@ namespace config {
 
     // returns a tuple<var_map&, mutex&>, where var_map& and mutex& are statically allocated
     // in particular, the map is allocated so as to fix the static initialization order problem
-    // since these are used inside the constructor for config::var<T, C> to register variables
+    // since these are used inside the constructor for envvar::var<T, C> to register variables
     // which are expected to be allocated statically as well
     std::tuple<var_map_t&, std::mutex&> get_var_map();
 
@@ -304,7 +304,7 @@ namespace config {
     // list is heterogeneous over all valid variable types, using variant<_detail::var<T>&...>
     // locks mutex to ensure that there aren't race conditions due to parallel modifications
     template <typename T, category::tag C>
-    auto register_variable(const config::var<T, C>& v) {
+    auto register_variable(const envvar::var<T, C>& v) {
       auto [var_map, map_mutex] = _detail::get_var_map();
       std::lock_guard map_lock(map_mutex);
 
@@ -418,7 +418,7 @@ namespace config {
     extern const var<useconds_t> progress_delay;
     extern const var<bool> net_cpu_queue;
   }  // namespace ro
-}  // namespace config
+}  // namespace envvar
 }  // namespace rocshmem
 
-#endif  // LIBRARY_SRC_CONFIG_HPP_
+#endif  // LIBRARY_SRC_ENVVAR_HPP_

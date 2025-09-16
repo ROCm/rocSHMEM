@@ -37,8 +37,8 @@
 #include "rocshmem/rocshmem.hpp"
 #include "atomic_return.hpp"
 #include "backend_type.hpp"
-#include "config.hpp"
 #include "context_incl.hpp"
+#include "envvar.hpp"
 #include "mpi_transport.hpp"
 #include "ro_net_team.hpp"
 #include "util.hpp"
@@ -51,9 +51,9 @@ ROBackend::ROBackend(MPI_Comm comm)
     : Backend(comm) {
   type = BackendType::RO_BACKEND;
 
-  poll_block_count_ = config::max_num_contexts;
+  poll_block_count_ = envvar::max_num_contexts;
 
-  profiler_proxy_ = ProfilerProxyT(config::max_num_contexts);
+  profiler_proxy_ = ProfilerProxyT(envvar::max_num_contexts);
 
   int device_id;
   hipDeviceProp_t device_props;
@@ -67,7 +67,7 @@ ROBackend::ROBackend(MPI_Comm comm)
 
   setup_default_ctx_buffers();
 
-  size_t num_buff_elems = config::max_num_contexts * max_wg_size_;
+  size_t num_buff_elems = envvar::max_num_contexts * max_wg_size_;
 
   g_ret_buffer_ = RetBufferProxyT(num_buff_elems);
 
@@ -75,7 +75,7 @@ ROBackend::ROBackend(MPI_Comm comm)
 
   status_ = StatusProxyT(num_buff_elems);
 
-  queue_ = Queue(config::max_num_contexts, queue_size_);
+  queue_ = Queue(envvar::max_num_contexts, queue_size_);
 
   transport_ = new MPITransport(backend_comm, &queue_);
   num_pes = transport_->getNumPes();
@@ -98,7 +98,7 @@ ROBackend::ROBackend(MPI_Comm comm)
 
   initIPC();
 
-  transport_->initTransport(config::max_num_contexts, &backend_proxy);
+  transport_->initTransport(envvar::max_num_contexts, &backend_proxy);
 
   host_interface = transport_->host_interface;
 
@@ -126,7 +126,7 @@ ROBackend::ROBackend(MPI_Comm comm)
 
   block_handle_proxy_ = BlockHandleProxyT(g_ret_buffer_.get(),
                         atomic_ret_buffer_.get(), &queue_,
-                        max_wg_size_, status_.get(), config::max_num_contexts);
+                        max_wg_size_, status_.get(), envvar::max_num_contexts);
   setup_ctxs();
 
   worker_thread = std::thread(&ROBackend::ro_net_poll, this);
@@ -135,15 +135,15 @@ ROBackend::ROBackend(MPI_Comm comm)
 }
 
 void ROBackend::setup_ctxs() {
-  CHECK_HIP(hipMalloc(&ctx_array, sizeof(ROContext) * config::max_num_contexts));
-  for (size_t i = 0; i < config::max_num_contexts; i++) {
+  CHECK_HIP(hipMalloc(&ctx_array, sizeof(ROContext) * envvar::max_num_contexts));
+  for (size_t i = 0; i < envvar::max_num_contexts; i++) {
     new (&ctx_array[i]) ROContext(this, i);
     ctx_free_list.get()->push_back(ctx_array + i);
   }
 }
 
 void ROBackend::setup_default_ctx_buffers() {
-  size_t num_buff_elems = config::max_wavefront_buffers * wf_size_;
+  size_t num_buff_elems = envvar::max_wavefront_buffers * wf_size_;
 
   g_ret_buffer_default_ctx_ = RetBufferProxyT(num_buff_elems);
 
@@ -151,16 +151,16 @@ void ROBackend::setup_default_ctx_buffers() {
 
   status_default_ctx_ = StatusProxyT(num_buff_elems);
 
-  default_ctx_status_.get()->allocate_queue(config::max_wavefront_buffers);
-  default_ctx_g_ret_buffer_.get()->allocate_queue(config::max_wavefront_buffers);
-  default_ctx_atomic_ret_buffer_.get()->allocate_queue(config::max_wavefront_buffers);
+  default_ctx_status_.get()->allocate_queue(envvar::max_wavefront_buffers);
+  default_ctx_g_ret_buffer_.get()->allocate_queue(envvar::max_wavefront_buffers);
+  default_ctx_atomic_ret_buffer_.get()->allocate_queue(envvar::max_wavefront_buffers);
 
 
   char* status = status_default_ctx_.get();
   uint64_t* g_ret_buf = g_ret_buffer_default_ctx_.get();
   uint64_t* atomic_ret_buf = atomic_ret_buffer_default_ctx_.get();
 
-  for (size_t i = 0; i < config::max_wavefront_buffers; i++) {
+  for (size_t i = 0; i < envvar::max_wavefront_buffers; i++) {
     size_t offset = i * wf_size_;
     default_ctx_status_.get()->push(status + offset);
     default_ctx_g_ret_buffer_.get()->push(g_ret_buf + offset);
@@ -225,7 +225,7 @@ void ROBackend::ctx_destroy(Context *ctx) {
 void ROBackend::reset_backend_stats() {
   auto *bp{backend_proxy.get()};
 
-  for (size_t i = 0; i < config::max_num_contexts; i++) {
+  for (size_t i = 0; i < envvar::max_num_contexts; i++) {
     bp->profiler[i].resetStats();
   }
 }
@@ -251,7 +251,7 @@ void ROBackend::dump_backend_stats() {
 
   auto *bp{backend_proxy.get()};
 
-  for (size_t i = 0; i < config::max_num_contexts; i++) {
+  for (size_t i = 0; i < envvar::max_num_contexts; i++) {
     // Average latency as perceived from a thread
     const ROStats &prof{bp->profiler[i]};
     us_wait_slot += prof.getStat(WAITING_ON_SLOT) / gpu_frequency_mhz;

@@ -22,7 +22,7 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "config.hpp"
+#include "envvar.hpp"
 
 #include <istream>
 #include <list>
@@ -35,7 +35,7 @@
 #include <unistd.h>
 
 namespace rocshmem {
-namespace config {
+namespace envvar {
   inline namespace _base {
     const var<bool> uniqueid_with_mpi("UNIQUEID_WITH_MPI", "", false);
     const var<types::debug_level> debug_level("DEBUG_LEVEL", "", types::debug_level::NONE);
@@ -144,5 +144,5 @@ namespace config {
       }
     }  // inline namespace _debug
   }  // namespace types
-}  // namespace config
+}  // namespace envvar
 }  // namespace rocshmem

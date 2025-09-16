@@ -23,6 +23,7 @@
  *****************************************************************************/
 
 #include "queue.hpp"
+#include "envvar.hpp"
 #include "mpi_transport.hpp"
 
 namespace rocshmem {
@@ -57,7 +58,7 @@ bool Queue::process(uint64_t queue_index, MPITransport* transport) {
 
 queue_element* Queue::next_element(uint64_t queue_index) {
   queue_element *next_elem{nullptr};
-  if (!config::ro::net_cpu_queue) {
+  if (!envvar::ro::net_cpu_queue) {
     hdp_proxy_.get()->hdp_flush();
     copy_element_to_cache(queue_index);
     next_elem = queue_element_cache_proxy_.get();
@@ -77,13 +78,13 @@ void Queue::copy_element_to_cache(uint64_t queue_index) {
 }
 
 void Queue::flush_hdp() {
-  if (config::ro::net_cpu_queue) {
+  if (envvar::ro::net_cpu_queue) {
     hdp_proxy_.get()->hdp_flush();
   }
 }
 
 void Queue::sfence_flush_hdp() {
-  if (config::ro::net_cpu_queue) {
+  if (envvar::ro::net_cpu_queue) {
     asm volatile("sfence" ::: "memory");
     hdp_proxy_.get()->hdp_flush();
   }

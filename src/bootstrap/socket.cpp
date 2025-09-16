@@ -34,7 +34,7 @@
 #include <fstream>
 #include <cstring>
 
-#include "config.hpp"
+#include "envvar.hpp"
 #include "socket.hpp"
 #include "utils.hpp"
 #include "util.hpp"
@@ -86,8 +86,8 @@ static uint16_t socketToPort(union SocketAddress* addr) {
 
 /* Allow the user to force the IPv4/IPv6 interface selection */
 static int envSocketFamily(void) {
-  // config::types::socket_family enum is defined directly from AF_* constants
-  return static_cast<int>(config::bootstrap::socket_family.get_value());
+  // envvar::types::socket_family enum is defined directly from AF_* constants
+  return static_cast<int>(envvar::bootstrap::socket_family.get_value());
 }
 
 static int findInterfaces(const char* prefixList, char* names, union SocketAddress* addrs,
@@ -328,7 +328,7 @@ int FindInterfaces(char* ifNames, union SocketAddress* ifAddrs, int ifNameMaxSiz
   int sock_family = envSocketFamily();
 
   // User specified interface
-  const std::string& socketIfname = config::bootstrap::socket_ifname;
+  const std::string& socketIfname = envvar::bootstrap::socket_ifname;
   if (inputIfName) {
     DPRINTF("using iterface %s", inputIfName);
     nIfs = findInterfaces(inputIfName, ifNames, ifAddrs, sock_family, ifNameMaxSize, maxIfs);

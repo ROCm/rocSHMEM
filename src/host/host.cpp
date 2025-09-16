@@ -25,7 +25,7 @@
 #include "host.hpp"
 
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
-#include "config.hpp"
+#include "envvar.hpp"
 #include "host_helpers.hpp"
 #include "memory/window_info.hpp"
 #include "util.hpp"
@@ -70,7 +70,7 @@ __host__ void HostInterface::release_window_context(WindowInfo* window_info) {
 }
 
 int HostInterface::find_avail_pool_entry() {
-  for (size_t i = 0; i < config::max_num_host_contexts; i++) {
+  for (size_t i = 0; i < envvar::max_num_host_contexts; i++) {
     if (host_window_context_pool_[i]->is_avail()) {
       return i;
     }
@@ -79,7 +79,7 @@ int HostInterface::find_avail_pool_entry() {
 }
 
 int HostInterface::find_win_info_in_pool(WindowInfo* window_info) {
-  for (size_t i = 0; i < config::max_num_host_contexts; i++) {
+  for (size_t i = 0; i < envvar::max_num_host_contexts; i++) {
     if (host_window_context_pool_[i]->is_avail()) {
       continue;
     }
@@ -110,11 +110,11 @@ __host__ HostInterface::HostInterface(HdpPolicy* hdp_policy,
   /*
    * Allocate and initialize pool of windows for contexts
    */
-  size_t pool_size = config::max_num_host_contexts * sizeof(HostContextWindowInfo*);
+  size_t pool_size = envvar::max_num_host_contexts * sizeof(HostContextWindowInfo*);
   host_window_context_pool_ =
       reinterpret_cast<HostContextWindowInfo**>(malloc(pool_size));
 
-  for (size_t ctx_i = 0; ctx_i < config::max_num_host_contexts; ctx_i++) {
+  for (size_t ctx_i = 0; ctx_i < envvar::max_num_host_contexts; ctx_i++) {
     host_window_context_pool_[ctx_i] =
         new HostContextWindowInfo(host_comm_world_, heap);
   }
@@ -160,11 +160,11 @@ __host__ HostInterface::HostInterface(HdpPolicy* hdp_policy,
   /*
    * Allocate and initialize pool of windows for contexts
    */
-  size_t pool_size = config::max_num_host_contexts * sizeof(HostContextWindowInfo*);
+  size_t pool_size = envvar::max_num_host_contexts * sizeof(HostContextWindowInfo*);
   host_window_context_pool_ =
       reinterpret_cast<HostContextWindowInfo**>(malloc(pool_size));
 
-  for (size_t ctx_i = 0; ctx_i < config::max_num_host_contexts; ctx_i++) {
+  for (size_t ctx_i = 0; ctx_i < envvar::max_num_host_contexts; ctx_i++) {
     host_window_context_pool_[ctx_i] =
         new HostContextWindowInfo(heap);
   }
@@ -185,7 +185,7 @@ __host__ HostInterface::~HostInterface() {
   /* Detroy the pool of contexts */
 
   if (host_window_context_pool_ != nullptr) {
-    for (size_t ctx_i = 0; ctx_i < config::max_num_host_contexts; ctx_i++) {
+    for (size_t ctx_i = 0; ctx_i < envvar::max_num_host_contexts; ctx_i++) {
       delete host_window_context_pool_[ctx_i];
     }
     free(host_window_context_pool_);

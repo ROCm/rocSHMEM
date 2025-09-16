@@ -33,7 +33,7 @@
 #include <vector>
 
 #include "rocshmem/rocshmem.hpp"
-#include "config.hpp"
+#include "envvar.hpp"
 
 namespace rocshmem {
 
@@ -125,7 +125,7 @@ class TeamTracker {
    * pre-allocate resources (e.g. LDS, working arrays, etc.)
    * for teams.
    */
-  size_t max_num_teams_{config::max_num_teams};
+  size_t max_num_teams_{envvar::max_num_teams};
 
   /**
    * @brief Pointer to implementation of ROCSHMEM_TEAM_WORLD

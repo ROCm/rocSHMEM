@@ -29,9 +29,9 @@
 #include <cassert>
 
 #include "backend_ipc.hpp"
-#include "config.hpp"
-#include "mpi_instance.hpp"
+#include "envvar.hpp"
 #include "ipc_team.hpp"
+#include "mpi_instance.hpp"
 
 namespace rocshmem {
 
@@ -140,9 +140,9 @@ IPCBackend::~IPCBackend() {
 }
 
 void IPCBackend::setup_ctxs() {
-  CHECK_HIP(hipMalloc(&ctx_array, sizeof(IPCContext) * config::max_num_contexts));
+  CHECK_HIP(hipMalloc(&ctx_array, sizeof(IPCContext) * envvar::max_num_contexts));
   // 0th context is default context
-  for (size_t i = 0; i < config::max_num_contexts; i++) {
+  for (size_t i = 0; i < envvar::max_num_contexts; i++) {
     new (&ctx_array[i]) IPCContext(this, i + 1);
     ctx_free_list.get()->push_back(ctx_array + i);
   }
