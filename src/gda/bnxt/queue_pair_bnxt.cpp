@@ -336,6 +336,7 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t length, uintptr_t *r
   uint64_t active_lane_mask;
   uint8_t active_lane_count;
   uint8_t active_lane_id;
+  uint32_t atomic_idx = 0;
 
   active_lane_mask  = get_active_lane_mask();
   active_lane_count = get_active_lane_count(active_lane_mask);
@@ -378,8 +379,14 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t length, uintptr_t *r
       amo.swp_dt = atomic_data;
 
       /* Populate SG Segment - (Return address of atomic) */
-      sge.pa     = (uint64_t) nonfetching_atomic;
-      sge.lkey   = nonfetching_atomic_lkey;
+      if (fetching) {
+        atomic_idx = fetching_atomic_idx++ % FETCHING_ATOMIC_CNT;
+        sge.pa     = (uint64_t) &fetching_atomic[atomic_idx];
+        sge.lkey   = fetching_atomic_lkey;
+      } else {
+        sge.pa     = (uint64_t) nonfetching_atomic;
+        sge.lkey   = nonfetching_atomic_lkey;
+      }
       sge.length = length;
 
       /* Write WQE to SQ */
@@ -404,6 +411,10 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t length, uintptr_t *r
 
   if (0 == active_lane_id) {
     release_lock(&sq.lock);
+  }
+
+  if (fetching) {
+    return fetching_atomic[atomic_idx];
   }
 
   return 0;
