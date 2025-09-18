@@ -698,10 +698,12 @@ namespace rocshmem
     static auto const& ibvDeviceList = GetIbvDeviceList();
 
     int numGpus = GetNumDevices(rocshmem::EXE_GPU);
+    DPRINTF("[%d] numGpus: %d numIbvDevices %zu\n", getpid(), numGpus, ibvDeviceList.size());
     if (gpuIndex < 0 || gpuIndex >= numGpus) return -1;
 
     // Build closest NICs per GPU on first use
     if (!isInitialized) {
+      DPRINTF("[%d] Entering Initialization of deviceList\n", getpid());
       closestNicId.resize(numGpus, -1);
 
       // Build up list of NIC bus addresses
@@ -728,9 +730,9 @@ namespace rocshmem
         char hipPciBusId[64];
         hipError_t err = hipDeviceGetPCIBusId(hipPciBusId, sizeof(hipPciBusId), i);
         if (err != hipSuccess) {
-#ifdef VERBS_DEBUG
+	  //#ifdef VERBS_DEBUG
           printf("Failed to get PCI Bus ID for HIP device %d: %s\n", i, hipGetErrorString(err));
-#endif
+	  //#endif
           closestNicId[i] = -1;
           continue;
         }
@@ -748,9 +750,9 @@ namespace rocshmem
         // The following will only use distance between bus IDs
         // to determine the closest NIC to GPU if the PCIe tree approach fails
         if (closestIdx < 0) {
-#ifdef VERBS_DEBUG
+	  //#ifdef VERBS_DEBUG
           printf("[WARN] Falling back to PCIe bus ID distance to determine proximity\n");
-#endif
+	  //#endif
 
           int minDistance = std::numeric_limits<int>::max();
           for (int j = 0; j < ibvDeviceList.size(); j++) {
@@ -772,6 +774,7 @@ namespace rocshmem
     DPRINTF("GPU Device id: %d closest NIC id : %d name: %s\n", gpuIndex, closestNicId[gpuIndex],
            ibvDeviceList[closestNicId[gpuIndex]].name.c_str());
     if (dev_name != NULL) {
+      DPRINTF("[%d] Doing strdup\n", getpid());
       *dev_name = strdup(ibvDeviceList[closestNicId[gpuIndex]].name.c_str());
     }
 
