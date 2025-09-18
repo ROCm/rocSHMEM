@@ -27,6 +27,21 @@
 
 namespace rocshmem {
 
+static const __device__ char bnxt_re_wc_error_strings[12][14] = {
+  "OK",
+  "BAD_RESP",
+  "LOC_LEN",
+  "LOC_QP_OP",
+  "PROT",
+  "MEM_OP",
+  "REM_INVAL",
+  "REM_ACC",
+  "REM_OP",
+  "RNR_NAK_XCED",
+  "TRNSP_XCED",
+  "WR_FLUSH",
+};
+
 __device__ static inline void bnxt_re_init_db_hdr(struct bnxt_re_db_hdr *hdr,
                                                   uint32_t indx, uint32_t toggle,
                                                   uint32_t qid, uint32_t typ) {
@@ -187,7 +202,7 @@ __device__ int QueuePair::poll_cq() {
            & BNXT_RE_BCQE_STATUS_MASK;
 
     if (status != BNXT_RE_REQ_ST_OK) {
-      printf("CQ Error (%x)\n", status);
+      printf("CQ Error %s (%x)\n", bnxt_re_wc_error_strings[status], status);
       abort();
       return -1;
     }
