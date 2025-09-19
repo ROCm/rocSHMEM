@@ -382,10 +382,11 @@ namespace rocshmem
 
     // Build list on first use
     if (!isInitialized) {
-
+      printf("[%d] Initializing IbvDeviceList\n", getpid());
       // Query the number of IBV devices
       int numIbvDevices = 0;
       ibv_device** deviceList = ibv_get_device_list(&numIbvDevices);
+      printf("[%d] found %d Ibv devices\n", getpid(), numIbvDevices);
 
       if (deviceList && numIbvDevices > 0) {
         // Loop over each device to collect information
@@ -397,6 +398,7 @@ namespace rocshmem
           {
             struct ibv_context *context = ibv_open_device(ibvDevice.devicePtr);
             if (context) {
+	      printf("[%d] ibv_open_device %d SUCCESS\n", getpid(), i);
               struct ibv_device_attr deviceAttr;
               if (!ibv_query_device(context, &deviceAttr)) {
                 int activePort;
@@ -405,6 +407,7 @@ namespace rocshmem
                   struct ibv_port_attr portAttr;
                   if (ibv_query_port(context, port, &portAttr)) continue;
                   if (portAttr.state == IBV_PORT_ACTIVE) {
+		    printf("[%d] ibv_query_port of device %d port %d is ACTIVE\n", getpid(), i, port);
                     activePort = port;
                     ibvDevice.hasActivePort = true;
                     if(portAttr.link_layer == IBV_LINK_LAYER_ETHERNET) {
@@ -421,12 +424,15 @@ namespace rocshmem
                 }
               }
               ibv_close_device(context);
-            }
+            } else  {
+	      printf("[%d] ibv_open_device %d FAILED\n", getpid(), i);
+	    }
           }
           ibvDevice.busId = "";
           {
             std::string device_path(ibvDevice.devicePtr->dev_path);
             if (std::filesystem::exists(device_path)) {
+	      printf("[%d] ibv device %d device_path exists\n", getpid(), i);
               std::string pciPath = std::filesystem::canonical(device_path + "/device").string();
               std::size_t pos = pciPath.find_last_of('/');
               if (pos != std::string::npos) {
@@ -441,8 +447,10 @@ namespace rocshmem
           std::string canonicalPath = std::filesystem::canonical(devicePath).string();
 
           if (std::filesystem::exists(canonicalPath)) {
+	    printf("[%d] ibv device %d canonicalPath exists\n", getpid(), i);
             std::ifstream file(canonicalPath);
             if (file.is_open()) {
+	      printf("[%d] ibv device %d canonicalPath open SUCCESS\n", getpid(), i);
               std::string numaNodeStr;
               std::getline(file, numaNodeStr);
               int numaNodeVal;
