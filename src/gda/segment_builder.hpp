@@ -25,7 +25,7 @@
 #ifndef LIBRARY_SRC_GDA_SEGMENT_BUILDER_HPP_
 #define LIBRARY_SRC_GDA_SEGMENT_BUILDER_HPP_
 
-#include "gda/mlx5/mlx5dv.h"
+#include "gda/mlx5/provider_gda_mlx5.hpp"
 
 #include "util.hpp"
 
