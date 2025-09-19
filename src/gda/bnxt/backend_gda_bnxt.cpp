@@ -218,32 +218,4 @@ void GDABackend::create_qps(int sq_length) {
     CHECK_NNULL(qps[i], "bnxt_re_dv_create_qp");
   }
 }
-
-int GDABackend::bnxt_dv_dl_init() {
-  bnxtdv_handle_ = dlopen("libbnxt_re.so", RTLD_NOW);
-  if (!bnxtdv_handle_) {
-    // Try hard-coded PATH
-    bnxtdv_handle_ = dlopen("/usr/local/lib/libbnxt_re.so", RTLD_NOW);
-    if (!bnxtdv_handle_) {
-      DPRINTF("Could not open libbnxt_re.so. Returning\n");
-      return ROCSHMEM_ERROR;
-    }
-  }
-
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, init_obj);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, create_qp);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, destroy_qp);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, modify_qp);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, qp_mem_alloc);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, create_cq);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, destroy_cq);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, cq_mem_alloc);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, umem_reg);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, umem_dereg);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, get_default_db_region);
-
-  return ROCSHMEM_SUCCESS;
-}
-
 }  // namespace rocshmem
-

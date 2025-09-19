@@ -51,6 +51,4 @@ if (GDA_BNXT)
   add_subdirectory(bnxt)
 endif()
 
-if (GDA_MLX5)
-  target_sources(${PROJECT_NAME} PRIVATE segment_builder.cpp)
-endif()
+target_sources(${PROJECT_NAME} PRIVATE segment_builder.cpp)
