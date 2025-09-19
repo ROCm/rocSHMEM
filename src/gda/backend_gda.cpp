@@ -935,7 +935,7 @@ void GDABackend::create_queues() {
 
   if (nic_type == GDA_NIC::IONIC) {
     ncqes = sq_size << 1;
-  } else if (nic_type == GDA_NIC::MLX5) {
+  } else {
     ncqes = sq_size;
   }
 
