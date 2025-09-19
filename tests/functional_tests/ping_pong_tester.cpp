@@ -37,7 +37,6 @@ __global__ void PingPongTest(int loop, int skip, long long int *start_time,
   __shared__ rocshmem_ctx_t ctx;
   int wg_id = get_flat_grid_id();
 
-  rocshmem_wg_init();
   rocshmem_wg_ctx_create(ctx_type, &ctx);
 
   int pe = rocshmem_ctx_my_pe(ctx);
@@ -65,7 +64,6 @@ __global__ void PingPongTest(int loop, int skip, long long int *start_time,
   }
 
   rocshmem_wg_ctx_destroy(&ctx);
-  rocshmem_wg_finalize();
 }
 
 /******************************************************************************
