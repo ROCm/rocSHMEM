@@ -171,7 +171,7 @@ __device__ void GDAContext::amo_cas(void *dst, T value, T cond, int pe) {
   if constexpr (sizeof(T) != 8) { printf("rocshmem::gda:amo_cas not implemented for non-64bit types.\n"); abort(); }//TODO:support for non-uint64t
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
   for (int i = 0; i < WF_SIZE; i++) { //TODO: this looks wrong
-    qps[pe].atomic_cas(base_heap[pe] + L_offset, value, cond, pe);
+    qps[pe].atomic_cas_nofetch(base_heap[pe] + L_offset, value, cond, pe);
   }
 }
 

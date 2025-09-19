@@ -122,6 +122,16 @@ class QueuePair {
    */
   __device__ int64_t atomic_cas(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe);
 
+  /**
+   * @brief Create and enqueue an atomic cas work queue entry (wqe).
+   *
+   * @param[in] dest Destination address for data transmission.
+   * @param[in] value Data value for the atomic operation.
+   * @param[in] cond Used in atomic comparisons.
+   * @param[in] pe Destination processing element of data transmission.
+   */
+  __device__ int64_t atomic_cas_no_fetch(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe);
+
   char *const *base_heap{nullptr};
 
  private:

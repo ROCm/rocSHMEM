@@ -659,6 +659,11 @@ __device__ int64_t QueuePair::atomic_cas(void *dest, int64_t atomic_data, int64_
   return post_wqe_amo(pe, sizeof(int64_t), dst, gda_op_atomic_cs, atomic_data, atomic_cmp, true);
 }
 
+__device__ int64_t QueuePair::atomic_cas_nofetch(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe) {
+  uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
+  return post_wqe_amo(pe, sizeof(int64_t), dst, gda_op_atomic_cs, atomic_data, atomic_cmp, false);
+}
+
 __device__ int64_t QueuePair::atomic_fetch(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe) {
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
   return post_wqe_amo(pe, sizeof(int64_t), dst, gda_op_atomic_fa, atomic_data, atomic_cmp, true);
