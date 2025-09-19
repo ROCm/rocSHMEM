@@ -65,7 +65,6 @@ __global__ void alltoall_test(int *source, int *dest, size_t nelem,
     __shared__ rocshmem_ctx_t ctx;
     int64_t ctx_type = 0;
 
-    rocshmem_wg_init();
     rocshmem_wg_ctx_create(ctx_type, &ctx);
     int num_pes = rocshmem_ctx_n_pes(ctx);
 
@@ -75,7 +74,6 @@ __global__ void alltoall_test(int *source, int *dest, size_t nelem,
     __syncthreads();
 
     rocshmem_wg_ctx_destroy(&ctx);
-    rocshmem_wg_finalize();
 }
 
 static void init_sendbuf (int *source, int nelem, int my_pe, int npes)
