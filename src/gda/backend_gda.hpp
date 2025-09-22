@@ -91,8 +91,8 @@ class GDAHostContext;
 class QueuePair;
 class HostInterface;
 
-enum GDA_NIC {
-  INVALID,
+enum GDAVendor {
+  NONE,
   IONIC,
   BNXT,
   MLX5
@@ -110,7 +110,7 @@ class GDABackend : public Backend {
   char *requested_dev = nullptr;
   struct ibv_context *context = nullptr;;
   struct ibv_pd *pd_orig = nullptr;
-  enum GDA_NIC nic_type = GDA_NIC::INVALID;
+  enum GDAVendor gda_vendor = GDAVendor::NONE;
 
   struct ibv_port_attr portinfo;
   union ibv_gid gid;

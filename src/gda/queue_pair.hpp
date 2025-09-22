@@ -56,7 +56,7 @@ class QueuePair {
   /**
    * @brief Constructor.
    */
-  explicit QueuePair(struct ibv_pd* pd, int nic_type);
+  explicit QueuePair(struct ibv_pd* pd, int gda_vendor);
 
   /**
    * @brief Destructor.
@@ -130,7 +130,7 @@ class QueuePair {
    * @param[in] cond Used in atomic comparisons.
    * @param[in] pe Destination processing element of data transmission.
    */
-  __device__ int64_t atomic_cas_no_fetch(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe);
+  __device__ int64_t atomic_cas_nofetch(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe);
 
   char *const *base_heap{nullptr};
 

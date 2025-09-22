@@ -75,30 +75,30 @@ void GDABackend::init() {
   type = BackendType::GDA_BACKEND;
 
 #ifdef GDA_IONIC
-  nic_type = GDA_NIC::IONIC;
+  gda_vendor = GDAVendor::IONIC;
 #endif
 
-  if (nic_type == GDA_NIC::INVALID) {
+  if (gda_vendor == GDAVendor::NONE) {
     ret = bnxt_dv_dl_init();
 
     if (ret == ROCSHMEM_SUCCESS) {
-      nic_type = GDA_NIC::BNXT;
+      gda_vendor = GDAVendor::BNXT;
     } else {
       DPRINTF("Initializing rocSHMEM BNXT GDA support failed\n");
     }
   }
 
-  if (nic_type == GDA_NIC::INVALID) {
+  if (gda_vendor == GDAVendor::NONE) {
     ret = mlx5_dv_dl_init();
 
     if (ret == ROCSHMEM_SUCCESS) {
-      nic_type = GDA_NIC::MLX5;
+      gda_vendor = GDAVendor::MLX5;
     } else {
       DPRINTF("Initializing rocSHMEM MLX5 GDA support failed\n");
     }
   }
 
-  if (nic_type == GDA_NIC::INVALID) {
+  if (gda_vendor == GDAVendor::NONE) {
     printf("Initializing rocSHMEM with IONIC, BNXT, or MLX5 GDA support failed\n");
     abort();
   }
@@ -622,7 +622,7 @@ void GDABackend::setup_ibv() {
 void GDABackend::cleanup_ibv() {
   int err;
 
-  if (nic_type == GDA_NIC::BNXT) {
+  if (gda_vendor == GDAVendor::BNXT) {
     CHECK_HIP(hipHostUnregister(db_region_attr.dbr));
 
     for (int i = 0; i < qps.size(); i++) {
@@ -646,7 +646,7 @@ void GDABackend::cleanup_ibv() {
 
       CHECK_HIP(hipFree(bnxt_cqs[i].buf));
     }
-  } else if (nic_type == GDA_NIC::MLX5) {
+  } else if (gda_vendor == GDAVendor::MLX5) {
     for (int i = 0; i < qps.size(); i++) {
       err = ibv_destroy_qp(qps[i]);
       CHECK_ZERO(err, "ibv_destroy_qp");
@@ -655,7 +655,7 @@ void GDABackend::cleanup_ibv() {
       CHECK_ZERO(err, "ibv_destroy_cqs");
     }
 
-    if (nic_type == GDA_NIC::IONIC) {
+    if (gda_vendor == GDAVendor::IONIC) {
       err = ibv_dealloc_pd(pd_uxdma[0]);
       CHECK_ZERO(err, "ibv_dealloc_pd (uxdma[0])");
 
@@ -742,7 +742,7 @@ void GDABackend::setup_gpu_qps() {
   CHECK_NNULL(host_qps, "malloc (host_qps)");
 
   for (int i = 0; i < qp_objs_count; i++) {
-    new (&host_qps[i]) QueuePair(pd_orig, nic_type);
+    new (&host_qps[i]) QueuePair(pd_orig, gda_vendor);
     CHECK_HIP(hipMemcpy(&gpu_qps[i], &host_qps[i], sizeof(QueuePair), hipMemcpyDefault));
     initialize_gpu_qp(&gpu_qps[i], i);
   }
@@ -796,7 +796,7 @@ void GDABackend::open_ib_device() {
   CHECK_NNULL(pd_orig, "ib allocate pd");
   dump_ibv_pd(pd_orig);
 
-  if (nic_type == GDA_NIC::IONIC || nic_type == GDA_NIC::MLX5) {
+  if (gda_vendor == GDAVendor::IONIC || gda_vendor == GDAVendor::MLX5) {
     create_parent_domain();
   }
 
@@ -831,7 +831,7 @@ void GDABackend::modify_qps_reset_to_init() {
             | IBV_QP_ACCESS_FLAGS;
 
   for (int i =0; i < qps.size() ; i++) {
-    if (nic_type == GDA_NIC::BNXT) {
+    if (gda_vendor == GDAVendor::BNXT) {
       err = bnxtdv_ftable_.modify_qp(qps[i], &attr, attr_mask, 0, 0);
     } else {
       err = ibv_modify_qp(qps[i], &attr, attr_mask);
@@ -851,7 +851,7 @@ void GDABackend::modify_qps_init_to_rtr() {
   attr.min_rnr_timer          = 12;
   attr.ah_attr.port_num       = port;
 
-  if (nic_type == GDA_NIC::IONIC) {
+  if (gda_vendor == GDAVendor::IONIC) {
     attr.max_dest_rd_atomic = 15;
   } else {
     attr.max_dest_rd_atomic = 1;
@@ -882,7 +882,7 @@ void GDABackend::modify_qps_init_to_rtr() {
       attr.ah_attr.dlid = dest_info[i].lid;
     }
 
-    if (nic_type == GDA_NIC::BNXT) {
+    if (gda_vendor == GDAVendor::BNXT) {
       err = bnxtdv_ftable_.modify_qp(qps[i], &attr, attr_mask, 0, 0);
     } else {
       err = ibv_modify_qp(qps[i], &attr, attr_mask);
@@ -902,7 +902,7 @@ void GDABackend::modify_qps_rtr_to_rts() {
   attr.retry_cnt     = 7;
   attr.rnr_retry     = 7;
 
-  if (nic_type == GDA_NIC::IONIC) {
+  if (gda_vendor == GDAVendor::IONIC) {
     attr.max_dest_rd_atomic = 15;
   } else {
     attr.max_dest_rd_atomic = 1;
@@ -918,7 +918,7 @@ void GDABackend::modify_qps_rtr_to_rts() {
   for (int i = 0; i < qps.size(); i++) {
     attr.sq_psn = dest_info[i].psn;
 
-    if (nic_type == GDA_NIC::BNXT) {
+    if (gda_vendor == GDAVendor::BNXT) {
       err = bnxtdv_ftable_.modify_qp(qps[i], &attr, attr_mask, 0, 0);
     } else {
       err = ibv_modify_qp(qps[i], &attr, attr_mask);
@@ -931,7 +931,7 @@ void GDABackend::create_queues() {
   int ncqes;
   int resize_length;
 
-  if (nic_type == GDA_NIC::IONIC) {
+  if (gda_vendor == GDAVendor::IONIC) {
     ncqes = sq_size << 1;
   } else {
     ncqes = sq_size;
@@ -978,7 +978,7 @@ void GDABackend::create_parent_domain() {
   pattr.free       = GDABackend::pd_release;
   pattr.pd_context = nullptr;
 
-  if (nic_type == GDA_NIC::IONIC) {
+  if (gda_vendor == GDAVendor::IONIC) {
     pattr.alloc      = GDABackend::pd_alloc_device_uncached;
   } else {
     pattr.alloc      = GDABackend::pd_alloc_host;
@@ -1018,7 +1018,7 @@ void GDABackend::create_cqs(int cqe) {
   cq_attr.parent_domain = pd_parent;
 
   for (int i = 0; i < qps.size(); i++) {
-    if (nic_type == GDA_NIC::IONIC) {
+    if (gda_vendor == GDAVendor::IONIC) {
       cq_attr.parent_domain = pd_uxdma[((i + 1) / 2) & 1];
     }
 
@@ -1074,7 +1074,7 @@ void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   gpu_qp->rkey = heap_rkey[conn_num % num_pes];
   gpu_qp->inline_threshold = 32;
 #endif /* GDA_IONIC */
-  if (nic_type == GDA_NIC::MLX5) {
+  if (gda_vendor == GDAVendor::MLX5) {
     mlx5dv_cq cq_out;
     mlx5dv_obj mlx_obj;
     mlx_obj.cq.in = cqs[conn_num];
@@ -1158,12 +1158,12 @@ void GDABackend::create_qps(int sq_length) {
   attr.comp_mask           = IBV_QP_INIT_ATTR_PD;
   attr.pd                  = pd_parent;
 
-  if (nic_type == GDA_NIC::IONIC) {
+  if (gda_vendor == GDAVendor::IONIC) {
     attr.cap.max_recv_sge    = 1; // TODO allow zero sges in the driver
   }
 
   for (int i = 0; i < qps.size(); i++) {
-    if (nic_type == GDA_NIC::IONIC) {
+    if (gda_vendor == GDAVendor::IONIC) {
       attr.pd      = pd_uxdma[((i + 1) / 2) & 1];
     }
     attr.send_cq = cqs[i];

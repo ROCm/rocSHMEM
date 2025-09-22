@@ -34,7 +34,7 @@
 
 namespace rocshmem {
 
-QueuePair::QueuePair(struct ibv_pd* pd, int nic_type) {
+QueuePair::QueuePair(struct ibv_pd* pd, int gda_vendor) {
   int access = IBV_ACCESS_LOCAL_WRITE
              | IBV_ACCESS_REMOTE_WRITE
              | IBV_ACCESS_REMOTE_READ
@@ -54,7 +54,7 @@ QueuePair::QueuePair(struct ibv_pd* pd, int nic_type) {
   mr_fetching_atomic = ibv_reg_mr(pd, fetching_atomic, 8 * FETCHING_ATOMIC_CNT, access);
   CHECK_NNULL(mr_fetching_atomic, "ibv_reg_mr");
 
-  if (nic_type == GDA_NIC::MLX5) {
+  if (gda_vendor == GDAVendor::MLX5) {
     nonfetching_atomic_lkey = htobe32(mr_nonfetching_atomic->lkey);
     fetching_atomic_lkey = htobe32(mr_fetching_atomic->lkey);
   } else {
@@ -72,12 +72,12 @@ QueuePair::QueuePair(struct ibv_pd* pd, int nic_type) {
   gda_op_atomic_fa  = IONIC_V2_OP_ATOMIC_FA;
   gda_op_atomic_cs  = IONIC_V2_OP_ATOMIC_CS;
 #endif
-  if (nic_type == GDA_NIC::BNXT) {
+  if (gda_vendor == GDAVendor::BNXT) {
     gda_op_rdma_write = BNXT_RE_WR_OPCD_RDMA_WRITE;
     gda_op_rdma_read  = BNXT_RE_WR_OPCD_RDMA_READ;
     gda_op_atomic_fa  = BNXT_RE_WR_OPCD_ATOMIC_FA;
     gda_op_atomic_cs  = BNXT_RE_WR_OPCD_ATOMIC_CS;
-  } else if (nic_type == GDA_NIC::MLX5) {
+  } else {
     gda_op_rdma_write = MLX5_OPCODE_RDMA_WRITE;
     gda_op_rdma_read  = MLX5_OPCODE_RDMA_READ;
     gda_op_atomic_fa  = MLX5_OPCODE_ATOMIC_FA;
