@@ -25,8 +25,6 @@
 #ifndef LIBRARY_SRC_TEAM_HPP_
 #define LIBRARY_SRC_TEAM_HPP_
 
-#include <mpi.h>
-
 #include "rocshmem/rocshmem.hpp"
 #include "backend_type.hpp"
 

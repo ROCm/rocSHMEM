@@ -125,8 +125,10 @@ class MPIInstance {
     /**
      * @brief dlopen the MPI library and set
      *        function pointers.
+     * @return ROCSHMEM_SUCCESS on success,
+     *         ROCSHMEM_ERROR otherwise.
      */
-    static void mpilib_dl_init(void);
+    static int mpilib_dl_init(void);
 
     /**
      * @brief dlclose the MPI library

@@ -203,8 +203,8 @@ class HostStats {
     struct timespec tp;
 
     (void) clock_gettime(CLOCK_MONOTONIC, &tp);
-    wt = (double)(tp.tv_nsec)/1.0e+9;
-    wt += (double)tp.tv_sec;
+    wt = (static_cast<double>(tp.tv_nsec))/1.0e+9;
+    wt += static_cast<double>(tp.tv_sec);
     return wt;
   }
 };

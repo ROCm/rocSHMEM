@@ -106,9 +106,9 @@ void Backend::init(void) {
 
 void Backend::init_mpi_once(MPI_Comm comm) {
   if (comm == MPI_COMM_NULL) comm = MPI_COMM_WORLD;
-  NET_CHECK(MPI_Comm_dup(comm, &backend_comm));
-  NET_CHECK(MPI_Comm_size(backend_comm, &num_pes));
-  NET_CHECK(MPI_Comm_rank(backend_comm, &my_pe));
+  NET_CHECK(mpilib_ftable_.Comm_dup(comm, &backend_comm));
+  NET_CHECK(mpilib_ftable_.Comm_size(backend_comm, &num_pes));
+  NET_CHECK(mpilib_ftable_.Comm_rank(backend_comm, &my_pe));
 }
 
 void Backend::track_ctx(Context* ctx) {
@@ -140,7 +140,7 @@ void Backend::destroy_remaining_ctxs() {
 Backend::~Backend() {
   CHECK_HIP(hipFree(print_lock));
   if (backend_comm != MPI_COMM_NULL)
-    NET_CHECK(MPI_Comm_free(&backend_comm));
+    NET_CHECK(mpilib_ftable_.Comm_free(&backend_comm));
 }
 
 void Backend::dump_stats() {

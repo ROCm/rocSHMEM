@@ -136,8 +136,8 @@ do {                                                                            
 #define DLSYM_VAR_HELPER(func_struct, handle, var_name)                     \
 do {                                                                        \
   *(void **) (&func_struct.var_name) = dlsym(handle, STRINGIFY(var_name));  \
-  if (!func_struct.func_name) {                                             \
-    DPRINTF("Failed to find function %s \n",  STRINGIFY(var__name));        \
+  if (!func_struct.var_name) {                                             \
+    DPRINTF("Failed to find function %s \n",  STRINGIFY(var_name));        \
     dlclose(handle);                                                        \
     handle = nullptr;                                                       \
     return ROCSHMEM_ERROR;                                                  \
