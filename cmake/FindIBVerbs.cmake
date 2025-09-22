@@ -59,7 +59,7 @@ set_target_properties(IBVerbs::verbs_provider PROPERTIES
   IMPORTED_LOCATION "${IBVerbs_PROVIDER_LIBRARY}"
   INTERFACE_INCLUDE_DIRECTORIES "${IBVerbs_PROVIDER_INCLUDE_DIR}"
 )
-target_link_libraries(IBVerbs::verbs_provider)
+target_link_libraries(IBVerbs::verbs IBVerbs::verbs_provider)
 endif()
 
 find_package_handle_standard_args(IBVerbs DEFAULT_MSG
