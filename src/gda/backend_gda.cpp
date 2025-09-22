@@ -853,8 +853,7 @@ void GDABackend::modify_qps_init_to_rtr() {
 
   if (nic_type == GDA_NIC::IONIC) {
     attr.max_dest_rd_atomic = 15;
-  }
-  else if (nic_type == GDA_NIC::BNXT || nic_type == GDA_NIC::MLX5) {
+  } else {
     attr.max_dest_rd_atomic = 1;
   }
 
