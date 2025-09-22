@@ -55,7 +55,7 @@ class AMOStandardTester : public Tester {
   T* ret_val{nullptr};     // device returns [loop][thread]
 
   size_t n_in{0};          // num_wgs * wg_size
-  size_t n_out{0};         // per loop: PerBlock->num_wgs, PerGrid->1
+  size_t n_out{0};         // elements per loop: PerBlock->num_wgs, PerGrid->1
   size_t n_loops{0};       // loop + skip
 };
 

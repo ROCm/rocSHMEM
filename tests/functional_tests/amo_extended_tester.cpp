@@ -32,10 +32,23 @@ using namespace rocshmem;
 /* Declare the global kernel template with a generic implementation */
 template <typename T>
 __global__ void AMOExtendedTest(int loop, int skip, long long int *start_time,
-                                long long int *end_time, char *r_buf,
-                                T *s_buf, T *ret_val, TestType type,
+                                long long int *end_time, T *dest, T *ret_val,
+                                AddrMode addr_mode, TestType type,
                                 ShmemContextType ctx_type) {
   return;
+}
+
+template <class T>
+__device__ inline T* compute_target_ptr(T* base_ptr, AddrMode addr_mode,
+                                        int wg_idx, int itr, int n_wgs) {
+  // PerBlock: element = wg_idx, with n_wgs elements per loop
+  // PerGrid : single element shared by the whole grid per loop
+  if (addr_mode == AddrMode::PerBlock) {
+    size_t offset = wg_idx + itr * n_wgs;
+    return base_ptr + offset;
+  } else { // PerGrid
+    return base_ptr + itr;
+  }
 }
 
 /******************************************************************************
@@ -43,22 +56,30 @@ __global__ void AMOExtendedTest(int loop, int skip, long long int *start_time,
  *****************************************************************************/
 template <typename T>
 AMOExtendedTester<T>::AMOExtendedTester(TesterArguments args) : Tester(args) {
-  CHECK_HIP(hipMalloc((void **)&_ret_val, args.max_msg_size * args.num_wgs));
-  _r_buf = (char *)rocshmem_malloc(args.max_msg_size);
-  _s_buf = (T *)rocshmem_malloc(args.max_msg_size * args.num_wgs);
+  n_out   = (args.addr_mode == AddrMode::PerBlock) ? args.num_wgs : 1;
+  n_in    = args.num_wgs * args.wg_size;
+  n_loops = args.loop + args.skip;
+
+  // One return per *thread* per loop
+  CHECK_HIP(hipMalloc((void **)&ret_val, args.max_msg_size * n_in * n_loops));
+
+  dest = (T *)rocshmem_malloc(args.max_msg_size * n_out * n_loops);
+  if (dest == nullptr) {
+    std::cerr << "Error allocating memory from symmetric heap" << std::endl;
+    std::cerr << "dest: " << (void*)dest << std::endl;
+  }
 }
 
 template <typename T>
 AMOExtendedTester<T>::~AMOExtendedTester() {
-  rocshmem_free(_r_buf);
-  CHECK_HIP(hipFree(_ret_val));
+  CHECK_HIP(hipFree(ret_val));
+  rocshmem_free(dest);
 }
 
 template <typename T>
 void AMOExtendedTester<T>::resetBuffers(size_t size) {
-  memset(_r_buf, 0, args.max_msg_size);
-  memset(_ret_val, 0, args.max_msg_size * args.num_wgs);
-  memset(_s_buf, 0, args.max_msg_size * args.num_wgs);
+  memset(ret_val, 0, args.max_msg_size * n_in  * n_loops);
+  memset(dest,    0, args.max_msg_size * n_out * n_loops);
 }
 
 template <typename T>
@@ -67,47 +88,132 @@ void AMOExtendedTester<T>::launchKernel(dim3 gridsize, dim3 blocksize, int loop,
   size_t shared_bytes = 0;
 
   hipLaunchKernelGGL(AMOExtendedTest, gridsize, blocksize, shared_bytes, stream,
-                     loop, args.skip, start_time, end_time, _r_buf, _s_buf,
-                     _ret_val, _type, _shmem_context);
+                     args.loop, args.skip, start_time, end_time, dest,
+                     ret_val, args.addr_mode, _type, _shmem_context);
 
-  _gridSize = gridsize;
-  num_msgs = (loop + args.skip) * gridsize.x;
-  num_timed_msgs = loop;
+  num_msgs       = n_loops   * gridsize.x * blocksize.x;
+  num_timed_msgs = args.loop * gridsize.x * blocksize.x;
+}
+
+template <typename G>
+void fail_eq(const G& got, const G& exp) {
+  std::cerr << "data validation error\n"
+            << "got " << got << ", expected " << exp << std::endl;
+  std::exit(-1);
+}
+
+// Map (loop, elem_idx) -> dest[] index for current address mode.
+template <typename T>
+int AMOExtendedTester<T>::destIndex(int l, int elem_idx) const {
+  return (args.addr_mode == AddrMode::PerBlock)
+           ? l * static_cast<int>(args.num_wgs) + elem_idx
+           : l; // PerGrid has a single element per loop
+}
+
+// Number of output elements to check per loop for current address mode.
+template <typename T>
+int AMOExtendedTester<T>::numElems() const {
+  return (args.addr_mode == AddrMode::PerBlock)
+           ? static_cast<int>(args.num_wgs)
+           : 1; // PerGrid
+}
+
+// Return pointer to the start of the ret_val “chunk” for (loop, elem_idx)
+// plus the chunk length for this address mode.
+template <typename T>
+std::pair<T*, int> AMOExtendedTester<T>::retChunk(int l, int elem_idx) const {
+  if (args.addr_mode == AddrMode::PerBlock) {
+    // One chunk per element (workgroup): wg_size returns
+    T*  p  = ret_val + l * n_in + elem_idx * args.wg_size;
+    int sz = static_cast<int>(args.wg_size);
+    return {p, sz};
+  }
+  // PerGrid: one big chunk per loop (all threads)
+  T*  p  = ret_val + l * n_in;
+  int sz = static_cast<int>(n_in);
+  return {p, sz};
 }
 
 template <typename T>
-void AMOExtendedTester<T>::verifyResults(size_t size) {
-  T ret;
-  if (args.myid == 0) {
-    T expected_val = 0;
+void AMOExtendedTester<T>::verifyDestValues() {
+  const int loops   = static_cast<int>(n_loops);
+  const int n_elems = numElems();
 
-    switch (_type) {
-      case AMO_FetchTestType:
-        expected_val = 0;
-        break;
-      case AMO_SetTestType:
-        expected_val = 44;
-        break;
-      case AMO_SwapTestType:
-        expected_val = num_msgs / 2;
-        break;
-      default:
-        break;
+  auto check_equal_all = [&](T expected) {
+    for (int l = 0; l < loops; ++l) {
+      for (int elem = 0; elem < n_elems; ++elem) {
+        const int idx = destIndex(l, elem);
+        if (dest[idx] != expected) fail_eq(dest[idx], expected);
+      }
     }
+  };
 
-    int fetch_op =
-        (_type == AMO_FetchTestType || _type == AMO_SwapTestType) ? 1 : 0;
+  auto check_nonzero_all = [&]() {
+    for (int l = 0; l < loops; ++l) {
+      for (int elem = 0; elem < n_elems; ++elem) {
+        const int idx = destIndex(l, elem);
+        if (dest[idx] == T{0}) fail_eq(dest[idx], T{1});
+      }
+    }
+  };
 
-    if (fetch_op == 1) {
-      ret = *std::max_element(_ret_val, _ret_val + args.num_wgs);
-    } else {
-      ret = *std::max_element(_s_buf, _s_buf + args.num_wgs);
+  switch (_type) {
+    case AMO_FetchTestType:
+      // fetch does not modify dest -> stays 0
+      check_equal_all(T{0});
+      break;
+
+    case AMO_SetTestType:
+      // set writes a constant (17)
+      check_equal_all(static_cast<T>(17));
+      break;
+
+    case AMO_SwapTestType:
+      // swap writes non-zero values -> final must be non-zero
+      check_nonzero_all();
+      break;
+
+    default:
+      break;
+  }
+}
+
+template <typename T>
+void AMOExtendedTester<T>::verifyReturnValues() {
+  // Only fetch/swap produce return values to validate
+  if (_type == AMO_SetTestType) return;
+
+  const int loops   = static_cast<int>(n_loops);
+  const int n_elems = numElems();
+
+  for (int l = 0; l < loops; ++l) {
+    for (int elem = 0; elem < n_elems; ++elem) {
+      auto [p, cnt] = retChunk(l, elem);
+
+      int zeros = 0;
+      for (int i = 0; i < cnt; ++i) {
+        zeros += (p[i] == T{0});
+      }
+
+      if (_type == AMO_FetchTestType) {
+        // fetch returns the current value (initially 0), dest unchanged
+        if (zeros != cnt) fail_eq(zeros, cnt);
+      } else { // AMO_SwapTestType
+        // For a single element per (loop,elem), exactly one atomic_swap
+        // observes old==0 (the first arriving swap). The rest see non-zero.
+        if (zeros != 1) fail_eq(zeros, 1);
+      }
     }
-    if (ret != expected_val) {
-      std::cerr << "data validation error\n";
-      std::cerr << "got " << ret << ", expected " << expected_val << std::endl;
-      exit(-1);
-    }
+  }
+}
+
+template <typename T>
+void AMOExtendedTester<T>::verifyResults(size_t /*size*/) {
+  // PE 0 checks returns; target PE checks dest.
+  if (args.myid) {
+    verifyDestValues();
+  } else {
+    verifyReturnValues();
   }
 }
 
@@ -115,39 +221,40 @@ void AMOExtendedTester<T>::verifyResults(size_t size) {
   template <>                                                                 \
   __global__ void AMOExtendedTest<T>(                                         \
       int loop, int skip, long long int *start_time,                          \
-      long long int *end_time, char *r_buf, T *s_buf, T *ret_val,             \
-      TestType type, ShmemContextType ctx_type) {                             \
+      long long int *end_time, T *dest, T *ret_val,                           \
+      AddrMode addr_mode, TestType type, ShmemContextType ctx_type) {         \
     __shared__ rocshmem_ctx_t ctx;                                            \
-    int wg_id = get_flat_grid_id();                                           \
+    int wg_id     = get_flat_grid_id();                                       \
+    int global_id = get_flat_id();                                            \
+    int t_id      = get_flat_block_id();                                      \
+    int n_threads = get_flat_grid_size();                                     \
+    int n_wgs     = get_grid_num_blocks();                                    \
     rocshmem_wg_init();                                                       \
     rocshmem_wg_ctx_create(ctx_type, &ctx);                                   \
-    if (hipThreadIdx_x == 0) {                                                \
-      T ret = 0;                                                              \
-      T cond = 0;                                                             \
-      for (int i = 0; i < loop + skip; i++) {                                 \
-        if (i == skip) {                                                      \
-          start_time[wg_id] = wall_clock64();                                 \
-        }                                                                     \
-        switch (type) {                                                       \
-          case AMO_FetchTestType:                                             \
-            ret = rocshmem_ctx_##TNAME##_atomic_fetch(ctx, (T *)r_buf, 1);    \
-            break;                                                            \
-          case AMO_SetTestType:                                               \
-            rocshmem_ctx_##TNAME##_atomic_set(ctx, (T *)r_buf, 44, 1);        \
-            break;                                                            \
-          case AMO_SwapTestType:                                              \
-            ret = rocshmem_ctx_##TNAME##_atomic_swap(ctx, (T *)r_buf,         \
-                                                      ret + 1, 1);            \
-            break;                                                            \
-          default:                                                            \
-            break;                                                            \
-        }                                                                     \
+    for (int i = 0; i < loop + skip; i++) {                                   \
+    T *ptr = compute_target_ptr<T>(dest, addr_mode, wg_id, i, n_wgs);         \
+    T ret = 0;                                                                \
+      if (i == skip) {                                                        \
+        start_time[wg_id] = wall_clock64();                                   \
       }                                                                       \
-      rocshmem_ctx_quiet(ctx);                                                \
-      end_time[wg_id] = wall_clock64();                                       \
-      ret_val[wg_id] = ret;                                                   \
-      rocshmem_ctx_getmem(ctx, &s_buf[wg_id], r_buf, sizeof(T), 1);           \
+      switch (type) {                                                         \
+        case AMO_FetchTestType:                                               \
+          ret = rocshmem_ctx_##TNAME##_atomic_fetch(ctx, ptr, 1);             \
+          break;                                                              \
+        case AMO_SetTestType:                                                 \
+          rocshmem_ctx_##TNAME##_atomic_set(ctx, ptr, (T)17, 1);              \
+          break;                                                              \
+        case AMO_SwapTestType:                                                \
+          ret = rocshmem_ctx_##TNAME##_atomic_swap(ctx, ptr, (T)(t_id + 1),1);\
+          break;                                                              \
+        default:                                                              \
+          break;                                                              \
+      }                                                                       \
+    ret_val[global_id + i * n_threads] = ret;                                 \
     }                                                                         \
+    rocshmem_ctx_quiet(ctx);                                                  \
+    end_time[wg_id] = wall_clock64();                                         \
+    __syncthreads();                                                          \
     rocshmem_wg_ctx_destroy(&ctx);                                            \
     rocshmem_wg_finalize();                                                   \
   }                                                                           \
