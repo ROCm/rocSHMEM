@@ -59,6 +59,7 @@ option(USE_SHARED_CTX "Request support for shared ctx between WG" OFF)
 option(USE_SINGLE_NODE "Enable single node support only." OFF)
 option(USE_HDP_FLUSH "Force flush the HDP cache." OFF)
 option(USE_HDP_FLUSH_HOST_SIDE "Use a polling thread to flush the HDP cache on the host." OFF)
+option(USE_MPI_OMPI_CONSTANTS "Use Open MPI values for predefined MPI constants." ON)
 
 option(BUILD_FUNCTIONAL_TESTS "Build the functional tests" OFF)
 option(BUILD_EXAMPLES "Build the examples" ON)

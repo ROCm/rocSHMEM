@@ -22,96 +22,109 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
+#include <dlfcn.h>
+
+#include "rocshmem/rocshmem.h"
 #include "mpi_instance.hpp"
+#include "util.hpp"
 
 namespace rocshmem {
 
+#if defined(USE_MPI_OMPI_CONSTANTS)
+  /* Open MPI specific symbols */
+  struct ompi_internal_symbols_t ompi_symbols;
+#endif // USE_MPI_OMPI_CONSTANTS
+
 static void mpilib_dl_init() {
-  if (mpilib_handle_ != nullptr)
+  if (MPIInstance::mpilib_handle_ != nullptr)
       return;
 
-  mpilib_handle_ = dlopen("libmpi.so", RTLD_NOW);
-  if (!mpilib_handle_) {
+  MPIInstance::mpilib_handle_ = dlopen("libmpi.so", RTLD_NOW);
+  if (!MPIInstance::mpilib_handle_) {
     printf("Could not open libmmpi.so. Returning\n");
     return ROCSHMEM_ERROR;
   }
 
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Init_thread);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Initialized);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Finalize);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Finalized);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Comm_rank);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Comm_size);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Abort);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Get_address);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Type_size);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Iprobe);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Testsome);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Comm_split);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Comm_split_type);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Comm_group);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Comm_create_group);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Comm_dup);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Comm_free);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Group_free);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Group_translate_ranks);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Group_incl);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Allgather);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Alltoall);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Allreduce);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Bcast);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Barrier);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Iallreduce);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Ibarrier);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Win_create);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Win_free);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Win_flush);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Win_flush_all);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Win_flush_local);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Win_lock);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Win_lock_all);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Win_unlock);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Win_unlock_all);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Win_lock);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Get);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Rget);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Put);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Rput);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Compare_and_swap);
-  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Fetch_and_op);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Init_thread);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Initialized);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Finalize);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Finalized);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Comm_rank);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Comm_size);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Abort);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Get_address);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Type_size);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Iprobe);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Testsome);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Comm_split);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Comm_split_type);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Comm_group);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Comm_create_group);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Comm_dup);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Comm_free);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Group_free);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Group_translate_ranks);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Group_incl);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Allgather);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Alltoall);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Allreduce);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Bcast);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Barrier);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Iallreduce);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Ibarrier);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Win_create);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Win_free);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Win_flush);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Win_flush_all);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Win_flush_local);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Win_lock);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Win_lock_all);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Win_unlock);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Win_unlock_all);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Win_lock);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Get);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Rget);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Put);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Rput);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Compare_and_swap);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, MPIInstance::mpilib_handle_, Fetch_and_op);
 
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_comm_world);
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_comm_null);
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_dataype_null);
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_request_null);
+#if defined (USE_MPI_OMPI_CONSTANTS)
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_comm_world);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_comm_null);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_dataype_null);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_request_null);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_info_null);
 
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_op_max);
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_op_min);
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_op_sum);
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_op_prod);
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_op_band);
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_op_bor);
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_op_bxor);
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_op_replace);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_op_max);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_op_min);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_op_sum);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_op_prod);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_op_band);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_op_bor);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_op_bxor);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_op_replace);
 
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_char);
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_unsigned_char);
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_signed_char);
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_short);
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_int);
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_long);
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_unsigned_long);
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_long_long_int);
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_float);
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_double);
-  DLSYM_VAR_HELPER(mpilib_ftable_, mpilib_handle_, ompi_mpi_long_double);
-
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_char);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_unsigned_char);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_signed_char);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_short);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_int);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_long);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_unsigned_long);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_long_long_int);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_float);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_double);
+  DLSYM_VAR_HELPER(ompi_symbols, MPIInstance::mpilib_handle_, ompi_mpi_long_double);
+#endif // USE_MPI_OMPI_CONSTANTS
   return ROCSHMEM_SUCCESS;
 }
 
 void mpilib_dl_close() {
-    if (mpilib_handle_ != nullptr)
-	dlclose(mpilib_handle_);
+  if (MPIInstance::mpilib_handle_ != nullptr) {
+    dlclose(MPIInstance::mpilib_handle_);
+    MPIInstance::mpilib_handle_ = nullptr;
+  }
 }
 
 MPIInstance::MPIInstance(MPI_Comm comm) {
@@ -120,7 +133,7 @@ MPIInstance::MPIInstance(MPI_Comm comm) {
 
   if (!is_init) {
     int provided;
-    mpilib_ftable_.Init_thread(nullptr, nullptr, MPI_THREAD_MULTIPLE, &provided);
+    MPIInstance::mpilib_ftable_.Init_thread(nullptr, nullptr, MPI_THREAD_MULTIPLE, &provided);
     init_in_this_class = 1;
   }
 
@@ -128,15 +141,15 @@ MPIInstance::MPIInstance(MPI_Comm comm) {
     comm = MPI_COMM_WORLD;
   }
 
-  mpilib_ftable_.Comm_size(comm, &nprocs_);
-  mpilib_ftable_.Comm_rank(comm, &my_rank_);
+  MPIInstance::mpilib_ftable_.Comm_size(comm, &nprocs_);
+  MPIInstance::mpilib_ftable_.Comm_rank(comm, &my_rank_);
 }
 
 MPIInstance::~MPIInstance() {
   int finalized{0};
-  mpilib_ftable_.Finalized(&finalized);
+  MPIInstance::mpilib_ftable_.Finalized(&finalized);
   if (!finalized && init_in_this_class) {
-    mpilib_ftable_.Finalize();
+    MPIInstance::mpilib_ftable_.Finalize();
   }
 }
 

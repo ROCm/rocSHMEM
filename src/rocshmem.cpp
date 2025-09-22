@@ -75,7 +75,6 @@ Backend *backend = nullptr;
 MPIInstance *mpi_instance = nullptr;
 TcpBootstrap *bootstr = nullptr;
 rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
-void *mpilib_handle_ = nullptr;
 
  /**
  * Begin Host Code
@@ -93,13 +92,17 @@ void *mpilib_handle_ = nullptr;
 
   rocm_init();
 
-  mpilib_dl_init();
+  MPIInstance::mpilib_dl_init();
   mpi_instance = new MPIInstance(comm);
 
 #if defined(USE_GDA)
   CHECK_HIP(hipHostMalloc(&backend, sizeof(GDABackend)));
   backend = new (backend) GDABackend(comm);
 #elif defined(USE_RO)
+  if (MPIInstance::mpilib_ftable_ == nullptr) {
+    printf("Could not initialize MPI library. RO conduit requires MPI library to be loaded at runtime. Aborting\n");
+    abort();
+  }
   CHECK_HIP(hipHostMalloc(&backend, sizeof(ROBackend)));
   backend = new (backend) ROBackend(comm);
 #elif defined(USE_IPC)
@@ -116,8 +119,8 @@ void *mpilib_handle_ = nullptr;
   int initialized;
   int world_size = -1;
 
-  mpilib_dl_init();
-  mpilib_ftable_.Initialized(&initialized);
+  MPIInstance::mpilib_dl_init();
+  MPIInstance::mpilib_ftable_.Initialized(&initialized);
 
   if (!initialized) {
     // This is an Open MPI specific solution to retrieve the number of
@@ -135,7 +138,7 @@ void *mpilib_handle_ = nullptr;
       abort();
     }
   } else {
-    mpilib_ftable_.Comm_size (MPI_COMM_WORLD, &world_size);
+    MPIInstance::mpilib_ftable_.Comm_size (MPI_COMM_WORLD, &world_size);
   }
 
   if (world_size == nranks) {
@@ -144,8 +147,8 @@ void *mpilib_handle_ = nullptr;
     MPI_Group world_group;
     int world_rank;
 
-    mpilib_ftable_.Comm_rank (MPI_COMM_WORLD, &world_rank);
-    mpilib_ftable_.Comm_group (MPI_COMM_WORLD, &world_group);
+    MPIInstance::mpilib_ftable_.Comm_rank (MPI_COMM_WORLD, &world_rank);
+    MPIInstance::mpilib_ftable_.Comm_group (MPI_COMM_WORLD, &world_group);
 
     int *inc_ranks = new int[nranks];
     inc_ranks[rank] = world_rank;
@@ -154,14 +157,14 @@ void *mpilib_handle_ = nullptr;
 
     MPI_Group sub_group;
     MPI_Comm sub_comm;
-    mpilib_ftable_.Group_incl (world_group, nranks, inc_ranks, &sub_group);
+    MPIInstance::mpilib_ftable_.Group_incl (world_group, nranks, inc_ranks, &sub_group);
     mpilib_ftable_.Comm_create_group (MPI_COMM_WORLD, sub_group, 1234, &sub_comm);
 
     library_init(sub_comm);
 
-    mpilib_ftable_.Group_free (&sub_group);
-    mpilib_ftable_.Group_free (&world_group);
-    mpilib_ftable_.Comm_free (&sub_comm);
+    MPIInstance::mpilib_ftable_.Group_free (&sub_group);
+    MPIInstance::mpilib_ftable_.Group_free (&world_group);
+    MPIInstance::mpilib_ftable_.Comm_free (&sub_comm);
     delete[] inc_ranks;
   }
 }
