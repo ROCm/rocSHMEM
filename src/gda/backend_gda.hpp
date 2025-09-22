@@ -344,6 +344,11 @@ class GDABackend : public Backend {
   void cleanup_ibv();
 
   /**
+   * @brief Detect the available direct verbs libraries
+   */
+  void autodetect_dv_libs();
+
+  /**
    * @brief Open InfiniBand Device and create common structures
    */
   void open_ib_device();

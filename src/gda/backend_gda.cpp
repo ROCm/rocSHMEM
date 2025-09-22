@@ -70,38 +70,8 @@ GDABackend::GDABackend(TcpBootstrap *bootstrap):  Backend(bootstrap) {
 }
 
 void GDABackend::init() {
-  int ret;
 
   type = BackendType::GDA_BACKEND;
-
-#ifdef GDA_IONIC
-  gda_vendor = GDAVendor::IONIC;
-#endif
-
-  if (gda_vendor == GDAVendor::NONE) {
-    ret = bnxt_dv_dl_init();
-
-    if (ret == ROCSHMEM_SUCCESS) {
-      gda_vendor = GDAVendor::BNXT;
-    } else {
-      DPRINTF("Initializing rocSHMEM BNXT GDA support failed\n");
-    }
-  }
-
-  if (gda_vendor == GDAVendor::NONE) {
-    ret = mlx5_dv_dl_init();
-
-    if (ret == ROCSHMEM_SUCCESS) {
-      gda_vendor = GDAVendor::MLX5;
-    } else {
-      DPRINTF("Initializing rocSHMEM MLX5 GDA support failed\n");
-    }
-  }
-
-  if (gda_vendor == GDAVendor::NONE) {
-    printf("Initializing rocSHMEM with IONIC, BNXT, or MLX5 GDA support failed\n");
-    abort();
-  }
 
   read_env();
 
@@ -606,6 +576,8 @@ int GDABackend::bnxt_dv_dl_init() {
 }
 
 void GDABackend::setup_ibv() {
+  autodetect_dv_libs();
+
   open_ib_device();
 
   create_queues();
@@ -673,6 +645,40 @@ void GDABackend::cleanup_ibv() {
   err = ibv_close_device(context);
   CHECK_ZERO(err, "ibv_close_device");
 }
+
+void GDABackend::autodetect_dv_libs() {
+  int ret;
+
+#ifdef GDA_IONIC
+  gda_vendor = GDAVendor::IONIC;
+#endif
+
+  if (gda_vendor == GDAVendor::NONE) {
+    ret = bnxt_dv_dl_init();
+
+    if (ret == ROCSHMEM_SUCCESS) {
+      gda_vendor = GDAVendor::BNXT;
+    } else {
+      DPRINTF("Initializing rocSHMEM BNXT GDA support failed\n");
+    }
+  }
+
+  if (gda_vendor == GDAVendor::NONE) {
+    ret = mlx5_dv_dl_init();
+
+    if (ret == ROCSHMEM_SUCCESS) {
+      gda_vendor = GDAVendor::MLX5;
+    } else {
+      DPRINTF("Initializing rocSHMEM MLX5 GDA support failed\n");
+    }
+  }
+
+  if (gda_vendor == GDAVendor::NONE) {
+    printf("Initializing rocSHMEM with IONIC, BNXT, or MLX5 GDA support failed\n");
+    abort();
+  }
+}
+
 
 void GDABackend::exchange_qp_dest_info() {
   for (int i = 0; i < qps.size(); i++) {
