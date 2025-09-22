@@ -75,12 +75,6 @@ void AMOExtendedTester<T>::launchKernel(dim3 gridsize, dim3 blocksize, int loop,
   num_timed_msgs = loop;
 }
 
-#if defined(USE_IPC) and not defined(USE_RO)
-#define DISABLE_IPC_TEST 1
-#else
-#define DISABLE_IPC_TEST 0
-#endif
-
 template <typename T>
 void AMOExtendedTester<T>::verifyResults(size_t size) {
   T ret;
@@ -95,10 +89,6 @@ void AMOExtendedTester<T>::verifyResults(size_t size) {
         expected_val = 44;
         break;
       case AMO_SwapTestType:
-        if(DISABLE_IPC_TEST) {
-          printf("AMO Swap not implemented for IPC: values were not verified\n");
-          return;
-        }
         expected_val = num_msgs / 2;
         break;
       default:
@@ -146,10 +136,6 @@ void AMOExtendedTester<T>::verifyResults(size_t size) {
             rocshmem_ctx_##TNAME##_atomic_set(ctx, (T *)r_buf, 44, 1);        \
             break;                                                            \
           case AMO_SwapTestType:                                              \
-            if(DISABLE_IPC_TEST) {                                            \
-              printf("AMO Swap not implemented for IPC: test was not run\n"); \
-              break;                                                          \
-            }                                                                 \
             ret = rocshmem_ctx_##TNAME##_atomic_swap(ctx, (T *)r_buf,         \
                                                       ret + 1, 1);            \
             break;                                                            \

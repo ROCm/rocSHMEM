@@ -75,19 +75,9 @@ void AMOBitwiseTester<T>::launchKernel(dim3 gridsize, dim3 blocksize, int loop,
   num_timed_msgs = loop;
 }
 
-#if defined(USE_IPC) and not defined(USE_RO)
-#define DISABLE_IPC_TEST 1
-#else
-#define DISABLE_IPC_TEST 0
-#endif
-
 template <typename T>
 void AMOBitwiseTester<T>::verifyResults(size_t size) {
   T ret;
-  if(DISABLE_IPC_TEST) {
-    printf("AMO binary ops not implemented for IPC: values were not verified\n");
-    return;
-  }
   if (args.myid == 0) {
     T expected_val = 0;
 
@@ -141,10 +131,6 @@ void AMOBitwiseTester<T>::verifyResults(size_t size) {
       TestType type, ShmemContextType ctx_type) {                             \
     __shared__ rocshmem_ctx_t ctx;                                            \
     int wg_id = get_flat_grid_id();                                           \
-    if(DISABLE_IPC_TEST) {                                                    \
-      printf("AMO binary ops not implemented for IPC: test was not run\n");   \
-      return;                                                                 \
-    }                                                                         \
     rocshmem_wg_init();                                                       \
     rocshmem_wg_ctx_create(ctx_type, &ctx);                                   \
     if (hipThreadIdx_x == 0) {                                                \
