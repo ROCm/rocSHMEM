@@ -549,32 +549,6 @@ int GDABackend::mlx5_dv_dl_init () {
   return ROCSHMEM_SUCCESS;
 }
 
-int GDABackend::bnxt_dv_dl_init() {
-  bnxtdv_handle_ = dlopen("libbnxt_re.so", RTLD_NOW);
-  if (!bnxtdv_handle_) {
-    // Try hard-coded PATH
-    bnxtdv_handle_ = dlopen("/usr/local/lib/libbnxt_re.so", RTLD_NOW);
-    if (!bnxtdv_handle_) {
-      DPRINTF("Could not open libbnxt_re.so. Returning\n");
-      return ROCSHMEM_ERROR;
-    }
-  }
-
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, init_obj);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, create_qp);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, destroy_qp);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, modify_qp);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, qp_mem_alloc);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, create_cq);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, destroy_cq);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, cq_mem_alloc);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, umem_reg);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, umem_dereg);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, get_default_db_region);
-
-  return ROCSHMEM_SUCCESS;
-}
-
 void GDABackend::setup_ibv() {
   autodetect_dv_libs();
 
@@ -750,7 +724,12 @@ void GDABackend::setup_gpu_qps() {
   for (int i = 0; i < qp_objs_count; i++) {
     new (&host_qps[i]) QueuePair(pd_orig, gda_vendor);
     CHECK_HIP(hipMemcpy(&gpu_qps[i], &host_qps[i], sizeof(QueuePair), hipMemcpyDefault));
-    initialize_gpu_qp(&gpu_qps[i], i);
+
+    if (gda_vendor == GDAVendor::BNXT) {
+      bnxt_initialize_gpu_qp(&gpu_qps[i], i);
+    } else {
+      initialize_gpu_qp(&gpu_qps[i], i);
+    }
   }
 }
 
@@ -952,8 +931,13 @@ void GDABackend::create_queues() {
   bnxt_cqs.resize(resize_length);
   bnxt_qps.resize(resize_length);
 
-  create_cqs(ncqes);
-  create_qps(sq_size);
+  if (gda_vendor == GDAVendor::BNXT) {
+    bnxt_create_cqs(ncqes);
+    bnxt_create_qps(sq_size);
+  } else {
+    create_cqs(ncqes);
+    create_qps(sq_size);
+  }
 }
 
 void* GDABackend::pd_alloc_device_uncached(struct ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type) {
@@ -1009,7 +993,6 @@ void GDABackend::create_parent_domain() {
 #endif /* GDA_IONIC */
 }
 
-#ifndef GDA_BNXT
 void GDABackend::create_cqs(int cqe) {
   struct ibv_cq_init_attr_ex cq_attr;
   struct ibv_cq_ex *cq_ex;
@@ -1179,7 +1162,6 @@ void GDABackend::create_qps(int sq_length) {
     CHECK_NNULL(qps[i], "ibv_create_qp_ex");
   }
 }
-#endif
 
 void GDABackend::select_gid_index() {
   struct ibv_gid_entry *gid_entries;

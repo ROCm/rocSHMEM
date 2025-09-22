@@ -223,14 +223,18 @@ class QueuePair {
   uint32_t sq_dbprod{0};
   uint32_t sq_prod{0};
   uint32_t sq_msn{0};
+#endif
 
-#elif defined(GDA_BNXT)
+  /* GDAVendor::BNXT START */
   uint64_t *dbr;
   struct bnxt_device_cq cq;
   struct bnxt_device_sq sq;
 
   __device__ int poll_cq();
-#else // GDA_MLX5
+
+  /* GDAVendor::BNXT END */
+
+  /* GDAVendor::MLX5 START */
 
   db_reg_t db{};
 
@@ -291,7 +295,7 @@ class QueuePair {
   static constexpr size_t OUTSTANDING_TABLE_SIZE = 65536;
   uint64_t outstanding_wqes[OUTSTANDING_TABLE_SIZE]{0};
 
-#endif // GDA_IONIC
+  /* GDAVendor::MLX5 END */
 
   uint32_t inline_threshold{0};
 

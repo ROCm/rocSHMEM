@@ -332,6 +332,7 @@ class GDABackend : public Backend {
   void cleanup_heap_memory_rkey();
 
   void initialize_gpu_qp(QueuePair* qp, int conn_num);
+  void bnxt_initialize_gpu_qp(QueuePair* qp, int conn_num);
 
   /**
    * @brief Setup InfiniBand Resources
@@ -367,11 +368,13 @@ class GDABackend : public Backend {
    * @brief Create all CQs with a of length ncqes
    */
   void create_cqs(int ncqes);
+  void bnxt_create_cqs(int ncqes);
 
   /**
    * @brief Create all QPs with a SQ of length sq_length
    */
   void create_qps(int sq_length);
+  void bnxt_create_qps(int sq_length);
 
   /**
    * @brief Exchange QP information for connection
