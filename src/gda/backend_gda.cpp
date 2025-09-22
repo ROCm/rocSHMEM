@@ -904,8 +904,7 @@ void GDABackend::modify_qps_rtr_to_rts() {
 
   if (nic_type == GDA_NIC::IONIC) {
     attr.max_dest_rd_atomic = 15;
-  }
-  else if (nic_type == GDA_NIC::BNXT || nic_type == GDA_NIC::MLX5) {
+  } else {
     attr.max_dest_rd_atomic = 1;
   }
 
