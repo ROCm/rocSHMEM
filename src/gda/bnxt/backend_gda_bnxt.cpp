@@ -28,7 +28,7 @@
 
 namespace rocshmem {
 
-void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
+void GDABackend::bnxt_initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   struct bnxt_re_dv_obj dv_obj;
   struct bnxt_re_dv_cq dv_cq;
   struct bnxt_re_dv_qp dv_qp;
@@ -90,7 +90,7 @@ void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   gpu_qp->inline_threshold = inline_threshold;
 }
 
-void GDABackend::create_cqs(int cqe) {
+void GDABackend::bnxt_create_cqs(int cqe) {
   struct bnxt_re_dv_cq_attr cq_attr;
   struct bnxt_re_dv_cq_init_attr cq_init_attr;
   struct bnxt_re_dv_umem_reg_attr umem_attr;
@@ -126,7 +126,7 @@ void GDABackend::create_cqs(int cqe) {
   }
 }
 
-void GDABackend::create_qps(int sq_length) {
+void GDABackend::bnxt_create_qps(int sq_length) {
   struct ibv_qp_init_attr ib_qp_attr;
   struct bnxt_re_dv_umem_reg_attr umem_attr;
   void *sq_ptr;
@@ -246,4 +246,3 @@ int GDABackend::bnxt_dv_dl_init() {
 }
 
 }  // namespace rocshmem
-
