@@ -28,15 +28,13 @@
 
 #include "backend_gda.hpp"
 #include "endian.hpp"
-#if defined(GDA_MLX5)
 #include "segment_builder.hpp"
-#endif
 #include "util.hpp"
 #include "constants.hpp"
 
 namespace rocshmem {
 
-QueuePair::QueuePair(struct ibv_pd* pd) {
+QueuePair::QueuePair(struct ibv_pd* pd, int gda_vendor) {
   int access = IBV_ACCESS_LOCAL_WRITE
              | IBV_ACCESS_REMOTE_WRITE
              | IBV_ACCESS_REMOTE_READ
@@ -56,16 +54,34 @@ QueuePair::QueuePair(struct ibv_pd* pd) {
   mr_fetching_atomic = ibv_reg_mr(pd, fetching_atomic, 8 * FETCHING_ATOMIC_CNT, access);
   CHECK_NNULL(mr_fetching_atomic, "ibv_reg_mr");
 
-#if defined(GDA_MLX5)
-  nonfetching_atomic_lkey = htobe32(mr_nonfetching_atomic->lkey);
-  fetching_atomic_lkey = htobe32(mr_fetching_atomic->lkey);
-#else
-  nonfetching_atomic_lkey = mr_nonfetching_atomic->lkey;
-  fetching_atomic_lkey = mr_fetching_atomic->lkey;
-#endif
+  if (gda_vendor == GDAVendor::MLX5) {
+    nonfetching_atomic_lkey = htobe32(mr_nonfetching_atomic->lkey);
+    fetching_atomic_lkey = htobe32(mr_fetching_atomic->lkey);
+  } else {
+    nonfetching_atomic_lkey = mr_nonfetching_atomic->lkey;
+    fetching_atomic_lkey = mr_fetching_atomic->lkey;
+  }
 
   for(int i{0}; i < FETCHING_ATOMIC_CNT; i+=WF_SIZE) {
     fetching_atomic_freelist->push_back(fetching_atomic + i);
+  }
+
+  /* Set Correct opcodes for each NIC */
+#ifdef GDA_IONIC
+  gda_op_rdma_write = IONIC_V2_OP_RDMA_WRITE;
+  gda_op_atomic_fa  = IONIC_V2_OP_ATOMIC_FA;
+  gda_op_atomic_cs  = IONIC_V2_OP_ATOMIC_CS;
+#endif
+  if (gda_vendor == GDAVendor::BNXT) {
+    gda_op_rdma_write = BNXT_RE_WR_OPCD_RDMA_WRITE;
+    gda_op_rdma_read  = BNXT_RE_WR_OPCD_RDMA_READ;
+    gda_op_atomic_fa  = BNXT_RE_WR_OPCD_ATOMIC_FA;
+    gda_op_atomic_cs  = BNXT_RE_WR_OPCD_ATOMIC_CS;
+  } else if (gda_vendor == GDAVendor::MLX5) {
+    gda_op_rdma_write = MLX5_OPCODE_RDMA_WRITE;
+    gda_op_rdma_read  = MLX5_OPCODE_RDMA_READ;
+    gda_op_atomic_fa  = MLX5_OPCODE_ATOMIC_FA;
+    gda_op_atomic_cs  = MLX5_OPCODE_ATOMIC_CS;
   }
 }
 
@@ -447,7 +463,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   seg_build.update_ctrl_seg(my_sq_counter, opcode, 0, qp_num, MLX5_WQE_CTRL_CQ_UPDATE, 3, 0, 0);
   seg_build.update_raddr_seg(raddr, rkey);
 
-  if (size <= inline_threshold && opcode == GDA_OP_RDMA_WRITE) {
+  if (size <= inline_threshold && opcode == gda_op_rdma_write) {
     seg_build.update_inl_data_seg(laddr, size);
   } else {
     seg_build.update_data_seg(laddr, size, lkey);
@@ -629,23 +645,33 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
 __device__ void QueuePair::put_nbi(void *dest, const void *source, size_t nelems, int pe) {
   uintptr_t *src = reinterpret_cast<uintptr_t*>(const_cast<void*>(source));
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
-  post_wqe_rma(pe, nelems, src, dst, GDA_OP_RDMA_WRITE);
+  post_wqe_rma(pe, nelems, src, dst, gda_op_rdma_write);
 }
 
 __device__ void QueuePair::get_nbi(void *dest, const void *source, size_t nelems, int pe) {
   uintptr_t *src = reinterpret_cast<uintptr_t*>(const_cast<void*>(source));
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
-  post_wqe_rma(pe, nelems, dst, src, GDA_OP_RDMA_READ);
+  post_wqe_rma(pe, nelems, dst, src, gda_op_rdma_read);
 }
 
-__device__ int64_t QueuePair::atomic_fetch(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe, uint8_t atomic_op) {
+__device__ int64_t QueuePair::atomic_cas(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe) {
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
-  return post_wqe_amo(pe, sizeof(int64_t), dst, atomic_op, atomic_data, atomic_cmp, true);
+  return post_wqe_amo(pe, sizeof(int64_t), dst, gda_op_atomic_cs, atomic_data, atomic_cmp, true);
 }
 
-__device__ void QueuePair::atomic_nofetch(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe, uint8_t atomic_op) {
+__device__ int64_t QueuePair::atomic_cas_nofetch(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe) {
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
-  post_wqe_amo(pe, sizeof(int64_t), dst, atomic_op, atomic_data, atomic_cmp, false);
+  return post_wqe_amo(pe, sizeof(int64_t), dst, gda_op_atomic_cs, atomic_data, atomic_cmp, false);
+}
+
+__device__ int64_t QueuePair::atomic_fetch(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe) {
+  uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
+  return post_wqe_amo(pe, sizeof(int64_t), dst, gda_op_atomic_fa, atomic_data, atomic_cmp, true);
+}
+
+__device__ void QueuePair::atomic_nofetch(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe) {
+  uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
+  post_wqe_amo(pe, sizeof(int64_t), dst, gda_op_atomic_fa, atomic_data, atomic_cmp, false);
 }
 
 }  // namespace rocshmem

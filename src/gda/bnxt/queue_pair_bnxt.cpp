@@ -267,7 +267,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t length, uintptr_t *laddr
       uint32_t rma_slots  = 3; // (Three slots: hdr, rdma, sge)
 
       inline_msg = length <= inline_threshold &&
-                   opcode == GDA_OP_RDMA_WRITE;
+                   opcode == gda_op_rdma_write;
 
       hdr_ptr  = (struct bnxt_re_bsqe*) bnxt_re_get_hwqe(&sq, 0);
       rdma_ptr = (struct bnxt_re_rdma*) bnxt_re_get_hwqe(&sq, 1);

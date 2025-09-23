@@ -37,47 +37,17 @@
 #include "rocshmem_config.h"
 #include "endian.h"
 #include "constants.hpp"
-#ifdef GDA_IONIC
-extern "C" {
-#include <infiniband/ionic_dv.h>
-#include <infiniband/ionic_fw.h>
-}
-#elif defined(GDA_BNXT)
-#include "bnxt/provider_gda_bnxt.hpp"
-#elif defined(GDA_MLX5)
-#include <infiniband/mlx5dv.h>
-#else
-#error "Please select an RDMA provider"
-#endif
+
+#include "gda/ionic/provider_gda_ionic.hpp"
+#include "gda/mlx5/provider_gda_mlx5.hpp"
+#include "gda/bnxt/provider_gda_bnxt.hpp"
 
 #include "containers/free_list.hpp"
 #include "memory/hip_allocator.hpp"
 
-#ifdef GDA_IONIC
-#define GDA_MAX_ATOMIC     15
-#define GDA_OP_RDMA_WRITE  IONIC_V2_OP_RDMA_WRITE
-#define GDA_OP_ATOMIC_FA   IONIC_V2_OP_ATOMIC_FA
-#define GDA_OP_ATOMIC_CS   IONIC_V2_OP_ATOMIC_CS
-#elif defined(GDA_MLX5)
-#define GDA_MAX_ATOMIC     1
-#define GDA_OP_RDMA_WRITE  MLX5_OPCODE_RDMA_WRITE
-#define GDA_OP_RDMA_READ   MLX5_OPCODE_RDMA_READ
-#define GDA_OP_ATOMIC_FA   MLX5_OPCODE_ATOMIC_FA
-#define GDA_OP_ATOMIC_CS   MLX5_OPCODE_ATOMIC_CS
-#endif
-
 namespace rocshmem {
 
 class GDABackend;
-
-typedef union db_reg {
-  uint64_t *ptr;
-  uintptr_t uint;
-} db_reg_t;
-
-#define SPIN_LOCK_INVALID  0xdead
-#define SPIN_LOCK_UNLOCKED 0x1234
-#define SPIN_LOCK_LOCKED   0xabcd
 
 class QueuePair {
  public:
@@ -86,7 +56,7 @@ class QueuePair {
   /**
    * @brief Constructor.
    */
-  explicit QueuePair(struct ibv_pd* pd);
+  explicit QueuePair(struct ibv_pd* pd, int gda_vendor);
 
   /**
    * @brief Destructor.
@@ -125,11 +95,10 @@ class QueuePair {
    * @param[in] value Data value for the atomic operation.
    * @param[in] cond Used in atomic comparisons.
    * @param[in] pe Destination processing element of data transmission.
-   * @param[in] atomic_op The atomic operation to perform.
    *
    * @return An atomic value
    */
-  __device__ int64_t atomic_fetch(void *dest, int64_t value, int64_t cond, int pe, uint8_t atomic_op);
+  __device__ int64_t atomic_fetch(void *dest, int64_t value, int64_t cond, int pe);
 
   /**
    * @brief Create and enqueue an atomic fetch work queue entry (wqe).
@@ -138,9 +107,30 @@ class QueuePair {
    * @param[in] value Data value for the atomic operation.
    * @param[in] cond Used in atomic comparisons.
    * @param[in] pe Destination processing element of data transmission.
-   * @param[in] atomic_op The atomic operation to perform.
    */
-  __device__ void atomic_nofetch(void *dest, int64_t value, int64_t cond, int pe, uint8_t atomic_op);
+  __device__ void atomic_nofetch(void *dest, int64_t value, int64_t cond, int pe);
+
+  /**
+   * @brief Create and enqueue an atomic cas work queue entry (wqe).
+   *
+   * @param[in] dest Destination address for data transmission.
+   * @param[in] value Data value for the atomic operation.
+   * @param[in] cond Used in atomic comparisons.
+   * @param[in] pe Destination processing element of data transmission.
+   *
+   * @return An atomic value
+   */
+  __device__ int64_t atomic_cas(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe);
+
+  /**
+   * @brief Create and enqueue an atomic cas work queue entry (wqe).
+   *
+   * @param[in] dest Destination address for data transmission.
+   * @param[in] value Data value for the atomic operation.
+   * @param[in] cond Used in atomic comparisons.
+   * @param[in] pe Destination processing element of data transmission.
+   */
+  __device__ int64_t atomic_cas_nofetch(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe);
 
   char *const *base_heap{nullptr};
 
@@ -233,14 +223,18 @@ class QueuePair {
   uint32_t sq_dbprod{0};
   uint32_t sq_prod{0};
   uint32_t sq_msn{0};
+#endif
 
-#elif defined(GDA_BNXT)
+  /* GDAVendor::BNXT START */
   uint64_t *dbr;
   struct bnxt_device_cq cq;
   struct bnxt_device_sq sq;
 
   __device__ int poll_cq();
-#else // GDA_MLX5
+
+  /* GDAVendor::BNXT END */
+
+  /* GDAVendor::MLX5 START */
 
   db_reg_t db{};
 
@@ -301,7 +295,7 @@ class QueuePair {
   static constexpr size_t OUTSTANDING_TABLE_SIZE = 65536;
   uint64_t outstanding_wqes[OUTSTANDING_TABLE_SIZE]{0};
 
-#endif // GDA_IONIC
+  /* GDAVendor::MLX5 END */
 
   uint32_t inline_threshold{0};
 
@@ -325,6 +319,10 @@ class QueuePair {
 
   HIPAllocator allocator{};
 
+  uint8_t gda_op_rdma_write;
+  uint8_t gda_op_rdma_read;
+  uint8_t gda_op_atomic_fa;
+  uint8_t gda_op_atomic_cs;
 };
 
 }  // namespace rocshmem

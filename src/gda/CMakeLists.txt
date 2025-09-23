@@ -35,6 +35,7 @@ target_sources(
     gda_team.cpp
     queue_pair.cpp
     endian.cpp
+    segment_builder.cpp
     topology.cpp
 )
 
@@ -47,10 +48,4 @@ target_link_libraries(
     numa
 )
 
-if (GDA_BNXT)
-  add_subdirectory(bnxt)
-endif()
-
-if (GDA_MLX5)
-  target_sources(${PROJECT_NAME} PRIVATE segment_builder.cpp)
-endif()
+add_subdirectory(bnxt)

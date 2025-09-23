@@ -26,16 +26,9 @@
 #define LIBRARY_SRC_GDA_BNXT_GDA_PROVIDER_HPP_
 
 extern "C" {
-#include <infiniband/bnxt_re_dv.h>
-#include <infiniband/bnxt_re_hsi.h>
+#include "gda/bnxt/bnxt_re_dv.h"
+#include "gda/bnxt/bnxt_re_hsi.h"
 }
-
-#define GDA_DEFAULT_GID    3
-#define GDA_MAX_ATOMIC     1
-#define GDA_OP_RDMA_WRITE  BNXT_RE_WR_OPCD_RDMA_WRITE
-#define GDA_OP_RDMA_READ   BNXT_RE_WR_OPCD_RDMA_READ
-#define GDA_OP_ATOMIC_FA   BNXT_RE_WR_OPCD_ATOMIC_FA
-#define GDA_OP_ATOMIC_CS   BNXT_RE_WR_OPCD_ATOMIC_CS
 
 #define bnxt_re_get_cqe_sz() (sizeof(struct bnxt_re_req_cqe) + \
                               sizeof(struct bnxt_re_bcqe))

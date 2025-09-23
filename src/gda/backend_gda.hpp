@@ -36,9 +36,9 @@
 #include "queue_pair.hpp"
 #include "bootstrap/bootstrap.hpp"
 #include "debug_gda.hpp"
-
-#ifdef GDA_BNXT
-#include <infiniband/bnxt_re_dv.h>
+#include "gda/ionic/provider_gda_ionic.hpp"
+#include "gda/bnxt/provider_gda_bnxt.hpp"
+#include "gda/mlx5/provider_gda_mlx5.hpp"
 
 struct bnxtdv_funcs_t {
   int (*init_obj)(struct bnxt_re_dv_obj *obj, uint64_t obj_type);
@@ -61,15 +61,10 @@ struct bnxtdv_funcs_t {
   int (*get_default_db_region)(struct ibv_context *ibvctx,
                                struct bnxt_re_dv_db_region_attr *out);
 };
-#endif /* GDA_BNXT */
-
-#ifdef GDA_MLX5
-#include <infiniband/mlx5dv.h>
 
 struct mlx5dv_funcs_t {
   int (*init_obj)(struct mlx5dv_obj *obj, uint64_t obj_type);
 };
-#endif /* GDA_MLX5 */
 
 /* Helper Macros for handling dynamic libraries */
 #define PPCAT_NX(prefix, func_name) prefix##func_name
@@ -96,6 +91,13 @@ class GDAHostContext;
 class QueuePair;
 class HostInterface;
 
+enum GDAVendor {
+  NONE,
+  IONIC,
+  BNXT,
+  MLX5
+};
+
 class GDABackend : public Backend {
  private:
   typedef struct dest_info {
@@ -108,6 +110,7 @@ class GDABackend : public Backend {
   char *requested_dev = nullptr;
   struct ibv_context *context = nullptr;;
   struct ibv_pd *pd_orig = nullptr;
+  enum GDAVendor gda_vendor = GDAVendor::NONE;
 
   struct ibv_port_attr portinfo;
   union ibv_gid gid;
@@ -125,21 +128,23 @@ class GDABackend : public Backend {
   std::vector<ibv_cq*> cqs;
   std::vector<dest_info_t> dest_info;
 
-#ifdef GDA_BNXT
+  /* GDA_BNXT START */
   std::vector<struct bnxt_host_qp> bnxt_qps;
   std::vector<struct bnxt_host_cq> bnxt_cqs;
 
   struct bnxt_re_dv_db_region_attr db_region_attr;
-#else
-  struct ibv_pd *pd_parent = nullptr;
-#endif
+  /* GDA_BNXT END */
 
-#ifdef GDA_IONIC
+  /* GDA_IONIC & GDA_MLX5 START */
+  struct ibv_pd *pd_parent = nullptr;
+  /* GDA_IONIC & GDA_MLX5 END */
+
+  /* GDA_IONIC START */
   struct ibv_pd *pd_uxdma[2];
   void *gpu_db_page = nullptr;
   uint64_t *gpu_db_cq = nullptr;
   uint64_t *gpu_db_sq = nullptr;
-#endif
+  /* GDA_IONIC END */
 
  /**
    * @brief Common code invoked from the different constructors
@@ -327,6 +332,7 @@ class GDABackend : public Backend {
   void cleanup_heap_memory_rkey();
 
   void initialize_gpu_qp(QueuePair* qp, int conn_num);
+  void bnxt_initialize_gpu_qp(QueuePair* qp, int conn_num);
 
   /**
    * @brief Setup InfiniBand Resources
@@ -337,6 +343,11 @@ class GDABackend : public Backend {
    * @brief Cleanup InfiniBand Resources
    */
   void cleanup_ibv();
+
+  /**
+   * @brief Detect the available direct verbs libraries
+   */
+  void autodetect_dv_libs();
 
   /**
    * @brief Open InfiniBand Device and create common structures
@@ -357,11 +368,13 @@ class GDABackend : public Backend {
    * @brief Create all CQs with a of length ncqes
    */
   void create_cqs(int ncqes);
+  void bnxt_create_cqs(int ncqes);
 
   /**
    * @brief Create all QPs with a SQ of length sq_length
    */
   void create_qps(int sq_length);
+  void bnxt_create_qps(int sq_length);
 
   /**
    * @brief Exchange QP information for connection
@@ -388,13 +401,12 @@ class GDABackend : public Backend {
    */
   int ibv_mtu_to_int(enum ibv_mtu mtu);
 
-#ifndef GDA_BNXT
-  static void* pd_alloc(ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type);
+  static void* pd_alloc_host(ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type);
+  static void* pd_alloc_device_uncached(ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type);
 
   static void pd_release(ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type);
 
   void create_parent_domain();
-#endif
 
   void setup_gpu_qps();
   void cleanup_gpu_qps();
@@ -501,7 +513,6 @@ class GDABackend : public Backend {
    */
   void rte_barrier();
 
-#ifdef GDA_BNXT
   /**
    * @brief structures holding the function pointers to the direct verbs functionality
    * of each network driver.
@@ -517,9 +528,7 @@ class GDABackend : public Backend {
    * @brief initialize function table for BCOM direct verbs support
    */
   int bnxt_dv_dl_init();
-#endif
 
-#ifdef GDA_MLX5
   /**
    * @brief structures holding the function pointers to the direct verbs functionality
    * of each network driver.
@@ -535,7 +544,6 @@ class GDABackend : public Backend {
    * @brief initialize function table for MLNX direct verbs support
    */
   int mlx5_dv_dl_init();
-#endif
 };
 
 }  // namespace rocshmem
