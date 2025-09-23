@@ -25,7 +25,6 @@
 #ifndef LIBRARY_INCLUDE_ROCSHMEM_MPI_HPP
 #define LIBRARY_INCLUDE_ROCSHMEM_MPI_HPP
 
-
 #if defined(USE_MPI_OMPI_CONSTANTS)
 // Open MPI based values for the constants/handles etc.
 #define MPI_Comm     void*

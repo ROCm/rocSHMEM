@@ -28,16 +28,15 @@
 #include "mpi_instance.hpp"
 #include "util.hpp"
 
-namespace rocshmem {
+#if defined(USE_MPI_OMPI_CONSTANTS)
+// Open MPI specific symbols
+struct ompi_internal_symbols_t ompi_symbols_;
+#endif // USE_MPI_OMPI_CONSTANTS
 
+namespace rocshmem {
 
 void* mpilib_handle_{nullptr};
 struct mpilib_funcs_t mpilib_ftable_;
-
-#if defined(USE_MPI_OMPI_CONSTANTS)
-  /* Open MPI specific symbols */
-  struct ompi_internal_symbols_t ompi_symbols_;
-#endif // USE_MPI_OMPI_CONSTANTS
 
 int MPIInstance::mpilib_dl_init() {
   if (mpilib_handle_ != nullptr)

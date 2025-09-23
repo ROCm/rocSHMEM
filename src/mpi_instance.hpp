@@ -95,10 +95,6 @@ struct mpilib_funcs_t {
 extern struct mpilib_funcs_t mpilib_ftable_;
 extern void *mpilib_handle_;
 
-#if defined(USE_MPI_OMPI_CONSTANTS)
-extern struct ompi_internal_symbols_t ompi_symbols_;
-#endif // USE_MPI_OMPI_CONSTANTS
-
 class MPIInstance {
   public:
     /**
