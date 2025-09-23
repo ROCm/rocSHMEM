@@ -77,7 +77,7 @@ QueuePair::QueuePair(struct ibv_pd* pd, int gda_vendor) {
     gda_op_rdma_read  = BNXT_RE_WR_OPCD_RDMA_READ;
     gda_op_atomic_fa  = BNXT_RE_WR_OPCD_ATOMIC_FA;
     gda_op_atomic_cs  = BNXT_RE_WR_OPCD_ATOMIC_CS;
-  } else {
+  } else if (gda_vendor == GDAVendor::MLX5) {
     gda_op_rdma_write = MLX5_OPCODE_RDMA_WRITE;
     gda_op_rdma_read  = MLX5_OPCODE_RDMA_READ;
     gda_op_atomic_fa  = MLX5_OPCODE_ATOMIC_FA;

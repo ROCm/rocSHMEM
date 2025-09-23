@@ -592,7 +592,7 @@ void GDABackend::cleanup_ibv() {
 
       CHECK_HIP(hipFree(bnxt_cqs[i].buf));
     }
-  } else if (gda_vendor == GDAVendor::MLX5) {
+  } else {
     for (int i = 0; i < qps.size(); i++) {
       err = ibv_destroy_qp(qps[i]);
       CHECK_ZERO(err, "ibv_destroy_qp");
