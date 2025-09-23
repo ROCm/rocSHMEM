@@ -37,8 +37,6 @@
 
 namespace rocshmem {
 
-static void* mpilib_handle_{nullptr};
-
 struct mpilib_funcs_t {
   int (*Init_thread)(int *argc, char ***argv, int required, int *provided);
   int (*Initialized)(int *flag);
@@ -94,7 +92,12 @@ struct mpilib_funcs_t {
   int (*Fetch_and_op)(const void *origin_addr, void *result_addr, MPI_Datatype datatype,
                       int target_rank, MPI_Aint target_disp, MPI_Op op, MPI_Win win);
 };
-struct mpilib_funcs_t mpilib_ftable_;
+extern struct mpilib_funcs_t mpilib_ftable_;
+extern void *mpilib_handle_;
+
+#if defined(USE_MPI_OMPI_CONSTANTS)
+extern struct ompi_internal_symbols_t ompi_symbols_;
+#endif // USE_MPI_OMPI_CONSTANTS
 
 class MPIInstance {
   public:

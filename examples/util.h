@@ -34,7 +34,7 @@
         hipError_t error = condition;                                     \
         if(error != hipSuccess){                                          \
             fprintf(stderr,"HIP error: %d line: %d\n", error,  __LINE__); \
-            MPI_Abort(MPI_COMM_WORLD, error);                             \
+            exit(error);                                                  \
         }                                                                 \
     }
 

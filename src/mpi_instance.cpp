@@ -30,12 +30,16 @@
 
 namespace rocshmem {
 
+
+void* mpilib_handle_{nullptr};
+struct mpilib_funcs_t mpilib_ftable_;
+
 #if defined(USE_MPI_OMPI_CONSTANTS)
   /* Open MPI specific symbols */
   struct ompi_internal_symbols_t ompi_symbols_;
 #endif // USE_MPI_OMPI_CONSTANTS
 
-static int mpilib_dl_init() {
+int MPIInstance::mpilib_dl_init() {
   if (mpilib_handle_ != nullptr)
       return ROCSHMEM_SUCCESS;
 
@@ -124,7 +128,7 @@ static int mpilib_dl_init() {
   return ROCSHMEM_SUCCESS;
 }
 
-static void mpilib_dl_close() {
+void MPIInstance::mpilib_dl_close() {
   if (mpilib_handle_ != nullptr) {
     dlclose(mpilib_handle_);
     mpilib_handle_ = nullptr;

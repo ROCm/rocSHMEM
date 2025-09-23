@@ -112,7 +112,8 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
 
     CHECK_HIP(hipMalloc(reinterpret_cast<void**>(&pes_with_ipc_avail), shm_size * sizeof(int)));
 
-    MPI_Group thread_grp, shm_grp;
+    MPI_Group thread_grp;
+    MPI_Group shm_grp;
     mpilib_ftable_.Comm_group(thread_comm, &thread_grp);
     mpilib_ftable_.Comm_group(shmcomm, &shm_grp);
     int *seqranks = new int[shm_size];

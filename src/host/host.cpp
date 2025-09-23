@@ -294,7 +294,7 @@ __host__ void HostInterface::quiet(WindowInfo* window_info) {
 __host__ void HostInterface::sync_all(WindowInfo* window_info) {
   WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
   if (!window_info_mpi) {
-    MPI_Win_sync(window_info_mpi->get_win());
+    mpilib_ftable_.Win_sync(window_info_mpi->get_win());
 
     hdp_policy_->hdp_flush();
     /*
