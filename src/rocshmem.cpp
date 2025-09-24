@@ -92,14 +92,15 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
   rocm_init();
 
-  MPIInstance::mpilib_dl_init();
+  int ret;
+  ret = MPIInstance::mpilib_dl_init();
   mpi_instance = new MPIInstance(comm);
 
 #if defined(USE_GDA)
   CHECK_HIP(hipHostMalloc(&backend, sizeof(GDABackend)));
   backend = new (backend) GDABackend(comm);
 #elif defined(USE_RO)
-  if (mpilib_handle_ == nullptr) {
+  if (ret != ROCSHMEM_SUCCESS) {
     printf("Could not initialize MPI library. RO conduit requires MPI library to be loaded at runtime. Aborting\n");
     abort();
   }
@@ -113,15 +114,18 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   if (!backend) {
     abort();
   }
+  printf("[%d] backend check success\n", getpid());
 }
 
 [[maybe_unused]] __host__ static void inline library_init_subcomm(TcpBootstrap *bootstrap, int nranks, int rank) {
   int initialized;
   int world_size = -1;
 
-  MPIInstance::mpilib_dl_init();
-  if (mpilib_handle_ == nullptr) {
-    printf("Could not initialize MPI library. This initialization method of rocSHMEM requires MPI library to be loaded at runtime. Aborting\n");
+  int ret;
+  ret = MPIInstance::mpilib_dl_init();
+  if (ret == ROCSHMEM_SUCCESS) {
+    printf("Could not initialize MPI library. This initialization method of "
+	   "rocSHMEM requires MPI library to be loaded at runtime. Aborting\n");
     abort();
   }
   mpilib_ftable_.Initialized(&initialized);
@@ -203,7 +207,7 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
 [[maybe_unused]] __host__ int rocshmem_init_attr(unsigned int flags,
                                                  rocshmem_init_attr_t *attr) {
-  MPI_Comm comm = MPI_COMM_NULL;
+  MPI_Comm comm;
 
   if ((attr == nullptr) ||
       ((flags != ROCSHMEM_INIT_WITH_UNIQUEID) &&
@@ -277,8 +281,16 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   library_init(comm);
 }
 
+[[maybe_unused]] __host__ void rocshmem_init() {
+  MPIInstance::mpilib_dl_init();
+  library_init(MPI_COMM_WORLD);
+}
+
 [[maybe_unused]] __host__ int rocshmem_init_thread(
     [[maybe_unused]] int required, int *provided, MPI_Comm comm) {
+  if (comm == static_cast<MPI_Comm>(0) || comm == MPI_COMM_NULL) {
+    comm = MPI_COMM_WORLD;
+  }
   library_init(comm);
   rocshmem_query_thread(provided);
 
@@ -308,7 +320,6 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
   void *ptr;
   backend->heap.malloc(&ptr, size);
-
   rocshmem_barrier_all();
 
   return ptr;
@@ -466,7 +477,8 @@ __host__ int rocshmem_team_split_strided(
       TeamInfo(team_world, pe_start_in_world, stride_in_world, size);
 
   MPI_Comm team_comm{MPI_COMM_NULL};
-  if (parent_team_obj->mpi_comm != MPI_COMM_NULL) {
+  if (parent_team_obj->mpi_comm != MPI_COMM_NULL &&
+      parent_team_obj->mpi_comm != static_cast<MPI_Comm>(0)) {
     /* Create a new MPI communicator for this team */
     int color;
     if (my_pe_in_new_team < 0) {
@@ -476,7 +488,7 @@ __host__ int rocshmem_team_split_strided(
     }
 
     mpilib_ftable_.Comm_split(parent_team_obj->mpi_comm, color, my_pe_in_world, &team_comm);
-  }
+}
   /**
    * Allocate new team for GPU-inittiated communication with backend-specific
    * objects
@@ -495,7 +507,7 @@ __host__ int rocshmem_team_split_strided(
     backend->team_tracker.track(*new_team);
   }
 
-  if (team_comm != MPI_COMM_NULL) {
+  if (team_comm != MPI_COMM_NULL && team_comm != static_cast<MPI_Comm>(0)) {
     mpilib_ftable_.Comm_free (&team_comm);
   }
   return 0;

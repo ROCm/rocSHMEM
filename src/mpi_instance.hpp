@@ -93,7 +93,6 @@ struct mpilib_funcs_t {
                       int target_rank, MPI_Aint target_disp, MPI_Op op, MPI_Win win);
 };
 extern struct mpilib_funcs_t mpilib_ftable_;
-extern void *mpilib_handle_;
 
 class MPIInstance {
   public:

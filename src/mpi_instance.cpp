@@ -35,7 +35,7 @@ struct ompi_internal_symbols_t ompi_symbols_;
 
 namespace rocshmem {
 
-void* mpilib_handle_{nullptr};
+static void* mpilib_handle_{nullptr};
 struct mpilib_funcs_t mpilib_ftable_;
 
 int MPIInstance::mpilib_dl_init() {
@@ -124,6 +124,7 @@ int MPIInstance::mpilib_dl_init() {
   DLSYM_VAR_HELPER(ompi_symbols_, mpilib_handle_, ompi_mpi_double);
   DLSYM_VAR_HELPER(ompi_symbols_, mpilib_handle_, ompi_mpi_long_double);
 #endif // USE_MPI_OMPI_CONSTANTS
+
   return ROCSHMEM_SUCCESS;
 }
 
@@ -142,10 +143,6 @@ MPIInstance::MPIInstance(MPI_Comm comm) {
     int provided;
     mpilib_ftable_.Init_thread(nullptr, nullptr, MPI_THREAD_MULTIPLE, &provided);
     init_in_this_class = 1;
-  }
-
-  if (comm == MPI_COMM_NULL) {
-    comm = MPI_COMM_WORLD;
   }
 
   mpilib_ftable_.Comm_size(comm, &nprocs_);

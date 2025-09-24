@@ -53,7 +53,7 @@ class CommunicatorMPI {
    * @brief Primary constructor
    */
   CommunicatorMPI(char* heap_base, size_t heap_size,
-                  MPI_Comm comm = MPI_COMM_WORLD)
+                  MPI_Comm comm)
     : comm_{comm} {
     mpilib_ftable_.Comm_rank(comm_, &my_pe_);
     mpilib_ftable_.Comm_size(comm_, &num_pes_);
@@ -206,7 +206,7 @@ class RemoteHeapInfo {
    * @param[in] The total number of processing elements
    */
   RemoteHeapInfo(char* heap_ptr, size_t heap_size,
-                 MPI_Comm comm = MPI_COMM_WORLD)
+                 MPI_Comm comm)
     : communicator_{heap_ptr, heap_size, comm} {
     init(heap_ptr, heap_size);
   }

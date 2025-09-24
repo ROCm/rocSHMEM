@@ -27,13 +27,19 @@
 
 #if defined(USE_MPI_OMPI_CONSTANTS)
 // Open MPI based values for the constants/handles etc.
-#define MPI_Comm     void*
-#define MPI_Win      void*
-#define MPI_Group    void*
-#define MPI_Op       void*
-#define MPI_Datatype void*
-#define MPI_Request  void*
-#define MPI_Info     void*
+
+#if defined(c_plusplus) || defined(__cplusplus)
+extern "C" {
+#endif
+
+typedef void* MPI_Comm;
+typedef void* MPI_Win;
+typedef void* MPI_Group;
+typedef void* MPI_Op;
+typedef void* MPI_Datatype;
+typedef void* MPI_Request;
+typedef void* MPI_Info;
+
 struct ompi_status_public_t {
     int MPI_SOURCE;
     int MPI_TAG;
@@ -119,6 +125,10 @@ extern struct ompi_internal_symbols_t ompi_symbols_;
 #define MPI_FLOAT OMPI_PREDEFINED_GLOBAL(MPI_Datatype, ompi_symbols_.ompi_mpi_float)
 #define MPI_DOUBLE OMPI_PREDEFINED_GLOBAL(MPI_Datatype, ompi_symbols_.ompi_mpi_double)
 #define MPI_LONG_DOUBLE OMPI_PREDEFINED_GLOBAL(MPI_Datatype, ompi_symbols_.ompi_mpi_long_double)
+
+#if defined(c_plusplus) || defined(__cplusplus)
+}
+#endif
 
 #endif // USE_MPI_OMPI_CONSTANTS
 

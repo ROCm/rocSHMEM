@@ -83,7 +83,7 @@ private:
 class SymmetricHeap {
 
  public:
-  SymmetricHeap(MPI_Comm comm = MPI_COMM_NULL, TcpBootstrap* bootstrap  = nullptr) {
+  SymmetricHeap(MPI_Comm comm, TcpBootstrap* bootstrap  = nullptr) {
 
     if (comm != MPI_COMM_NULL) {
       remote_heap_info_ = new RemoteHeapInfoMPI(single_heap_.get_base_ptr(),

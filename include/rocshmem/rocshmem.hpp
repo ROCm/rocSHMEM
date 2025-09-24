@@ -60,10 +60,17 @@ constexpr char VERSION[] = "3.0.0";
 /**
  * @brief Initialize the rocSHMEM runtime and underlying transport layer.
  *
- * @param[in] comm      (Optional) MPI Communicator that rocSHMEM will be using
+ * @param[in] comm      MPI Communicator that rocSHMEM will be using
  *                      If MPI_COMM_NULL, rocSHMEM will be using MPI_COMM_WORLD
  */
-__host__ void rocshmem_init(MPI_Comm comm = MPI_COMM_WORLD);
+__host__ void rocshmem_init(MPI_Comm comm);
+
+/**
+ * @brief Initialize the rocSHMEM runtime and underlying transport layer.
+ *        This is equivalent to the previous function, using implicitely
+ *        MPI_COMM_WORLD for initialization
+ */
+__host__ void rocshmem_init(void);
 
 /**
  * @brief Query rocSHMEM context from host API
@@ -103,7 +110,7 @@ __host__ void *rocshmem_ptr(void *dest, int pe);
  *                      value
  */
 __host__ int rocshmem_init_thread(int requested, int *provided,
-                                  MPI_Comm comm = MPI_COMM_WORLD);
+                                  MPI_Comm comm);
 
 /**
  * @brief Initialize the rocSHMEM runtime and underlying transport layer

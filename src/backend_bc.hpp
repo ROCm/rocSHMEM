@@ -224,7 +224,7 @@ class Backend {
    * @todo document where this is used and try to coalesce this into another
    * class
    */
-  MPI_Comm backend_comm{MPI_COMM_NULL};
+  MPI_Comm backend_comm;
 
   /**
    * @todo document where this is used
