@@ -35,13 +35,11 @@ namespace rocshmem {
 
 __host__ HostContextWindowInfo::HostContextWindowInfo(MPI_Comm comm_world,
                                                       SymmetricHeap* heap) {
-  printf("In HostContextWindowInfo MPI constructor\n");
   window_info_ =
       new WindowInfoMPI(comm_world, heap->get_local_heap_base(), heap->get_size());
 }
 
 __host__ HostContextWindowInfo::HostContextWindowInfo(SymmetricHeap* heap) {
-  printf("In HostContextWindowInfo TCP constructor\n");
   window_info_ =
       new WindowInfo(heap->get_local_heap_base(), heap->get_size());
 }
@@ -317,7 +315,6 @@ __host__ void HostInterface::sync_all(WindowInfo* window_info) {
 __host__ void HostInterface::barrier_all(WindowInfo* window_info) {
   WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
   if (window_info_mpi) {
-    printf("HostInterface::barrier_all in window_info_mpi section get_win returns %p host_comm_world_ %p\n", window_info_mpi->get_win(), host_comm_world_);
     complete_all(window_info_mpi->get_win());
 
     /*
@@ -325,7 +322,7 @@ __host__ void HostInterface::barrier_all(WindowInfo* window_info) {
      * see the latest values in device memory
      */
     hdp_policy_->hdp_flush();
-    printf("HostInterface::barrier_all host_comm_world_ %p\n", host_comm_world_);
+
     mpilib_ftable_.Barrier(host_comm_world_);
   } else {
     // Probably not required

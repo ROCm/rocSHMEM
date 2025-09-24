@@ -114,7 +114,6 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   if (!backend) {
     abort();
   }
-  printf("[%d] backend check success\n", getpid());
 }
 
 [[maybe_unused]] __host__ static void inline library_init_subcomm(TcpBootstrap *bootstrap, int nranks, int rank) {

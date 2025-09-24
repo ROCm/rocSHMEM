@@ -85,6 +85,7 @@ int MPIInstance::mpilib_dl_init() {
   DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Win_unlock);
   DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Win_unlock_all);
   DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Win_lock);
+  DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Win_sync);
   DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Get);
   DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Rget);
   DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Put);

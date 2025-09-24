@@ -154,9 +154,7 @@ class WindowInfoMPI: public WindowInfo {
     win_end_ = reinterpret_cast<char*>(start) + size;
 
     up_win_ = std::unique_ptr<MPI_Win>(new MPI_Win);
-    printf("About to call Win_create comm %p\n", comm_);
     mpilib_ftable_.Win_create(win_start_, size, 1, MPI_INFO_NULL, comm_, up_win_.get());
-    printf("After  Win_create win %p\n", *up_win_.get());
     mpilib_ftable_.Win_lock_all(MPI_MODE_NOCHECK, *up_win_.get());
   }
 
