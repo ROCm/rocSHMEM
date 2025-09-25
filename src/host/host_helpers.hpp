@@ -27,7 +27,7 @@
 
 #include "host.hpp"
 #include "memory/window_info.hpp"
-#include "../mpi_instance.hpp"
+#include "mpi_instance.hpp"
 
 #include <cassert>
 

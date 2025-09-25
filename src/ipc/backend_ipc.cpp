@@ -29,7 +29,7 @@
 #include <cassert>
 
 #include "backend_ipc.hpp"
-#include "../mpi_instance.hpp"
+#include "mpi_instance.hpp"
 #include "ipc_team.hpp"
 
 namespace rocshmem {

@@ -41,7 +41,7 @@
 #include "memory/symmetric_heap.hpp"
 #include "memory/window_info.hpp"
 #include "bootstrap/bootstrap.hpp"
-#include "../mpi_instance.hpp"
+#include "mpi_instance.hpp"
 
 namespace rocshmem {
 

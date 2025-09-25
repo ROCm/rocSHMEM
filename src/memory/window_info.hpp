@@ -27,7 +27,7 @@
 
 #include <cassert>
 #include <memory>
-#include "../mpi_instance.hpp"
+#include "mpi_instance.hpp"
 
 /**
  * @file window_info.hpp
