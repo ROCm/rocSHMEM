@@ -160,16 +160,16 @@ class QueuePair {
   __device__ __attribute__((noinline)) void post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
 
 #if defined(GDA_MLX5)
-  __device__ uint64_t post_wqe_amo_mlx5(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
-  __device__ void post_wqe_rma_mlx5(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
+  __device__ uint64_t mlx5_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
+  __device__ void mlx5_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
 #endif
 #if defined(GDA_BNXT)
-  __device__ uint64_t post_wqe_amo_bnxt(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
-  __device__ void post_wqe_rma_bnxt(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
+  __device__ uint64_t bnxt_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
+  __device__ void bnxt_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
 #endif
 #if defined(GDA_IONIC)
-  __device__ uint64_t post_wqe_amo_ionic(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
-  __device__ void post_wqe_rma_ionic(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
+  __device__ uint64_t ionic_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
+  __device__ void ionic_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
 #endif
 
   /**
@@ -178,14 +178,14 @@ class QueuePair {
    * @param[in] db_val Doorbell value is written by method.
    */
 #if defined(GDA_MLX5)
-  __device__ void ring_doorbell_mlx5(uint64_t db_val, uint64_t my_sq_counter);
+  __device__ void mlx5_ring_doorbell(uint64_t db_val, uint64_t my_sq_counter);
 #endif
 #if defined(GDA_BNXT)
   __device__ void ring_sq_doorbell(uint32_t slot_idx);
   __device__ void ring_cq_doorbell(uint32_t slot_idx);
 #endif
 #if defined(GDA_IONIC)
-  __device__ void ring_doorbell_ionic(uint32_t pos);
+  __device__ void ionic_ring_doorbell(uint32_t pos);
 #endif
 
 #ifdef GDA_IONIC
@@ -221,7 +221,7 @@ class QueuePair {
    * @brief Helper method to drain completion queue entries.
    * @param cons wait for sq_msn to catch up to this position.
    */
-  __device__ __attribute__((noinline)) void quiet_internal_ionic(uint64_t active_lane_mask, uint32_t cons);
+  __device__ __attribute__((noinline)) void ionic_quiet_internal(uint64_t active_lane_mask, uint32_t cons);
 
   uint64_t *cq_dbreg{nullptr};
   uint64_t cq_dbval{0};
@@ -241,13 +241,13 @@ class QueuePair {
 #endif
 
 #if defined(GDA_MLX5)
-  __device__ void quiet_mlx5();
+  __device__ void mlx5_quiet();
 #endif
 #if defined(GDA_BNXT)
-  __device__ void quiet_bnxt();
+  __device__ void bnxt_quiet();
 #endif
 #if defined(GDA_IONIC)
-  __device__ void quiet_ionic();
+  __device__ void ionic_quiet();
 #endif
   int gda_vendor_{0};
 

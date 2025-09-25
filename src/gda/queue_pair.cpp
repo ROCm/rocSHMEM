@@ -151,7 +151,7 @@ __device__ uint32_t QueuePair::reserve_sq(uint64_t activemask, uint32_t num_wqes
   my_sq_prod = __shfl(my_sq_prod, get_first_active_lane_id(activemask));
 
   // wait for that space to be available
-  quiet_internal_ionic(activemask, my_sq_prod + num_wqes - sq_mask);
+  ionic_quiet_internal(activemask, my_sq_prod + num_wqes - sq_mask);
 
   return my_sq_prod;
 }
@@ -167,7 +167,7 @@ __device__ uint32_t QueuePair::commit_sq(bool last, uint32_t my_sq_prod, uint32_
       // spin
     }
 
-    ring_doorbell_ionic(dbprod);
+    ionic_ring_doorbell(dbprod);
 
     __hip_atomic_exchange(&sq_dbprod, dbprod, __ATOMIC_RELEASE, __HIP_MEMORY_SCOPE_AGENT);
   }
@@ -246,7 +246,7 @@ __device__ void QueuePair::poll_wave_cqes(uint64_t activemask) {
   sq_msn = msn;
 }
 
-__device__ void QueuePair::quiet_internal_ionic(uint64_t activemask, uint32_t cons) {
+__device__ void QueuePair::ionic_quiet_internal(uint64_t activemask, uint32_t cons) {
   /* wait for sq_msn to catch up or pass cons. */
   /* 0x800000 - sign bit for 24-bit fields     */
   while ((sq_msn - cons) & 0x800000) {
@@ -266,7 +266,7 @@ __device__ void QueuePair::quiet_internal_ionic(uint64_t activemask, uint32_t co
 #endif // GDA_IONIC
 
 #if defined(GDA_IONIC)
-__device__ void QueuePair::ring_doorbell_ionic(uint32_t pos) {
+__device__ void QueuePair::ionic_ring_doorbell(uint32_t pos) {
   // TODO When threads write at once to the same address, not all writes reach the bus.
   for (int i = 0; i < 64; ++i) {
     if (__lane_id() == i) {
@@ -279,7 +279,7 @@ __device__ void QueuePair::ring_doorbell_ionic(uint32_t pos) {
 #endif
 
 #if defined(GDA_MLX5)
-__device__ void QueuePair::ring_doorbell_mlx5(uint64_t db_val, uint64_t my_sq_counter) {
+__device__ void QueuePair::mlx5_ring_doorbell(uint64_t db_val, uint64_t my_sq_counter) {
   swap_endian_store(const_cast<uint32_t*>(dbrec), (uint32_t)my_sq_counter);
   __atomic_signal_fence(__ATOMIC_SEQ_CST);
 
@@ -291,13 +291,13 @@ __device__ void QueuePair::ring_doorbell_mlx5(uint64_t db_val, uint64_t my_sq_co
 #endif // GDA_MLX5
 
 #if defined(GDA_IONIC)
-__device__ void QueuePair::quiet_ionic() {
-  quiet_internal_ionic(get_same_qp_lane_mask(), sq_prod);
+__device__ void QueuePair::ionic_quiet() {
+  ionic_quiet_internal(get_same_qp_lane_mask(), sq_prod);
 }
 #endif
 
 #if defined(GDA_MLX5)
-__device__ void QueuePair::quiet_mlx5() {
+__device__ void QueuePair::mlx5_quiet() {
   constexpr size_t BROADCAST_SIZE = 1024 / WF_SIZE;
   __shared__ uint64_t wqe_broadcast[BROADCAST_SIZE];
   uint8_t wavefront_id = get_flat_block_id() / WF_SIZE;
@@ -384,17 +384,17 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
   switch (gda_vendor_) {
 #if defined(GDA_MLX5)
   case GDAVendor::MLX5:
-    post_wqe_rma_mlx5(pe, size, laddr, raddr, opcode);
+    mlx5_post_wqe_rma(pe, size, laddr, raddr, opcode);
     return;
 #endif
 #if defined(GDA_BNXT)
   case GDAVendor::BNXT:
-    post_wqe_rma_bnxt(pe, size, laddr, raddr, opcode);
+    bnxt_post_wqe_rma(pe, size, laddr, raddr, opcode);
     return;
 #endif
 #if defined(GDA_IONIC)
   case GDAVendor::IONIC:
-    post_wqe_rma_ionic(pe, size, laddr, raddr, opcode);
+    ionic_post_wqe_rma(pe, size, laddr, raddr, opcode);
     return;
 #endif
   default:
@@ -407,15 +407,15 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   switch (gda_vendor_) {
 #if defined(GDA_MLX5)
   case GDAVendor::MLX5:
-    return post_wqe_amo_mlx5(pe, size, raddr, opcode, atomic_data, atomic_cmp, fetching);
+    return mlx5_post_wqe_amo(pe, size, raddr, opcode, atomic_data, atomic_cmp, fetching);
 #endif
 #if defined(GDA_BNXT)
   case GDAVendor::BNXT:
-    return post_wqe_amo_bnxt(pe, size, raddr, opcode, atomic_data, atomic_cmp, fetching);
+    return bnxt_post_wqe_amo(pe, size, raddr, opcode, atomic_data, atomic_cmp, fetching);
 #endif
 #if defined(GDA_IONIC)
   case GDAVendor::IONIC:
-    return post_wqe_amo_ionic(pe, size, raddr, opcode, atomic_data, atomic_cmp, fetching);
+    return ionic_post_wqe_amo(pe, size, raddr, opcode, atomic_data, atomic_cmp, fetching);
 #endif
   default:
     assert(false /* invalid nic provider */);
@@ -427,17 +427,17 @@ __device__ void QueuePair::quiet() {
   switch (gda_vendor_) {
 #if defined(GDA_MLX5)
   case GDAVendor::MLX5:
-    quiet_mlx5();
+    mlx5_quiet();
     return;
 #endif
 #if defined(GDA_BNXT)
   case GDAVendor::BNXT:
-    quiet_bnxt();
+    bnxt_quiet();
     return;
 #endif
 #if defined(GDA_IONIC)
   case GDAVendor::IONIC:
-    quiet_ionic();
+    ionic_quiet();
     return;
 #endif
   default:
@@ -446,7 +446,7 @@ __device__ void QueuePair::quiet() {
 }
 
 #if defined(GDA_IONIC)
-__device__ void QueuePair::post_wqe_rma_ionic(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
+__device__ void QueuePair::ionic_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
   uint64_t activemask = get_same_qp_lane_mask();
   uint32_t num_wqes = get_active_lane_count(activemask);
   uint32_t my_logical_lane_id = get_active_lane_num(activemask);
@@ -492,7 +492,7 @@ __device__ void QueuePair::post_wqe_rma_ionic(int pe, int32_t size, uintptr_t *l
 #endif
 
 #if defined (GDA_MLX5)
-__device__ void QueuePair::post_wqe_rma_mlx5(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
+__device__ void QueuePair::mlx5_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
   uint64_t activemask = get_active_lane_mask();
   uint8_t num_active_lanes = get_active_lane_count(activemask);
   uint8_t my_logical_lane_id = get_active_lane_num(activemask);
@@ -520,7 +520,7 @@ __device__ void QueuePair::post_wqe_rma_mlx5(int pe, int32_t size, uintptr_t *la
     if (num_free_entries > num_entries_until_wave_last_entry) {
       break;
     }
-    quiet_mlx5();
+    mlx5_quiet();
   }
 
   outstanding_wqes[my_sq_counter % OUTSTANDING_TABLE_SIZE] = my_sq_counter;
@@ -545,7 +545,7 @@ __device__ void QueuePair::post_wqe_rma_mlx5(int pe, int32_t size, uintptr_t *la
 
     uint8_t *base_ptr = reinterpret_cast<uint8_t*>(sq_buf);
     uint64_t* ctrl_wqe_8B_for_db = reinterpret_cast<uint64_t*>(&base_ptr[64 * ((wave_sq_counter + num_wqes - 1) % sq_wqe_cnt)]);
-    ring_doorbell_mlx5(*ctrl_wqe_8B_for_db, wave_sq_counter + num_wqes);
+    mlx5_ring_doorbell(*ctrl_wqe_8B_for_db, wave_sq_counter + num_wqes);
 
     __hip_atomic_fetch_add(&quiet_posted, num_wqes, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
     __hip_atomic_store(&sq_db_touched, wave_sq_counter + num_wqes, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
@@ -554,7 +554,7 @@ __device__ void QueuePair::post_wqe_rma_mlx5(int pe, int32_t size, uintptr_t *la
 #endif // GDA_MLX5
 
 #if defined(GDA_IONIC)
-__device__ uint64_t QueuePair::post_wqe_amo_ionic(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode,
+__device__ uint64_t QueuePair::ionic_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode,
                                                   int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
   uint64_t activemask = get_same_qp_lane_mask();
   uint32_t num_wqes = get_active_lane_count(activemask);
@@ -604,7 +604,7 @@ __device__ uint64_t QueuePair::post_wqe_amo_ionic(int pe, int32_t size, uintptr_
 
   uint64_t ret{0};
   if (fetching) {
-    quiet_internal_ionic(activemask, cons);
+    ionic_quiet_internal(activemask, cons);
     ret = wave_fetch_atomic[my_logical_lane_id];
     __atomic_signal_fence(__ATOMIC_SEQ_CST);
     if (is_leader) {
@@ -616,7 +616,7 @@ __device__ uint64_t QueuePair::post_wqe_amo_ionic(int pe, int32_t size, uintptr_
 #endif
 
 #if defined(GDA_MLX5)
-__device__ uint64_t QueuePair::post_wqe_amo_mlx5(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode,
+__device__ uint64_t QueuePair::mlx5_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode,
                                                  int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
   uint64_t activemask = get_active_lane_mask();
   uint8_t num_active_lanes = get_active_lane_count(activemask);
@@ -645,7 +645,7 @@ __device__ uint64_t QueuePair::post_wqe_amo_mlx5(int pe, int32_t size, uintptr_t
     if (num_free_entries > num_entries_until_wave_last_entry) {
       break;
     }
-    quiet_mlx5();
+    mlx5_quiet();
   }
 
   uint64_t* wave_fetch_atomic{nullptr};
@@ -686,7 +686,7 @@ __device__ uint64_t QueuePair::post_wqe_amo_mlx5(int pe, int32_t size, uintptr_t
 
     uint8_t *base_ptr = reinterpret_cast<uint8_t*>(sq_buf);
     uint64_t* ctrl_wqe_8B_for_db = reinterpret_cast<uint64_t*>(&base_ptr[64 * ((wave_sq_counter + num_wqes - 1) % sq_wqe_cnt)]);
-    ring_doorbell_mlx5(*ctrl_wqe_8B_for_db, wave_sq_counter + num_wqes);
+    mlx5_ring_doorbell(*ctrl_wqe_8B_for_db, wave_sq_counter + num_wqes);
 
     __hip_atomic_fetch_add(&quiet_posted, num_wqes, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
     __hip_atomic_store(&sq_db_touched, wave_sq_counter + num_wqes, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
@@ -694,7 +694,7 @@ __device__ uint64_t QueuePair::post_wqe_amo_mlx5(int pe, int32_t size, uintptr_t
 
   uint64_t ret{0};
   if (fetching) {
-    quiet_mlx5();
+    mlx5_quiet();
     ret = wave_fetch_atomic[my_logical_lane_id];
     __atomic_signal_fence(__ATOMIC_SEQ_CST);
     if (is_leader) {
