@@ -145,6 +145,17 @@ namespace envvar {
         if constexpr (std::is_integral_v<T>) {
           is >> std::setbase(0);
         }
+
+        // check if input is negative: remove whitespace, then check if first char is '-'
+        if constexpr (std::is_unsigned_v<T>) {
+          is >> std::ws;
+          auto first = is.peek();
+          if (first == '-') {
+            is.setstate(std::ios_base::failbit);
+            return is;
+          }
+        }
+
         return is >> value;
       }
     };
