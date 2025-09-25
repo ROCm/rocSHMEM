@@ -30,6 +30,8 @@ extern "C" {
 #include "gda/bnxt/bnxt_re_hsi.h"
 }
 
+#define GDA_BNXT_WQE_SLOT_COUNT 3
+
 #define bnxt_re_get_cqe_sz() (sizeof(struct bnxt_re_req_cqe) + \
                               sizeof(struct bnxt_re_bcqe))
 
@@ -55,7 +57,6 @@ struct bnxt_device_cq : public bnxt_device_wq {
 
 struct bnxt_device_sq : public bnxt_device_wq {
   uint32_t psn;
-  volatile uint32_t posted;
 
   void *msntbl;
   uint32_t msn;

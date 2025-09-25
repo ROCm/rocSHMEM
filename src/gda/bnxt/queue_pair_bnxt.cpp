@@ -182,19 +182,19 @@ __device__ void QueuePair::ring_sq_doorbell(uint32_t slot_idx) {
   __hip_atomic_store(dbr, hdr.typ_qid_indx, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
 }
 
-__device__ int QueuePair::poll_cq() {
+__device__ void QueuePair::poll_cq_once() {
   struct bnxt_re_bcqe *hdr;
-  void *cqe;
+  struct bnxt_re_req_cqe *cqe;
   uint32_t flg_val;
   int type;
   uint8_t status;
 
-  cqe = (void*) ((char*) cq.buf + (cq.head * bnxt_re_get_cqe_sz()));
+  cqe = (struct bnxt_re_req_cqe *) ((char*) cq.buf + (cq.head * bnxt_re_get_cqe_sz()));
   hdr = (struct bnxt_re_bcqe*) ((char*)cqe + sizeof(struct bnxt_re_req_cqe));
 
   flg_val = hdr->flg_st_typ_ph;
 
-  __threadfence_system();
+  __threadfence();
 
   if (bnxt_re_is_cqe_valid(flg_val, cq.phase)) {
     // Is the CQE valid?
@@ -204,22 +204,46 @@ __device__ int QueuePair::poll_cq() {
     if (status != BNXT_RE_REQ_ST_OK) {
       printf("CQ Error %s (%x)\n", bnxt_re_wc_error_strings[status], status);
       abort();
-      return -1;
     }
 
     /* Update the CQ Ptr */
     bnxt_re_incr_head(&cq, 1);
     bnxt_re_change_cq_phase(&cq);
 
+    /* Update the SQ head
+     * This param provides us the wqe_idx but we need to convert to the slot idx.
+     * We assume a static slots size of GDA_BNXT_WQE_SLOT_COUNT thus can multipy by this value */
+    sq.head = ((cqe->con_indx & 0xFFFF) % sq.depth) * GDA_BNXT_WQE_SLOT_COUNT;
+
     /* Ring Doorbell */
     ring_cq_doorbell(cq.head);
-
-    __hip_atomic_fetch_sub(&sq.posted, 1, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
-
-    return 1;
+    return;
   }
 
-  return 0;
+  return;
+}
+
+__device__ void QueuePair::poll_cq_until(uint32_t requested_available_slots) {
+  uint32_t sq_tail;
+  uint32_t sq_head;
+  uint32_t consumed_slots;
+  uint32_t available_slots;
+
+  sq_head = __hip_atomic_load(&sq.head, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+  sq_tail = __hip_atomic_load(&sq.tail, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+
+  consumed_slots  = (sq_tail - sq_head);
+  available_slots = sq.depth - consumed_slots;
+
+  while (available_slots < requested_available_slots) {
+    poll_cq_once();
+
+    sq_head = __hip_atomic_load(&sq.head, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+    sq_tail = __hip_atomic_load(&sq.tail, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+
+    consumed_slots  = (sq_tail - sq_head);
+    available_slots = sq.depth - consumed_slots;
+  }
 }
 
 __device__ void QueuePair::quiet() {
@@ -231,11 +255,11 @@ __device__ void QueuePair::quiet() {
 
   if (0 == active_lane_id) {
     aquire_lock(&cq.lock);
-    while (__hip_atomic_load(&sq.posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT)) {
-      poll_cq();
-    }
+    poll_cq_until(sq.depth);
     release_lock(&cq.lock);
   }
+
+  __threadfence();
 }
 
 __device__ void QueuePair::post_wqe_rma(int pe, int32_t length, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
@@ -264,8 +288,6 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t length, uintptr_t *laddr
       uint32_t hdr_flags;
       uint32_t inline_msg;
 
-      uint32_t rma_slots  = 3; // (Three slots: hdr, rdma, sge)
-
       inline_msg = length <= inline_threshold &&
                    opcode == gda_op_rdma_write;
 
@@ -275,7 +297,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t length, uintptr_t *laddr
 
       /* Populate Header Segment */
       wqe_type  = BNXT_RE_HDR_WT_MASK & opcode;
-      wqe_size  = BNXT_RE_HDR_WS_MASK & rma_slots;
+      wqe_size  = BNXT_RE_HDR_WS_MASK & GDA_BNXT_WQE_SLOT_COUNT;
       hdr_flags = ((uint32_t) BNXT_RE_HDR_FLAGS_MASK)
                 & ((uint32_t) BNXT_RE_WR_FLAGS_SIGNALED);
 
@@ -314,13 +336,10 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t length, uintptr_t *laddr
       bnxt_re_fill_psns_for_msntbl(&sq, length);
 
       /* Update SQ Pointer */
-      bnxt_re_incr_tail(&sq, rma_slots);
+      bnxt_re_incr_tail(&sq, GDA_BNXT_WQE_SLOT_COUNT);
 
       /* Ring Doorbell */
       ring_sq_doorbell(sq.tail);
-
-      __hip_atomic_fetch_add(&sq.posted, 1, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
-
     }
     __threadfence_system();
     quiet();
@@ -357,17 +376,16 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t length, uintptr_t *r
       uint32_t wqe_size;
       uint32_t wqe_type;
       uint32_t hdr_flags;
-      uint32_t amo_slots = 3; // (Three slots: hdr, amo, sge)
 
       hdr_ptr = (struct bnxt_re_bsqe*)   bnxt_re_get_hwqe(&sq, 0);
       amo_ptr = (struct bnxt_re_atomic*) bnxt_re_get_hwqe(&sq, 1);
       sge_ptr = (struct bnxt_re_sge*)    bnxt_re_get_hwqe(&sq, 2);
 
       /* Populate Header Segment */
-      wqe_size  = BNXT_RE_HDR_WS_MASK    & amo_slots;
+      wqe_size  = BNXT_RE_HDR_WS_MASK & GDA_BNXT_WQE_SLOT_COUNT;
       hdr_flags = ((uint32_t) BNXT_RE_HDR_FLAGS_MASK)
                 & ((uint32_t) BNXT_RE_WR_FLAGS_SIGNALED);
-      wqe_type  = BNXT_RE_HDR_WT_MASK    & opcode;
+      wqe_type  = BNXT_RE_HDR_WT_MASK & opcode;
 
       hdr.rsv_ws_fl_wt  = (wqe_size  << BNXT_RE_HDR_WS_SHIFT)
                         | (hdr_flags << BNXT_RE_HDR_FLAGS_SHIFT)
@@ -398,12 +416,10 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t length, uintptr_t *r
       bnxt_re_fill_psns_for_msntbl(&sq, length);
 
       /* Update SQ Pointer */
-      bnxt_re_incr_tail(&sq, amo_slots);
+      bnxt_re_incr_tail(&sq, GDA_BNXT_WQE_SLOT_COUNT);
 
       /* Ring Doorbell */
       ring_sq_doorbell(sq.tail);
-
-      __hip_atomic_fetch_add(&sq.posted, 1, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
     }
     __threadfence_system();
     quiet();

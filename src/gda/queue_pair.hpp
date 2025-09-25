@@ -230,7 +230,8 @@ class QueuePair {
   struct bnxt_device_cq cq;
   struct bnxt_device_sq sq;
 
-  __device__ int poll_cq();
+  __device__ void poll_cq_once();
+  __device__ void poll_cq_until(uint32_t requested_available_slots);
 
   /* GDAVendor::BNXT END */
 
