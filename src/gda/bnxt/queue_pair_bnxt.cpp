@@ -213,7 +213,7 @@ __device__ void QueuePair::poll_cq_once() {
     /* Update the SQ head
      * This param provides us the wqe_idx but we need to convert to the slot idx.
      * We assume a static slots size of GDA_BNXT_WQE_SLOT_COUNT thus can multipy by this value */
-    sq.head = ((cqe->con_indx & 0xFFFF) % sq.depth) * GDA_BNXT_WQE_SLOT_COUNT;
+    sq.head = (((cqe->con_indx & 0xFFFF) * GDA_BNXT_WQE_SLOT_COUNT) % sq.depth);
 
     /* Ring Doorbell */
     ring_cq_doorbell(cq.head);
