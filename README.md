@@ -125,10 +125,14 @@ rocSHMEM has the following enviroment variables:
                         Disables IPC support for the reverse offload backend.
 
     ROCSHMEM_MAX_NUM_CONTEXTS (default : 1024)
-                        Maximum number of contexts used in library
+                        Maximum number of contexts used in library.
 
     ROCSHMEM_MAX_NUM_TEAMS (default : 40)
-                        Maximum number of teams supported by the library
+                        Maximum number of teams supported by the library.
+
+    ROCSHMEM_GDA_ALTERNATE_QP_PORTS (default : 1)
+                        Enables/Disables having QPs alternate their mappings
+                        across rocSHMEM contexts.
 ```
 
 ## Examples
