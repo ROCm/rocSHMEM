@@ -144,6 +144,10 @@ void GDABackend::read_env() {
   if ((value = getenv("ROCSHMEM_SQ_SIZE"))) {
     sq_size = atoi(value);
   }
+
+  if ((value = getenv("ROCSHMEM_GDA_ALTERNATE_QP_PORTS"))) {
+    alternate_qp_ports_enabled = atoi(value);
+  }
 }
 
 void GDABackend::setup_ipc() {
@@ -937,6 +941,57 @@ void GDABackend::create_queues() {
   } else {
     create_cqs(ncqes);
     create_qps(sq_size);
+  }
+
+  alternate_qp_ports();
+}
+
+void GDABackend::alternate_qp_ports() {
+  int cur_qp_idx;
+  int new_qp_idx;
+
+  /* We can't remap anything */
+  if (maximum_num_contexts_ == 1) {
+    return;
+  }
+
+  if (alternate_qp_ports_enabled) {
+    /* If we assume two PEs and a default context and two user context,
+     * initially QPs are in the following port order:
+     *
+     * Labels :| DCTX PE0 | DCTX PE1 | CTX0 PE0 | CTX0 PE1 | CTX1 PE0 | CTX1 PE1 |
+     * QPs    :| QP0      | QP1      | QP2      | QP3      | QP4      | QP5      |
+     * Port   :| 0        | 1        | 0        | 1        | 0        | 1        |
+     *
+     * This creates the pattern where PE1 is always mapped to port 0 but we want it
+     * to use both ports to maximize throughput/bandwidth.
+     *
+     * So we reorder our QPs
+     *
+     * Labels :| DCTX PE0 | DCTX PE1 | CTX0 PE0 | CTX0 PE1 | CTX1 PE0 | CTX1 PE1 |
+     * QPs    :| QP0      | QP1      | QP2      | QP4      | QP3      | QP5      |
+     * Port   :| 0        | 1        | 1        | 0        | 0        | 1        |
+     *
+     * We alternate the ports [0,1] and [1,0] for each context.
+     * Therefore, when we use two contexts we use both ports
+     *
+     */
+
+    /* Re-Map each context */
+    for (int i = 1; i < (maximum_num_contexts_ + 1); i+=2) {
+      for (int p = 0; p < num_pes; p+=2) {
+        cur_qp_idx = (i * num_pes) + p;
+        new_qp_idx = cur_qp_idx + 1;
+
+        if (new_qp_idx < qps.size()) {
+          // Swap QPs
+          std::swap(cqs[cur_qp_idx],      cqs[new_qp_idx]);
+          std::swap(qps[cur_qp_idx],      qps[new_qp_idx]);
+          std::swap(bnxt_cqs[cur_qp_idx], bnxt_cqs[new_qp_idx]);
+          std::swap(bnxt_qps[cur_qp_idx], bnxt_qps[new_qp_idx]);
+        }
+      }
+    }
   }
 }
 

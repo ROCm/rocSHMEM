@@ -127,6 +127,7 @@ class GDABackend : public Backend {
   std::vector<ibv_qp*> qps;
   std::vector<ibv_cq*> cqs;
   std::vector<dest_info_t> dest_info;
+  int alternate_qp_ports_enabled = 1;;
 
   /* GDA_BNXT START */
   std::vector<struct bnxt_host_qp> bnxt_qps;
@@ -375,6 +376,11 @@ class GDABackend : public Backend {
    */
   void create_qps(int sq_length);
   void bnxt_create_qps(int sq_length);
+
+  /**
+   * @brief Reorders QPs to that we map rocSHMEM contexts to the correct QPs
+   */
+  void alternate_qp_ports();
 
   /**
    * @brief Exchange QP information for connection
