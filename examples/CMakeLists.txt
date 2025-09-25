@@ -41,6 +41,7 @@ set(EXAMPLE_SOURCES
   rocshmem_init_attr_test.cc
 )
 
+//TODO the init_with_attr tester is an MPI program
 find_package(MPI REQUIRED)
 find_package(hip REQUIRED PATHS /opt/rocm)
 if(NOT TARGET roc::rocshmem)

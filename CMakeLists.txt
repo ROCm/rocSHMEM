@@ -59,7 +59,7 @@ option(USE_SHARED_CTX "Request support for shared ctx between WG" OFF)
 option(USE_SINGLE_NODE "Enable single node support only." OFF)
 option(USE_HDP_FLUSH "Force flush the HDP cache." OFF)
 option(USE_HDP_FLUSH_HOST_SIDE "Use a polling thread to flush the HDP cache on the host." OFF)
-option(USE_EXTERNAL_MPI_HEADERS "Use external MPI headers (required if used MPI is ABI incompatible with Open MPI v5" OFF)
+option(USE_EXTERNAL_MPI "Link with an external MPI (required if used MPI is ABI incompatible with Open MPI v5" OFF)
 
 option(BUILD_FUNCTIONAL_TESTS "Build the functional tests (Requires MPI)" OFF)
 option(BUILD_EXAMPLES "Build the examples" ON)
@@ -151,7 +151,7 @@ if (NOT BUILD_TESTS_ONLY)
   #############################################################################
   # PACKAGE DEPENDENCIES
   #############################################################################
-  if (USE_EXTERNAL_MPI_HEADERS)
+  if (USE_EXTERNAL_MPI)
     find_package(MPI REQUIRED)
   endif()
   find_package(hip REQUIRED PATHS /opt/rocm)
@@ -180,12 +180,12 @@ if (NOT BUILD_TESTS_ONLY)
       $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include/rocshmem>   # rocshmem_config.h from rocshmem.hpp
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
       $<INSTALL_INTERFACE:include>
-      $<$<BOOL:${USE_EXTERNAL_MPI_HEADERS}>:$<TARGET_PROPERTY:MPI::MPI_CXX,INTERFACE_INCLUDE_DIRECTORIES>>
   )
 
   target_link_libraries(
     ${PROJECT_NAME}
     PUBLIC
+      $<$<BOOL:${USE_EXTERNAL_MPI}>:MPI::MPI_CXX>
       Threads::Threads
       hip::device
       hip::host

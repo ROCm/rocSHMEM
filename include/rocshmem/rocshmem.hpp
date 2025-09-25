@@ -35,7 +35,7 @@
 #include "rocshmem_COLL.hpp"
 #include "rocshmem_P2P_SYNC.hpp"
 #include "rocshmem_RMA_X.hpp"
-#if defined(USE_EXTERNAL_MPI_HEADERS)
+#if defined(USE_EXTERNAL_MPI)
 #include <mpi.h>
 #endif
 

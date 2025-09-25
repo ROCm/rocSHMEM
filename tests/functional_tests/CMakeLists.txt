@@ -74,10 +74,10 @@ target_sources(
 include(${CMAKE_SOURCE_DIR}/cmake/find_pmix.cmake)
 check_pmix()
 
-find_package(MPI REQUIRED)
-find_package(hip REQUIRED PATHS /opt/rocm)
-
 if (BUILD_TESTS_ONLY)
+  //TODO check that build_test_only still works
+  #find_package(MPI REQUIRED)
+  #find_package(hip REQUIRED PATHS /opt/rocm)
   find_package(rocshmem REQUIRED PATHS /opt/rocm)
 
   target_include_directories(
@@ -99,7 +99,6 @@ target_compile_definitions(
 target_link_libraries(
   ${PROJECT_NAME}
   PRIVATE
-    MPI::MPI_CXX
     roc::rocshmem
     PMIx::pmix
 )
