@@ -25,12 +25,18 @@
 #ifndef LIBRARY_INCLUDE_ROCSHMEM_MPI_HPP
 #define LIBRARY_INCLUDE_ROCSHMEM_MPI_HPP
 
-#if defined(USE_MPI_OMPI_CONSTANTS)
-// Open MPI based values for the constants/handles etc.
+#if defined(USE_EXTERNAL_MPI_HEADERS)
+#include <mpi.h>
+#else
 
 #if defined(c_plusplus) || defined(__cplusplus)
 extern "C" {
 #endif
+
+#if !defined(MPI_VERSION)
+// Open MPI based values for the constants/handles etc.
+// Even though we did not include an external MPI header file
+// The includer may have (e.g., a unit test).
 
 typedef void* MPI_Comm;
 typedef void* MPI_Win;
@@ -57,6 +63,9 @@ typedef struct ompi_status_public_t MPI_Status;
 #define MPI_IN_PLACE (void*)1
 #define MPI_MODE_NOCHECK 1
 #define MPI_COMM_TYPE_SHARED 0
+
+
+#define MPI_Aint_diff(addr1, addr2) ((MPI_Aint) ((char *) (addr1) - (char *) (addr2)))
 
 struct ompi_internal_symbols_t  {
   void *ompi_mpi_comm_world;
@@ -126,13 +135,12 @@ extern struct ompi_internal_symbols_t ompi_symbols_;
 #define MPI_DOUBLE OMPI_PREDEFINED_GLOBAL(MPI_Datatype, ompi_symbols_.ompi_mpi_double)
 #define MPI_LONG_DOUBLE OMPI_PREDEFINED_GLOBAL(MPI_Datatype, ompi_symbols_.ompi_mpi_long_double)
 
+#endif //!defined(MPI_VERSION)
+
 #if defined(c_plusplus) || defined(__cplusplus)
 }
 #endif
 
-#endif // USE_MPI_OMPI_CONSTANTS
-
-
-#define MPI_Aint_diff(addr1, addr2) ((MPI_Aint) ((char *) (addr1) - (char *) (addr2)))
+#endif //defined(USE_EXTERNAL_MPI_HEADERS)
 
 #endif //LIBRARY_INCLUDE_ROCSHMEM_MPI_HPP

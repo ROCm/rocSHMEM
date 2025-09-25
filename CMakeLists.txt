@@ -59,11 +59,11 @@ option(USE_SHARED_CTX "Request support for shared ctx between WG" OFF)
 option(USE_SINGLE_NODE "Enable single node support only." OFF)
 option(USE_HDP_FLUSH "Force flush the HDP cache." OFF)
 option(USE_HDP_FLUSH_HOST_SIDE "Use a polling thread to flush the HDP cache on the host." OFF)
-option(USE_MPI_OMPI_CONSTANTS "Use Open MPI values for predefined MPI constants." ON)
+option(USE_EXTERNAL_MPI_HEADERS "Use external MPI headers (required if used MPI is ABI incompatible with Open MPI v5" OFF)
 
-option(BUILD_FUNCTIONAL_TESTS "Build the functional tests" OFF)
+option(BUILD_FUNCTIONAL_TESTS "Build the functional tests (Requires MPI)" OFF)
 option(BUILD_EXAMPLES "Build the examples" ON)
-option(BUILD_UNIT_TESTS "Build the unit tests" OFF)
+option(BUILD_UNIT_TESTS "Build the unit tests (Requires MPI)" OFF)
 option(BUILD_TESTS_ONLY "Build only tests. Used to link agains rocSHMEM in a ROCm Release" OFF)
 option(BUILD_TOOLS "Build binary tools (e.g., rocshmem_info)" ON)
 
@@ -151,7 +151,9 @@ if (NOT BUILD_TESTS_ONLY)
   #############################################################################
   # PACKAGE DEPENDENCIES
   #############################################################################
-  find_package(MPI REQUIRED)
+  if (USE_EXTERNAL_MPI_HEADERS)
+    find_package(MPI REQUIRED)
+  endif()
   find_package(hip REQUIRED PATHS /opt/rocm)
   find_package(hsa-runtime64 REQUIRED)
 
@@ -178,13 +180,13 @@ if (NOT BUILD_TESTS_ONLY)
       $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include/rocshmem>   # rocshmem_config.h from rocshmem.hpp
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
       $<INSTALL_INTERFACE:include>
+      $<$<BOOL:${USE_EXTERNAL_MPI_HEADERS}>:MPI::MPI_CXX>
   )
 
   target_link_libraries(
     ${PROJECT_NAME}
     PUBLIC
       Threads::Threads
-      MPI::MPI_CXX
       hip::device
       hip::host
       hsa-runtime64::hsa-runtime64

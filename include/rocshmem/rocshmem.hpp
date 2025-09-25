@@ -28,7 +28,6 @@
 #include <hip/hip_runtime.h>
 
 #include "rocshmem_config.h"
-#include "rocshmem_mpi.hpp"
 #include "rocshmem_common.hpp"
 #include "rocshmem_RMA.hpp"
 #include "rocshmem_AMO.hpp"
@@ -36,6 +35,10 @@
 #include "rocshmem_COLL.hpp"
 #include "rocshmem_P2P_SYNC.hpp"
 #include "rocshmem_RMA_X.hpp"
+#if defined(USE_EXTERNAL_MPI_HEADERS)
+#include <mpi.h>
+#endif
+
 /**
  * @file rocshmem.hpp
  * @brief Public header for rocSHMEM device and host libraries.
@@ -57,6 +60,7 @@ constexpr char VERSION[] = "3.0.0";
 /******************************************************************************
  **************************** HOST INTERFACE **********************************
  *****************************************************************************/
+#if (MPI_VERSION >= 3)
 /**
  * @brief Initialize the rocSHMEM runtime and underlying transport layer.
  *
@@ -64,6 +68,7 @@ constexpr char VERSION[] = "3.0.0";
  *                      If MPI_COMM_NULL, rocSHMEM will be using MPI_COMM_WORLD
  */
 __host__ void rocshmem_init(MPI_Comm comm);
+#endif
 
 /**
  * @brief Initialize the rocSHMEM runtime and underlying transport layer.
@@ -95,6 +100,7 @@ __host__ void * rocshmem_get_device_ctx();
  */
 __host__ void *rocshmem_ptr(void *dest, int pe);
 
+#if (MPI_VERSION >= 3)
 /**
  * @brief Initialize the rocSHMEM runtime and underlying transport layer
  *        with an attempt to enable the requested thread support.
@@ -111,6 +117,7 @@ __host__ void *rocshmem_ptr(void *dest, int pe);
  */
 __host__ int rocshmem_init_thread(int requested, int *provided,
                                   MPI_Comm comm);
+#endif
 
 /**
  * @brief Initialize the rocSHMEM runtime and underlying transport layer

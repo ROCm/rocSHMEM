@@ -28,10 +28,10 @@
 #include "mpi_instance.hpp"
 #include "util.hpp"
 
-#if defined(USE_MPI_OMPI_CONSTANTS)
-// Open MPI specific symbols
+#if !defined(USE_EXTERNAL_MPI_HEADERS) || defined(OPEN_MPI)
+// Open MPI specific symbols, need to be available even if using external headers
 struct ompi_internal_symbols_t ompi_symbols_;
-#endif // USE_MPI_OMPI_CONSTANTS
+#endif //!defined(USE_EXTERNAL_MPI_HEADERS) || defined(OPEN_MPI)
 
 namespace rocshmem {
 
@@ -44,7 +44,7 @@ int MPIInstance::mpilib_dl_init() {
 
   mpilib_handle_ = dlopen("libmpi.so", RTLD_NOW);
   if (!mpilib_handle_) {
-    printf("Could not open libmmpi.so. Returning\n");
+    printf("Could not open libmpi.so. Returning\n");
     return ROCSHMEM_ERROR;
   }
 
@@ -93,7 +93,7 @@ int MPIInstance::mpilib_dl_init() {
   DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Compare_and_swap);
   DLSYM_HELPER(mpilib_ftable_, MPI_, mpilib_handle_, Fetch_and_op);
 
-#if defined (USE_MPI_OMPI_CONSTANTS)
+#if !defined(USE_EXTERNAL_MPI_HEADERS) || defined(OPEN_MPI)
   DLSYM_VAR_HELPER(ompi_symbols_, mpilib_handle_, ompi_mpi_comm_world);
   DLSYM_VAR_HELPER(ompi_symbols_, mpilib_handle_, ompi_mpi_comm_null);
   DLSYM_VAR_HELPER(ompi_symbols_, mpilib_handle_, ompi_mpi_datatype_null);
@@ -124,7 +124,7 @@ int MPIInstance::mpilib_dl_init() {
   DLSYM_VAR_HELPER(ompi_symbols_, mpilib_handle_, ompi_mpi_float);
   DLSYM_VAR_HELPER(ompi_symbols_, mpilib_handle_, ompi_mpi_double);
   DLSYM_VAR_HELPER(ompi_symbols_, mpilib_handle_, ompi_mpi_long_double);
-#endif // USE_MPI_OMPI_CONSTANTS
+#endif //!defined(USE_EXTERNAL_MPI_HEADERS) || defined(OPEN_MPI)
 
   return ROCSHMEM_SUCCESS;
 }

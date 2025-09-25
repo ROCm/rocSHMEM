@@ -45,4 +45,4 @@
 #cmakedefine GDA_IONIC
 #cmakedefine GDA_BNXT
 #cmakedefine GDA_MLX5
-#cmakedefine USE_MPI_OMPI_CONSTANTS
+#cmakedefine USE_EXTERNAL_MPI_HEADERS
