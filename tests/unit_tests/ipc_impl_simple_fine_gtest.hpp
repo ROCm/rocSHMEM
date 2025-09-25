@@ -140,7 +140,7 @@ class IPCImplSimpleFine : public ::testing::TestWithParam<std::tuple<int, int, i
 
   public:
     IPCImplSimpleFine() {
-        ipc_impl_.ipcHostInit(mpi_.my_pe(), mpi_.get_heap_bases() , MPI_COMM_WORLD);
+        ipc_impl_.ipcHostInit(mpi_.my_pe(), mpi_.get_heap_bases(), MPI_COMM_WORLD);
 
         assert(ipc_impl_dptr_ == nullptr);
         hip_allocator_.allocate((void**)&ipc_impl_dptr_, sizeof(IpcImpl));
@@ -291,7 +291,7 @@ class IPCImplSimpleFine : public ::testing::TestWithParam<std::tuple<int, int, i
 
     HEAP_T heap_mem_ {};
 
-    MPI_T mpi_ {heap_mem_.get_ptr(), heap_mem_.get_size()};
+    MPI_T mpi_ {heap_mem_.get_ptr(), heap_mem_.get_size(), MPI_COMM_WORLD};
 
     std::vector<int> golden_;
 

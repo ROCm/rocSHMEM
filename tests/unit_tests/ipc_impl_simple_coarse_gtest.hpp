@@ -73,7 +73,7 @@ class IPCImplSimpleCoarse : public ::testing::TestWithParam<std::tuple<int, int,
 
   public:
     IPCImplSimpleCoarse() {
-        ipc_impl_.ipcHostInit(mpi_.my_pe(), mpi_.get_heap_bases() , MPI_COMM_WORLD);
+        ipc_impl_.ipcHostInit(mpi_.my_pe(), mpi_.get_heap_bases(), MPI_COMM_WORLD);
         assert(ipc_impl_dptr_ == nullptr);
         hip_allocator_.allocate((void**)&ipc_impl_dptr_, sizeof(IpcImpl));
         CHECK_HIP(hipMemcpy(ipc_impl_dptr_, &ipc_impl_,
@@ -184,7 +184,7 @@ class IPCImplSimpleCoarse : public ::testing::TestWithParam<std::tuple<int, int,
     std::vector<int> golden_;
 
     HEAP_T heap_mem_ {};
-    MPI_T mpi_ {heap_mem_.get_ptr(), heap_mem_.get_size()};
+    MPI_T mpi_ {heap_mem_.get_ptr(), heap_mem_.get_size(), MPI_COMM_WORLD};
 
     IpcImpl ipc_impl_ {};
     IpcImpl *ipc_impl_dptr_ {nullptr};
