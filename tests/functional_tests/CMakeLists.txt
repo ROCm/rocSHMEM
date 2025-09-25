@@ -75,7 +75,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/find_pmix.cmake)
 check_pmix()
 
 if (BUILD_TESTS_ONLY)
-  //TODO check that build_test_only still works
+  #TODO check that build_test_only still works
   #find_package(MPI REQUIRED)
   #find_package(hip REQUIRED PATHS /opt/rocm)
   find_package(rocshmem REQUIRED PATHS /opt/rocm)
