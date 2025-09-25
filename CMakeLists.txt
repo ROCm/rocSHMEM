@@ -180,7 +180,7 @@ if (NOT BUILD_TESTS_ONLY)
       $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include/rocshmem>   # rocshmem_config.h from rocshmem.hpp
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
       $<INSTALL_INTERFACE:include>
-      $<$<BOOL:${USE_EXTERNAL_MPI_HEADERS}>:MPI::MPI_CXX>
+      $<$<BOOL:${USE_EXTERNAL_MPI_HEADERS}>:$<TARGET_PROPERTY:MPI::MPI_CXX,INTERFACE_INCLUDE_DIRECTORIES>>
   )
 
   target_link_libraries(

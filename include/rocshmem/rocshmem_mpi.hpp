@@ -27,7 +27,7 @@
 
 #if defined(USE_EXTERNAL_MPI_HEADERS)
 #include <mpi.h>
-#else
+#endif
 
 #if defined(c_plusplus) || defined(__cplusplus)
 extern "C" {
@@ -66,6 +66,10 @@ typedef struct ompi_status_public_t MPI_Status;
 
 
 #define MPI_Aint_diff(addr1, addr2) ((MPI_Aint) ((char *) (addr1) - (char *) (addr2)))
+
+#endif // MPI_VERSION
+
+#if !defined(MPI_VERSION) || defined(OPEN_MPI)
 
 struct ompi_internal_symbols_t  {
   void *ompi_mpi_comm_world;
@@ -135,12 +139,10 @@ extern struct ompi_internal_symbols_t ompi_symbols_;
 #define MPI_DOUBLE OMPI_PREDEFINED_GLOBAL(MPI_Datatype, ompi_symbols_.ompi_mpi_double)
 #define MPI_LONG_DOUBLE OMPI_PREDEFINED_GLOBAL(MPI_Datatype, ompi_symbols_.ompi_mpi_long_double)
 
-#endif //!defined(MPI_VERSION)
+#endif //!defined(VERSION) || defined(OPEN_MPI)
 
 #if defined(c_plusplus) || defined(__cplusplus)
 }
 #endif
-
-#endif //defined(USE_EXTERNAL_MPI_HEADERS)
 
 #endif //LIBRARY_INCLUDE_ROCSHMEM_MPI_HPP
