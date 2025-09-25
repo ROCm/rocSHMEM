@@ -164,7 +164,13 @@ namespace envvar {
     // operator>>(std::istream&, std::string&) stops on the first whitespace character
     template <> inline
     std::istream& parse<std::string>::operator()(std::istream& is, std::string& value) const {
-      return std::getline(is, value);
+      std::getline(is, value);
+      // std::getline sets failbit when no characters are extracted
+      // setting ROCSHMEM_ENVVAR='' can be valid behavior, so clear failbit when this happens
+      if (value.empty()) {
+        is.clear();
+      }
+      return is;
     }
 
     // bool parser specialization, parse both false/true and 0/1
