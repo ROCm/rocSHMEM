@@ -26,6 +26,7 @@
 #define LIBRARY_SRC_TEAM_HPP_
 
 #include "rocshmem/rocshmem.hpp"
+#include "rocshmem/rocshmem_mpi.hpp"
 #include "backend_type.hpp"
 
 namespace rocshmem {

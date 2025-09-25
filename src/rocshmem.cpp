@@ -124,7 +124,7 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   ret = MPIInstance::mpilib_dl_init();
   if (ret == ROCSHMEM_SUCCESS) {
     printf("Could not initialize MPI library. This initialization method of "
-	   "rocSHMEM requires MPI library to be loaded at runtime. Aborting\n");
+           "rocSHMEM requires MPI library to be loaded at runtime. Aborting\n");
     abort();
   }
   mpilib_ftable_.Initialized(&initialized);
@@ -242,12 +242,12 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 }
 
 [[maybe_unused]] __host__ int rocshmem_set_attr_uniqueid_args(int rank, int nranks,
-							       rocshmem_uniqueid_t *uid,
-							       rocshmem_init_attr_t *attr) {
+                                                              rocshmem_uniqueid_t *uid,
+                                                              rocshmem_init_attr_t *attr) {
   if (uid == nullptr || attr == nullptr) {
       fprintf(stderr, "ROCSHMEM_ERROR: %s in file '%s' in line %d\n",
               "Call 'rocshmem_get_uniqueid: invalid input argument'",
-	      __FILE__, __LINE__);
+              __FILE__, __LINE__);
       return ROCSHMEM_ERROR;
   }
 
@@ -266,7 +266,7 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   if (uid == nullptr) {
       fprintf(stderr, "ROCSHMEM_ERROR: %s in file '%s' in line %d\n",
               "Call 'rocshmem_get_uniqueid: invalid input argument'",
-	      __FILE__, __LINE__);
+              __FILE__, __LINE__);
       return ROCSHMEM_ERROR;
   }
 
