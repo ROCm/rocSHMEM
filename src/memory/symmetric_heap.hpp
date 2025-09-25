@@ -87,10 +87,10 @@ class SymmetricHeap {
 
     if (comm != MPI_COMM_NULL) {
       remote_heap_info_ = new RemoteHeapInfoMPI(single_heap_.get_base_ptr(),
-						single_heap_.get_size(), comm);
+                                                single_heap_.get_size(), comm);
     } else  {
       remote_heap_info_ = new RemoteHeapInfoTCP(single_heap_.get_base_ptr(),
-						single_heap_.get_size(), bootstrap);
+                                                single_heap_.get_size(), bootstrap);
     }
   }
   /**

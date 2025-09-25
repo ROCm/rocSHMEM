@@ -57,7 +57,8 @@ class RemoteHeapInfoTestFixture : public ::testing::Test
      * @brief Remote heap info with MPI Communicator
      */
     MPI_T mpi_ {heap_mem_.get_ptr(),
-                heap_mem_.get_size()};
+                heap_mem_.get_size(),
+                MPI_COMM_WORLD};
 };
 
 } // namespace rocshmem
