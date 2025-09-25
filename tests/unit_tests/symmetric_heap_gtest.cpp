@@ -43,7 +43,7 @@ TEST_F(SymmetricHeapTestFixture, window_info) {
     void *window_base_addr{nullptr};
     int flag{0};
     MPI_Win_get_attr(window_info_mpi->get_win(), MPI_WIN_BASE, &window_base_addr,
-		     &flag);
+                     &flag);
     ASSERT_NE(0, flag);
     ASSERT_NE(nullptr, window_base_addr);
   }

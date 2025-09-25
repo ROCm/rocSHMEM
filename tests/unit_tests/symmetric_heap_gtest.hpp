@@ -25,6 +25,8 @@
 #ifndef ROCSHMEM_SYMMETRIC_HEAP_GTEST_HPP
 #define ROCSHMEM_SYMMETRIC_HEAP_GTEST_HPP
 
+#include <mpi.h>
+
 #include "gtest/gtest.h"
 
 #include "../src/memory/symmetric_heap.hpp"
