@@ -25,5 +25,12 @@ target_sources(
   ${PROJECT_NAME}
   PRIVATE
     backend_gda_bnxt.cpp
+)
+
+if(GDA_BNXT)
+target_sources(
+  ${PROJECT_NAME}
+  PRIVATE
     queue_pair_bnxt.cpp
 )
+endif()

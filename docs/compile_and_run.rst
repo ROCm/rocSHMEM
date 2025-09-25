@@ -15,10 +15,10 @@ Compiling and linking with rocSHMEM
 
 rocSHMEM is a library that can be statically linked to your application during compilation with ``hipcc``. For more information, see :doc:`HIPCC <hipcc:index>`.
 
-When compiling your application with ``hipcc``, you must include the rocSHMEM header files and the rocSHMEM library. 
+When compiling your application with ``hipcc``, you must include the rocSHMEM header files and the rocSHMEM library.
 Because rocSHMEM depends on MPI (Message Passing Interface), you must manually add the arguments for MPI linkage instead of using ``mpicc``.
 
-When using ``hipcc`` directly without a build system, it's recommended to perform the compilation and linking steps separately. 
+When using ``hipcc`` directly without a build system, it's recommended to perform the compilation and linking steps separately.
 
 Example compile and link commands are provided at the top of the example files in the ``examples`` directory:
 
@@ -36,13 +36,13 @@ Example compile and link commands are provided at the top of the example files i
     $OPENMPI_UCX_INSTALL_DIR/lib/libmpi.so                                        \
     -L/opt/rocm/lib -lamdhip64 -lhsa-runtime64
 
-If your project uses CMake, see 
+If your project uses CMake, see
 `Using CMake with AMD ROCm <https://rocmdocs.amd.com/en/latest/conceptual/cmake-packages.html>`_.
 
 Running a rocSHMEM application
 --------------------------
 
-Applications using rocSHMEM typically deploy multiple processes, usually one per GPU.  
+Applications using rocSHMEM typically deploy multiple processes, usually one per GPU.
 The MPI launcher, for example, ``mpiexec`` with Open MPI, is used to start the required number
 of processes. For example, to launch two ``getmem`` example processes (available when compiled from source):
 
@@ -87,3 +87,6 @@ You can control the behavior of rocSHMEM by using the following environment vari
     * - ROCSHMEM_RO_DISABLE_IPC
       - 0
       - Defines whether to force using the RO conduit even when IPC is available.
+    * - ROCSHMEM_GDA_ALTERNATE_QP_PORTS
+      - 1
+      - Enables/Disables having QPs alternate their mappings across rocSHMEM contexts. This helps saturate bandwidth on multiport bonded interfaces.
