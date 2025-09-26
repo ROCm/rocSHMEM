@@ -222,7 +222,7 @@ __device__ int QueuePair::poll_cq() {
   return 0;
 }
 
-__device__ void QueuePair::quiet() {
+__device__ void QueuePair::bnxt_quiet() {
   uint64_t active_lane_mask;
   uint8_t active_lane_id;
 
@@ -238,7 +238,7 @@ __device__ void QueuePair::quiet() {
   }
 }
 
-__device__ void QueuePair::post_wqe_rma(int pe, int32_t length, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
+__device__ void QueuePair::bnxt_post_wqe_rma(int pe, int32_t length, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
   uint64_t active_lane_mask;
   uint8_t active_lane_count;
   uint8_t active_lane_id;
@@ -331,8 +331,8 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t length, uintptr_t *laddr
   }
 }
 
-__device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t length, uintptr_t *raddr, uint8_t opcode,
-                                            int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
+__device__ uint64_t QueuePair::bnxt_post_wqe_amo(int pe, int32_t length, uintptr_t *raddr, uint8_t opcode,
+                                                 int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
   uint64_t active_lane_mask;
   uint8_t active_lane_count;
   uint8_t active_lane_id;
