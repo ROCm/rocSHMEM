@@ -21,32 +21,16 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 ###############################################################################
-
-###############################################################################
-# ADD ROCSHMEM TARGET FOR FILES IN CURRENT DIRECTORY
-###############################################################################
 target_sources(
   ${PROJECT_NAME}
   PRIVATE
-    context_gda_device.cpp
-    context_gda_device_coll.cpp
-    context_gda_host.cpp
-    backend_gda.cpp
-    gda_team.cpp
-    queue_pair.cpp
-    endian.cpp
-    segment_builder.cpp
-    topology.cpp
+    backend_gda_ionic.cpp
 )
 
-find_package(IBVerbs REQUIRED)
-
-target_link_libraries(
+if(GDA_IONIC)
+target_sources(
   ${PROJECT_NAME}
-  PUBLIC
-    IBVerbs::verbs
-    numa
+  PRIVATE
+    queue_pair_ionic.cpp
 )
-
-add_subdirectory(bnxt)
-add_subdirectory(ionic)
+endif()

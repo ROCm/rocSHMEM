@@ -650,10 +650,11 @@ void GDABackend::cleanup_ibv() {
 void GDABackend::autodetect_dv_libs() {
   int ret;
 
-#ifdef GDA_IONIC
-  gda_vendor = GDAVendor::IONIC;
-#endif
+  //TODO: environment variable selection/deselection
+  //this hardcoded init order will always prefer BNXT>IONIC>MLX5
+  //if all three drivers are installed
 
+#if defined(GDA_BXNT)
   if (gda_vendor == GDAVendor::NONE) {
     ret = bnxt_dv_dl_init();
 
@@ -663,7 +664,21 @@ void GDABackend::autodetect_dv_libs() {
       DPRINTF("Initializing rocSHMEM BNXT GDA support failed\n");
     }
   }
+#endif // defined(GDA_BNXT)
 
+#if defined(GDA_IONIC)
+  if (gda_vendor == GDAVendor::NONE) {
+    ret = ionic_dv_dl_init();
+
+    if (ret == ROCSHMEM_SUCCESS) {
+      gda_vendor = GDAVendor::IONIC;
+    } else {
+      DPRINTF("Initializing rocSHMEM IONIC GDA support failed\n");
+    }
+  }
+#endif // defined(GDA_IONIC)
+
+#if defined(GDA_MLX5)
   if (gda_vendor == GDAVendor::NONE) {
     ret = mlx5_dv_dl_init();
 
@@ -673,6 +688,7 @@ void GDABackend::autodetect_dv_libs() {
       DPRINTF("Initializing rocSHMEM MLX5 GDA support failed\n");
     }
   }
+#endif // defined(GDA_MLX5)
 
   if (gda_vendor == GDAVendor::NONE) {
     printf("Initializing rocSHMEM with IONIC, BNXT, or MLX5 GDA support failed\n");
@@ -1057,19 +1073,9 @@ void GDABackend::create_parent_domain() {
   CHECK_NNULL(pd_parent, "ibv_alloc_parent_domain");
   dump_ibv_pd(pd_parent);
 
-#ifdef GDA_IONIC
-  ionic_dv_pd_set_sqcmb(pd_parent, false, false, false);
-  ionic_dv_pd_set_rqcmb(pd_parent, false, false, false);
-
-  for (int uxdma_i = 0; uxdma_i < 2; ++uxdma_i) {
-    pd_uxdma[uxdma_i] = ibv_alloc_parent_domain(context, &pattr);
-    CHECK_NNULL(pd_uxdma[uxdma_i], "ibv_alloc_parent_domain (uxdma)");
-
-    ionic_dv_pd_set_sqcmb(pd_uxdma[uxdma_i], false, false, false);
-    ionic_dv_pd_set_rqcmb(pd_uxdma[uxdma_i], false, false, false);
-    ionic_dv_pd_set_udma_mask(pd_uxdma[uxdma_i], 1u << uxdma_i);
+  if (gda_vendor == GDAVendor::IONIC) {
+    ionic_setup_parent_domain(&pattr);
   }
-#endif /* GDA_IONIC */
 }
 
 void GDABackend::create_cqs(int cqe) {
@@ -1102,51 +1108,6 @@ void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   int hip_dev_id{-1};
   CHECK_HIP(hipGetDevice(&hip_dev_id));
 
-#ifdef GDA_IONIC
-  ionic_dv_ctx dvctx;
-  ionic_dv_get_ctx(&dvctx, context);
-
-  void* gpu_db_page = nullptr;
-  rocm_memory_lock_to_fine_grain(dvctx.db_page, 0x1000, &gpu_db_page, hip_dev_id);
-
-  uint64_t *db_page_u64 = reinterpret_cast<uint64_t*>(dvctx.db_page);
-  uint64_t *gpu_db_page_u64 = reinterpret_cast<uint64_t*>(gpu_db_page);
-
-  uint64_t *gpu_db_ptr = &gpu_db_page_u64[dvctx.db_ptr - db_page_u64];
-
-  gpu_db_page = gpu_db_page;
-  gpu_db_cq = &gpu_db_ptr[dvctx.cq_qtype];
-  gpu_db_sq = &gpu_db_ptr[dvctx.sq_qtype];
-
-  uint8_t udma_idx = ionic_dv_qp_get_udma_idx(qps[conn_num]);
-
-  ionic_dv_cq dvcq;
-  ionic_dv_get_cq(&dvcq, cqs[conn_num], udma_idx);
-
-  gpu_qp->cq_dbreg = gpu_db_cq;
-  gpu_qp->cq_dbval = dvcq.q.db_val;
-  gpu_qp->cq_mask = dvcq.q.mask;
-
-  gpu_qp->ionic_cq_buf = reinterpret_cast<ionic_v1_cqe*>(dvcq.q.ptr);
-
-  ionic_dv_qp dvqp;
-  ionic_dv_get_qp(&dvqp, qps[conn_num]);
-
-  gpu_qp->sq_dbreg = gpu_db_sq;
-  gpu_qp->sq_dbval = dvqp.sq.db_val;
-  gpu_qp->sq_mask = dvqp.sq.mask;
-  gpu_qp->ionic_sq_buf = reinterpret_cast<ionic_v1_wqe *>(dvqp.sq.ptr);
-
-  strncpy(gpu_qp->dev_name,
-          qps[conn_num]->context->device->name,
-          sizeof(gpu_qp->dev_name));
-  gpu_qp->dev_name[sizeof(gpu_qp->dev_name) - 1] = 0;
-
-  gpu_qp->qp_num = qps[conn_num]->qp_num;
-  gpu_qp->lkey = heap_mr->lkey;
-  gpu_qp->rkey = heap_rkey[conn_num % num_pes];
-  gpu_qp->inline_threshold = 32;
-#endif /* GDA_IONIC */
   if (gda_vendor == GDAVendor::MLX5) {
     mlx5dv_cq cq_out;
     mlx5dv_obj mlx_obj;

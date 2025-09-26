@@ -40,31 +40,23 @@
 #include "gda/bnxt/provider_gda_bnxt.hpp"
 #include "gda/mlx5/provider_gda_mlx5.hpp"
 
-struct bnxtdv_funcs_t {
-  int (*init_obj)(struct bnxt_re_dv_obj *obj, uint64_t obj_type);
-  struct ibv_qp* (*create_qp)(struct ibv_pd *pd,
-                              struct bnxt_re_dv_qp_init_attr *qp_attr);
-  int (*destroy_qp)(struct ibv_qp *ibvqp);
-  int (*modify_qp)(struct ibv_qp *ibv_qp, struct ibv_qp_attr *attr,
-                   int attr_mask, uint32_t type, uint32_t value);
-  int (*qp_mem_alloc)(struct ibv_pd *ibvpd,
-                      struct ibv_qp_init_attr *attr,
-                      struct bnxt_re_dv_qp_mem_info *dv_qp_mem);
-  struct ibv_cq* (*create_cq)(struct ibv_context *ibvctx,
-                              struct bnxt_re_dv_cq_init_attr *cq_attr);
-  int (*destroy_cq)(struct ibv_cq *ibv_cq);
-  void* (*cq_mem_alloc)(struct ibv_context *ibvctx, int num_cqe,
-                        struct bnxt_re_dv_cq_attr *cq_attr);
-  void* (*umem_reg)(struct ibv_context *ibvctx,
-                    struct bnxt_re_dv_umem_reg_attr *in);
-  int (*umem_dereg)(void *umem_handle);
-  int (*get_default_db_region)(struct ibv_context *ibvctx,
-                               struct bnxt_re_dv_db_region_attr *out);
-};
+/* Helper Macros for handling dynamic libraries */
+#define PPCAT_NX(prefix, func_name) prefix##func_name
+#define PPCAT(prefix, func_name) PPCAT_NX(prefix, func_name)
 
-struct mlx5dv_funcs_t {
-  int (*init_obj)(struct mlx5dv_obj *obj, uint64_t obj_type);
-};
+#define STRINGIFY_NX(name) #name
+#define STRINGIFY(name) STRINGIFY_NX(name)
+
+#define DLSYM_HELPER(func_struct, prefix, handle, func_name)                                \
+do {                                                                                        \
+  *(void **) (&func_struct.func_name) = dlsym(handle, STRINGIFY(PPCAT(prefix, func_name))); \
+  if (!func_struct.func_name) {                                                             \
+    DPRINTF("Failed to find function %s \n",  STRINGIFY(PPCAT(prefix, func_name)));         \
+    dlclose(handle);                                                                        \
+    handle = nullptr;                                                                       \
+    return ROCSHMEM_ERROR;                                                                  \
+  }                                                                                         \
+} while (0)
 
 namespace rocshmem {
 
@@ -325,6 +317,7 @@ class GDABackend : public Backend {
 
   void initialize_gpu_qp(QueuePair* qp, int conn_num);
   void bnxt_initialize_gpu_qp(QueuePair* qp, int conn_num);
+  void ionic_initialize_gpu_qp(QueuePair* qp, int conn_num);
 
   /**
    * @brief Setup InfiniBand Resources
@@ -404,6 +397,7 @@ class GDABackend : public Backend {
   static void pd_release(ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type);
 
   void create_parent_domain();
+  void ionic_setup_parent_domain(struct ibv_parent_domain_init_attr* pattr);
 
   void setup_gpu_qps();
   void cleanup_gpu_qps();
@@ -536,6 +530,22 @@ class GDABackend : public Backend {
    * @brief initialize function table for MLNX direct verbs support
    */
   int mlx5_dv_dl_init();
+
+  /**
+   * @brief structures holding the function pointers to the direct verbs functionality
+   * of each network driver.
+   */
+  ionicdv_funcs_t ionic_dv;
+
+  /**
+   * @brief handle used for the dlopen of the IONIC library
+   */
+  void *ionicdv_handle_{nullptr};
+
+  /**
+   * @brief initialize function table for IONIC direct verbs support
+   */
+  int ionic_dv_dl_init();
 };
 
 }  // namespace rocshmem
