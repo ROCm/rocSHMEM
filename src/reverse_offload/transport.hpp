@@ -25,13 +25,12 @@
 #ifndef LIBRARY_SRC_REVERSE_OFFLOAD_TRANSPORT_HPP_
 #define LIBRARY_SRC_REVERSE_OFFLOAD_TRANSPORT_HPP_
 
-#include <mpi.h>
-
 #include <cassert>
 
 #include "rocshmem/rocshmem.hpp"
 #include "backend_proxy.hpp"
 #include "ro_net_team.hpp"
+#include "mpi_instance.hpp"
 
 namespace rocshmem {
 

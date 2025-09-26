@@ -276,15 +276,18 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   return ROCSHMEM_SUCCESS;
 }
 
+#if defined(HAVE_EXTERNAL_MPI)
 [[maybe_unused]] __host__ void rocshmem_init(MPI_Comm comm) {
   library_init(comm);
 }
+#endif
 
 [[maybe_unused]] __host__ void rocshmem_init() {
   MPIInstance::mpilib_dl_init();
   library_init(MPI_COMM_WORLD);
 }
 
+#if defined(HAVE_EXTERNAL_MPI)
 [[maybe_unused]] __host__ int rocshmem_init_thread(
     [[maybe_unused]] int required, int *provided, MPI_Comm comm) {
   if (comm == static_cast<MPI_Comm>(0) || comm == MPI_COMM_NULL) {
@@ -295,6 +298,7 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
   return ROCSHMEM_SUCCESS;
 }
+#endif
 
 [[maybe_unused]] __host__ int rocshmem_my_pe() {
   if (backend != nullptr) {

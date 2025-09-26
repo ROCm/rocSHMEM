@@ -25,11 +25,10 @@
 #ifndef LIBRARY_SRC_REVERSE_OFFLOAD_RO_TEAM_PROXY_HPP_
 #define LIBRARY_SRC_REVERSE_OFFLOAD_RO_TEAM_PROXY_HPP_
 
-#include <mpi.h>
-
 #include "device_proxy.hpp"
 #include "ro_net_team.hpp"
 #include "team_info_proxy.hpp"
+#include "mpi_instance.hpp"
 
 namespace rocshmem {
 
