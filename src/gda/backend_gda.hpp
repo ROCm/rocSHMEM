@@ -503,7 +503,7 @@ class GDABackend : public Backend {
    * @brief structures holding the function pointers to the direct verbs functionality
    * of each network driver.
    */
-  bnxtdv_funcs_t bnxtdv_ftable_;
+  bnxtdv_funcs_t bnxt_re_dv;
 
   /**
    * @brief handle used for the dlopen of the BCOM library
@@ -519,7 +519,7 @@ class GDABackend : public Backend {
    * @brief structures holding the function pointers to the direct verbs functionality
    * of each network driver.
    */
-  mlx5dv_funcs_t mlx5dv_ftable_;
+  mlx5dv_funcs_t mlx5dv;
 
   /**
    * @brief handle used for the dlopen of the MLX5 library

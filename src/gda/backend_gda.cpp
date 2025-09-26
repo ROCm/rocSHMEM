@@ -539,7 +539,7 @@ int GDABackend::mlx5_dv_dl_init () {
     return ROCSHMEM_ERROR;
   }
 
-  DLSYM_HELPER(mlx5dv_ftable_, mlx5dv_, mlx5dv_handle_, init_obj);
+  DLSYM_HELPER(mlx5dv, mlx5dv_, mlx5dv_handle_, init_obj);
   return ROCSHMEM_SUCCESS;
 }
 
@@ -599,22 +599,22 @@ void GDABackend::cleanup_ibv() {
     CHECK_HIP(hipHostUnregister(db_region_attr.dbr));
 
     for (int i = 0; i < qps.size(); i++) {
-      err = bnxtdv_ftable_.destroy_qp(qps[i]);
+      err = bnxt_re_dv.destroy_qp(qps[i]);
       CHECK_ZERO(err, "bnxt_re_dv_destroy_qp");
 
-      err = bnxtdv_ftable_.umem_dereg(bnxt_qps[i].attr.rq_umem_handle);
+      err = bnxt_re_dv.umem_dereg(bnxt_qps[i].attr.rq_umem_handle);
       CHECK_ZERO(err, "bnxt_re_dv_umem_dereg (RQ)");
 
-      err = bnxtdv_ftable_.umem_dereg(bnxt_qps[i].attr.sq_umem_handle);
+      err = bnxt_re_dv.umem_dereg(bnxt_qps[i].attr.sq_umem_handle);
       CHECK_ZERO(err, "bnxt_re_dv_umem_dereg (SQ)");
 
       CHECK_HIP(hipFree(bnxt_qps[i].sq_buf));
       CHECK_HIP(hipFree(bnxt_qps[i].rq_buf));
 
-      err = bnxtdv_ftable_.destroy_cq(cqs[i]);
+      err = bnxt_re_dv.destroy_cq(cqs[i]);
       CHECK_ZERO(err, "bnxt_re_dv_destroy_cq");
 
-      err = bnxtdv_ftable_.umem_dereg(bnxt_cqs[i].umem_handle);
+      err = bnxt_re_dv.umem_dereg(bnxt_cqs[i].umem_handle);
       CHECK_ZERO(err, "bnxt_re_dv_umem_dereg");
 
       CHECK_HIP(hipFree(bnxt_cqs[i].buf));
@@ -860,7 +860,7 @@ void GDABackend::modify_qps_reset_to_init() {
 
   for (int i =0; i < qps.size() ; i++) {
     if (gda_vendor == GDAVendor::BNXT) {
-      err = bnxtdv_ftable_.modify_qp(qps[i], &attr, attr_mask, 0, 0);
+      err = bnxt_re_dv.modify_qp(qps[i], &attr, attr_mask, 0, 0);
     } else {
       err = ibv_modify_qp(qps[i], &attr, attr_mask);
     }
@@ -912,7 +912,7 @@ void GDABackend::modify_qps_init_to_rtr() {
     }
 
     if (gda_vendor == GDAVendor::BNXT) {
-      err = bnxtdv_ftable_.modify_qp(qps[i], &attr, attr_mask, 0, 0);
+      err = bnxt_re_dv.modify_qp(qps[i], &attr, attr_mask, 0, 0);
     } else {
       err = ibv_modify_qp(qps[i], &attr, attr_mask);
     }
@@ -948,7 +948,7 @@ void GDABackend::modify_qps_rtr_to_rts() {
     attr.sq_psn = dest_info[i].psn;
 
     if (gda_vendor == GDAVendor::BNXT) {
-      err = bnxtdv_ftable_.modify_qp(qps[i], &attr, attr_mask, 0, 0);
+      err = bnxt_re_dv.modify_qp(qps[i], &attr, attr_mask, 0, 0);
     } else {
       err = ibv_modify_qp(qps[i], &attr, attr_mask);
     }
@@ -1113,7 +1113,7 @@ void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
     mlx5dv_obj mlx_obj;
     mlx_obj.cq.in = cqs[conn_num];
     mlx_obj.cq.out = &cq_out;
-    mlx5dv_ftable_.init_obj(&mlx_obj, MLX5DV_OBJ_CQ);
+    mlx5dv.init_obj(&mlx_obj, MLX5DV_OBJ_CQ);
     dump_mlx5dv_cq(&cq_out, conn_num);
 
     /*
@@ -1136,7 +1136,7 @@ void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
     mlx5dv_qp qp_out;
     mlx_obj.qp.in = qps[conn_num];
     mlx_obj.qp.out = &qp_out;
-    mlx5dv_ftable_.init_obj(&mlx_obj, MLX5DV_OBJ_QP);
+    mlx5dv.init_obj(&mlx_obj, MLX5DV_OBJ_QP);
     dump_mlx5dv_qp(&qp_out, conn_num);
 
     /*
