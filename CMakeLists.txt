@@ -108,6 +108,7 @@ include(cmake/rocm_local_targets.cmake)
 set(DEFAULT_GPUS
     gfx90a:xnack-;
     gfx90a:xnack+;
+    gfx1100;
     gfx942)
 
 if(${ROCM_MAJOR_VERSION} GREATER 6)
