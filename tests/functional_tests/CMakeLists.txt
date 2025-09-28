@@ -71,9 +71,6 @@ target_sources(
 ###############################################################################
 # ROCSHMEM
 ###############################################################################
-include(${CMAKE_SOURCE_DIR}/cmake/find_pmix.cmake)
-check_pmix()
-
 if (BUILD_TESTS_ONLY)
   #TODO check that build_test_only still works with external-mpi
   #find_package(MPI REQUIRED)

@@ -151,9 +151,21 @@ if (NOT BUILD_TESTS_ONLY)
   #############################################################################
   # PACKAGE DEPENDENCIES
   #############################################################################
-  if (USE_EXTERNAL_MPI)
-    find_package(MPI REQUIRED)
+  find_package(MPI)
+  if (MPI_FOUND)
+    set(HAVE_EXTERNAL_MPI ON)
+  else()
+    set(HAVE_EXTERNAL_MPI OFF)
+    set(BUILD_FUNCTIONAL_TESTS OFF)
+    set(BUILD_UNIT_TESTS OFF)
   endif()
+
+  if (USE_EXTERNAL_MPI)
+    if(NOT HAVE_EXTERNAL_MPI)
+      message(FATAL_ERROR "External MPI support requested but MPI support not found. Build Aborted")
+    endif()
+  endif()
+
   find_package(hip REQUIRED PATHS /opt/rocm)
   find_package(hsa-runtime64 REQUIRED)
 
@@ -185,7 +197,7 @@ if (NOT BUILD_TESTS_ONLY)
   target_link_libraries(
     ${PROJECT_NAME}
     PUBLIC
-      $<$<BOOL:${USE_EXTERNAL_MPI}>:MPI::MPI_CXX>
+      $<$<BOOL:${HAVE_EXTERNAL_MPI}>:MPI::MPI_CXX>
       Threads::Threads
       hip::device
       hip::host

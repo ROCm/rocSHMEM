@@ -46,7 +46,7 @@ set(EXAMPLE_SOURCES
   rocshmem_put_signal_test.cc
 )
 
-if (TARGET MPI::MPI_CXX)
+if (HAVE_EXTERNAL_MPI)
   list(APPEND EXAMPLE_SOURCES
     rocshmem_init_attr_test.cc)
 endif()
