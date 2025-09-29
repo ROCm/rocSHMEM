@@ -121,6 +121,10 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
     case PutNBIMRTestType:
       min_msg_size = max_msg_size;
       break;
+    case PTestType:
+    case GTestType:
+      min_msg_size = 1;
+      max_msg_size = 1;
     default:
       break;
   }

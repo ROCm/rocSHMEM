@@ -82,16 +82,14 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
         rocshmem_ctx_putmem_nbi(ctx, dest, source, size, 1);
         break;
       case PTestType:
-        for (int s = 0; s < size; s++) {
-          char val = source[s];
-          rocshmem_ctx_char_p(ctx, &dest[s], val, 1);
+        {
+          /* Assigment required to verify we can send non-symetric memory */
+          char val = *source;
+          rocshmem_ctx_char_p(ctx, dest, val, 1);
         }
         break;
       case GTestType:
-        for (int s = 0; s < size; s++) {
-          char ret = rocshmem_ctx_char_g(ctx, &source[s], 1);
-          dest[s] = ret;
-        }
+        *dest = rocshmem_ctx_char_g(ctx, source, 1);
         break;
       default:
         break;
