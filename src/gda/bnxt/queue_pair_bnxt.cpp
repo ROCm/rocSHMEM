@@ -377,6 +377,7 @@ __device__ uint64_t QueuePair::bnxt_post_wqe_amo(int pe, int32_t length, uintptr
 
       /* Populate AMO Segment */
       amo.swp_dt = atomic_data;
+      amo.cmp_dt = atomic_cmp;
 
       /* Populate SG Segment - (Return address of atomic) */
       if (fetching) {
