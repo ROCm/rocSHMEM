@@ -39,7 +39,16 @@ class SymmetricHeapTestFixture : public ::testing::Test
     /**
      * @brief Symmetric heap object
      */
-    SymmetricHeap symmetric_heap_ {MPI_COMM_WORLD};
+    SymmetricHeap *symmetric_heap_;
+
+    void SetUp() override {
+      MPIInstance::mpilib_dl_init();
+      symmetric_heap_ = new SymmetricHeap(MPI_COMM_WORLD);
+    }
+
+    void TearDown() override {
+      MPIInstance::mpilib_dl_close();
+    }
 };
 
 } // namespace rocshmem
