@@ -24,7 +24,6 @@
 
 #include "context_ro_host.hpp"
 
-#include <mpi.h>
 
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "backend_type.hpp"

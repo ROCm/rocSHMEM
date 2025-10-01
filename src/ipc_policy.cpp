@@ -24,8 +24,6 @@
 
 #include "ipc_policy.hpp"
 
-#include <mpi.h>
-
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "backend_bc.hpp"
 #include "context_incl.hpp"
@@ -39,20 +37,20 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
    * Create an MPI communicator that deals only with local processes.
    */
   MPI_Comm shmcomm;
-  MPI_Comm_split_type(thread_comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL,
-                      &shmcomm);
+  mpilib_ftable_.Comm_split_type(thread_comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL,
+                                 &shmcomm);
 
   /*
    * Figure out how many local process there are.
    */
   int Shm_size;
-  MPI_Comm_size(shmcomm, &Shm_size);
+  mpilib_ftable_.Comm_size(shmcomm, &Shm_size);
   shm_size = Shm_size;
 
   /*
    * Figure out how this process' rank among local processes.
    */
-  MPI_Comm_rank(shmcomm, &shm_rank);
+  mpilib_ftable_.Comm_rank(shmcomm, &shm_rank);
 
   /*
    * Allocate a host-side c-array to hold the IPC handles.
@@ -73,8 +71,8 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
    * Do an all-to-all exchange with each local processing element to
    * share the symmetric heap IPC handles.
    */
-  MPI_Allgather(MPI_IN_PLACE, sizeof(hipIpcMemHandle_t), MPI_CHAR,
-                vec_ipc_handle, sizeof(hipIpcMemHandle_t), MPI_CHAR, shmcomm);
+  mpilib_ftable_.Allgather(MPI_IN_PLACE, sizeof(hipIpcMemHandle_t), MPI_CHAR,
+                           vec_ipc_handle, sizeof(hipIpcMemHandle_t), MPI_CHAR, shmcomm);
 
   /*
    * Allocate device-side array to hold the IPC symmetric heap base
@@ -114,16 +112,17 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
 
     CHECK_HIP(hipMalloc(reinterpret_cast<void**>(&pes_with_ipc_avail), shm_size * sizeof(int)));
 
-    MPI_Group thread_grp, shm_grp;
-    MPI_Comm_group(thread_comm, &thread_grp);
-    MPI_Comm_group(shmcomm, &shm_grp);
+    MPI_Group thread_grp;
+    MPI_Group shm_grp;
+    mpilib_ftable_.Comm_group(thread_comm, &thread_grp);
+    mpilib_ftable_.Comm_group(shmcomm, &shm_grp);
     int *seqranks = new int[shm_size];
     for(int i = 0; i < shm_size; i++)
       seqranks[i] = i;
-    MPI_Group_translate_ranks(shm_grp, shm_size, seqranks, thread_grp, pes_with_ipc_avail);
+    mpilib_ftable_.Group_translate_ranks(shm_grp, shm_size, seqranks, thread_grp, pes_with_ipc_avail);
     delete [] seqranks;
-    MPI_Group_free(&shm_grp);
-    MPI_Group_free(&thread_grp);
+    mpilib_ftable_.Group_free(&shm_grp);
+    mpilib_ftable_.Group_free(&thread_grp);
   }
 }
 

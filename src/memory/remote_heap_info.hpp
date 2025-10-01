@@ -26,10 +26,10 @@
 #define LIBRARY_SRC_MEMORY_REMOTE_HEAP_INFO_HPP_
 
 #include <hip/hip_runtime_api.h>
-#include <mpi.h>
 
 #include <vector>
 
+#include "mpi_instance.hpp"
 #include "hip_allocator.hpp"
 #include "window_info.hpp"
 #include "bootstrap/bootstrap.hpp"
@@ -53,10 +53,10 @@ class CommunicatorMPI {
    * @brief Primary constructor
    */
   CommunicatorMPI(char* heap_base, size_t heap_size,
-                  MPI_Comm comm = MPI_COMM_WORLD)
+                  MPI_Comm comm)
     : comm_{comm} {
-    MPI_Comm_rank(comm_, &my_pe_);
-    MPI_Comm_size(comm_, &num_pes_);
+    mpilib_ftable_.Comm_rank(comm_, &my_pe_);
+    mpilib_ftable_.Comm_size(comm_, &num_pes_);
     heap_window_info_ = WindowInfoMPI(comm_, heap_base, heap_size);
   }
 
@@ -78,14 +78,14 @@ class CommunicatorMPI {
   /**
    * @brief Performs MPI_Barrier
    */
-  void barrier() { MPI_Barrier(comm_); }
+  void barrier() { mpilib_ftable_.Barrier(comm_); }
 
   /**
    * @brief Performs MPI_Allgather on recvbuf
    */
   void allgather(void* recvbuf) {
-    MPI_Allgather(MPI_IN_PLACE, sizeof(void*), MPI_CHAR, recvbuf,
-                  sizeof(void*), MPI_CHAR, comm_);
+    mpilib_ftable_.Allgather(MPI_IN_PLACE, sizeof(void*), MPI_CHAR, recvbuf,
+                             sizeof(void*), MPI_CHAR, comm_);
   }
 
   /**
@@ -206,7 +206,7 @@ class RemoteHeapInfo {
    * @param[in] The total number of processing elements
    */
   RemoteHeapInfo(char* heap_ptr, size_t heap_size,
-                 MPI_Comm comm = MPI_COMM_WORLD)
+                 MPI_Comm comm)
     : communicator_{heap_ptr, heap_size, comm} {
     init(heap_ptr, heap_size);
   }

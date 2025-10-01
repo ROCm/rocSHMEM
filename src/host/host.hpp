@@ -34,8 +34,6 @@
  * any backend type.
  */
 
-#include <mpi.h>
-
 #include <map>
 
 #include "rocshmem/rocshmem.hpp"
@@ -43,6 +41,7 @@
 #include "memory/symmetric_heap.hpp"
 #include "memory/window_info.hpp"
 #include "bootstrap/bootstrap.hpp"
+#include "mpi_instance.hpp"
 
 namespace rocshmem {
 
@@ -268,17 +267,17 @@ class HostInterface {
       if (i == my_pe_) {
         continue;
       }
-      MPI_Put(&flush_val, 1, MPI_UNSIGNED, i, 0, 1, MPI_UNSIGNED, hdp_win);
+      mpilib_ftable_.Put(&flush_val, 1, MPI_UNSIGNED, i, 0, 1, MPI_UNSIGNED, hdp_win);
     }
-    MPI_Win_flush_all(hdp_win);
+    mpilib_ftable_.Win_flush_all(hdp_win);
 #endif // USE_HDP_FLUSH
   }
 
   __host__ void flush_remote_hdp(int pe) {
 #if defined USE_HDP_FLUSH
     unsigned flush_val{HdpPolicy::HDP_FLUSH_VAL};
-    MPI_Put(&flush_val, 1, MPI_UNSIGNED, pe, 0, 1, MPI_UNSIGNED, hdp_win);
-    MPI_Win_flush(pe, hdp_win);
+    mpilib_ftable_.Put(&flush_val, 1, MPI_UNSIGNED, pe, 0, 1, MPI_UNSIGNED, hdp_win);
+    mpilib_ftable_.Win_flush(pe, hdp_win);
 #endif // USE_HDP_FLUSH
   }
 

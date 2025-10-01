@@ -26,12 +26,12 @@
 #define LIBRARY_SRC_IPC_POLICY_HPP_
 
 #include <hip/hip_runtime.h>
-#include <mpi.h>
 
 #include <atomic>
 #include <vector>
 
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
+#include "mpi_instance.hpp"
 #include "memory/hip_allocator.hpp"
 #include "util.hpp"
 #include "bootstrap/bootstrap.hpp"

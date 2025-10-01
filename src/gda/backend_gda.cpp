@@ -24,14 +24,15 @@
 
 #include <cstring>
 
-#include "backend_gda.hpp"
-#include "gda_team.hpp"
-#include "util.hpp"
-#include "topology.hpp"
-
 #include <hip/hip_runtime.h>
 #include <cstdlib>
 #include <cassert>
+
+#include "backend_gda.hpp"
+#include "mpi_instance.hpp"
+#include "gda_team.hpp"
+#include "util.hpp"
+#include "topology.hpp"
 
 namespace rocshmem {
 
@@ -303,7 +304,7 @@ void GDABackend::create_new_team([[maybe_unused]] Team *parent_team,
    * the pool of available work arrays.
    */
   if (team_comm != MPI_COMM_NULL) {
-    NET_CHECK(MPI_Allreduce(team_pool_bitmask_, team_reduced_bitmask_, team_bitmask_size_,
+    NET_CHECK(mpilib_ftable_.Allreduce(team_pool_bitmask_, team_reduced_bitmask_, team_bitmask_size_,
                             MPI_CHAR, MPI_BAND, team_comm));
   } else {
     Allreduce_char_BAND (team_pool_bitmask_, team_reduced_bitmask_, team_bitmask_size_, parent_team);
@@ -361,7 +362,7 @@ void GDABackend::dump_backend_stats() {
 
 __host__ void GDABackend::global_exit(int status) {
   if (backend_comm != MPI_COMM_NULL)
-    MPI_Abort(backend_comm, status);
+    mpilib_ftable_.Abort(backend_comm, status);
   else
     abort();
 }
@@ -536,7 +537,7 @@ void GDABackend::setup_teams() {
 
 void GDABackend::rte_barrier() {
   if (backend_comm != MPI_COMM_NULL) {
-    NET_CHECK(MPI_Barrier(backend_comm));
+    NET_CHECK(mpilib_ftable_.Barrier(backend_comm));
   } else {
     backend_bootstr->barrier();
   }
@@ -668,7 +669,7 @@ void GDABackend::exchange_qp_dest_info() {
 
   for (int i = 0; i < maximum_num_contexts_ + 1; i++) {
     if (backend_comm != MPI_COMM_NULL) {
-      MPI_Alltoall(MPI_IN_PLACE, sizeof(dest_info_t), MPI_CHAR, dest_info.data() + i * num_pes, sizeof(dest_info_t), MPI_CHAR, backend_comm);
+      mpilib_ftable_.Alltoall(MPI_IN_PLACE, sizeof(dest_info_t), MPI_CHAR, dest_info.data() + i * num_pes, sizeof(dest_info_t), MPI_CHAR, backend_comm);
     } else {
       Alltoall_char_inplace(reinterpret_cast<char*>(dest_info.data() + i * num_pes), sizeof(dest_info_t), ROCSHMEM_TEAM_WORLD);
     }
@@ -695,7 +696,7 @@ void GDABackend::setup_heap_memory_rkey() {
   CHECK_HIP(hipStreamSynchronize(stream));
 
   if (backend_comm != MPI_COMM_NULL)
-    MPI_Allgather(MPI_IN_PLACE, sizeof(uint32_t), MPI_CHAR, host_rkey_cpy, sizeof(uint32_t), MPI_CHAR, backend_comm);
+    mpilib_ftable_.Allgather(MPI_IN_PLACE, sizeof(uint32_t), MPI_CHAR, host_rkey_cpy, sizeof(uint32_t), MPI_CHAR, backend_comm);
   else
     backend_bootstr->allGather(host_rkey_cpy, sizeof(uint32_t));
 
