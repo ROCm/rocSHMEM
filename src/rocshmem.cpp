@@ -39,14 +39,14 @@
 #if defined(USE_GDA)
 #include "gda/backend_gda.hpp"
 #include "gda/context_gda_tmpl_host.hpp"
-#elif defined(USE_RO)
+#endif
+#if defined(USE_RO)
 #include "reverse_offload/backend_ro.hpp"
 #include "reverse_offload/context_ro_tmpl_host.hpp"
-#elif defined(USE_IPC)
+#endif
+#if defined(USE_IPC)
 #include "ipc/backend_ipc.hpp"
 #include "ipc/context_ipc_tmpl_host.hpp"
-#else
-#error "Select one backend among USE_RO, USE_IPC, USE_GDA"
 #endif
 #include "mpi_instance.hpp"
 #include "team.hpp"
@@ -81,6 +81,35 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
  * Begin Host Code
  **/
 
+#if defined(USE_GDA) && defined(USE_RO) && defined(USE_IPC)
+static BackendType select_backend_type() {
+  BackendType type;
+
+  /* Check whether the user explicitely requests a particular backend type */
+  char *envstr = rocshmem_env_.get_backend();
+  if (envstr != nullptr) {
+    if (strncasecmp(env, "ROCSHMEM_BACKEND_GDA", 21)) {
+      return BackendType::GDA;
+    }
+    if (strncasecmp(env, "ROCSHMEM_BACKEND_RO", 20)) {
+      return BackendType::RO;
+    }
+    if (strncasecmp(env, "ROCSHMEM_BACKEND_IPC", 21)) {
+      return BackendType::IPC;
+    }
+  }
+
+  if (BackendGDA::backend_can_run() == ROCSHMEM_SUCCESS) {
+    return BackendType::GDA;
+  }
+  if (MPIInstance::mpilib_dl_init() == ROCSHMEM_SUCCESS) {
+    return BackendType::RO;
+  }
+
+  return BackendType::IPC;
+}
+#endif
+
 [[maybe_unused]] __host__ void inline library_init(MPI_Comm comm) {
   assert(!backend);
   int count = 0;
@@ -97,7 +126,23 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   ret = MPIInstance::mpilib_dl_init();
   mpi_instance = new MPIInstance(comm);
 
-#if defined(USE_GDA)
+#if defined(USE_GDA) && defined(USE_RO) && defined(USE_IPC)
+  BackendType type = select_backend_type();
+  switch (type) {
+  case BackendType::GDA_BACKEND:
+    CHECK_HIP(hipHostMalloc(&backend, sizeof(GDABackend)));
+    backend = new (backend) GDABackend(comm);
+    break;
+  case BackendType::RO_BACKEND:
+    CHECK_HIP(hipHostMalloc(&backend, sizeof(ROBackend)));
+    backend = new (backend) ROBackend(comm);
+    break;
+  case BackendType::IPC_BACKEND:
+    CHECK_HIP(hipHostMalloc(&backend, sizeof(IPCBackend)));
+    backend = new (backend) IPCBackend(comm);
+    break;
+  }
+#elif defined(USE_GDA)
   CHECK_HIP(hipHostMalloc(&backend, sizeof(GDABackend)));
   backend = new (backend) GDABackend(comm);
 #elif defined(USE_RO)
@@ -189,12 +234,36 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
   rocm_init();
 
-#if defined(USE_GDA)
+#if defined(USE_GDA) && defined(USE_RO) && defined(USE_IPC)
+  BackendType type = select_backend_type();
+  switch (type) {
+  case BackendType::GDA_BACKEND:
+    CHECK_HIP(hipHostMalloc(&backend, sizeof(GDABackend)));
+    backend = new (backend) GDABackend(comm);
+    break;
+  case BackendType::RO_BACKEND:
+    mpi_instance = new MPIInstance(MPI_COMM_WORLD);
+    CHECK_HIP(hipHostMalloc(&backend, sizeof(ROBackend)));
+    backend = new (backend) ROBackend(comm);
+    break;
+  case BackendType::IPC_BACKEND:
+    CHECK_HIP(hipHostMalloc(&backend, sizeof(IPCBackend)));
+    backend = new (backend) IPCBackend(comm);
+    break;
+  }
+#elif defined(USE_GDA)
   CHECK_HIP(hipHostMalloc(&backend, sizeof(GDABackend)));
   backend = new (backend) GDABackend(bootstrap);
 #elif defined(USE_RO)
-  printf("RO Backend requires MPI library to be initialized, even when using uniqueId initializations!\n");
-  abort();
+  int ret;
+  ret = MPIInstance::mpilib_dl_init();
+  if (ret != MPI_SUCCESS) {
+    printf("RO Backend requires MPI library to be initialized, even when using uniqueId initializations!\n");
+    abort();
+  }
+  mpi_instance = new MPIInstance(MPI_COMM_WORLD);
+  CHECK_HIP(hipHostMalloc(&backend, sizeof(ROBackend)));
+  backend = new (backend) ROBackend(comm);
 #elif defined(USE_IPC)
   CHECK_HIP(hipHostMalloc(&backend, sizeof(IPCBackend)));
   backend = new (backend) IPCBackend(bootstrap);

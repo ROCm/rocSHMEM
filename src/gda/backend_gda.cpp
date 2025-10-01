@@ -543,6 +543,39 @@ int GDABackend::mlx5_dv_dl_init () {
   return ROCSHMEM_SUCCESS;
 }
 
+/* Currently we only check whether we can dlopen a Direct Verbs library.
+** We might need to extend this logic to check whether we have interfaces that
+** can use those DV libraries
+*/
+int GDABackend::backend_can_run() {
+  void *handle{nullptr};
+
+  /* Try opening bnxt DV libraries */
+  handle = dlopen("libbnxt_re.so", RTLD_NOW);
+  if (handle) {
+    dlclose(handle);
+    return ROCSHMEM_SUCCESS;
+  } else {
+    /* Try hard-coded PATH */
+    handle_ = dlopen("/usr/local/lib/libbnxt_re.so", RTLD_NOW);
+    if (handle) {
+      dlclose(handle);
+      return ROCSHMEM_SUCCESS;
+    }
+  }
+
+  /* Try opening mlx5 DV libraries */
+  handle = dlopen("libmlx5.so", RTLD_NOW);
+  if (handle) {
+    dlclose(handle);
+    return ROCSHMEM_SUCCESS;
+  }
+
+  /* ToDo: opening ionic DV libraries */
+
+  return ROCSHMEM_ERROR;
+}
+
 void GDABackend::setup_ibv() {
   autodetect_dv_libs();
 
