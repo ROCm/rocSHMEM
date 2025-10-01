@@ -115,6 +115,35 @@ namespace rocshmem {
   } while (0);
 #endif
 
+/* Helper Macros for handling dynamic libraries */
+#define PPCAT_NX(prefix, func_name) prefix##func_name
+#define PPCAT(prefix, func_name) PPCAT_NX(prefix, func_name)
+
+#define STRINGIFY_NX(name) #name
+#define STRINGIFY(name) STRINGIFY_NX(name)
+
+#define DLSYM_HELPER(func_struct, prefix, handle, func_name)                                \
+do {                                                                                        \
+  *(void **) (&func_struct.func_name) = dlsym(handle, STRINGIFY(PPCAT(prefix, func_name))); \
+  if (!func_struct.func_name) {                                                             \
+    DPRINTF("Failed to find function %s \n",  STRINGIFY(PPCAT(prefix, func_name)));         \
+    dlclose(handle);                                                                        \
+    handle = nullptr;                                                                       \
+    return ROCSHMEM_ERROR;                                                                  \
+  }                                                                                         \
+} while (0)
+
+#define DLSYM_VAR_HELPER(func_struct, handle, var_name)                     \
+do {                                                                        \
+  *(void **) (&func_struct.var_name) = dlsym(handle, STRINGIFY(var_name));  \
+  if (!func_struct.var_name) {                                             \
+    DPRINTF("Failed to find function %s \n",  STRINGIFY(var_name));        \
+    dlclose(handle);                                                        \
+    handle = nullptr;                                                       \
+    return ROCSHMEM_ERROR;                                                  \
+  }                                                                         \
+} while (0)
+
 extern const int gpu_clock_freq_mhz;
 
 /* Device-side internal functions */

@@ -25,7 +25,6 @@
 #include "tester.hpp"
 
 #include <hip/hip_runtime.h>
-#include <mpi.h>
 
 #include <functional>
 #include <iostream>

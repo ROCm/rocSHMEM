@@ -66,24 +66,6 @@ struct mlx5dv_funcs_t {
   int (*init_obj)(struct mlx5dv_obj *obj, uint64_t obj_type);
 };
 
-/* Helper Macros for handling dynamic libraries */
-#define PPCAT_NX(prefix, func_name) prefix##func_name
-#define PPCAT(prefix, func_name) PPCAT_NX(prefix, func_name)
-
-#define STRINGIFY_NX(name) #name
-#define STRINGIFY(name) STRINGIFY_NX(name)
-
-#define DLSYM_HELPER(func_struct, prefix, handle, func_name)                                \
-do {                                                                                        \
-  *(void **) (&func_struct.func_name) = dlsym(handle, STRINGIFY(PPCAT(prefix, func_name))); \
-  if (!func_struct.func_name) {                                                             \
-    DPRINTF("Failed to find function %s \n",  STRINGIFY(PPCAT(prefix, func_name)));         \
-    dlclose(handle);                                                                        \
-    handle = nullptr;                                                                       \
-    return ROCSHMEM_ERROR;                                                                  \
-  }                                                                                         \
-} while (0)
-
 namespace rocshmem {
 
 class GDAContext;

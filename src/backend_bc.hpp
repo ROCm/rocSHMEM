@@ -33,12 +33,11 @@
  * It is the top-level interface for these resources.
  */
 
-#include <mpi.h>
-
 #include <vector>
 
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "rocshmem/rocshmem.hpp"
+#include "mpi_instance.hpp"
 #include "backend_type.hpp"
 #include "ipc_policy.hpp"
 #include "memory/symmetric_heap.hpp"
@@ -225,7 +224,7 @@ class Backend {
    * @todo document where this is used and try to coalesce this into another
    * class
    */
-  MPI_Comm backend_comm{MPI_COMM_NULL};
+  MPI_Comm backend_comm;
 
   /**
    * @todo document where this is used

@@ -24,8 +24,6 @@
 
 #include "host.hpp"
 
-#include <mpi.h>
-
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "host_helpers.hpp"
 #include "memory/window_info.hpp"
@@ -98,9 +96,9 @@ __host__ HostInterface::HostInterface(HdpPolicy* hdp_policy,
    * Duplicate a communicator from roc_shem's comm
    * world for the host interface
    */
-  MPI_Comm_dup(rocshmem_comm, &host_comm_world_);
-  MPI_Comm_rank(host_comm_world_, &my_pe_);
-  MPI_Comm_rank(host_comm_world_, &num_pes_);
+  mpilib_ftable_.Comm_dup(rocshmem_comm, &host_comm_world_);
+  mpilib_ftable_.Comm_rank(host_comm_world_, &my_pe_);
+  mpilib_ftable_.Comm_size(host_comm_world_, &num_pes_);
 
   /*
    * Create an MPI window on the HDP so that it can be flushed
@@ -136,18 +134,18 @@ __host__ HostInterface::HostInterface(HdpPolicy* hdp_policy,
 
 #if defined USE_HDP_FLUSH
 __host__ void HostInterface::create_hdp_window() {
-  MPI_Win_create(hdp_policy_->get_hdp_flush_ptr(),
-                 sizeof(unsigned int), /* size of window */
-                 sizeof(unsigned int), /* displacement */
-                 MPI_INFO_NULL, host_comm_world_, &hdp_win);
-
+  mpilib_ftable_.Win_create(hdp_policy_->get_hdp_flush_ptr(),
+                            sizeof(unsigned int), /* size of window */
+                            sizeof(unsigned int), /* displacement */
+                            MPI_INFO_NULL, host_comm_world_, &hdp_win);
+  
   /*
    * Start a shared access epoch on windows of all ranks,
    * and let the library there is no need to check for
    * lock exclusivity during operations on this window
    * (MPI_MODE_NOCHECK).
    */
-  MPI_Win_lock_all(MPI_MODE_NOCHECK, hdp_win);
+  mpilib_ftable_.Win_lock_all(MPI_MODE_NOCHECK, hdp_win);
 }
 #endif  // USE_HDP_FLUSH
 
@@ -188,9 +186,9 @@ __host__ HostInterface::HostInterface(HdpPolicy* hdp_policy,
 
 __host__ HostInterface::~HostInterface() {
 #if defined USE_HDP_FLUSH
-  MPI_Win_unlock_all(hdp_win);
+  mpilib_ftable_.Win_unlock_all(hdp_win);
 
-  MPI_Win_free(&hdp_win);
+  mpilib_ftable_.Win_free(&hdp_win);
 #endif  // USE_HDP_FLUSH
 
   /* Detroy the pool of contexts */
@@ -203,7 +201,7 @@ __host__ HostInterface::~HostInterface() {
   }
 
   if (host_comm_world_ != MPI_COMM_NULL) {
-    MPI_Comm_free(&host_comm_world_);
+    mpilib_ftable_.Comm_free(&host_comm_world_);
   }
 }
 
@@ -236,7 +234,7 @@ __host__ void HostInterface::putmem(void* dest, const void* source,
   }
   initiate_put(dest, source, nelems, pe, window_info_mpi);
 
-  MPI_Win_flush_local(pe, window_info_mpi->get_win());
+  mpilib_ftable_.Win_flush_local(pe, window_info_mpi->get_win());
 }
 
 __host__ void HostInterface::getmem(void* dest, const void* source,
@@ -248,7 +246,7 @@ __host__ void HostInterface::getmem(void* dest, const void* source,
   }
   initiate_get(dest, source, nelems, pe, window_info_mpi);
 
-  MPI_Win_flush_local(pe, window_info_mpi->get_win());
+  mpilib_ftable_.Win_flush_local(pe, window_info_mpi->get_win());
 
   /*
    * Flush local HDP to ensure that the NIC's write
@@ -295,8 +293,8 @@ __host__ void HostInterface::quiet(WindowInfo* window_info) {
 
 __host__ void HostInterface::sync_all(WindowInfo* window_info) {
   WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(window_info);
-  if (!window_info_mpi) {
-    MPI_Win_sync(window_info_mpi->get_win());
+  if (window_info_mpi) {
+    mpilib_ftable_.Win_sync(window_info_mpi->get_win());
 
     hdp_policy_->hdp_flush();
     /*
@@ -305,7 +303,7 @@ __host__ void HostInterface::sync_all(WindowInfo* window_info) {
      * participating.
      */
 
-    MPI_Barrier(host_comm_world_);
+    mpilib_ftable_.Barrier(host_comm_world_);
   } else {
     hdp_policy_->hdp_flush();
     host_bootstrap_->barrier();
@@ -325,7 +323,7 @@ __host__ void HostInterface::barrier_all(WindowInfo* window_info) {
      */
     hdp_policy_->hdp_flush();
 
-    MPI_Barrier(host_comm_world_);
+    mpilib_ftable_.Barrier(host_comm_world_);
   } else {
     // Probably not required
     hdp_policy_->hdp_flush();
@@ -337,7 +335,7 @@ __host__ void HostInterface::barrier_all(WindowInfo* window_info) {
 
 __host__ void HostInterface::barrier_for_sync() {
   if (host_comm_world_ != MPI_COMM_NULL) {
-    MPI_Barrier(host_comm_world_);
+    mpilib_ftable_.Barrier(host_comm_world_);
   } else {
     host_bootstrap_->barrier();
   }

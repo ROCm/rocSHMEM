@@ -26,7 +26,6 @@
 #define LIBRARY_SRC_ATOMIC_RETURN_HPP_
 
 #include <hip/hip_runtime.h>
-#include <mpi.h>
 
 #include "memory/symmetric_heap.hpp"
 #include "util.hpp"

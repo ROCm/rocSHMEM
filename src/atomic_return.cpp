@@ -80,7 +80,7 @@ void init_g_ret(SymmetricHeap* heap_handle, MPI_Comm thread_comm, int num_wg,
    * Make sure that all processing elements have done this before
    * continuing.
    */
-  MPI_Barrier(thread_comm);
+  mpilib_ftable_.Barrier(thread_comm);
 }
 
 }  // namespace rocshmem

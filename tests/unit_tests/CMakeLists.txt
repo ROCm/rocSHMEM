@@ -79,9 +79,9 @@ endif()
 # ROCSHMEM DEPENDENCY
 ###############################################################################
 find_package(hip REQUIRED PATHS /opt/rocm)
+find_package(MPI REQUIRED)
 
 if (BUILD_TESTS_ONLY)
-  find_package(MPI REQUIRED)
   find_package(rocshmem REQUIRED PATHS /opt/rocm)
 
   target_include_directories(
@@ -95,6 +95,7 @@ endif()
 target_link_libraries(
   ${PROJECT_NAME}
   PRIVATE
+    MPI::MPI_CXX
     roc::rocshmem
 )
 

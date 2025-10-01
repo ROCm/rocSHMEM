@@ -50,14 +50,14 @@ MPITransport::MPITransport(MPI_Comm comm, Queue* q)
 
   assert(comm != MPI_COMM_NULL);
 
-  NET_CHECK(MPI_Comm_dup(comm, &ro_net_comm_world));
-  NET_CHECK(MPI_Comm_size(ro_net_comm_world, &num_pes));
-  NET_CHECK(MPI_Comm_rank(ro_net_comm_world, &my_pe));
+  NET_CHECK(mpilib_ftable_.Comm_dup(comm, &ro_net_comm_world));
+  NET_CHECK(mpilib_ftable_.Comm_size(ro_net_comm_world, &num_pes));
+  NET_CHECK(mpilib_ftable_.Comm_rank(ro_net_comm_world, &my_pe));
 }
 
 MPITransport::~MPITransport() {
   if (ro_net_comm_world != MPI_COMM_NULL)
-    NET_CHECK(MPI_Comm_free(&ro_net_comm_world));
+    NET_CHECK(mpilib_ftable_.Comm_free(&ro_net_comm_world));
 }
 
 void MPITransport::threadProgressEngine() {
@@ -267,13 +267,13 @@ void MPITransport::createNewTeam(ROBackend *backend, Team *parent_team,
 }
 
 void MPITransport::global_exit(int status) {
-  MPI_Abort(ro_net_comm_world, status);
+  mpilib_ftable_.Abort(ro_net_comm_world, status);
 }
 
 void MPITransport::barrier(int contextId, volatile char *status, bool blocking,
                            MPI_Comm team, bool do_quiet) {
   MPI_Request request{};
-  NET_CHECK(MPI_Ibarrier(team, &request));
+  NET_CHECK(mpilib_ftable_.Ibarrier(team, &request));
 
   if (do_quiet) {
     requests.push_back({request, {nullptr, contextId, false}});
@@ -351,10 +351,10 @@ void MPITransport::team_reduction(void *dst, void *src, int size, int win_id,
   MPI_Comm comm{team};
 
   if (dst == src) {
-    NET_CHECK(MPI_Iallreduce(MPI_IN_PLACE, dst, size, mpi_type, mpi_op, comm,
+    NET_CHECK(mpilib_ftable_.Iallreduce(MPI_IN_PLACE, dst, size, mpi_type, mpi_op, comm,
                              &request));
   } else {
-    NET_CHECK(MPI_Iallreduce(src, dst, size, mpi_type, mpi_op, comm, &request));
+    NET_CHECK(mpilib_ftable_.Iallreduce(src, dst, size, mpi_type, mpi_op, comm, &request));
   }
 
   requests.push_back({request, {status, contextId, blocking}});
@@ -370,25 +370,25 @@ void MPITransport::team_broadcast(void *dst, void *src, int size, int win_id,
 
   MPI_Comm comm{team};
   int rank{}, pe_size{};
-  NET_CHECK(MPI_Comm_rank(comm, &rank));
-  NET_CHECK(MPI_Comm_size(comm, &pe_size));
+  NET_CHECK(mpilib_ftable_.Comm_rank(comm, &rank));
+  NET_CHECK(mpilib_ftable_.Comm_size(comm, &pe_size));
 
   MPI_Group grp{}, world_grp{};
-  NET_CHECK(MPI_Comm_group(comm, &grp));
-  NET_CHECK(MPI_Comm_group(ro_net_comm_world, &world_grp));
+  NET_CHECK(mpilib_ftable_.Comm_group(comm, &grp));
+  NET_CHECK(mpilib_ftable_.Comm_group(ro_net_comm_world, &world_grp));
 
   std::vector<int> ranks(pe_size);
   std::vector<int> world_ranks(pe_size);
 
   for (int i = 0; i < pe_size; i++) ranks[i] = i;
 
-  NET_CHECK(MPI_Group_translate_ranks(grp, pe_size, ranks.data(), world_grp, world_ranks.data()));
+  NET_CHECK(mpilib_ftable_.Group_translate_ranks(grp, pe_size, ranks.data(), world_grp, world_ranks.data()));
 
   MPI_Datatype mpi_type{convertType(type)};
   MPI_Request req;
 
   if (rank != root){
-    NET_CHECK(MPI_Rget(reinterpret_cast<char *>(dst), size, mpi_type, world_ranks[root],
+    NET_CHECK(mpilib_ftable_.Rget(reinterpret_cast<char *>(dst), size, mpi_type, world_ranks[root],
                        bp->heap_window_info[win_id]->get_offset(reinterpret_cast<char *>(src)),
                        size, mpi_type, bp->heap_window_info[win_id]->get_win(), &req));
 
@@ -396,7 +396,7 @@ void MPITransport::team_broadcast(void *dst, void *src, int size, int win_id,
       outstanding[contextId]++;
   }
 
-  NET_CHECK(MPI_Win_flush_all(bp->heap_window_info[win_id]->get_win()));
+  NET_CHECK(mpilib_ftable_.Win_flush_all(bp->heap_window_info[win_id]->get_win()));
   barrier(contextId, nullptr, false, comm, false);
   quiet(contextId, status);
 }
@@ -409,22 +409,22 @@ void MPITransport::alltoall(void *dst, void *src, int size, int win_id,
 
   MPI_Comm comm{team};
   int rank{}, pe_size{};
-  NET_CHECK(MPI_Comm_rank(comm, &rank));
-  NET_CHECK(MPI_Comm_size(comm, &pe_size));
+  NET_CHECK(mpilib_ftable_.Comm_rank(comm, &rank));
+  NET_CHECK(mpilib_ftable_.Comm_size(comm, &pe_size));
 
   MPI_Group grp{}, world_grp{};
-  NET_CHECK(MPI_Comm_group(comm, &grp));
-  NET_CHECK(MPI_Comm_group(ro_net_comm_world, &world_grp));
+  NET_CHECK(mpilib_ftable_.Comm_group(comm, &grp));
+  NET_CHECK(mpilib_ftable_.Comm_group(ro_net_comm_world, &world_grp));
 
   std::vector<int> ranks(pe_size);
   std::vector<int> world_ranks(pe_size);
   for (int i = 0; i < pe_size; i++) ranks[i] = i;
 
-  NET_CHECK(MPI_Group_translate_ranks(grp, pe_size, ranks.data(), world_grp, world_ranks.data()));
+  NET_CHECK(mpilib_ftable_.Group_translate_ranks(grp, pe_size, ranks.data(), world_grp, world_ranks.data()));
 
   MPI_Datatype mpi_type{convertType(type)};
   int type_size{};
-  NET_CHECK(MPI_Type_size(mpi_type, &type_size));
+  NET_CHECK(mpilib_ftable_.Type_size(mpi_type, &type_size));
 
   if (dst == src) {
     fprintf(stderr, "IN_PLACE option not support for alltoall in the RO rocSHMEM conduit\n");
@@ -436,7 +436,7 @@ void MPITransport::alltoall(void *dst, void *src, int size, int win_id,
     int target = (rank + i) % pe_size;
     int src_offset = target * type_size * size;
     int dst_offset = rank * type_size * size;
-    NET_CHECK(MPI_Rput(reinterpret_cast<char *>(src) + src_offset, size,
+    NET_CHECK(mpilib_ftable_.Rput(reinterpret_cast<char *>(src) + src_offset, size,
                        mpi_type, world_ranks[target],
                        bp->heap_window_info[win_id]->get_offset(reinterpret_cast<char *>(dst) + dst_offset),
                        size, mpi_type, bp->heap_window_info[win_id]->get_win(),
@@ -445,7 +445,7 @@ void MPITransport::alltoall(void *dst, void *src, int size, int win_id,
     outstanding[contextId]++;
   }
 
-  NET_CHECK(MPI_Win_flush_all(bp->heap_window_info[win_id]->get_win()));
+  NET_CHECK(mpilib_ftable_.Win_flush_all(bp->heap_window_info[win_id]->get_win()));
   quiet(contextId, status);
 }
 
@@ -457,23 +457,23 @@ void MPITransport::fcollect(void *dst, void *src, int size, int win_id,
 
   MPI_Comm comm{team};
   int rank{}, pe_size{};
-  NET_CHECK(MPI_Comm_rank(comm, &rank));
-  NET_CHECK(MPI_Comm_size(comm, &pe_size));
+  NET_CHECK(mpilib_ftable_.Comm_rank(comm, &rank));
+  NET_CHECK(mpilib_ftable_.Comm_size(comm, &pe_size));
 
   MPI_Group grp{}, world_grp{};
-  NET_CHECK(MPI_Comm_group(comm, &grp));
-  NET_CHECK(MPI_Comm_group(ro_net_comm_world, &world_grp));
+  NET_CHECK(mpilib_ftable_.Comm_group(comm, &grp));
+  NET_CHECK(mpilib_ftable_.Comm_group(ro_net_comm_world, &world_grp));
 
   std::vector<int> ranks(pe_size);
   std::vector<int> world_ranks(pe_size);
 
   for (int i = 0; i < pe_size; i++) ranks[i] = i;
 
-  NET_CHECK(MPI_Group_translate_ranks(grp, pe_size, ranks.data(), world_grp, world_ranks.data()));
+  NET_CHECK(mpilib_ftable_.Group_translate_ranks(grp, pe_size, ranks.data(), world_grp, world_ranks.data()));
 
   MPI_Datatype mpi_type{convertType(type)};
   int type_size{};
-  NET_CHECK(MPI_Type_size(mpi_type, &type_size));
+  NET_CHECK(mpilib_ftable_.Type_size(mpi_type, &type_size));
 
   if (dst == src) {
     fprintf(stderr, "IN_PLACE option not support for fcollect in the RO rocSHMEM conduit\n");
@@ -484,7 +484,7 @@ void MPITransport::fcollect(void *dst, void *src, int size, int win_id,
   for (int i = 0; i < pe_size; ++i) {
     int target = (rank + i) % pe_size;
     int offset = rank * type_size * size;
-    NET_CHECK(MPI_Rput(reinterpret_cast<char *>(src), size, mpi_type, world_ranks[target],
+    NET_CHECK(mpilib_ftable_.Rput(reinterpret_cast<char *>(src), size, mpi_type, world_ranks[target],
                        bp->heap_window_info[win_id]->get_offset(reinterpret_cast<char *>(dst) + offset),
                        size, mpi_type, bp->heap_window_info[win_id]->get_win(), &pe_req[i]));
 
@@ -492,7 +492,7 @@ void MPITransport::fcollect(void *dst, void *src, int size, int win_id,
     outstanding[contextId]++;
   }
 
-  NET_CHECK(MPI_Win_flush_all(bp->heap_window_info[win_id]->get_win()));
+  NET_CHECK(mpilib_ftable_.Win_flush_all(bp->heap_window_info[win_id]->get_win()));
   quiet(contextId, status);
 }
 
@@ -504,14 +504,14 @@ void MPITransport::putMem(void *dst, void *src, int size, int pe, int win_id,
   auto *bp{backend_proxy->get()};
   MPI_Request request{};
 
-  NET_CHECK(MPI_Rput(
+  NET_CHECK(mpilib_ftable_.Rput(
       src, size, MPI_CHAR, pe, bp->heap_window_info[win_id]->get_offset(dst),
       size, MPI_CHAR, bp->heap_window_info[win_id]->get_win(), &request));
 
   // Since MPI makes puts as complete as soon as the local buffer is free,
   // we need a flush to satisfy quiet.  Put it here as a hack for now even
   // though it should be in the progress loop.
-  NET_CHECK(MPI_Win_flush_all(bp->heap_window_info[win_id]->get_win()));
+  NET_CHECK(mpilib_ftable_.Win_flush_all(bp->heap_window_info[win_id]->get_win()));
 
   requests.push_back({request, {status, contextId, blocking}});
 
@@ -525,7 +525,7 @@ void MPITransport::amoFOP(void *dst, void *src, void *val, int pe, int win_id,
 
   auto *bp{backend_proxy->get()};
   MPI_Datatype mpi_type{convertType(type)};
-  NET_CHECK(MPI_Fetch_and_op(reinterpret_cast<void *>(val), src, mpi_type, pe,
+  NET_CHECK(mpilib_ftable_.Fetch_and_op(reinterpret_cast<void *>(val), src, mpi_type, pe,
                              bp->heap_window_info[win_id]->get_offset(dst),
                              get_mpi_op(op),
                              bp->heap_window_info[win_id]->get_win()));
@@ -533,7 +533,7 @@ void MPITransport::amoFOP(void *dst, void *src, void *val, int pe, int win_id,
   // Since MPI makes puts as complete as soon as the local buffer is free,
   // we need a flush to satisfy quiet.  Put it here as a hack for now even
   // though it should be in the progress loop.
-  NET_CHECK(MPI_Win_flush_local(pe, bp->heap_window_info[win_id]->get_win()));
+  NET_CHECK(mpilib_ftable_.Win_flush_local(pe, bp->heap_window_info[win_id]->get_win()));
 
   queue->notify(status);
 
@@ -547,7 +547,7 @@ void MPITransport::amoFCAS(void *dst, void *src, void *val, int pe,
 
   auto *bp{backend_proxy->get()};
   MPI_Datatype mpi_type{convertType(type)};
-  NET_CHECK(MPI_Compare_and_swap((const void *)val, (const void *)cond, src,
+  NET_CHECK(mpilib_ftable_.Compare_and_swap((const void *)val, (const void *)cond, src,
                                  mpi_type, pe,
                                  bp->heap_window_info[win_id]->get_offset(dst),
                                  bp->heap_window_info[win_id]->get_win()));
@@ -555,7 +555,7 @@ void MPITransport::amoFCAS(void *dst, void *src, void *val, int pe,
   // Since MPI makes puts as complete as soon as the local buffer is free,
   // we need a flush to satisfy quiet.  Put it here as a hack for now even
   // though it should be in the progress loop.
-  NET_CHECK(MPI_Win_flush_local(pe, bp->heap_window_info[win_id]->get_win()));
+  NET_CHECK(mpilib_ftable_.Win_flush_local(pe, bp->heap_window_info[win_id]->get_win()));
 
   queue->notify(status);
 
@@ -569,7 +569,7 @@ void MPITransport::getMem(void *dst, void *src, int size, int pe, int win_id,
 
   auto *bp{backend_proxy->get()};
   MPI_Request request{};
-  NET_CHECK(MPI_Rget(
+  NET_CHECK(mpilib_ftable_.Rget(
       dst, size, MPI_CHAR, pe, bp->heap_window_info[win_id]->get_offset(src),
       size, MPI_CHAR, bp->heap_window_info[win_id]->get_win(), &request));
 
@@ -595,7 +595,7 @@ void MPITransport::progress() {
     // Slowing the progress engine down a bit avoid hammering the memory subsystem.
     // This leads to significant performance benefits
     usleep (progress_delay);
-    NET_CHECK(MPI_Iprobe(MPI_ANY_SOURCE, tag, ro_net_comm_world, &flag, &status));
+    NET_CHECK(mpilib_ftable_.Iprobe(MPI_ANY_SOURCE, tag, ro_net_comm_world, &flag, &status));
   } else {
     DPRINTF("Testing all outstanding requests (%zu)\n", requests.size());
 
@@ -605,7 +605,7 @@ void MPITransport::progress() {
     int outcount{};
 
     auto uptr_req_arr {raw_requests()};
-    NET_CHECK(MPI_Testsome(incount, uptr_req_arr.get(), &outcount,
+    NET_CHECK(mpilib_ftable_.Testsome(incount, uptr_req_arr.get(), &outcount,
                            testsome_indices.data(), MPI_STATUSES_IGNORE));
 
     auto *bp{backend_proxy->get()};

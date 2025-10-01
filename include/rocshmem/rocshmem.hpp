@@ -26,7 +26,6 @@
 #define LIBRARY_INCLUDE_ROCSHMEM_HPP
 
 #include <hip/hip_runtime.h>
-#include <mpi.h>
 
 #include "rocshmem_config.h"
 #include "rocshmem_common.hpp"
@@ -36,6 +35,10 @@
 #include "rocshmem_COLL.hpp"
 #include "rocshmem_P2P_SYNC.hpp"
 #include "rocshmem_RMA_X.hpp"
+#if defined(HAVE_EXTERNAL_MPI)
+#include <mpi.h>
+#endif
+
 /**
  * @file rocshmem.hpp
  * @brief Public header for rocSHMEM device and host libraries.
@@ -57,13 +60,22 @@ constexpr char VERSION[] = "3.0.0";
 /******************************************************************************
  **************************** HOST INTERFACE **********************************
  *****************************************************************************/
+#if defined(HAVE_EXTERNAL_MPI)
 /**
  * @brief Initialize the rocSHMEM runtime and underlying transport layer.
  *
- * @param[in] comm      (Optional) MPI Communicator that rocSHMEM will be using
+ * @param[in] comm      MPI Communicator that rocSHMEM will be using
  *                      If MPI_COMM_NULL, rocSHMEM will be using MPI_COMM_WORLD
  */
-__host__ void rocshmem_init(MPI_Comm comm = MPI_COMM_WORLD);
+[[deprecated]] __host__ void rocshmem_init(MPI_Comm comm);
+#endif
+
+/**
+ * @brief Initialize the rocSHMEM runtime and underlying transport layer.
+ *        This is equivalent to the previous function, using implicitely
+ *        MPI_COMM_WORLD for initialization
+ */
+__host__ void rocshmem_init(void);
 
 /**
  * @brief Query rocSHMEM context from host API
@@ -88,6 +100,7 @@ __host__ void * rocshmem_get_device_ctx();
  */
 __host__ void *rocshmem_ptr(void *dest, int pe);
 
+#if defined(HAVE_EXTERNAL_MPI)
 /**
  * @brief Initialize the rocSHMEM runtime and underlying transport layer
  *        with an attempt to enable the requested thread support.
@@ -102,8 +115,9 @@ __host__ void *rocshmem_ptr(void *dest, int pe);
  * @return int          returns 0 upon success; otherwise, it returns a nonzero
  *                      value
  */
-__host__ int rocshmem_init_thread(int requested, int *provided,
-                                  MPI_Comm comm = MPI_COMM_WORLD);
+[[deprecated]] __host__ int rocshmem_init_thread(int requested, int *provided,
+                                                 MPI_Comm comm);
+#endif
 
 /**
  * @brief Initialize the rocSHMEM runtime and underlying transport layer

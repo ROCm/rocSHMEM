@@ -25,10 +25,9 @@
 #ifndef LIBRARY_SRC_MEMORY_WINDOW_INFO_HPP_
 #define LIBRARY_SRC_MEMORY_WINDOW_INFO_HPP_
 
-#include <mpi.h>
-
 #include <cassert>
 #include <memory>
+#include "mpi_instance.hpp"
 
 /**
  * @file window_info.hpp
@@ -155,8 +154,8 @@ class WindowInfoMPI: public WindowInfo {
     win_end_ = reinterpret_cast<char*>(start) + size;
 
     up_win_ = std::unique_ptr<MPI_Win>(new MPI_Win);
-    MPI_Win_create(win_start_, size, 1, MPI_INFO_NULL, comm_, up_win_.get());
-    MPI_Win_lock_all(MPI_MODE_NOCHECK, *up_win_.get());
+    mpilib_ftable_.Win_create(win_start_, size, 1, MPI_INFO_NULL, comm_, up_win_.get());
+    mpilib_ftable_.Win_lock_all(MPI_MODE_NOCHECK, *up_win_.get());
   }
 
   /**
@@ -164,8 +163,8 @@ class WindowInfoMPI: public WindowInfo {
    */
   ~WindowInfoMPI() {
     if (up_win_) {
-      MPI_Win_unlock_all(*up_win_.get());
-      MPI_Win_free(up_win_.get());
+      mpilib_ftable_.Win_unlock_all(*up_win_.get());
+      mpilib_ftable_.Win_free(up_win_.get());
     }
   }
 
@@ -222,9 +221,9 @@ class WindowInfoMPI: public WindowInfo {
            reinterpret_cast<char*>(win_end_));
 
     MPI_Aint dest_disp;
-    MPI_Get_address(dest, &dest_disp);
+    mpilib_ftable_.Get_address(dest, &dest_disp);
     MPI_Aint start_disp;
-    MPI_Get_address(win_start_, &start_disp);
+    mpilib_ftable_.Get_address(win_start_, &start_disp);
 
     return static_cast<ptrdiff_t>(MPI_Aint_diff(dest_disp, start_disp));
   }

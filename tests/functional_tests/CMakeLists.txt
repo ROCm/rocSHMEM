@@ -72,8 +72,9 @@ target_sources(
 # ROCSHMEM
 ###############################################################################
 if (BUILD_TESTS_ONLY)
-  find_package(MPI REQUIRED)
-  find_package(hip REQUIRED PATHS /opt/rocm)
+  #TODO check that build_test_only still works with external-mpi
+  #find_package(MPI REQUIRED)
+  #find_package(hip REQUIRED PATHS /opt/rocm)
   find_package(rocshmem REQUIRED PATHS /opt/rocm)
 
   target_include_directories(
