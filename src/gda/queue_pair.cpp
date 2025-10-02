@@ -29,7 +29,6 @@
 #include "backend_gda.hpp"
 #include "endian.hpp"
 #include "segment_builder.hpp"
-#include "util.hpp"
 #include "constants.hpp"
 
 namespace rocshmem {
@@ -120,25 +119,6 @@ __device__ uint64_t QueuePair::get_same_qp_lane_mask() {
   }
 
   return lane_mask;
-}
-
-__device__ bool QueuePair::cq_lock_try_acquire(uint64_t activemask) {
-  uint32_t cq_lock_val = SPIN_LOCK_INVALID;
-
-  if (is_first_active_lane(activemask)) {
-    cq_lock_val = SPIN_LOCK_UNLOCKED;
-    __hip_atomic_compare_exchange_strong(&cq_lock, &cq_lock_val, SPIN_LOCK_LOCKED,
-                                         __ATOMIC_ACQUIRE, __ATOMIC_ACQUIRE, __HIP_MEMORY_SCOPE_AGENT);
-  }
-  cq_lock_val = __shfl(cq_lock_val, get_first_active_lane_id(activemask));
-
-  return (cq_lock_val == SPIN_LOCK_UNLOCKED);
-}
-
-__device__ void QueuePair::cq_lock_release(uint64_t activemask) {
-  if (is_first_active_lane(activemask)) {
-    __hip_atomic_store(&cq_lock, SPIN_LOCK_UNLOCKED, __ATOMIC_RELEASE, __HIP_MEMORY_SCOPE_AGENT);
-  }
 }
 
 __device__ uint32_t QueuePair::reserve_sq(uint64_t activemask, uint32_t num_wqes) {
@@ -250,7 +230,7 @@ __device__ void QueuePair::ionic_quiet_internal(uint64_t activemask, uint32_t co
   /* wait for sq_msn to catch up or pass cons. */
   /* 0x800000 - sign bit for 24-bit fields     */
   while ((sq_msn - cons) & 0x800000) {
-    if (!cq_lock_try_acquire(activemask)) {
+    if (!spin_lock_try_acquire_shared(&cq_lock, activemask)) {
       continue;
     }
 
@@ -259,7 +239,7 @@ __device__ void QueuePair::ionic_quiet_internal(uint64_t activemask, uint32_t co
       poll_wave_cqes(activemask);
     }
 
-    cq_lock_release(activemask);
+    spin_lock_release_shared(&cq_lock, activemask);
     break;
   }
 }

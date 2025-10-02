@@ -37,6 +37,7 @@
 #include "rocshmem_config.h"
 #include "endian.h"
 #include "constants.hpp"
+#include "util.hpp"
 
 #include "gda/ionic/provider_gda_ionic.hpp"
 #include "gda/mlx5/provider_gda_mlx5.hpp"
@@ -190,9 +191,6 @@ class QueuePair {
 
 #ifdef GDA_IONIC
   __device__ uint64_t get_same_qp_lane_mask();
-
-  __device__ bool cq_lock_try_acquire(uint64_t active_lane_mask);
-  __device__ void cq_lock_release(uint64_t active_lane_mask);
 
   /**
    * @brief Reserve space in the sq to post this many wqes.
