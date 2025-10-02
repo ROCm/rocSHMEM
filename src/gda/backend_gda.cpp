@@ -50,7 +50,7 @@ rocshmem_team_t get_external_team(GDATeam *team) {
   return reinterpret_cast<rocshmem_team_t>(team);
 }
 
-int get_ls_non_zero_bit(char *bitmask, int mask_length) {
+static int get_ls_non_zero_bit(char *bitmask, int mask_length) {
   int position{-1};
   for (int bit_i = 0; bit_i < mask_length; bit_i++) {
     int byte_i = bit_i / CHAR_BIT;
@@ -557,7 +557,7 @@ int GDABackend::backend_can_run() {
     return ROCSHMEM_SUCCESS;
   } else {
     /* Try hard-coded PATH */
-    handle_ = dlopen("/usr/local/lib/libbnxt_re.so", RTLD_NOW);
+    handle = dlopen("/usr/local/lib/libbnxt_re.so", RTLD_NOW);
     if (handle) {
       dlclose(handle);
       return ROCSHMEM_SUCCESS;

@@ -38,11 +38,11 @@ cmake \
     -DDEBUG=OFF \
     -DPROFILE=OFF \
     -DUSE_GDA=ON \
-    -DUSE_GDA_MLX5=ON \
-    -DUSE_GDA_BNXT=ON \
-    -DUSE_GDA_IONIC=OFF \
+    -DGDA_MLX5=ON \
+    -DGDA_BNXT=ON \
+    -DGDA_IONIC=OFF \
     -DUSE_RO=ON \
-    -DUSE_IPC=OFF \
+    -DUSE_IPC=ON \
     -DUSE_THREADS=OFF \
     -DUSE_WF_COAL=OFF \
     -DUSE_HDP_FLUSH=OFF \

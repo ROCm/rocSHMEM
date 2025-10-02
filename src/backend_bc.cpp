@@ -29,9 +29,11 @@
 
 #if defined(USE_GDA)
 #include "gda/backend_gda.hpp"
-#elif defined(USE_RO)
+#endif
+#if defined(USE_RO)
 #include "reverse_offload/backend_ro.hpp"
-#elif defined(USE_IPC)
+#endif
+#if defined(USE_IPC)
 #include "ipc/backend_ipc.hpp"
 #endif
 

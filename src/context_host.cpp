@@ -31,7 +31,8 @@ namespace rocshmem {
 __host__ Context::Context(Backend* handle, bool shareable)
     : num_pes(handle->getNumPEs()),
       my_pe(handle->getMyPE()),
-      fence_(shareable) {
+      fence_(shareable),
+      btype(handle->type) {
 }
 
 __host__ Context::~Context() {
