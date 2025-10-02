@@ -108,7 +108,6 @@ class GDABackend : public Backend {
   std::vector<ibv_qp*> qps;
   std::vector<ibv_cq*> cqs;
   std::vector<dest_info_t> dest_info;
-  int alternate_qp_ports_enabled = 1;;
 
   /* GDA_BNXT START */
   std::vector<struct bnxt_host_qp> bnxt_qps;

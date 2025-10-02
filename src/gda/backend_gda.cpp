@@ -130,7 +130,6 @@ GDABackend::~GDABackend() {
 }
 
 void GDABackend::read_env() {
-  char* value{nullptr};
   if (!envvar::requested_dev.is_default()) {
     requested_dev = envvar::requested_dev.get_value().c_str();
   } else {
@@ -138,10 +137,6 @@ void GDABackend::read_env() {
     CHECK_HIP(hipGetDevice(&gpu_dev));
     int nic_dev = rocshmem::GetClosestNicToGpu(gpu_dev, &requested_dev);
     assert (nic_dev != -1);
-  }
-
-  if ((value = getenv("ROCSHMEM_GDA_ALTERNATE_QP_PORTS"))) {
-    alternate_qp_ports_enabled = atoi(value);
   }
 }
 
@@ -950,7 +945,7 @@ void GDABackend::alternate_qp_ports() {
     return;
   }
 
-  if (alternate_qp_ports_enabled) {
+  if (envvar::gda::alternate_qp_ports) {
     /* If we assume two PEs and a default context and two user context,
      * initially QPs are in the following port order:
      *

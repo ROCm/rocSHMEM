@@ -125,6 +125,7 @@ namespace envvar {
       ROCSHMEM,
       BOOTSTRAP,
       REVERSE_OFFLOAD,
+      GDA,
     };
 
     // env var string prefixes
@@ -134,6 +135,7 @@ namespace envvar {
     template <> inline constexpr const char* prefix<tag::ROCSHMEM> = "ROCSHMEM";
     template <> inline constexpr const char* prefix<tag::BOOTSTRAP> = "ROCSHMEM_BOOTSTRAP";
     template <> inline constexpr const char* prefix<tag::REVERSE_OFFLOAD> = "ROCSHMEM_RO";
+    template <> inline constexpr const char* prefix<tag::GDA> = "ROCSHMEM_GDA";
   }  // namespace category
 
   namespace parser {
@@ -437,6 +439,11 @@ namespace envvar {
     extern const var<useconds_t> progress_delay;
     extern const var<bool> net_cpu_queue;
   }  // namespace ro
+
+  namespace gda {
+    template <typename T> using var = var<T, category::tag::GDA>;
+    extern const var<bool> alternate_qp_ports;
+  }  // namespace gda
 }  // namespace envvar
 }  // namespace rocshmem
 

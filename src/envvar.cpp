@@ -61,6 +61,10 @@ namespace envvar {
     const var<bool> net_cpu_queue("NET_CPU_QUEUE", "", false);
   }  // namespace ro
 
+  namespace gda {
+    const var<bool> alternate_qp_ports("ALTERNATE_QP_PORTS", "", true);
+  }  // namespace gda
+
   namespace _detail {
     std::tuple<var_map_t&, std::mutex&> get_var_map() {
       // construct on first use idiom
