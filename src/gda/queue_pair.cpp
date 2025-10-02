@@ -180,7 +180,7 @@ __device__ void QueuePair::poll_wave_cqes(uint64_t activemask) {
   uint32_t my_cq_pos = cq_pos + my_logical_lane_id;
 
   /* Look at the cqe at the current position in the cq buffer */
-  struct ionic_v1_cqe *cqe = &cq_buf[my_cq_pos & cq_mask];
+  struct ionic_v1_cqe *cqe = &ionic_cq_buf[my_cq_pos & cq_mask];
 
   /* Determine expected color based on cq wrap count */
   uint32_t qtf_color_bit = swap_endian_val<uint32_t>(IONIC_V1_CQE_COLOR);
@@ -452,7 +452,7 @@ __device__ void QueuePair::ionic_post_wqe_rma(int pe, int32_t size, uintptr_t *l
   uint32_t my_logical_lane_id = get_active_lane_num(activemask);
   uint32_t my_sq_prod = reserve_sq(activemask, num_wqes);
   uint32_t my_sq_pos = my_sq_prod + my_logical_lane_id;
-  struct ionic_v1_wqe *wqe = &sq_buf[my_sq_pos & sq_mask];
+  struct ionic_v1_wqe *wqe = &ionic_sq_buf[my_sq_pos & sq_mask];
 
   // TODO why is this needed?
   if (size && !laddr && opcode == IONIC_V2_OP_RDMA_WRITE) {
@@ -563,7 +563,7 @@ __device__ uint64_t QueuePair::ionic_post_wqe_amo(int pe, int32_t size, uintptr_
   const uint64_t leader_phys_lane_id = get_first_active_lane_id(activemask);
   uint32_t my_sq_prod = reserve_sq(activemask, num_wqes);
   uint32_t my_sq_pos = my_sq_prod + my_logical_lane_id;
-  struct ionic_v1_wqe *wqe = &sq_buf[my_sq_pos & sq_mask];
+  struct ionic_v1_wqe *wqe = &ionic_sq_buf[my_sq_pos & sq_mask];
   uint32_t cons;
 
   uint64_t* wave_fetch_atomic{nullptr};
