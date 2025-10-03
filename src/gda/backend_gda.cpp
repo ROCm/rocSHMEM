@@ -882,9 +882,9 @@ void GDABackend::modify_qps_rtr_to_rts() {
   attr.rnr_retry     = 7;
 
   if (gda_vendor == GDAVendor::IONIC) {
-    attr.max_dest_rd_atomic = 15;
+    attr.max_rd_atomic = 15;
   } else {
-    attr.max_dest_rd_atomic = 1;
+    attr.max_rd_atomic = 1;
   }
 
   attr_mask = IBV_QP_STATE
