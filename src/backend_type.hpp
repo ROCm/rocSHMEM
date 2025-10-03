@@ -66,6 +66,7 @@ enum class BackendType { GDA_BACKEND, RO_BACKEND, IPC_BACKEND };
     static_cast<ROContext *>(this)->Func;  \
     break;                                 \
   case BackendType::IPC_BACKEND:           \
+  default:                                 \
     static_cast<IPCContext *>(this)->Func; \
     break;                                 \
   }
@@ -123,6 +124,7 @@ enum class BackendType { GDA_BACKEND, RO_BACKEND, IPC_BACKEND };
     ret_val = static_cast<ROContext *>(this)->Func;  \
     break;                                           \
   case BackendType::IPC_BACKEND:                     \
+  default:                                           \
     ret_val = static_cast<IPCContext *>(this)->Func; \
     break;                                           \
   }                                                  \
@@ -161,6 +163,7 @@ enum class BackendType { GDA_BACKEND, RO_BACKEND, IPC_BACKEND };
     static_cast<ROHostContext *>(this)->Func;  \
     break;                                     \
   case BackendType::IPC_BACKEND:               \
+  default:                                     \
     static_cast<IPCHostContext *>(this)->Func; \
     break;                                     \
   }
@@ -219,6 +222,7 @@ enum class BackendType { GDA_BACKEND, RO_BACKEND, IPC_BACKEND };
     ret_val = static_cast<ROHostContext *>(this)->Func;  \
     break;                                               \
   case BackendType::IPC_BACKEND:                         \
+  default:                                               \
     ret_val = static_cast<IPCHostContext *>(this)->Func; \
     break;                                               \
   }                                                      \

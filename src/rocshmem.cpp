@@ -88,7 +88,7 @@ static BackendType select_backend_type() {
   /* Check whether the user explicitely requests a particular backend type */
   std::string envstr = rocshmem_env_.get_backend();
   if (!envstr.empty()) {
-    printf("Found environment variable ROCSHMEM_BACKEND, value is %s\n", envstr.c_str());
+    DPRINTF("Found environment variable ROCSHMEM_BACKEND, value is %s\n", envstr.c_str());
     if (envstr.find("gda") != std::string::npos) {
       return BackendType::GDA_BACKEND;
     }
@@ -101,11 +101,11 @@ static BackendType select_backend_type() {
   }
 
   if (GDABackend::backend_can_run() == ROCSHMEM_SUCCESS) {
-    printf("GDABackend::backend_can_run returned success\n");
+    DPRINTF("GDABackend::backend_can_run returned success\n");
     return BackendType::GDA_BACKEND;
   }
   if (MPIInstance::mpilib_dl_init() == ROCSHMEM_SUCCESS) {
-    printf("MPIInstance could dl_init MPI library\n");
+    DPRINTF("MPIInstance could dl_init MPI library\n");
     return BackendType::RO_BACKEND;
   }
 
@@ -133,17 +133,17 @@ static BackendType select_backend_type() {
   BackendType type = select_backend_type();
   switch (type) {
   case BackendType::GDA_BACKEND:
-    printf("Initializing GDA backend using MPI\n");
+    DPRINTF("Initializing GDA backend using MPI\n");
     CHECK_HIP(hipHostMalloc(&backend, sizeof(GDABackend)));
     backend = new (backend) GDABackend(comm);
     break;
   case BackendType::RO_BACKEND:
-    printf("Initializing RO backend using MPI\n");
+    DPRINTF("Initializing RO backend using MPI\n");
     CHECK_HIP(hipHostMalloc(&backend, sizeof(ROBackend)));
     backend = new (backend) ROBackend(comm);
     break;
   case BackendType::IPC_BACKEND:
-    printf("Initializing IPC backend using MPI\n");
+    DPRINTF("Initializing IPC backend using MPI\n");
     CHECK_HIP(hipHostMalloc(&backend, sizeof(IPCBackend)));
     backend = new (backend) IPCBackend(comm);
     break;
@@ -244,19 +244,19 @@ static BackendType select_backend_type() {
   BackendType type = select_backend_type();
   switch (type) {
   case BackendType::GDA_BACKEND:
-    printf("Initializing GDA backend with TCP bootstrapping\n");
+    DPRINTF("Initializing GDA backend with TCP bootstrapping\n");
     CHECK_HIP(hipHostMalloc(&backend, sizeof(GDABackend)));
     backend = new (backend) GDABackend(bootstrap);
     break;
   case BackendType::RO_BACKEND:
     /* Not sure whether this is a valid configuration. Will leave it in for now */
-    printf("Initializing RO backend with TCP bootstrapping\n");
+    DPRINTF("Initializing RO backend with TCP bootstrapping\n");
     mpi_instance = new MPIInstance(MPI_COMM_WORLD);
     CHECK_HIP(hipHostMalloc(&backend, sizeof(ROBackend)));
     backend = new (backend) ROBackend(MPI_COMM_WORLD);
     break;
   case BackendType::IPC_BACKEND:
-    printf("Initializing IPC backend with TCP bootstrapping\n");
+    DPRINTF("Initializing IPC backend with TCP bootstrapping\n");
     CHECK_HIP(hipHostMalloc(&backend, sizeof(IPCBackend)));
     backend = new (backend) IPCBackend(bootstrap);
     break;
