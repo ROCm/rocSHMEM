@@ -350,11 +350,6 @@ class HostInterface {
 #endif  // USE_HDP_FLUSH
 
   /**
-   * @brief Max number of contexts for the application
-   */
-  int max_num_ctxs_{1};
-
-  /**
    * @brief Pool of HostContexWindowInfos
    */
   HostContextWindowInfo** host_window_context_pool_{nullptr};

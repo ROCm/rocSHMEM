@@ -33,6 +33,7 @@
 #include <vector>
 
 #include "rocshmem/rocshmem.hpp"
+#include "envvar.hpp"
 
 namespace rocshmem {
 
@@ -93,7 +94,7 @@ class TeamTracker {
    *
    * @return number of teams supported by tracker
    */
-  __host__ __device__ int get_max_num_teams() { return max_num_teams_; }
+  __host__ __device__ int get_max_num_teams() { return max_num_teams_; } // TODO fix narrowing
 
   /**
    * @brief Get team world pointer
@@ -124,7 +125,7 @@ class TeamTracker {
    * pre-allocate resources (e.g. LDS, working arrays, etc.)
    * for teams.
    */
-  int max_num_teams_{40};
+  size_t max_num_teams_{envvar::max_num_teams};
 
   /**
    * @brief Pointer to implementation of ROCSHMEM_TEAM_WORLD

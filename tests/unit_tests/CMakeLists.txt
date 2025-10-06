@@ -63,6 +63,7 @@ target_sources(
     free_list_gtest.cpp
     wavefront_size_gtest.cpp
     atomic_wf_queue_gtest.cpp
+    envvar_gtest.cpp
 )
 
 if (USE_IPC)

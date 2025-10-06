@@ -29,8 +29,9 @@
 #include <cassert>
 
 #include "backend_ipc.hpp"
-#include "mpi_instance.hpp"
+#include "envvar.hpp"
 #include "ipc_team.hpp"
+#include "mpi_instance.hpp"
 
 namespace rocshmem {
 
@@ -105,11 +106,6 @@ IPCBackend::IPCBackend(TcpBootstrap *bootstrap):  Backend(bootstrap) {
 }
 
 void IPCBackend::init() {
-  if (auto maximum_num_contexts_str = getenv("ROCSHMEM_MAX_NUM_CONTEXTS")) {
-    std::stringstream sstream(maximum_num_contexts_str);
-    sstream >> maximum_num_contexts_;
-  }
-
   ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque = default_host_ctx.get();
 
   setup_team_world();
@@ -144,9 +140,9 @@ IPCBackend::~IPCBackend() {
 }
 
 void IPCBackend::setup_ctxs() {
-  CHECK_HIP(hipMalloc(&ctx_array, sizeof(IPCContext) * maximum_num_contexts_));
+  CHECK_HIP(hipMalloc(&ctx_array, sizeof(IPCContext) * envvar::max_num_contexts));
   // 0th context is default context
-  for (size_t i = 0; i < maximum_num_contexts_; i++) {
+  for (size_t i = 0; i < envvar::max_num_contexts; i++) {
     new (&ctx_array[i]) IPCContext(this, i + 1);
     ctx_free_list.get()->push_back(ctx_array + i);
   }

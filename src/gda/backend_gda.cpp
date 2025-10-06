@@ -29,8 +29,9 @@
 #include <cassert>
 
 #include "backend_gda.hpp"
-#include "mpi_instance.hpp"
+#include "envvar.hpp"
 #include "gda_team.hpp"
+#include "mpi_instance.hpp"
 #include "util.hpp"
 #include "topology.hpp"
 
@@ -129,25 +130,13 @@ GDABackend::~GDABackend() {
 }
 
 void GDABackend::read_env() {
-  if (auto maximum_num_contexts_str = getenv("ROCSHMEM_MAX_NUM_CONTEXTS")) {
-    std::stringstream sstream(maximum_num_contexts_str);
-    sstream >> maximum_num_contexts_;
-  }
-  char* value{nullptr};
-  if ((value = getenv("ROCSHMEM_USE_IB_HCA"))) {
-    requested_dev = strdup(value);
+  if (!envvar::requested_dev.is_default()) {
+    requested_dev = envvar::requested_dev.get_value().c_str();
   } else {
     int gpu_dev = 0;
     CHECK_HIP(hipGetDevice(&gpu_dev));
     int nic_dev = rocshmem::GetClosestNicToGpu(gpu_dev, &requested_dev);
     assert (nic_dev != -1);
-  }
-  if ((value = getenv("ROCSHMEM_SQ_SIZE"))) {
-    sq_size = atoi(value);
-  }
-
-  if ((value = getenv("ROCSHMEM_GDA_ALTERNATE_QP_PORTS"))) {
-    alternate_qp_ports_enabled = atoi(value);
   }
 }
 
@@ -178,9 +167,9 @@ void GDABackend::setup_ctxs() {
   setup_host_ctx();
   setup_default_ctx();
 
-  CHECK_HIP(hipMalloc(&ctx_array, sizeof(GDAContext) * maximum_num_contexts_));
+  CHECK_HIP(hipMalloc(&ctx_array, sizeof(GDAContext) * envvar::max_num_contexts));
   // 0th context is default context
-  for (size_t i = 0; i < maximum_num_contexts_; i++) {
+  for (size_t i = 0; i < envvar::max_num_contexts; i++) {
     new (&ctx_array[i]) GDAContext(this, i + 1);
     ctx_free_list.get()->push_back(ctx_array + i);
   }
@@ -188,7 +177,7 @@ void GDABackend::setup_ctxs() {
 
 void GDABackend::cleanup_ctxs() {
   ctx_free_list.~FreeListProxy();
-  for (size_t i = 0; i < maximum_num_contexts_; i++) {
+  for (size_t i = 0; i < envvar::max_num_contexts; i++) {
     ctx_array[i].~GDAContext();
   }
 
@@ -667,7 +656,7 @@ void GDABackend::exchange_qp_dest_info() {
     dest_info[i].gid = gid;
   }
 
-  for (int i = 0; i < maximum_num_contexts_ + 1; i++) {
+  for (size_t i = 0; i < envvar::max_num_contexts + 1; i++) {
     if (backend_comm != MPI_COMM_NULL) {
       mpilib_ftable_.Alltoall(MPI_IN_PLACE, sizeof(dest_info_t), MPI_CHAR, dest_info.data() + i * num_pes, sizeof(dest_info_t), MPI_CHAR, backend_comm);
     } else {
@@ -718,7 +707,7 @@ void GDABackend::setup_gpu_qps() {
   size_t qp_objs_count;
   size_t qp_objs_mem_size;
 
-  qp_objs_count    = (maximum_num_contexts_ + 1) * num_pes;
+  qp_objs_count    = (envvar::max_num_contexts + 1) * num_pes;
   qp_objs_mem_size = sizeof(QueuePair) * qp_objs_count;
 
   CHECK_HIP(hipMalloc(&gpu_qps, qp_objs_mem_size));
@@ -726,7 +715,7 @@ void GDABackend::setup_gpu_qps() {
   host_qps = (QueuePair*) malloc(qp_objs_mem_size);
   CHECK_NNULL(host_qps, "malloc (host_qps)");
 
-  for (int i = 0; i < qp_objs_count; i++) {
+  for (size_t i = 0; i < qp_objs_count; i++) {
     new (&host_qps[i]) QueuePair(pd_orig, gda_vendor);
     CHECK_HIP(hipMemcpy(&gpu_qps[i], &host_qps[i], sizeof(QueuePair), hipMemcpyDefault));
 
@@ -741,9 +730,9 @@ void GDABackend::setup_gpu_qps() {
 void GDABackend::cleanup_gpu_qps() {
   size_t qp_objs_count;
 
-  qp_objs_count = (maximum_num_contexts_ + 1) * num_pes;
+  qp_objs_count = (envvar::max_num_contexts + 1) * num_pes;
 
-  for (int i = 0; i < qp_objs_count; i++) {
+  for (size_t i = 0; i < qp_objs_count; i++) {
     host_qps[i].~QueuePair();
   }
 
@@ -919,15 +908,15 @@ void GDABackend::modify_qps_rtr_to_rts() {
 
 void GDABackend::create_queues() {
   int ncqes;
-  int resize_length;
+  size_t resize_length;
 
   if (gda_vendor == GDAVendor::IONIC) {
-    ncqes = sq_size << 1;
+    ncqes = envvar::sq_size << 1;
   } else {
-    ncqes = sq_size;
+    ncqes = envvar::sq_size;
   }
 
-  resize_length = (maximum_num_contexts_ + 1) * num_pes;
+  resize_length = (envvar::max_num_contexts + 1) * num_pes;
 
   dest_info.resize(resize_length);
   cqs.resize(resize_length);
@@ -938,25 +927,25 @@ void GDABackend::create_queues() {
 
   if (gda_vendor == GDAVendor::BNXT) {
     bnxt_create_cqs(ncqes);
-    bnxt_create_qps(sq_size);
+    bnxt_create_qps(envvar::sq_size);
   } else {
     create_cqs(ncqes);
-    create_qps(sq_size);
+    create_qps(envvar::sq_size);
   }
 
   alternate_qp_ports();
 }
 
 void GDABackend::alternate_qp_ports() {
-  int cur_qp_idx;
-  int new_qp_idx;
+  size_t cur_qp_idx;
+  size_t new_qp_idx;
 
   /* We can't remap anything */
-  if (maximum_num_contexts_ == 1) {
+  if (envvar::max_num_contexts == 1) {
     return;
   }
 
-  if (alternate_qp_ports_enabled) {
+  if (envvar::gda::alternate_qp_ports) {
     /* If we assume two PEs and a default context and two user context,
      * initially QPs are in the following port order:
      *
@@ -979,8 +968,8 @@ void GDABackend::alternate_qp_ports() {
      */
 
     /* Re-Map each context */
-    for (int i = 1; i < (maximum_num_contexts_ + 1); i+=2) {
-      for (int p = 0; p < num_pes; p+=2) {
+    for (size_t i = 1; i < (envvar::max_num_contexts + 1); i += 2) {
+      for (size_t p = 0; p < num_pes; p += 2) {
         cur_qp_idx = (i * num_pes) + p;
         new_qp_idx = cur_qp_idx + 1;
 

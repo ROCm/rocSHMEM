@@ -25,6 +25,7 @@
 #ifndef LIBRARY_SRC_MEMORY_SINGLE_HEAP_HPP_
 #define LIBRARY_SRC_MEMORY_SINGLE_HEAP_HPP_
 
+#include "envvar.hpp"
 #include "heap_memory.hpp"
 #include "heap_type.hpp"
 #if defined USE_ALLOC_DLMALLOC
@@ -163,7 +164,7 @@ class SingleHeap {
   /**
    * @brief Heap memory object
    */
-  HEAP_T heap_mem_{};
+  HEAP_T heap_mem_{envvar::heap_size};
 
   /**
    * @brief Allocation strategy object

@@ -35,6 +35,7 @@
 
 #include "backend_bc.hpp"
 #include "context_incl.hpp"
+#include "envvar.hpp"
 #if defined(USE_GDA)
 #include "gda/backend_gda.hpp"
 #include "gda/context_gda_tmpl_host.hpp"
@@ -229,9 +230,9 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
     assert (attr->rank < attr->nranks);
 
     bootstr = new TcpBootstrap(attr->rank, attr->nranks);
-    bootstr->initialize(attr->uid, rocshmem_env_.get_bootstrap_timeout());
+    bootstr->initialize(attr->uid, envvar::bootstrap::timeout);
 
-    if (rocshmem_env_.get_uniqueid_with_mpi() ) {
+    if (envvar::uniqueid_with_mpi) {
       library_init_subcomm(bootstr, attr->nranks, attr->rank);
     } else {
       library_init (bootstr);
