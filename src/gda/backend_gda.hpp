@@ -89,7 +89,7 @@ class GDABackend : public Backend {
     union ibv_gid gid;
   } dest_info_t;
 
-  char *requested_dev = nullptr;
+  const char *requested_dev = nullptr;
   struct ibv_context *context = nullptr;;
   struct ibv_pd *pd_orig = nullptr;
   enum GDAVendor gda_vendor = GDAVendor::NONE;
@@ -102,14 +102,12 @@ class GDABackend : public Backend {
   uint32_t *heap_rkey = nullptr;
   struct ibv_mr *heap_mr = nullptr;
 
-  uint32_t sq_size = 1024;
   uint32_t inline_threshold = 8;
   QueuePair *host_qps = nullptr;
   QueuePair *gpu_qps = nullptr;
   std::vector<ibv_qp*> qps;
   std::vector<ibv_cq*> cqs;
   std::vector<dest_info_t> dest_info;
-  int alternate_qp_ports_enabled = 1;;
 
   /* GDA_BNXT START */
   std::vector<struct bnxt_host_qp> bnxt_qps;
@@ -421,11 +419,6 @@ class GDABackend : public Backend {
    * @brief A free-list containing contexts.
    */
   FreeListProxy<HIPAllocator, GDAContext *> ctx_free_list{};
-
-  /**
-   * @brief Holds maximum number of contexts used in library
-   */
-  size_t maximum_num_contexts_{32};
 
   /**
    * @brief The bitmask representing the availability of teams in the pool

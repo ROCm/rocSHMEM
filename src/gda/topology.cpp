@@ -691,7 +691,7 @@ namespace rocshmem
   }
 
 
-  int GetClosestNicToGpu(int gpuIndex, char** dev_name)
+  int GetClosestNicToGpu(int gpuIndex, const char** dev_name)
   {
     static bool isInitialized = false;
     static std::vector<int> closestNicId;
@@ -771,7 +771,7 @@ namespace rocshmem
 
     DPRINTF("GPU Device id: %d closest NIC id : %d name: %s\n", gpuIndex, closestNicId[gpuIndex],
            ibvDeviceList[closestNicId[gpuIndex]].name.c_str());
-    if (dev_name != NULL) {
+    if (dev_name != nullptr) {
       *dev_name = strdup(ibvDeviceList[closestNicId[gpuIndex]].name.c_str());
     }
 

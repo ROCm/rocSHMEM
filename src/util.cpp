@@ -34,8 +34,6 @@ namespace rocshmem {
 
 __constant__ int* print_lock;
 
-rocshmem_env_config rocshmem_env_;
-
 typedef struct device_agent {
   hsa_agent_t agent;
   hsa_amd_memory_pool_t pool;
@@ -121,79 +119,6 @@ void rocm_memory_lock_to_fine_grain(void* ptr, size_t size, void** gpu_ptr,
     printf("Failed to lock memory pool (%p): 0x%x\n", ptr, status);
     exit(-1);
   }
-}
-
-
-rocshmem_env_config::rocshmem_env_config() {
-  char* env_value = NULL;
-
-  env_value = getenv("ROCSHMEM_DISABLE_IPC");
-  if (NULL != env_value) {
-    disable_ipc = atoi(env_value);
-  }
-  // For backward compatibility, synonymous with ROCSHMEM_DISABLE_IPC
-  env_value = getenv("ROCSHMEM_RO_DISABLE_IPC");
-  if (NULL != env_value) {
-    disable_ipc = atoi(env_value);
-  }
-
-  env_value = getenv("ROCSHMEM_RO_PROGRESS_DELAY");
-  if (nullptr != env_value) {
-    ro_progress_delay = atoi(env_value);
-  }
-
-  env_value = getenv("ROCSHMEM_UNIQUEID_WITH_MPI");
-  if (nullptr != env_value) {
-    uniqueid_with_mpi = atoi(env_value);
-  }
-
-  env_value = getenv("ROCSHMEM_BOOTSTRAP_TIMEOUT");
-  if (nullptr != env_value) {
-    bootstrap_timeout = atoi(env_value);
-  }
-
-  env_value = getenv("ROCSHMEM_BOOTSTRAP_HOSTID");
-  if (nullptr != env_value) {
-    bootstrap_hostid = std::string(env_value);
-  }
-
-  env_value = getenv("ROCSHMEM_BOOTSTRAP_SOCKET_FAMILY");
-  if (nullptr != env_value) {
-    bootstrap_socket_family = std::string(env_value);
-  }
-
-  env_value = getenv("ROCSHMEM_BOOTSTRAP_SOCKET_IFNAME");
-  if (nullptr != env_value) {
-    bootstrap_socket_ifname = std::string(env_value);
-  }
-}
-
-int rocshmem_env_config::get_disable_ipc() {
-  return disable_ipc;
-}
-
-int rocshmem_env_config::get_ro_progress_delay() {
-  return ro_progress_delay;
-}
-
-int rocshmem_env_config::get_uniqueid_with_mpi() {
-  return uniqueid_with_mpi;
-}
-
-int rocshmem_env_config::get_bootstrap_timeout() {
-  return bootstrap_timeout;
-}
-
-std::string rocshmem_env_config::get_bootstrap_hostid() {
-  return bootstrap_hostid;
-}
-
-std::string rocshmem_env_config::get_bootstrap_socket_family() {
-  return bootstrap_socket_family;
-}
-
-std::string rocshmem_env_config::get_bootstrap_socket_ifname() {
-  return bootstrap_socket_ifname;
 }
 
 }  // namespace rocshmem

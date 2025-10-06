@@ -237,11 +237,6 @@ class IPCBackend : public Backend {
   FreeListProxy<HIPAllocator, IPCContext *> ctx_free_list{};
 
   /**
-   * @brief Holds maximum number of contexts used in library
-   */
-  size_t maximum_num_contexts_{1024};
-
-  /**
    * @brief The bitmask representing the availability of teams in the pool
    */
   char *team_pool_bitmask_{nullptr};

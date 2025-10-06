@@ -32,6 +32,7 @@
 
 #include "host/host.hpp"
 #include "backend_ro.hpp"
+#include "envvar.hpp"
 #include "ro_net_team.hpp"
 #include "util.hpp"
 
@@ -585,8 +586,6 @@ std::unique_ptr<MPI_Request[]> MPITransport::raw_requests() {
 }
 
 void MPITransport::progress() {
-  static int progress_delay = rocshmem_env_.get_ro_progress_delay();
-
   if (requests.size() == 0) {
     const int tag{1000};
     int flag{0};
@@ -594,7 +593,7 @@ void MPITransport::progress() {
 
     // Slowing the progress engine down a bit avoid hammering the memory subsystem.
     // This leads to significant performance benefits
-    usleep (progress_delay);
+    usleep(envvar::ro::progress_delay);
     NET_CHECK(mpilib_ftable_.Iprobe(MPI_ANY_SOURCE, tag, ro_net_comm_world, &flag, &status));
   } else {
     DPRINTF("Testing all outstanding requests (%zu)\n", requests.size());
