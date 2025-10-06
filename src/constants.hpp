@@ -57,7 +57,11 @@ inline const unsigned MAX_WG_SIZE{1024};
  *
  * @note Wavefront size on most systems is either 32 or 64.
  */
+#if defined(__gfx90a__) || defined(__gfx942__) || defined (__gfx950__)
 inline const int WF_SIZE{64};
+#else
+inline const int WF_SIZE{32};
+#endif
 
 }  // namespace rocshmem
 
