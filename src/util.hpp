@@ -192,6 +192,13 @@ __device__ __forceinline__ int get_flat_block_id() {
 }
 
 /*
+ * Returns the number of blocks in the caller's flattened grid.
+ */
+__device__ __forceinline__ int get_grid_num_blocks() {
+  return hipGridDim_x * hipGridDim_y * hipGridDim_z;
+}
+
+/*
  * Returns the flattened block index that the calling thread is a member of in
  * in the grid. Callers from the same block will have the same index.
  */

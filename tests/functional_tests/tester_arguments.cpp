@@ -62,6 +62,13 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
     } else if (arg == "-x") {
       i++;
       shmem_context = atoi(argv[i]);
+    } else if (arg == "-m") {
+      int atomics_addr_mode = atoi(argv[i]);
+      if(atomics_addr_mode >= static_cast<int>(AddrMode::PerGrid) &&
+         atomics_addr_mode <= static_cast<int>(AddrMode::PerBlock)) {
+         addr_mode = static_cast<AddrMode>(atomics_addr_mode);
+      }
+      i++;
     } else {
       show_usage(argv[0]);
       exit(-1);
@@ -141,6 +148,7 @@ void TesterArguments::show_usage(std::string executable_name) {
   std::cout << "\t-o <Operation type for the random_access test>\n";
   std::cout << "\t-ta <Number of Thread Accessing the communication>\n";
   std::cout << "\t-x <shmem context>\n";
+  std::cout << "\t-m Atomics Address mode\n";
 }
 
 void TesterArguments::get_rocshmem_arguments() {
