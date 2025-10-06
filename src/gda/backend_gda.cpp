@@ -1054,7 +1054,7 @@ void GDABackend::create_cqs(int cqe) {
 
   for (int i = 0; i < qps.size(); i++) {
     if (gda_vendor == GDAVendor::IONIC) {
-      cq_attr.parent_domain = pd_uxdma[((i + 1) / 2) & 1];
+      cq_attr.parent_domain = pd_uxdma[i & 1];
     }
 
     cq_ex = ibv_create_cq_ex(context, &cq_attr);
@@ -1204,7 +1204,7 @@ void GDABackend::create_qps(int sq_length) {
 
   for (int i = 0; i < qps.size(); i++) {
     if (gda_vendor == GDAVendor::IONIC) {
-      attr.pd      = pd_uxdma[((i + 1) / 2) & 1];
+      attr.pd      = pd_uxdma[i & 1];
     }
     attr.send_cq = cqs[i];
     attr.recv_cq = cqs[i];
