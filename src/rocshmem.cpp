@@ -86,7 +86,8 @@ static BackendType select_backend_type() {
   BackendType type;
 
   /* Check whether the user explicitely requests a particular backend type */
-  std::string envstr = rocshmem_env_.get_backend();
+  std::string envstr = envvar::backend;
+  std::transform(envstr.begin(), envstr.end(), envstr.begin(), ::tolower);
   if (!envstr.empty()) {
     DPRINTF("Found environment variable ROCSHMEM_BACKEND, value is %s\n", envstr.c_str());
     if (envstr.find("gda") != std::string::npos) {
