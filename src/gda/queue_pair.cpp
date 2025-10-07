@@ -29,7 +29,6 @@
 #include "backend_gda.hpp"
 #include "endian.hpp"
 #include "segment_builder.hpp"
-#include "util.hpp"
 #include "constants.hpp"
 
 namespace rocshmem {
@@ -69,6 +68,7 @@ QueuePair::QueuePair(struct ibv_pd* pd, int gda_vendor) {
   /* Set Correct opcodes for each NIC */
 #if defined(GDA_IONIC)
   gda_op_rdma_write = IONIC_V2_OP_RDMA_WRITE;
+  gda_op_rdma_read  = IONIC_V2_OP_RDMA_READ;
   gda_op_atomic_fa  = IONIC_V2_OP_ATOMIC_FA;
   gda_op_atomic_cs  = IONIC_V2_OP_ATOMIC_CS;
 #endif
@@ -122,25 +122,6 @@ __device__ uint64_t QueuePair::get_same_qp_lane_mask() {
   return lane_mask;
 }
 
-__device__ bool QueuePair::cq_lock_try_acquire(uint64_t activemask) {
-  uint32_t cq_lock_val = SPIN_LOCK_INVALID;
-
-  if (is_first_active_lane(activemask)) {
-    cq_lock_val = SPIN_LOCK_UNLOCKED;
-    __hip_atomic_compare_exchange_strong(&cq_lock, &cq_lock_val, SPIN_LOCK_LOCKED,
-                                         __ATOMIC_ACQUIRE, __ATOMIC_ACQUIRE, __HIP_MEMORY_SCOPE_AGENT);
-  }
-  cq_lock_val = __shfl(cq_lock_val, get_first_active_lane_id(activemask));
-
-  return (cq_lock_val == SPIN_LOCK_UNLOCKED);
-}
-
-__device__ void QueuePair::cq_lock_release(uint64_t activemask) {
-  if (is_first_active_lane(activemask)) {
-    __hip_atomic_store(&cq_lock, SPIN_LOCK_UNLOCKED, __ATOMIC_RELEASE, __HIP_MEMORY_SCOPE_AGENT);
-  }
-}
-
 __device__ uint32_t QueuePair::reserve_sq(uint64_t activemask, uint32_t num_wqes) {
   uint32_t my_sq_prod = 0;
 
@@ -156,21 +137,18 @@ __device__ uint32_t QueuePair::reserve_sq(uint64_t activemask, uint32_t num_wqes
   return my_sq_prod;
 }
 
-__device__ uint32_t QueuePair::commit_sq(bool last, uint32_t my_sq_prod, uint32_t num_wqes, struct ionic_v1_wqe *wqe) {
+__device__ uint32_t QueuePair::commit_sq(uint64_t activemask, uint32_t my_sq_prod, uint32_t my_sq_pos, uint32_t num_wqes) {
   uint32_t dbprod = my_sq_prod + num_wqes;
 
-  if (last) {
-    // signal last wqe before the doorbell
-    wqe->base.flags |= swap_endian_val<uint16_t>(IONIC_V1_FLAG_SIG);
+  spin_lock_acquire_shared(&sq_lock, activemask);
 
-    while (__hip_atomic_load(&sq_dbprod, __ATOMIC_ACQUIRE, __HIP_MEMORY_SCOPE_AGENT) != my_sq_prod) {
-      // spin
-    }
+  if (is_first_active_lane(activemask) && ((sq_dbprod - dbprod) & (1u << 31))) {
+    sq_dbprod = dbprod;
 
     ionic_ring_doorbell(dbprod);
-
-    __hip_atomic_exchange(&sq_dbprod, dbprod, __ATOMIC_RELEASE, __HIP_MEMORY_SCOPE_AGENT);
   }
+
+  spin_lock_release_shared(&sq_lock, activemask);
 
   return dbprod;
 }
@@ -180,7 +158,7 @@ __device__ void QueuePair::poll_wave_cqes(uint64_t activemask) {
   uint32_t my_cq_pos = cq_pos + my_logical_lane_id;
 
   /* Look at the cqe at the current position in the cq buffer */
-  struct ionic_v1_cqe *cqe = &cq_buf[my_cq_pos & cq_mask];
+  struct ionic_v1_cqe *cqe = &ionic_cq_buf[my_cq_pos & cq_mask];
 
   /* Determine expected color based on cq wrap count */
   uint32_t qtf_color_bit = swap_endian_val<uint32_t>(IONIC_V1_CQE_COLOR);
@@ -189,18 +167,9 @@ __device__ void QueuePair::poll_wave_cqes(uint64_t activemask) {
     qtf_color_exp = 0;
   }
 
-  /* Wait for at least one thread cqe color == expected color */
-  uint32_t qtf_be;
-  bool ready;
-  uint64_t ballot_ready;
-  do {
-    qtf_be = *(volatile uint32_t *)(&cqe->qid_type_flags);
-    ready = (qtf_be & qtf_color_bit) == qtf_color_exp;
-    ballot_ready = __ballot(ready);
-  } while (!ballot_ready);
-
-  /* Other threads saw a ready cqe, but not this thread */
-  if (!ready) {
+  /* Check if my cqe color == expected color */
+  uint32_t qtf_be = *(volatile uint32_t *)(&cqe->qid_type_flags);
+  if ((qtf_be & qtf_color_bit) != qtf_color_exp) {
     return;
   }
 
@@ -214,10 +183,10 @@ __device__ void QueuePair::poll_wave_cqes(uint64_t activemask) {
     uint32_t type = (qtf >> IONIC_V1_CQE_TYPE_SHIFT) & IONIC_V1_CQE_TYPE_MASK;
     uint32_t flag = qtf & 0xf;
     uint32_t status = swap_endian_val<uint32_t>(cqe->status_length);
-    uint64_t npg = swap_endian_val<uint64_t>(cqe->send.npg_wqe_id);
+    uint64_t npg = cqe->send.npg_wqe_idx_timestamp & IONIC_V1_CQE_WQE_IDX_MASK;
 
-    printf("QUIET ERROR: qid %u type %u flag %#x status %u msn %u npg %lu\n",
-        qid, type, flag, status, msn, npg);
+    printf("QUIET ERROR: %s qid %u type %u flag %#x status %u msn %u npg %lu\n",
+        dev_name, qid, type, flag, status, msn, npg);
 #endif
     /* No other way to signal an error, so just crash. */
     abort();
@@ -226,7 +195,7 @@ __device__ void QueuePair::poll_wave_cqes(uint64_t activemask) {
   /* Only proceed with the furthest ahead cqe to update the sq state */
   uint64_t my_lane_mask = 1ull << __lane_id();
   uint64_t lesser_lane_mask = my_lane_mask - 1;
-  if (my_lane_mask != (ballot_ready & ~lesser_lane_mask)) {
+  if (my_lane_mask != (__ballot(true) & activemask & ~lesser_lane_mask)) {
     return;
   }
 
@@ -247,19 +216,33 @@ __device__ void QueuePair::poll_wave_cqes(uint64_t activemask) {
 }
 
 __device__ void QueuePair::ionic_quiet_internal(uint64_t activemask, uint32_t cons) {
+  uint32_t greed = 10;
+
   /* wait for sq_msn to catch up or pass cons. */
   /* 0x800000 - sign bit for 24-bit fields     */
   while ((sq_msn - cons) & 0x800000) {
-    if (!cq_lock_try_acquire(activemask)) {
+    if (!spin_lock_try_acquire_shared(&cq_lock, activemask)) {
       continue;
     }
 
     /* with lock acquired, this wave polls cqes until caught up */
     while ((sq_msn - cons) & 0x800000) {
+      uint32_t old_sq_msn = sq_msn;
+
       poll_wave_cqes(activemask);
+
+      if (!((sq_msn - cons) & 0x800000)) {
+        if (sq_msn == old_sq_msn) {
+          break;
+        }
+        if (!greed) {
+          break;
+        }
+        --greed;
+      }
     }
 
-    cq_lock_release(activemask);
+    spin_lock_release_shared(&cq_lock, activemask);
     break;
   }
 }
@@ -452,17 +435,25 @@ __device__ void QueuePair::ionic_post_wqe_rma(int pe, int32_t size, uintptr_t *l
   uint32_t my_logical_lane_id = get_active_lane_num(activemask);
   uint32_t my_sq_prod = reserve_sq(activemask, num_wqes);
   uint32_t my_sq_pos = my_sq_prod + my_logical_lane_id;
-  struct ionic_v1_wqe *wqe = &sq_buf[my_sq_pos & sq_mask];
+  struct ionic_v1_wqe *wqe = &ionic_sq_buf[my_sq_pos & sq_mask];
+  uint16_t wqe_flags = 0;
+
+  if (!(my_sq_pos & (sq_mask + 1))) {
+    wqe_flags |= swap_endian_val<uint16_t>(IONIC_V1_FLAG_COLOR);
+  }
+
+  if (is_last_active_lane(activemask)) {
+    wqe_flags |= swap_endian_val<uint16_t>(IONIC_V1_FLAG_SIG);
+  }
 
   // TODO why is this needed?
   if (size && !laddr && opcode == IONIC_V2_OP_RDMA_WRITE) {
     size = 1;
   }
 
-  wqe->base.wqe_id = my_sq_pos;
+  wqe->base.wqe_idx = my_sq_pos;
   wqe->base.op = opcode;
   wqe->base.num_sge_key = size ? 1 : 0;
-  wqe->base.flags = swap_endian_val<uint16_t>(0);
   wqe->base.imm_data_key = swap_endian_val<uint32_t>(0);
 
   wqe->common.rdma.remote_va_high = swap_endian_val<uint32_t>(reinterpret_cast<uint64_t>(raddr) >> 32);
@@ -472,7 +463,7 @@ __device__ void QueuePair::ionic_post_wqe_rma(int pe, int32_t size, uintptr_t *l
 
   if (size) {
     if (opcode == IONIC_V2_OP_RDMA_WRITE && size <= inline_threshold) {
-      wqe->base.flags |= swap_endian_val<uint16_t>(IONIC_V1_FLAG_INL);
+      wqe_flags |= swap_endian_val<uint16_t>(IONIC_V1_FLAG_INL);
       wqe->base.num_sge_key = 0;
       if (!laddr) {
         // TODO why is this needed?
@@ -487,7 +478,9 @@ __device__ void QueuePair::ionic_post_wqe_rma(int pe, int32_t size, uintptr_t *l
     }
   }
 
-  commit_sq(is_last_active_lane(activemask), my_sq_prod, num_wqes, wqe);
+  __hip_atomic_store(&wqe->base.flags, wqe_flags, __ATOMIC_RELEASE, __HIP_MEMORY_SCOPE_AGENT);
+
+  commit_sq(activemask, my_sq_prod, my_sq_pos, num_wqes);
 }
 #endif
 
@@ -563,7 +556,8 @@ __device__ uint64_t QueuePair::ionic_post_wqe_amo(int pe, int32_t size, uintptr_
   const uint64_t leader_phys_lane_id = get_first_active_lane_id(activemask);
   uint32_t my_sq_prod = reserve_sq(activemask, num_wqes);
   uint32_t my_sq_pos = my_sq_prod + my_logical_lane_id;
-  struct ionic_v1_wqe *wqe = &sq_buf[my_sq_pos & sq_mask];
+  struct ionic_v1_wqe *wqe = &ionic_sq_buf[my_sq_pos & sq_mask];
+  uint16_t wqe_flags = 0;
   uint32_t cons;
 
   uint64_t* wave_fetch_atomic{nullptr};
@@ -578,10 +572,17 @@ __device__ uint64_t QueuePair::ionic_post_wqe_amo(int pe, int32_t size, uintptr_
     wave_fetch_atomic = (uint64_t*)__shfl((uint64_t)wave_fetch_atomic, leader_phys_lane_id);
   }
 
-  wqe->base.wqe_id = my_sq_pos;
+  if (!(my_sq_pos & (sq_mask + 1))) {
+    wqe_flags |= swap_endian_val<uint16_t>(IONIC_V1_FLAG_COLOR);
+  }
+
+  if (is_last_active_lane(activemask)) {
+    wqe_flags |= swap_endian_val<uint16_t>(IONIC_V1_FLAG_SIG);
+  }
+
+  wqe->base.wqe_idx = my_sq_pos;
   wqe->base.op = opcode;
   wqe->base.num_sge_key = 1;
-  wqe->base.flags = swap_endian_val<uint16_t>(0);
   wqe->base.imm_data_key = swap_endian_val<uint32_t>(0);
 
   wqe->atomic_v2.remote_va_high = swap_endian_val<uint32_t>(reinterpret_cast<uint64_t>(raddr) >> 32);
@@ -600,7 +601,9 @@ __device__ uint64_t QueuePair::ionic_post_wqe_amo(int pe, int32_t size, uintptr_
     wqe->atomic_v2.lkey = swap_endian_val<uint32_t>(nonfetching_atomic_lkey);
   }
 
-  cons = commit_sq(is_last_active_lane(activemask), my_sq_prod, num_wqes, wqe);
+  __hip_atomic_store(&wqe->base.flags, wqe_flags, __ATOMIC_RELEASE, __HIP_MEMORY_SCOPE_AGENT);
+
+  cons = commit_sq(activemask, my_sq_prod, my_sq_pos, num_wqes);
 
   uint64_t ret{0};
   if (fetching) {
