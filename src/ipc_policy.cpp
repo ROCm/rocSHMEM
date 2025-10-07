@@ -108,7 +108,7 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
    */
   free(vec_ipc_handle);
 
-  if (!envvar::ro::disable_ipc) {
+  if (!envvar::disable_ipc && !envvar::ro::disable_ipc) {
     int thread_comm_rank {-1};
 
     CHECK_HIP(hipMalloc(reinterpret_cast<void**>(&pes_with_ipc_avail), shm_size * sizeof(int)));
@@ -187,7 +187,7 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
    */
   free(vec_ipc_handle);
 
-  if (!envvar::ro::disable_ipc) {
+  if (!envvar::disable_ipc && !envvar::ro::disable_ipc) {
     int thread_comm_rank {-1};
 
     CHECK_HIP(hipMalloc(reinterpret_cast<void**>(&pes_with_ipc_avail), shm_size * sizeof(int)));
