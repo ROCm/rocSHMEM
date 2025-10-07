@@ -62,7 +62,6 @@ __global__ void RandomAccessTest(int loop, int skip, long long int *start_time,
                                  uint32_t *PE_bins, ShmemContextType ctx_type) {
   __shared__ rocshmem_ctx_t ctx;
   int wg_id = get_flat_grid_id();
-  rocshmem_wg_init();
   rocshmem_wg_ctx_create(ctx_type, &ctx);
 
   int pe = rocshmem_ctx_my_pe(ctx);
@@ -97,7 +96,6 @@ __global__ void RandomAccessTest(int loop, int skip, long long int *start_time,
     end_time[wg_id] = wall_clock64();
   }
   rocshmem_wg_ctx_destroy(&ctx);
-  rocshmem_wg_finalize();
 }
 
 /******************************************************************************

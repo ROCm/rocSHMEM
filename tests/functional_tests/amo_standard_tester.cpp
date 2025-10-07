@@ -260,7 +260,6 @@ void AMOStandardTester<T>::verifyResults(size_t size) {
     int t_id      = get_flat_block_id();                                       \
     int n_threads = get_flat_grid_size();                                      \
     int n_wgs     = get_grid_num_blocks();                                     \
-    rocshmem_wg_init();                                                        \
     rocshmem_wg_ctx_create(ctx_type, &ctx);                                    \
     for (int i = 0; i < loop + skip; i++) {                                    \
       T *ptr = compute_target_ptr<T>(dest, addr_mode, wg_id, i, n_wgs);        \
@@ -294,7 +293,6 @@ void AMOStandardTester<T>::verifyResults(size_t size) {
     end_time[wg_id] = wall_clock64();                                          \
     __syncthreads();                                                           \
     rocshmem_wg_ctx_destroy(&ctx);                                             \
-    rocshmem_wg_finalize();                                                    \
   }                                                                            \
   template class AMOStandardTester<T>;
 
