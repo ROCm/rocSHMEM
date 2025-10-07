@@ -330,9 +330,14 @@ class GDABackend : public Backend {
   void cleanup_ibv();
 
   /**
-   * @brief Detect the available direct verbs libraries
+   * @brief Detect and load the available direct verbs libraries
    */
-  void autodetect_dv_libs();
+  void open_dv_libs();
+
+  /**
+   * @ brief Close opened direct versbs libraries
+   */
+  void close_dv_libs();
 
   /**
    * @brief Open InfiniBand Device and create common structures
@@ -516,6 +521,11 @@ class GDABackend : public Backend {
   int bnxt_dv_dl_init();
 
   /**
+   * @brief open bnxt dv lib
+   */
+  static void* bnxt_dv_dlopen();
+
+  /**
    * @brief structures holding the function pointers to the direct verbs functionality
    * of each network driver.
    */
@@ -532,6 +542,11 @@ class GDABackend : public Backend {
   int mlx5_dv_dl_init();
 
   /**
+   * @brief open mlx5 dv lib
+   */
+  static void* mlx5_dv_dlopen();
+
+  /**
    * @brief structures holding the function pointers to the direct verbs functionality
    * of each network driver.
    */
@@ -546,6 +561,11 @@ class GDABackend : public Backend {
    * @brief initialize function table for IONIC direct verbs support
    */
   int ionic_dv_dl_init();
+
+  /**
+   * @brief open ionic dv lib
+   */
+  static void* ionic_dv_dlopen();
 };
 
 }  // namespace rocshmem

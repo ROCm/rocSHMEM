@@ -25,7 +25,7 @@
 #include "segment_builder.hpp"
 
 #include "util.hpp"
-#include "endian.hpp"
+#include "gda/endian.hpp"
 
 namespace rocshmem {
 

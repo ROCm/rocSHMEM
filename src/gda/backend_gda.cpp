@@ -122,11 +122,7 @@ GDABackend::~GDABackend() {
   cleanup_heap_memory_rkey();
   cleanup_ibv();
 
-  if (bnxtdv_handle_ != nullptr)
-    dlclose(bnxtdv_handle_);
-
-  if (mlx5dv_handle_ != nullptr)
-    dlclose(mlx5dv_handle_);
+  close_dv_libs();
 }
 
 void GDABackend::read_env() {
@@ -532,17 +528,6 @@ void GDABackend::rte_barrier() {
   }
 }
 
-int GDABackend::mlx5_dv_dl_init () {
-  mlx5dv_handle_ = dlopen("libmlx5.so", RTLD_NOW);
-  if (!mlx5dv_handle_) {
-    DPRINTF("Could not open libmlx5.so. Returning\n");
-    return ROCSHMEM_ERROR;
-  }
-
-  DLSYM_HELPER(mlx5dv, mlx5dv_, mlx5dv_handle_, init_obj);
-  return ROCSHMEM_SUCCESS;
-}
-
 /* Currently we only check whether we can dlopen a Direct Verbs library.
 ** We might need to extend this logic to check whether we have interfaces that
 ** can use those DV libraries
@@ -551,33 +536,37 @@ int GDABackend::backend_can_run() {
   void *handle{nullptr};
 
   /* Try opening bnxt DV libraries */
-  handle = dlopen("libbnxt_re.so", RTLD_NOW);
+#if defined(GDA_BNXT)
+  handle = bnxt_dv_dlopen();
   if (handle) {
     dlclose(handle);
     return ROCSHMEM_SUCCESS;
-  } else {
-    /* Try hard-coded PATH */
-    handle = dlopen("/usr/local/lib/libbnxt_re.so", RTLD_NOW);
-    if (handle) {
-      dlclose(handle);
-      return ROCSHMEM_SUCCESS;
-    }
   }
+#endif //defined(GDA_BNXT)
+
+  /* Try opening ionic DV libraries */
+#if defined(GDA_IONIC)
+  handle = ionic_dv_dlopen();
+  if (handle) {
+    dlclose(handle);
+    return ROCSHMEM_SUCCESS;
+  }
+#endif //defined(GDA_IONIC)
 
   /* Try opening mlx5 DV libraries */
-  handle = dlopen("libmlx5.so", RTLD_NOW);
+#if defined(GDA_MLX5)
+  handle = mlx5_dv_dlopen();
   if (handle) {
     dlclose(handle);
     return ROCSHMEM_SUCCESS;
   }
-
-  /* ToDo: opening ionic DV libraries */
+#endif //defined(GDA_MLX5)
 
   return ROCSHMEM_ERROR;
 }
 
 void GDABackend::setup_ibv() {
-  autodetect_dv_libs();
+  open_dv_libs();
 
   open_ib_device();
 
@@ -647,7 +636,7 @@ void GDABackend::cleanup_ibv() {
   CHECK_ZERO(err, "ibv_close_device");
 }
 
-void GDABackend::autodetect_dv_libs() {
+void GDABackend::open_dv_libs() {
   int ret;
 
   //TODO: environment variable selection/deselection
@@ -691,11 +680,23 @@ void GDABackend::autodetect_dv_libs() {
 #endif // defined(GDA_MLX5)
 
   if (gda_vendor == GDAVendor::NONE) {
-    printf("Initializing rocSHMEM with IONIC, BNXT, or MLX5 GDA support failed\n");
+    DPRINTF("Initializing rocSHMEM with IONIC, BNXT, or MLX5 GDA support failed: no DV library found\n");
     abort();
   }
 }
 
+void GDABackend::close_dv_libs() {
+  if (ionicdv_handle_ != nullptr)
+    dlclose(ionicdv_handle_);
+
+  if (bnxtdv_handle_ != nullptr)
+    dlclose(bnxtdv_handle_);
+
+  if (mlx5dv_handle_ != nullptr)
+    dlclose(mlx5dv_handle_);
+
+  gda_vendor = GDAVendor::NONE;
+}
 
 void GDABackend::exchange_qp_dest_info() {
   for (int i = 0; i < qps.size(); i++) {

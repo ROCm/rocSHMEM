@@ -219,16 +219,23 @@ void GDABackend::bnxt_create_qps(int sq_length) {
   }
 }
 
-int GDABackend::bnxt_dv_dl_init() {
-  bnxtdv_handle_ = dlopen("libbnxt_re.so", RTLD_NOW);
-  if (!bnxtdv_handle_) {
+void* GDABackend::bnxt_dv_dlopen() {
+  void* dv_handle{nullptr};
+  dv_handle = dlopen("libbnxt_re.so", RTLD_NOW);
+  if (!dv_handle) {
     // Try hard-coded PATH
-    bnxtdv_handle_ = dlopen("/usr/local/lib/libbnxt_re.so", RTLD_NOW);
-    if (!bnxtdv_handle_) {
+    dv_handle = dlopen("/usr/local/lib/libbnxt_re.so", RTLD_NOW);
+    if (!dv_handle) {
       DPRINTF("Could not open libbnxt_re.so. Returning\n");
-      return ROCSHMEM_ERROR;
     }
   }
+  return dv_handle;
+}
+
+int GDABackend::bnxt_dv_dl_init() {
+  bnxtdv_handle_ = bnxt_dv_dlopen();
+  if (!bnxtdv_handle_)
+    return ROCSHMEM_ERROR;
 
   DLSYM_HELPER(bnxt_re_dv, bnxt_re_dv_, bnxtdv_handle_, init_obj);
   DLSYM_HELPER(bnxt_re_dv, bnxt_re_dv_, bnxtdv_handle_, create_qp);

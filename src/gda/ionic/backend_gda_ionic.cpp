@@ -90,16 +90,23 @@ void GDABackend::ionic_setup_parent_domain(struct ibv_parent_domain_init_attr* p
   }
 }
 
-int GDABackend::ionic_dv_dl_init() {
-  ionicdv_handle_ = dlopen("libionic.so", RTLD_NOW);
-  if (!ionicdv_handle_) {
+void* GDABackend::ionic_dv_dlopen() {
+  void* dv_handle{nullptr};
+  dv_handle = dlopen("libionic.so", RTLD_NOW);
+  if (!dv_handle) {
     // Try hard-coded PATH
-    ionicdv_handle_ = dlopen("/usr/local/lib/libionic.so", RTLD_NOW);
-    if (!ionicdv_handle_) {
+    dv_handle = dlopen("/usr/local/lib/libionic.so", RTLD_NOW);
+    if (!dv_handle) {
       DPRINTF("Could not open libionic.so. Returning\n");
-      return ROCSHMEM_ERROR;
     }
   }
+  return dv_handle;
+}
+
+int GDABackend::ionic_dv_dl_init() {
+  ionicdv_handle_ = ionic_dv_dlopen();
+  if (!ionicdv_handle_)
+    return ROCSHMEM_ERROR;
 
   DLSYM_HELPER(ionic_dv, ionic_dv_, ionicdv_handle_, get_ctx);
   DLSYM_HELPER(ionic_dv, ionic_dv_, ionicdv_handle_, qp_get_udma_idx);
