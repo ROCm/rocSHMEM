@@ -63,6 +63,8 @@ class TeamInfo;
  */
 class Backend {
  public:
+  friend Context;
+
   /**
    * @brief Constructor.
    *
@@ -286,7 +288,7 @@ class Backend {
    * rely on the normal inheritance mechanism to tailor behavior for
    * derived backend types.
    */
-  BackendType type{BackendType::RO_BACKEND};
+  BackendType type;
 
   /**
    * @brief Dumps derived class statistics.

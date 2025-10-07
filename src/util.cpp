@@ -26,6 +26,8 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cctype>
+#include <algorithm>
 #include <vector>
 
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)

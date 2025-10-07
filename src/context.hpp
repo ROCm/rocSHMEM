@@ -472,6 +472,11 @@ class Context {
   int my_pe{-1};
 
   /**
+   * @brief Duplicated local copy of backend's type
+   */
+  BackendType btype;
+  
+  /**
    * @brief Stats common to all types of device contexts.
    */
   ROCStats ctxStats{};
