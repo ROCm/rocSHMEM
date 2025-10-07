@@ -841,6 +841,7 @@ void GDABackend::modify_qps_init_to_rtr() {
     attr.ah_attr.is_global      = 1;
     attr.ah_attr.grh.hop_limit  = 1;
     attr.ah_attr.sl             = 1;
+    attr.ah_attr.grh.traffic_class = envvar::gda::traffic_class;
   }
 
   attr_mask = IBV_QP_STATE
@@ -882,9 +883,9 @@ void GDABackend::modify_qps_rtr_to_rts() {
   attr.rnr_retry     = 7;
 
   if (gda_vendor == GDAVendor::IONIC) {
-    attr.max_dest_rd_atomic = 15;
+    attr.max_rd_atomic = 15;
   } else {
-    attr.max_dest_rd_atomic = 1;
+    attr.max_rd_atomic = 1;
   }
 
   attr_mask = IBV_QP_STATE
@@ -1053,7 +1054,7 @@ void GDABackend::create_cqs(int cqe) {
 
   for (int i = 0; i < qps.size(); i++) {
     if (gda_vendor == GDAVendor::IONIC) {
-      cq_attr.parent_domain = pd_uxdma[((i + 1) / 2) & 1];
+      cq_attr.parent_domain = pd_uxdma[i & 1];
     }
 
     cq_ex = ibv_create_cq_ex(context, &cq_attr);
@@ -1093,7 +1094,7 @@ void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   gpu_qp->cq_dbval = dvcq.q.db_val;
   gpu_qp->cq_mask = dvcq.q.mask;
 
-  gpu_qp->cq_buf = reinterpret_cast<ionic_v1_cqe*>(dvcq.q.ptr);
+  gpu_qp->ionic_cq_buf = reinterpret_cast<ionic_v1_cqe*>(dvcq.q.ptr);
 
   ionic_dv_qp dvqp;
   ionic_dv_get_qp(&dvqp, qps[conn_num]);
@@ -1101,7 +1102,12 @@ void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   gpu_qp->sq_dbreg = gpu_db_sq;
   gpu_qp->sq_dbval = dvqp.sq.db_val;
   gpu_qp->sq_mask = dvqp.sq.mask;
-  gpu_qp->sq_buf = reinterpret_cast<ionic_v1_wqe *>(dvqp.sq.ptr);
+  gpu_qp->ionic_sq_buf = reinterpret_cast<ionic_v1_wqe *>(dvqp.sq.ptr);
+
+  strncpy(gpu_qp->dev_name,
+          qps[conn_num]->context->device->name,
+          sizeof(gpu_qp->dev_name));
+  gpu_qp->dev_name[sizeof(gpu_qp->dev_name) - 1] = 0;
 
   gpu_qp->qp_num = qps[conn_num]->qp_num;
   gpu_qp->lkey = heap_mr->lkey;
@@ -1198,7 +1204,7 @@ void GDABackend::create_qps(int sq_length) {
 
   for (int i = 0; i < qps.size(); i++) {
     if (gda_vendor == GDAVendor::IONIC) {
-      attr.pd      = pd_uxdma[((i + 1) / 2) & 1];
+      attr.pd      = pd_uxdma[i & 1];
     }
     attr.send_cq = cqs[i];
     attr.recv_cq = cqs[i];

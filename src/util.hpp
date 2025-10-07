@@ -265,6 +265,76 @@ __device__ __forceinline__ bool is_last_active_lane() {
   return is_last_active_lane(get_active_lane_mask());
 }
 
+#define SPIN_LOCK_INVALID  0xdead
+#define SPIN_LOCK_UNLOCKED 0x1234
+#define SPIN_LOCK_LOCKED   0xabcd
+
+/*
+ * Each thread in wave tries to acquire a different lock.
+ */
+__device__ __forceinline__ bool spin_lock_try_acquire_unique(uint32_t *lock) {
+  uint32_t lock_val = SPIN_LOCK_UNLOCKED;
+
+  __hip_atomic_compare_exchange_strong(lock, &lock_val, SPIN_LOCK_LOCKED,
+                                       __ATOMIC_ACQUIRE, __ATOMIC_ACQUIRE,
+                                       __HIP_MEMORY_SCOPE_AGENT);
+
+  return lock_val == SPIN_LOCK_UNLOCKED;
+}
+
+/*
+ * Each thread in wave acquires a different lock.
+ * (deadlock if locks are not different)
+ */
+__device__ __forceinline__ void spin_lock_acquire_unique(uint32_t *lock) {
+  while (!spin_lock_try_acquire_unique(lock)) {
+    // spin
+  }
+}
+
+/*
+ * Each thread in wave releases a different lock.
+ */
+__device__ __forceinline__ void spin_lock_release_unique(uint32_t *lock) {
+  __hip_atomic_store(lock, SPIN_LOCK_UNLOCKED, __ATOMIC_RELEASE,
+                     __HIP_MEMORY_SCOPE_AGENT);
+}
+
+/*
+ * Threads in activemask together try to acquire the same lock.
+ */
+__device__ __forceinline__ bool spin_lock_try_acquire_shared(uint32_t *lock, uint64_t activemask) {
+  uint32_t lock_val = SPIN_LOCK_INVALID;
+
+  if (is_first_active_lane(activemask)) {
+    lock_val = SPIN_LOCK_UNLOCKED;
+    __hip_atomic_compare_exchange_strong(lock, &lock_val, SPIN_LOCK_LOCKED,
+                                         __ATOMIC_ACQUIRE, __ATOMIC_ACQUIRE,
+                                         __HIP_MEMORY_SCOPE_AGENT);
+  }
+  lock_val = __shfl(lock_val, get_first_active_lane_id(activemask));
+
+  return lock_val == SPIN_LOCK_UNLOCKED;
+}
+
+/*
+ * Threads in activemask together acquire the same lock.
+ */
+__device__ __forceinline__ void spin_lock_acquire_shared(uint32_t *lock, uint64_t activemask) {
+  while (!spin_lock_try_acquire_shared(lock, activemask)) {
+    // spin
+  }
+}
+
+/*
+ * Threads in activemask together release the same lock.
+ */
+__device__ __forceinline__ void spin_lock_release_shared(uint32_t *lock, uint64_t activemask) {
+  if (is_first_active_lane(activemask)) {
+    __hip_atomic_store(lock, SPIN_LOCK_UNLOCKED, __ATOMIC_RELEASE,
+                       __HIP_MEMORY_SCOPE_AGENT);
+  }
+}
 
 extern __constant__ int* print_lock;
 

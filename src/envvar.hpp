@@ -106,9 +106,12 @@ namespace envvar {
   };
 
   using var_types = unique_type_sequence_t<bool,
+                                           uint8_t,
+                                           int32_t,
+                                           uint32_t,
                                            size_t,
                                            int64_t,
-                                           uint32_t,
+                                           uint64_t,
                                            useconds_t,
                                            std::string,
                                            types::socket_family,
@@ -443,6 +446,7 @@ namespace envvar {
   namespace gda {
     template <typename T> using var = var<T, category::tag::GDA>;
     extern const var<bool> alternate_qp_ports;
+    extern const var<uint8_t> traffic_class;
   }  // namespace gda
 }  // namespace envvar
 }  // namespace rocshmem
