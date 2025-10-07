@@ -18,6 +18,7 @@
 ### Removed
 
 * rocSHMEM no-longer requires rocPRIM and rocThrust as dependencies
+* Removed MPI compile-time dependency
 
 ### Changed
 * `rocshmem_ptr`  has an implementation that can return non-null pointer to
