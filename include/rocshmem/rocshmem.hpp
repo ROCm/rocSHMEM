@@ -98,8 +98,8 @@ __host__ void * rocshmem_get_device_ctx();
  *                      This can be used to issue load/store from custom kernels
  *                      instead of using rocshmem device side get/put APIs for RMA operations.
  */
-__host__ void *rocshmem_ptr(void *dest, int pe);
-__device__ ATTR_NO_INLINE void *rocshmem_ptr(const void *dest, int pe);
+__host__ void* rocshmem_ptr(const void *dest, int pe);
+__device__ ATTR_NO_INLINE void* rocshmem_ptr(const void *dest, int pe);
 
 #if defined(HAVE_EXTERNAL_MPI)
 /**
