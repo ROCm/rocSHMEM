@@ -643,7 +643,7 @@ void GDABackend::open_dv_libs() {
   //this hardcoded init order will always prefer BNXT>IONIC>MLX5
   //if all three drivers are installed
 
-#if defined(GDA_BXNT)
+#if defined(GDA_BNXT)
   if (gda_vendor == GDAVendor::NONE) {
     ret = bnxt_dv_dl_init();
 
