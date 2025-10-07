@@ -28,11 +28,11 @@
 namespace rocshmem {
 
 void GDABackend::ionic_initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
-  int hip_dev_id{-1};
-  CHECK_HIP(hipGetDevice(&hip_dev_id));
-
   ionic_dv_ctx dvctx;
   ionic_dv.get_ctx(&dvctx, context);
+
+  int hip_dev_id{-1};
+  CHECK_HIP(hipGetDevice(&hip_dev_id));
 
   void* gpu_db_page = nullptr;
   rocm_memory_lock_to_fine_grain(dvctx.db_page, 0x1000, &gpu_db_page, hip_dev_id);

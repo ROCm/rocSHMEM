@@ -318,6 +318,7 @@ class GDABackend : public Backend {
   void initialize_gpu_qp(QueuePair* qp, int conn_num);
   void bnxt_initialize_gpu_qp(QueuePair* qp, int conn_num);
   void ionic_initialize_gpu_qp(QueuePair* qp, int conn_num);
+  void mlx5_initialize_gpu_qp(QueuePair* qp, int conn_num);
 
   /**
    * @brief Setup InfiniBand Resources
