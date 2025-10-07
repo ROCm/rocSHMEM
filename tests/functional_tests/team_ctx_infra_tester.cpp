@@ -44,7 +44,6 @@ rocshmem_team_t team_world_dup[NUM_TEAMS];
                                          int expected_pe, int expected_n_pes) {
     __shared__ rocshmem_ctx_t ctx;
 
-    rocshmem_wg_init();
     rocshmem_wg_team_create_ctx(team, ctx_type, &ctx);
 
     int num_pes = rocshmem_ctx_n_pes(ctx);
@@ -64,7 +63,6 @@ rocshmem_team_t team_world_dup[NUM_TEAMS];
 
     rocshmem_ctx_quiet(ctx);
     rocshmem_wg_ctx_destroy(&ctx);
-    rocshmem_wg_finalize();
   }
 
  __global__ void TeamCtxInfraTest(ShmemContextType ctx_type,
@@ -72,7 +70,6 @@ rocshmem_team_t team_world_dup[NUM_TEAMS];
   __shared__ rocshmem_ctx_t ctx1, ctx2, ctx3;
   __shared__ rocshmem_ctx_t ctx[NUM_TEAMS];
 
-  rocshmem_wg_init();
 
   /**
    * Test 1: Assert team infos of different ctxs
@@ -131,7 +128,6 @@ rocshmem_team_t team_world_dup[NUM_TEAMS];
     rocshmem_wg_ctx_destroy(&ctx[team_i]);
   }
 
-  rocshmem_wg_finalize();
 }
 
 /******************************************************************************

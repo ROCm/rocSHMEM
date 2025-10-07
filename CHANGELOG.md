@@ -1,5 +1,14 @@
 # Changelog for rocSHMEM
 
+## rocSHMEM 3.x.x for ROCm 7.x.x
+
+### Changed
+
+* The following APIs have been deprecated:
+  * `rocshmem_wg_init`
+  * `rocshmem_wg_finalize`
+  * `rocshmem_wg_init_thread`
+
 ## rocSHMEM 3.0.0 for ROCm 7.0.0
 
 ### Added

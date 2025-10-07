@@ -374,7 +374,7 @@ __host__ void rocshmem_global_exit(int status);
  *
  * @return void.
  */
-__device__ void rocshmem_wg_init();
+[[deprecated]] __device__ void rocshmem_wg_init();
 
 /**
  * @brief Finalizes device-side rocSHMEM resources. Must be called before
@@ -384,7 +384,7 @@ __device__ void rocshmem_wg_init();
  *
  * @return void.
  */
-__device__ void rocshmem_wg_finalize();
+[[deprecated]] __device__ void rocshmem_wg_finalize();
 
 /**
  * @brief Initializes device-side rocSHMEM resources. Must be called before
@@ -400,7 +400,7 @@ __device__ void rocshmem_wg_finalize();
  *
  * @return void.
  */
-__device__ void rocshmem_wg_init_thread(int requested, int *provided);
+[[deprecated]] __device__ void rocshmem_wg_init_thread(int requested, int *provided);
 
 /**
  * @brief Query the thread mode used by the runtime.

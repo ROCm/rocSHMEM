@@ -23,12 +23,16 @@ you must select the device that this PE is associated to by calling
 `hipSetDevice
 <https://rocm.docs.amd.com/projects/HIP/en/docs-6.0.0/doxygen/html/group___device.html#ga43c1e7f15925eeb762195ccb5e063eae>`_.
 
-.. cpp:function:: __device__ void rocshmem_wg_init(void)
+.. WARNING::
+   Routine `rocshmem_wg_init` has been deprecated.
+
+.. cpp:function:: [[deprecated]] __device__ void rocshmem_wg_init(void)
 
   :Parameters: None.
   :returns: None.
 
 **Description:**
+This routine has been deprecated, please do not use.
 This routine initializes device-side rocSHMEM resources.
 It must be called before any threads in this work-group invoke other rocSHMEM functions.
 It must be called collectively by all threads in the work-group.
@@ -43,12 +47,16 @@ ROCSHMEM_FINALIZE
 **Description:**
 This routine finalizes the rocSHMEM library.
 
-.. cpp:function:: __device__ void rocshmem_wg_finalize(void)
+.. WARNING::
+   Routine `rocshmem_wg_finalize` has been deprecated.
+
+.. cpp:function:: [[deprecated]] __device__ void rocshmem_wg_finalize(void)
 
   :Parameters: None.
   :returns: None.
 
 **Description:**
+This routine has been deprecated, please do not use.
 This routine finalizes device-side rocSHMEM resources.
 It must be called before work-group completion if the work-group also called ``rocshmem_wg_init``.
 It must be called collectively by all threads in the work-group.
@@ -65,7 +73,7 @@ ROCSHMEM_INIT_ATTR
 **Description:**
 This routine initializes the rocSHMEM runtime and underlying transport layer using
 the provided mode and attributes.
-The parameter ``flags`` can be either 
+The parameter ``flags`` can be either
 ``ROCSHMEM_INIT_WITH_UNIQUEID`` or ``ROCSHMEM_INIT_WITH_MPI_COMM``.
 
 ROCSHMEM_GET_UNIQUEID

@@ -39,7 +39,6 @@
    int wg_id = get_flat_grid_id();
    int t_id  = get_flat_block_id();
    int wf_id = t_id / wf_size;
-   rocshmem_wg_init();
  
    /**
     * Shared array to capture the start time for each wavefront
@@ -121,7 +120,6 @@
      start_time[wg_id] = wf_start_time[0];
    }
  
-   rocshmem_wg_finalize();
  }
  
  /******************************************************************************
