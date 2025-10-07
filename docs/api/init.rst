@@ -24,7 +24,7 @@ you must select the device that this PE is associated to by calling
 <https://rocm.docs.amd.com/projects/HIP/en/docs-6.0.0/doxygen/html/group___device.html#ga43c1e7f15925eeb762195ccb5e063eae>`_.
 
 .. WARNING::
-   This `rocshmem_wg_init` has been depricated!
+   Routine `rocshmem_wg_init` has been deprecated.
 
 .. cpp:function:: [[deprecated]] __device__ void rocshmem_wg_init(void)
 
@@ -32,7 +32,7 @@ you must select the device that this PE is associated to by calling
   :returns: None.
 
 **Description:**
-This routine has been depricated, please do not use.
+This routine has been deprecated, please do not use.
 This routine initializes device-side rocSHMEM resources.
 It must be called before any threads in this work-group invoke other rocSHMEM functions.
 It must be called collectively by all threads in the work-group.
@@ -48,7 +48,7 @@ ROCSHMEM_FINALIZE
 This routine finalizes the rocSHMEM library.
 
 .. WARNING::
-   This `rocshmem_wg_finalize` has been depricated!
+   Routine `rocshmem_wg_finalize` has been deprecated.
 
 .. cpp:function:: [[deprecated]] __device__ void rocshmem_wg_finalize(void)
 
@@ -56,7 +56,7 @@ This routine finalizes the rocSHMEM library.
   :returns: None.
 
 **Description:**
-This routine has been depricated, please do not use.
+This routine has been deprecated, please do not use.
 This routine finalizes device-side rocSHMEM resources.
 It must be called before work-group completion if the work-group also called ``rocshmem_wg_init``.
 It must be called collectively by all threads in the work-group.

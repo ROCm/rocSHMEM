@@ -4,7 +4,7 @@
 
 ### Changed
 
-* The following APIs have been depricated:
+* The following APIs have been deprecated:
   * `rocshmem_wg_init`
   * `rocshmem_wg_finalize`
   * `rocshmem_wg_init_thread`
