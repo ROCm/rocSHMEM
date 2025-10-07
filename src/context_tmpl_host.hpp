@@ -29,9 +29,11 @@
 #include "backend_type.hpp"
 #if defined(USE_GDA)
 #include "gda/context_gda_host.hpp"
-#elif defined(USE_RO)
+#endif
+#if defined(USE_RO)
 #include "reverse_offload/context_ro_host.hpp"
-#elif defined(USE_IPC)
+#endif
+#if defined(USE_IPC)
 #include "ipc/context_ipc_host.hpp"
 #endif
 
@@ -249,7 +251,7 @@ __host__ size_t Context::wait_until_any(T *ivars, size_t nelems,
                                         int cmp, T val) {
   ctxHostStats.incStat(NUM_HOST_WAIT_UNTIL_ANY);
 
-  return HOST_DISPATCH(wait_until_any<T>(ivars, nelems, status, cmp, val));
+  HOST_DISPATCH_RET(wait_until_any<T>(ivars, nelems, status, cmp, val));
 }
 
 template <typename T>

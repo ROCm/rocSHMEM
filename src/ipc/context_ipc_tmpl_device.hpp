@@ -160,7 +160,7 @@ __device__ T IPCContext::amo_fetch_cas(void *dest, T value, T cond, int pe) {
 
 // Collectives
 template <typename T, ROCSHMEM_OP Op>
-__device__ void compute_reduce(T *src, T *dst, int size, int wg_id, int wg_size) {
+__device__ void ipc_compute_reduce(T *src, T *dst, int size, int wg_id, int wg_size) {
   for (int i = wg_id; i < size; i += wg_size) {
     OpWrap<Op>::Calc(src, dst, i);
   }
@@ -213,7 +213,7 @@ __device__ void IPCContext::internal_direct_allreduce(
       __syncthreads();
 
       T *ptr = &pWrk[i * nelems];
-      compute_reduce<T, Op>(ptr, dst, nelems, wg_id, wg_size);
+      ipc_compute_reduce<T, Op>(ptr, dst, nelems, wg_id, wg_size);
       threadfence_system();
     }
   }
@@ -331,7 +331,7 @@ __device__ void IPCContext::internal_ring_allreduce(
         wait_until(&pSync[iter], ROCSHMEM_CMP_EQ, wait_val);
       }
       __syncthreads();
-      compute_reduce<T, Op>(&pWrk[off_recv], &dst[off_seg + off_recv],
+      ipc_compute_reduce<T, Op>(&pWrk[off_recv], &dst[off_seg + off_recv],
                             chunk_size, wg_id, wg_size);
     }
 

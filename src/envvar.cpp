@@ -46,6 +46,7 @@ namespace envvar {
     const var<size_t> max_wavefront_buffers("MAX_WF_BUFFERS", "", 1024);
     const var<std::string> requested_dev("USE_IB_HCA", "");
     const var<uint32_t> sq_size("SQ_SIZE", "", 1024);
+    const var<std::string> backend("BACKEND", "");
   }  // inline namespace _base
 
   namespace bootstrap {

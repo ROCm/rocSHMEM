@@ -49,7 +49,7 @@ rocshmem_team_t get_external_team(IPCTeam *team) {
   return reinterpret_cast<rocshmem_team_t>(team);
 }
 
-int get_ls_non_zero_bit(char *bitmask, int mask_length) {
+static int get_ls_non_zero_bit(char *bitmask, int mask_length) {
   int position = -1;
 
   for (int bit_i = 0; bit_i < mask_length; bit_i++) {

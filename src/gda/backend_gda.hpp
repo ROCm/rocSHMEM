@@ -146,6 +146,17 @@ class GDABackend : public Backend {
    */
   virtual ~GDABackend();
 
+  /**
+   * @brief Verify whether GDA Backend could run
+   *
+   * @return ROSCHMEM_SUCCESS if GDA Backend can most likely be used
+   *         ROCSHMEM_ERROR otherwise
+   */
+  static int backend_can_run(void);
+
+  /**
+   * @brief
+   */
   __device__ bool create_ctx(int64_t options, rocshmem_ctx_t *ctx);
 
   /**
