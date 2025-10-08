@@ -335,6 +335,20 @@ __host__ void HostInterface::barrier_all(WindowInfo* window_info) {
   return;
 }
 
+__host__ void HostInterface::barrier_all_on_stream(hipStream_t stream) {
+  // launch kernel to do barrier with given stream
+  // hipLaunchKernelGGL(rocshmem_barrier_all_kernel, dim3(1), dim3(1), 0, stream);
+
+  if (stream == nullptr) {
+    stream = hipStreamDefault;
+  }
+
+  rocshmem_barrier_all_kernel<<<1, 1, 0,  stream>>>();
+
+  // hipStreamSynchronize(stream);
+}
+
+
 __host__ void HostInterface::barrier_for_sync() {
   if (host_comm_world_ != MPI_COMM_NULL) {
     MPI_Barrier(host_comm_world_);

@@ -599,6 +599,8 @@ __host__ int rocshmem_ctx_double_prod_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, double *dest, const double *source,
     int nreduce);
 
+__global__ ATTR_NO_INLINE void rocshmem_barrier_all_kernel();
+
 /**
  * @brief perform a collective barrier between all PEs in the system.
  * The caller is blocked until the barrier is resolved.

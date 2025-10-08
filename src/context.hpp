@@ -393,6 +393,8 @@ class Context {
 
   __host__ void barrier_all();
 
+  __host__ void barrier_all_on_stream(hipStream_t stream);
+
   __host__ void sync_all();
 
   template <typename T>
