@@ -336,16 +336,12 @@ __host__ void HostInterface::barrier_all(WindowInfo* window_info) {
 }
 
 __host__ void HostInterface::barrier_all_on_stream(hipStream_t stream) {
-  // launch kernel to do barrier with given stream
-  // hipLaunchKernelGGL(rocshmem_barrier_all_kernel, dim3(1), dim3(1), 0, stream);
-
+  // launch kernel to do barrier with given stream, if non, use default stream
   if (stream == nullptr) {
     stream = hipStreamDefault;
   }
 
   rocshmem_barrier_all_kernel<<<1, 1, 0,  stream>>>();
-
-  // hipStreamSynchronize(stream);
 }
 
 

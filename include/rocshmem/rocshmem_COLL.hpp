@@ -599,6 +599,12 @@ __host__ int rocshmem_ctx_double_prod_reduce(
     rocshmem_ctx_t ctx, rocshmem_team_t team, double *dest, const double *source,
     int nreduce);
 
+/**
+ * @brief kernel for performing a barrier synchronization.
+ * Caller enqueues the kernel on given stream
+ *
+ * @return void
+ */
 __global__ ATTR_NO_INLINE void rocshmem_barrier_all_kernel();
 
 /**
