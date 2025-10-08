@@ -121,8 +121,8 @@ rocSHMEM has the following enviroment variables:
                         Defines the size of the rocSHMEM symmetric heap
                         Note the heap is on the GPU memory.
 
-    ROCSHMEM_RO_DISABLE_IPC (default : 0)
-                        Disables IPC support for the reverse offload backend.
+    ROCSHMEM_RO_DISABLE_MIXED_IPC (default : 0)
+                        Disables IPC support for the RO or GDA backends.
 
     ROCSHMEM_MAX_NUM_CONTEXTS (default : 1024)
                         Maximum number of contexts used in library.

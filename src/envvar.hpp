@@ -405,6 +405,7 @@ namespace envvar {
     extern const var<size_t> heap_size;
     extern const var<size_t> max_num_teams;
     extern const var<std::string> backend;
+    extern const var<bool> disable_mixed_ipc;
     extern const var<bool> disable_ipc;
 
     /**
