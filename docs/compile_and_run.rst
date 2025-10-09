@@ -84,9 +84,9 @@ You can control the behavior of rocSHMEM by using the following environment vari
     * - ROCSHMEM_UNIQUEID_WITH_MPI
       - 0
       - Defines whether rocSHMEM is expected to use MPI when using the uniqueId based initialization.
-    * - ROCSHMEM_RO_DISABLE_IPC
+    * - ROCSHMEM_DISABLE_MIXED_IPC
       - 0
-      - Defines whether to force using the RO conduit even when IPC is available.
+      - Defines whether to force using the network conduit even when IPC is available.
     * - ROCSHMEM_GDA_ALTERNATE_QP_PORTS
       - 1
       - Enables/Disables having QPs alternate their mappings across rocSHMEM contexts. This helps saturate bandwidth on multiport bonded interfaces.

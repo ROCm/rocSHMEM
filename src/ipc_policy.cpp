@@ -108,9 +108,14 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
    */
   free(vec_ipc_handle);
 
-  if (!envvar::ro::disable_ipc) {
-    int thread_comm_rank {-1};
-
+  if (envvar::ro::disable_ipc || envvar::disable_ipc) {
+    if (0 == my_pe) {
+      printf("ROCSHMEM_RO_DISABLE_IPC and RO_DISABLE_IPC environment variables have been deprecated.\n"
+             "  Please use ROCSHMEM_DISABLE_MIXED_IPC as a replacement.\n");
+    }
+  }
+  auto disable_ipc = envvar::disable_mixed_ipc || envvar::ro::disable_ipc || envvar::disable_ipc;
+  if (!disable_ipc) {
     CHECK_HIP(hipMalloc(reinterpret_cast<void**>(&pes_with_ipc_avail), shm_size * sizeof(int)));
 
     MPI_Group thread_grp;
@@ -187,9 +192,14 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
    */
   free(vec_ipc_handle);
 
-  if (!envvar::ro::disable_ipc) {
-    int thread_comm_rank {-1};
-
+  if (envvar::ro::disable_ipc || envvar::disable_ipc) {
+    if (0 == my_pe) {
+      printf("ROCSHMEM_RO_DISABLE_IPC and RO_DISABLE_IPC environment variables have been deprecated.\n"
+             "  Please use ROCSHMEM_DISABLE_MIXED_IPC as a replacement.\n");
+    }
+  }
+  auto disable_ipc = envvar::disable_mixed_ipc || envvar::ro::disable_ipc || envvar::disable_ipc;
+  if (!disable_ipc) {
     CHECK_HIP(hipMalloc(reinterpret_cast<void**>(&pes_with_ipc_avail), shm_size * sizeof(int)));
     std::copy(shm_ranks.begin(), shm_ranks.end(), pes_with_ipc_avail);
   }

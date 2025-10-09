@@ -47,6 +47,8 @@ namespace envvar {
     const var<std::string> requested_dev("USE_IB_HCA", "");
     const var<uint32_t> sq_size("SQ_SIZE", "", 1024);
     const var<std::string> backend("BACKEND", "");
+    const var<bool> disable_mixed_ipc("DISABLE_MIXED_IPC", "", false);
+    const var<bool> disable_ipc("DISABLE_IPC", "", false);
   }  // inline namespace _base
 
   namespace bootstrap {
