@@ -15,7 +15,7 @@
   * `rocshmem_wg_init`
   * `rocshmem_wg_finalize`
   * `rocshmem_wg_init_thread`
-* `rocshmem_ptr`  has an implementation that can return non-null pointer to
+* `rocshmem_ptr`  can now return non-null pointer to
    a shared memory region when the IPC transport is available to reach that region.
    Previously, it would return a null pointer.
 * `ROCSHMEM_RO_DISABLE_IPC` was renamed to `ROCSHMEM_DISABLE_MIXED_IPC`.
