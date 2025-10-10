@@ -153,7 +153,7 @@ ROCSHMEM_PTR
   :param dest: Local symmetric heap allocation pointer for current PE.
   :param pe:   Remote PE.
   :returns:    Returns remote symmetric heap device pointer from host-side API.
-               NULL is returned if a valid device pointer cannot be provided.
+               ``NULL`` is returned if a valid device pointer cannot be provided.
                This pointer can be used to issue load/store from custom kernels
                instead of using rocshmem device side get/put APIs for RMA operations.
 
