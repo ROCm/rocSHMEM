@@ -44,7 +44,7 @@ ROCSHMEM_GET_DEVICE_CTX
 
 .. cpp:function:: __host__ void * rocshmem_get_device_ctx()
 
-  :param:    None
+  :param:    None.
 
   :returns: Returns ``ROCSHMEM_CTX_DEFAULT`` device pointer that users.
             can query from one instance of rocSHMEM host library and
