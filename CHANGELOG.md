@@ -20,7 +20,7 @@
    Previously, it would return a null pointer.
 * `ROCSHMEM_RO_DISABLE_IPC` was renamed to `ROCSHMEM_DISABLE_MIXED_IPC`.
   This enviroment variable was not documented for prior releases.
-  However, we want to inform users who were using this undocumented feature.
+  It is now documented to inform users who were using this undocumented feature.
 
 ### Removed
 * rocSHMEM no-longer requires rocPRIM and rocThrust as dependencies
