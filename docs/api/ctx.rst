@@ -49,7 +49,7 @@ ROCSHMEM_GET_DEVICE_CTX
   :returns: Returns ROCSHMEM_CTX_DEFAULT device pointer that users
             can query from one instance of rocshmem host library and
             use later for dynamic module initialization in
-            kernel bitcode device library in the same application
+            kernel bitcode device library in the same application.
 
 **Description:**
 This routine queries rocSHMEM default device context from host API
