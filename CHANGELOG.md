@@ -11,24 +11,20 @@
    * `rocshmem_get_device_ctx`
 
 ### Changed
-
 * The following APIs have been deprecated:
   * `rocshmem_wg_init`
   * `rocshmem_wg_finalize`
   * `rocshmem_wg_init_thread`
-
-### Removed
-
-* rocSHMEM no-longer requires rocPRIM and rocThrust as dependencies
-* Removed MPI compile-time dependency
-
-### Changed
 * `rocshmem_ptr`  has an implementation that can return non-null pointer to
    a shared memory region when the IPC transport is available to reach that region.
    Previously, it would return a null pointer.
 * `ROCSHMEM_RO_DISABLE_IPC` was renamed to `ROCSHMEM_DISABLE_MIXED_IPC`.
   This enviroment variable was not documented for prior releasees.
   However, we want to inform users who were using this undocumented feature.
+
+### Removed
+* rocSHMEM no-longer requires rocPRIM and rocThrust as dependencies
+* Removed MPI compile-time dependency
 
 ### Known issues
 * Only a subset of rocSHMEM APIs are implemented for the GDA conduit
