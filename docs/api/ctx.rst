@@ -52,4 +52,4 @@ ROCSHMEM_GET_DEVICE_CTX
             kernel bitcode device library in the same application.
 
 **Description:**
-This routine queries rocSHMEM default device context from host API
+This routine queries rocSHMEM default device context from host API.
