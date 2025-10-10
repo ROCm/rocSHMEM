@@ -158,4 +158,4 @@ ROCSHMEM_PTR
                instead of using rocshmem device side get/put APIs for RMA operations.
 
 **Description:**
-Query rocSHMEM remote symmetric heap pointer
+This routine queries rocSHMEM remote symmetric heap pointer.
