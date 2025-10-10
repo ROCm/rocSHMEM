@@ -201,6 +201,7 @@ if (NOT BUILD_TESTS_ONLY)
       Threads::Threads
       hip::device
       hip::host
+      dl
       hsa-runtime64::hsa-runtime64
       -fgpu-rdc
   )
