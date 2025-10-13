@@ -40,7 +40,7 @@ cmake \
     -DUSE_GDA=ON \
     -DGDA_MLX5=ON \
     -DGDA_BNXT=ON \
-    -DGDA_IONIC=OFF \
+    -DGDA_IONIC=ON \
     -DUSE_RO=ON \
     -DUSE_IPC=ON \
     -DUSE_THREADS=OFF \
