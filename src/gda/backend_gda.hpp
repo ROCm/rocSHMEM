@@ -336,7 +336,7 @@ class GDABackend : public Backend {
   void open_dv_libs();
 
   /**
-   * @ brief Close opened direct versbs libraries
+   * @ brief Close opened direct verbs libraries
    */
   void close_dv_libs();
 

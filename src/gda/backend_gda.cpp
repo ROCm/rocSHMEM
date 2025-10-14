@@ -529,9 +529,9 @@ void GDABackend::rte_barrier() {
 }
 
 /* Currently we only check whether we can dlopen a Direct Verbs library.
-** We might need to extend this logic to check whether we have interfaces that
-** can use those DV libraries
-*/
+ * We might need to extend this logic to check whether we have interfaces that
+ * can use those DV libraries
+ */
 int GDABackend::backend_can_run() {
   void *handle{nullptr};
 
@@ -680,7 +680,7 @@ void GDABackend::open_dv_libs() {
 #endif // defined(GDA_MLX5)
 
   if (gda_vendor == GDAVendor::NONE) {
-    DPRINTF("Initializing rocSHMEM with IONIC, BNXT, or MLX5 GDA support failed: no DV library found\n");
+    printf("Initializing rocSHMEM with IONIC, BNXT, or MLX5 GDA support failed: no DV library found\n");
     abort();
   }
 }
