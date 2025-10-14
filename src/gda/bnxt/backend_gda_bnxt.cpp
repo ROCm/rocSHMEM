@@ -37,19 +37,18 @@ void GDABackend::bnxt_initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
 
   ib_qp = qps[conn_num];
 
-  /* Export CQ */
+  /* Export SCQ */
   memset(&dv_obj, 0, sizeof(struct bnxt_re_dv_obj));
-  dv_obj.cq.in  = cqs[conn_num];
+  dv_obj.cq.in  = bnxt_scqs[conn_num].cq;
   dv_obj.cq.out = &dv_cq;
 
   err = bnxt_re_dv.init_obj(&dv_obj, BNXT_RE_DV_OBJ_CQ);
   CHECK_ZERO(err, "bnxt_re_dv_init_obj(CQ)");
 
   memset(&gpu_qp->cq, 0, sizeof(bnxt_device_cq));
-  gpu_qp->cq.buf   = bnxt_cqs[conn_num].buf;
-  gpu_qp->cq.depth = bnxt_cqs[conn_num].depth;
+  gpu_qp->cq.buf   = bnxt_scqs[conn_num].buf;
+  gpu_qp->cq.depth = bnxt_scqs[conn_num].depth;
   gpu_qp->cq.id    = dv_cq.cqn;
-  gpu_qp->cq.phase = BNXT_RE_QUEUE_START_PHASE;
 
   /* Export QP */
   memset(&dv_obj, 0, sizeof(struct bnxt_re_dv_obj));
@@ -95,34 +94,72 @@ void GDABackend::bnxt_create_cqs(int cqe) {
   struct bnxt_re_dv_cq_init_attr cq_init_attr;
   struct bnxt_re_dv_umem_reg_attr umem_attr;
 
+  /* Ignore value of cqe as we only need of length 1 to use CQE compression */
+  cqe = 1;
+
+  /* Create SCQs */
   for (int i = 0; i < qps.size(); i++) {
-    /* Allocate CQ mem */
+    /* Allocate SCQ mem */
     memset(&cq_attr, 0, sizeof(struct bnxt_re_dv_cq_attr));
-    bnxt_cqs[i].handle = bnxt_re_dv.cq_mem_alloc(context, cqe, &cq_attr);
-    CHECK_NNULL(bnxt_cqs[i].handle, "bnxt_re_dv_cq_mem_alloc");
+    bnxt_scqs[i].handle = bnxt_re_dv.cq_mem_alloc(context, cqe, &cq_attr);
+    CHECK_NNULL(bnxt_scqs[i].handle, "bnxt_re_dv_cq_mem_alloc (SCQ)");
 
-    /* Allocate CQ UMEM */
-    bnxt_cqs[i].length = cq_attr.ncqe * cq_attr.cqe_size;
-    bnxt_cqs[i].depth  = cq_attr.ncqe;
-    CHECK_HIP(hipExtMallocWithFlags(&bnxt_cqs[i].buf, bnxt_cqs[i].length, hipDeviceMallocUncached));
+    /* We must force this to a value of 1 to use CQE Compression */
+    cq_attr.ncqe = cqe;
 
-    /* Register CQ UMEM */
+    /* Allocate SCQ UMEM */
+    bnxt_scqs[i].length = cq_attr.ncqe * cq_attr.cqe_size;
+    bnxt_scqs[i].depth  = cq_attr.ncqe;
+    CHECK_HIP(hipExtMallocWithFlags(&bnxt_scqs[i].buf, bnxt_scqs[i].length, hipDeviceMallocUncached));
+
+    /* Register SCQ UMEM */
     memset(&umem_attr, 0, sizeof(struct bnxt_re_dv_umem_reg_attr));
-    umem_attr.addr         = bnxt_cqs[i].buf;
-    umem_attr.size         = bnxt_cqs[i].length;
+    umem_attr.addr         = bnxt_scqs[i].buf;
+    umem_attr.size         = bnxt_scqs[i].length;
     umem_attr.access_flags = IBV_ACCESS_LOCAL_WRITE;
 
-    bnxt_cqs[i].umem_handle = bnxt_re_dv.umem_reg(context, &umem_attr);
-    CHECK_NNULL(bnxt_cqs[i].umem_handle, "bnxt_re_dv_umem_reg(cq_buf)");
+    bnxt_scqs[i].umem_handle = bnxt_re_dv.umem_reg(context, &umem_attr);
+    CHECK_NNULL(bnxt_scqs[i].umem_handle, "bnxt_re_dv_umem_reg(scq_buf)");
 
-    /* Create CQ */
+    /* Create SCQ */
     memset(&cq_init_attr, 0, sizeof(struct bnxt_re_dv_cq_init_attr));
-    cq_init_attr.cq_handle   = (uint64_t) bnxt_cqs[i].handle;
-    cq_init_attr.umem_handle = bnxt_cqs[i].umem_handle;
+    cq_init_attr.cq_handle   = (uint64_t) bnxt_scqs[i].handle;
+    cq_init_attr.umem_handle = bnxt_scqs[i].umem_handle;
     cq_init_attr.ncqe        = cq_attr.ncqe;
 
-    cqs[i] = bnxt_re_dv.create_cq(context, &cq_init_attr);
-    CHECK_NNULL(cqs[i], "bnxt_re_dv_create_cq");
+    bnxt_scqs[i].cq = bnxt_re_dv.create_cq(context, &cq_init_attr);
+    CHECK_NNULL(bnxt_scqs[i].cq, "bnxt_re_dv_create_cq (SCQ) ");
+  }
+
+  /* Create RCQs */
+  for (int i = 0; i < qps.size(); i++) {
+    /* Allocate RCQ mem */
+    memset(&cq_attr, 0, sizeof(struct bnxt_re_dv_cq_attr));
+    bnxt_rcqs[i].handle = bnxt_re_dv.cq_mem_alloc(context, cqe, &cq_attr);
+    CHECK_NNULL(bnxt_rcqs[i].handle, "bnxt_re_dv_cq_mem_alloc (RCQ)");
+
+    /* Allocate RCQ UMEM */
+    bnxt_rcqs[i].length = cq_attr.ncqe * cq_attr.cqe_size;
+    bnxt_rcqs[i].depth  = cq_attr.ncqe;
+    CHECK_HIP(hipExtMallocWithFlags(&bnxt_rcqs[i].buf, bnxt_rcqs[i].length, hipDeviceMallocUncached));
+
+    /* Register RCQ UMEM */
+    memset(&umem_attr, 0, sizeof(struct bnxt_re_dv_umem_reg_attr));
+    umem_attr.addr         = bnxt_rcqs[i].buf;
+    umem_attr.size         = bnxt_rcqs[i].length;
+    umem_attr.access_flags = IBV_ACCESS_LOCAL_WRITE;
+
+    bnxt_rcqs[i].umem_handle = bnxt_re_dv.umem_reg(context, &umem_attr);
+    CHECK_NNULL(bnxt_rcqs[i].umem_handle, "bnxt_re_dv_umem_reg(rcq_buf)");
+
+    /* Create RCQ */
+    memset(&cq_init_attr, 0, sizeof(struct bnxt_re_dv_cq_init_attr));
+    cq_init_attr.cq_handle   = (uint64_t) bnxt_rcqs[i].handle;
+    cq_init_attr.umem_handle = bnxt_rcqs[i].umem_handle;
+    cq_init_attr.ncqe        = cq_attr.ncqe;
+
+    bnxt_rcqs[i].cq = bnxt_re_dv.create_cq(context, &cq_init_attr);
+    CHECK_NNULL(bnxt_rcqs[i].cq, "bnxt_re_dv_create_cq (RCQ)");
   }
 }
 
@@ -140,8 +177,8 @@ void GDABackend::bnxt_create_qps(int sq_length) {
   for (int i = 0; i < qps.size(); i++) {
     /* IB QP Init Attr */
     memset(&ib_qp_attr, 0, sizeof(struct ibv_qp_init_attr));
-    ib_qp_attr.send_cq             = cqs[i];
-    ib_qp_attr.recv_cq             = cqs[i];
+    ib_qp_attr.send_cq             = bnxt_scqs[i].cq;
+    ib_qp_attr.recv_cq             = bnxt_rcqs[i].cq;
     ib_qp_attr.cap.max_send_wr     = sq_length;
     ib_qp_attr.cap.max_recv_wr     = 0;
     ib_qp_attr.cap.max_send_sge    = 1;

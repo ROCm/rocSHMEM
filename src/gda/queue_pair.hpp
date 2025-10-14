@@ -185,8 +185,7 @@ class QueuePair {
   __device__ void mlx5_ring_doorbell(uint64_t db_val, uint64_t my_sq_counter);
 #endif
 #if defined(GDA_BNXT)
-  __device__ void ring_sq_doorbell(uint32_t slot_idx);
-  __device__ void ring_cq_doorbell(uint32_t slot_idx);
+  __device__ void bnxt_ring_doorbell(uint32_t slot_idx);
 #endif
 #if defined(GDA_IONIC)
   __device__ void ionic_ring_doorbell(uint32_t pos);
@@ -199,7 +198,8 @@ class QueuePair {
   struct bnxt_device_cq cq;
   struct bnxt_device_sq sq;
 
-  __device__ int poll_cq();
+  __device__ void poll_cq_until(uint32_t requested_available_slots);
+  __device__ void bnxt_check_cqe_error(struct bnxt_re_req_cqe *cqe);
 
   /* GDAProvider::BNXT END */
 

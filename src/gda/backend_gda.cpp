@@ -626,13 +626,20 @@ void GDABackend::cleanup_ibv() {
       CHECK_HIP(hipFree(bnxt_qps[i].sq_buf));
       CHECK_HIP(hipFree(bnxt_qps[i].rq_buf));
 
-      err = bnxt_re_dv.destroy_cq(cqs[i]);
-      CHECK_ZERO(err, "bnxt_re_dv_destroy_cq");
+      err = bnxt_re_dv.destroy_cq(bnxt_scqs[i].cq);
+      CHECK_ZERO(err, "bnxt_re_dv_destroy_cq (SCQ)");
 
-      err = bnxt_re_dv.umem_dereg(bnxt_cqs[i].umem_handle);
-      CHECK_ZERO(err, "bnxt_re_dv_umem_dereg");
+      err = bnxt_re_dv.destroy_cq(bnxt_rcqs[i].cq);
+      CHECK_ZERO(err, "bnxt_re_dv_destroy_cq (RCQ)");
 
-      CHECK_HIP(hipFree(bnxt_cqs[i].buf));
+      err = bnxt_re_dv.umem_dereg(bnxt_scqs[i].umem_handle);
+      CHECK_ZERO(err, "bnxt_re_dv_umem_dereg (SCQ)");
+
+      err = bnxt_re_dv.umem_dereg(bnxt_rcqs[i].umem_handle);
+      CHECK_ZERO(err, "bnxt_re_dv_umem_dereg (RCQ)");
+
+      CHECK_HIP(hipFree(bnxt_scqs[i].buf));
+      CHECK_HIP(hipFree(bnxt_rcqs[i].buf));
     }
   } else {
     for (int i = 0; i < qps.size(); i++) {
@@ -999,7 +1006,8 @@ void GDABackend::create_queues() {
   cqs.resize(resize_length);
   qps.resize(resize_length);
 
-  bnxt_cqs.resize(resize_length);
+  bnxt_scqs.resize(resize_length);
+  bnxt_rcqs.resize(resize_length);
   bnxt_qps.resize(resize_length);
 
   if (gda_provider == GDAProvider::BNXT) {
@@ -1052,10 +1060,11 @@ void GDABackend::alternate_qp_ports() {
 
         if (new_qp_idx < qps.size()) {
           // Swap QPs
-          std::swap(cqs[cur_qp_idx],      cqs[new_qp_idx]);
-          std::swap(qps[cur_qp_idx],      qps[new_qp_idx]);
-          std::swap(bnxt_cqs[cur_qp_idx], bnxt_cqs[new_qp_idx]);
-          std::swap(bnxt_qps[cur_qp_idx], bnxt_qps[new_qp_idx]);
+          std::swap(cqs[cur_qp_idx],       cqs[new_qp_idx]);
+          std::swap(qps[cur_qp_idx],       qps[new_qp_idx]);
+          std::swap(bnxt_scqs[cur_qp_idx], bnxt_scqs[new_qp_idx]);
+          std::swap(bnxt_rcqs[cur_qp_idx], bnxt_rcqs[new_qp_idx]);
+          std::swap(bnxt_qps[cur_qp_idx],  bnxt_qps[new_qp_idx]);
         }
       }
     }

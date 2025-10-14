@@ -30,11 +30,7 @@ extern "C" {
 #include "gda/bnxt/bnxt_re_hsi.h"
 }
 
-#define bnxt_re_get_cqe_sz() (sizeof(struct bnxt_re_req_cqe) + \
-                              sizeof(struct bnxt_re_bcqe))
-
-#define bnxt_re_is_cqe_valid(valid, phase)              \
-        (((valid) & BNXT_RE_BCQE_PH_MASK) == (phase))
+#define GDA_BNXT_WQE_SLOT_COUNT 3
 
 struct bnxt_device_wq {
   void *buf;
@@ -50,12 +46,10 @@ struct bnxt_device_wq {
 } __attribute__((packed));
 
 struct bnxt_device_cq : public bnxt_device_wq {
-  uint32_t phase;
 } __attribute__((packed));
 
 struct bnxt_device_sq : public bnxt_device_wq {
   uint32_t psn;
-  volatile uint32_t posted;
 
   void *msntbl;
   uint32_t msn;
@@ -70,6 +64,7 @@ struct bnxt_host_cq {
   void *umem_handle;
   uint64_t length;
   uint32_t depth;
+  struct ibv_cq *cq;
 } __attribute__((packed));
 
 struct bnxt_host_qp {

@@ -85,7 +85,8 @@ class GDABackend : public Backend {
 
   /* GDA_BNXT START */
   std::vector<struct bnxt_host_qp> bnxt_qps;
-  std::vector<struct bnxt_host_cq> bnxt_cqs;
+  std::vector<struct bnxt_host_cq> bnxt_scqs;
+  std::vector<struct bnxt_host_cq> bnxt_rcqs;
 
   struct bnxt_re_dv_db_region_attr db_region_attr;
   /* GDA_BNXT END */
