@@ -29,7 +29,6 @@ cmake_minimum_required(VERSION 3.16.3 FATAL_ERROR)
 include(${CMAKE_SOURCE_DIR}/cmake/setup_project.cmake)
 project(rocshmem_examples VERSION 1.0.0 LANGUAGES CXX)
 
-find_package(MPI)
 find_package(hip REQUIRED PATHS /opt/rocm)
 if (NOT TARGET roc::rocshmem)
   find_package(rocshmem REQUIRED PATHS /opt/rocm)
