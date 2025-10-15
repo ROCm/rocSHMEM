@@ -990,6 +990,13 @@ __host__ void rocshmem_barrier_all() {
   get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->barrier_all();
 }
 
+
+__host__ void rocshmem_barrier_all_on_stream(hipStream_t stream) {
+  DPRINTF("Host function: rocshmem_barrier_all_on_stream\n");
+
+  get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)->barrier_all_on_stream(stream);
+}
+
 __host__ void rocshmem_sync_all() {
   DPRINTF("Host function: rocshmem_sync_all\n");
 

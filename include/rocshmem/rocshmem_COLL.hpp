@@ -600,6 +600,14 @@ __host__ int rocshmem_ctx_double_prod_reduce(
     int nreduce);
 
 /**
+ * @brief kernel for performing a barrier synchronization.
+ * Caller enqueues the kernel on given stream
+ *
+ * @return void
+ */
+__global__ ATTR_NO_INLINE void rocshmem_barrier_all_kernel();
+
+/**
  * @brief perform a collective barrier between all PEs in the system.
  * The caller is blocked until the barrier is resolved.
  *

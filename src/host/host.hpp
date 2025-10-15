@@ -193,6 +193,8 @@ class HostInterface {
   __host__ void quiet(WindowInfo* window_info);
 
   __host__ void barrier_all(WindowInfo* window_info);
+  
+  __host__ void barrier_all_on_stream(hipStream_t stream);
 
   __host__ void barrier_for_sync();
 

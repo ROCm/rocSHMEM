@@ -116,4 +116,10 @@ __host__ void Context::barrier_all() {
   HOST_DISPATCH(barrier_all());
 }
 
+__host__ void Context::barrier_all_on_stream(hipStream_t stream) {
+  ctxHostStats.incStat(NUM_HOST_BARRIER_ALL);
+
+  HOST_DISPATCH(barrier_all_on_stream(stream));
+}
+
 }  // namespace rocshmem

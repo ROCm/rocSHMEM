@@ -101,4 +101,8 @@ __host__ void IPCHostContext::barrier_all() {
   host_interface->barrier_all(context_window_info);
 }
 
+__host__ void IPCHostContext::barrier_all_on_stream(hipStream_t stream) {
+  host_interface->barrier_all_on_stream(stream);
+}
+
 }  // namespace rocshmem

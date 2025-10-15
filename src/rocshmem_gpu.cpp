@@ -622,6 +622,11 @@ __device__ int rocshmem_test(T *ivars, int cmp, T val) {
   return ctx_internal->test(ivars, cmp, val);
 }
 
+__global__ ATTR_NO_INLINE void rocshmem_barrier_all_kernel(){
+  rocshmem_barrier_all();
+}
+
+
 __device__ void rocshmem_barrier_all() {
   GPU_DPRINTF("Function: rocshmem_barrier_all (ctx=%zd)\n",
     get_internal_ctx(ROCSHMEM_CTX_DEFAULT));

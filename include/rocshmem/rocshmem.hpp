@@ -342,6 +342,13 @@ __host__ void rocshmem_quiet();
 __host__ void rocshmem_barrier_all();
 
 /**
+ * @brief enqueues a collective barrier on given stream.
+ *
+ * @return void
+ */
+__host__ void rocshmem_barrier_all_on_stream(hipStream_t stream);
+
+/**
  * @brief registers the arrival of a PE at a barrier.
  * The caller is blocked until the synchronization is resolved.
  *
