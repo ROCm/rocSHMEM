@@ -40,32 +40,6 @@
 #include "gda/bnxt/provider_gda_bnxt.hpp"
 #include "gda/mlx5/provider_gda_mlx5.hpp"
 
-struct bnxtdv_funcs_t {
-  int (*init_obj)(struct bnxt_re_dv_obj *obj, uint64_t obj_type);
-  struct ibv_qp* (*create_qp)(struct ibv_pd *pd,
-                              struct bnxt_re_dv_qp_init_attr *qp_attr);
-  int (*destroy_qp)(struct ibv_qp *ibvqp);
-  int (*modify_qp)(struct ibv_qp *ibv_qp, struct ibv_qp_attr *attr,
-                   int attr_mask, uint32_t type, uint32_t value);
-  int (*qp_mem_alloc)(struct ibv_pd *ibvpd,
-                      struct ibv_qp_init_attr *attr,
-                      struct bnxt_re_dv_qp_mem_info *dv_qp_mem);
-  struct ibv_cq* (*create_cq)(struct ibv_context *ibvctx,
-                              struct bnxt_re_dv_cq_init_attr *cq_attr);
-  int (*destroy_cq)(struct ibv_cq *ibv_cq);
-  void* (*cq_mem_alloc)(struct ibv_context *ibvctx, int num_cqe,
-                        struct bnxt_re_dv_cq_attr *cq_attr);
-  void* (*umem_reg)(struct ibv_context *ibvctx,
-                    struct bnxt_re_dv_umem_reg_attr *in);
-  int (*umem_dereg)(void *umem_handle);
-  int (*get_default_db_region)(struct ibv_context *ibvctx,
-                               struct bnxt_re_dv_db_region_attr *out);
-};
-
-struct mlx5dv_funcs_t {
-  int (*init_obj)(struct mlx5dv_obj *obj, uint64_t obj_type);
-};
-
 namespace rocshmem {
 
 class GDAContext;
@@ -325,6 +299,8 @@ class GDABackend : public Backend {
 
   void initialize_gpu_qp(QueuePair* qp, int conn_num);
   void bnxt_initialize_gpu_qp(QueuePair* qp, int conn_num);
+  void ionic_initialize_gpu_qp(QueuePair* qp, int conn_num);
+  void mlx5_initialize_gpu_qp(QueuePair* qp, int conn_num);
 
   /**
    * @brief Setup InfiniBand Resources
@@ -337,9 +313,14 @@ class GDABackend : public Backend {
   void cleanup_ibv();
 
   /**
-   * @brief Detect the available direct verbs libraries
+   * @brief Detect and load the available direct verbs libraries
    */
-  void autodetect_dv_libs();
+  void open_dv_libs();
+
+  /**
+   * @ brief Close opened direct verbs libraries
+   */
+  void close_dv_libs();
 
   /**
    * @brief Open InfiniBand Device and create common structures
@@ -404,6 +385,7 @@ class GDABackend : public Backend {
   static void pd_release(ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type);
 
   void create_parent_domain();
+  void ionic_setup_parent_domain(struct ibv_parent_domain_init_attr* pattr);
 
   void setup_gpu_qps();
   void cleanup_gpu_qps();
@@ -509,7 +491,7 @@ class GDABackend : public Backend {
    * @brief structures holding the function pointers to the direct verbs functionality
    * of each network driver.
    */
-  bnxtdv_funcs_t bnxtdv_ftable_;
+  bnxtdv_funcs_t bnxt_re_dv;
 
   /**
    * @brief handle used for the dlopen of the BCOM library
@@ -522,10 +504,15 @@ class GDABackend : public Backend {
   int bnxt_dv_dl_init();
 
   /**
+   * @brief open bnxt dv lib
+   */
+  static void* bnxt_dv_dlopen();
+
+  /**
    * @brief structures holding the function pointers to the direct verbs functionality
    * of each network driver.
    */
-  mlx5dv_funcs_t mlx5dv_ftable_;
+  mlx5dv_funcs_t mlx5dv;
 
   /**
    * @brief handle used for the dlopen of the MLX5 library
@@ -536,6 +523,32 @@ class GDABackend : public Backend {
    * @brief initialize function table for MLNX direct verbs support
    */
   int mlx5_dv_dl_init();
+
+  /**
+   * @brief open mlx5 dv lib
+   */
+  static void* mlx5_dv_dlopen();
+
+  /**
+   * @brief structures holding the function pointers to the direct verbs functionality
+   * of each network driver.
+   */
+  ionicdv_funcs_t ionic_dv;
+
+  /**
+   * @brief handle used for the dlopen of the IONIC library
+   */
+  void *ionicdv_handle_{nullptr};
+
+  /**
+   * @brief initialize function table for IONIC direct verbs support
+   */
+  int ionic_dv_dl_init();
+
+  /**
+   * @brief open ionic dv lib
+   */
+  static void* ionic_dv_dlopen();
 };
 
 }  // namespace rocshmem

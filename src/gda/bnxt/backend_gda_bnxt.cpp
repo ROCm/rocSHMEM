@@ -42,7 +42,7 @@ void GDABackend::bnxt_initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   dv_obj.cq.in  = cqs[conn_num];
   dv_obj.cq.out = &dv_cq;
 
-  err = bnxtdv_ftable_.init_obj(&dv_obj, BNXT_RE_DV_OBJ_CQ);
+  err = bnxt_re_dv.init_obj(&dv_obj, BNXT_RE_DV_OBJ_CQ);
   CHECK_ZERO(err, "bnxt_re_dv_init_obj(CQ)");
 
   memset(&gpu_qp->cq, 0, sizeof(bnxt_device_cq));
@@ -56,7 +56,7 @@ void GDABackend::bnxt_initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   dv_obj.qp.in  = ib_qp;
   dv_obj.qp.out = &dv_qp;
 
-  err = bnxtdv_ftable_.init_obj(&dv_obj, BNXT_RE_DV_OBJ_QP);
+  err = bnxt_re_dv.init_obj(&dv_obj, BNXT_RE_DV_OBJ_QP);
   CHECK_ZERO(err, "bnxt_re_dv_init_obj(QP)");
 
   memset(&gpu_qp->sq, 0, sizeof(bnxt_device_sq));
@@ -76,7 +76,7 @@ void GDABackend::bnxt_initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   gpu_qp->sq.mtu         = ibv_mtu_to_int(portinfo.active_mtu);
 
   /* Export DB */
-  err = bnxtdv_ftable_.get_default_db_region(context, &db_region_attr);
+  err = bnxt_re_dv.get_default_db_region(context, &db_region_attr);
   CHECK_ZERO(err, "bnxt_re_dv_init_obj(QP)");
 
   CHECK_HIP(hipHostRegister(db_region_attr.dbr, getpagesize(), hipHostRegisterDefault));
@@ -98,7 +98,7 @@ void GDABackend::bnxt_create_cqs(int cqe) {
   for (int i = 0; i < qps.size(); i++) {
     /* Allocate CQ mem */
     memset(&cq_attr, 0, sizeof(struct bnxt_re_dv_cq_attr));
-    bnxt_cqs[i].handle = bnxtdv_ftable_.cq_mem_alloc(context, cqe, &cq_attr);
+    bnxt_cqs[i].handle = bnxt_re_dv.cq_mem_alloc(context, cqe, &cq_attr);
     CHECK_NNULL(bnxt_cqs[i].handle, "bnxt_re_dv_cq_mem_alloc");
 
     /* Allocate CQ UMEM */
@@ -112,7 +112,7 @@ void GDABackend::bnxt_create_cqs(int cqe) {
     umem_attr.size         = bnxt_cqs[i].length;
     umem_attr.access_flags = IBV_ACCESS_LOCAL_WRITE;
 
-    bnxt_cqs[i].umem_handle = bnxtdv_ftable_.umem_reg(context, &umem_attr);
+    bnxt_cqs[i].umem_handle = bnxt_re_dv.umem_reg(context, &umem_attr);
     CHECK_NNULL(bnxt_cqs[i].umem_handle, "bnxt_re_dv_umem_reg(cq_buf)");
 
     /* Create CQ */
@@ -121,7 +121,7 @@ void GDABackend::bnxt_create_cqs(int cqe) {
     cq_init_attr.umem_handle = bnxt_cqs[i].umem_handle;
     cq_init_attr.ncqe        = cq_attr.ncqe;
 
-    cqs[i] = bnxtdv_ftable_.create_cq(context, &cq_init_attr);
+    cqs[i] = bnxt_re_dv.create_cq(context, &cq_init_attr);
     CHECK_NNULL(cqs[i], "bnxt_re_dv_create_cq");
   }
 }
@@ -152,7 +152,7 @@ void GDABackend::bnxt_create_qps(int sq_length) {
 
     /* Alloc qp_mem_info */
     memset(&bnxt_qps[i].mem_info, 0, sizeof(struct bnxt_re_dv_qp_mem_info));
-    err = bnxtdv_ftable_.qp_mem_alloc(pd_orig, &ib_qp_attr, &bnxt_qps[i].mem_info);
+    err = bnxt_re_dv.qp_mem_alloc(pd_orig, &ib_qp_attr, &bnxt_qps[i].mem_info);
     CHECK_ZERO(err, "bnxt_re_dv_qp_mem_alloc");
 
     /* Alloc SQ */
@@ -177,7 +177,7 @@ void GDABackend::bnxt_create_qps(int sq_length) {
     umem_attr.size         = bnxt_qps[i].mem_info.sq_len;
     umem_attr.access_flags = IBV_ACCESS_LOCAL_WRITE;
 
-    sq_umem_handle = bnxtdv_ftable_.umem_reg(context, &umem_attr);
+    sq_umem_handle = bnxt_re_dv.umem_reg(context, &umem_attr);
     CHECK_NNULL(sq_umem_handle, "bnxt_re_dv_umem_reg(sq)");
 
     memset(&umem_attr, 0, sizeof(struct bnxt_re_dv_umem_reg_attr));
@@ -185,7 +185,7 @@ void GDABackend::bnxt_create_qps(int sq_length) {
     umem_attr.size         = bnxt_qps[i].mem_info.rq_len;
     umem_attr.access_flags = IBV_ACCESS_LOCAL_WRITE;
 
-    rq_umem_handle = bnxtdv_ftable_.umem_reg(context, &umem_attr);
+    rq_umem_handle = bnxt_re_dv.umem_reg(context, &umem_attr);
     CHECK_NNULL(rq_umem_handle, "bnxt_re_dv_umem_reg(rq)");
 
     /* IB DV QP Init Attr */
@@ -214,33 +214,40 @@ void GDABackend::bnxt_create_qps(int sq_length) {
     bnxt_qps[i].attr.comp_mask = bnxt_qps[i].mem_info.comp_mask;
 
     /* Alloc QP */
-    qps[i] = bnxtdv_ftable_.create_qp(pd_orig, &bnxt_qps[i].attr);
+    qps[i] = bnxt_re_dv.create_qp(pd_orig, &bnxt_qps[i].attr);
     CHECK_NNULL(qps[i], "bnxt_re_dv_create_qp");
   }
 }
 
-int GDABackend::bnxt_dv_dl_init() {
-  bnxtdv_handle_ = dlopen("libbnxt_re.so", RTLD_NOW);
-  if (!bnxtdv_handle_) {
+void* GDABackend::bnxt_dv_dlopen() {
+  void* dv_handle{nullptr};
+  dv_handle = dlopen("libbnxt_re.so", RTLD_NOW);
+  if (!dv_handle) {
     // Try hard-coded PATH
-    bnxtdv_handle_ = dlopen("/usr/local/lib/libbnxt_re.so", RTLD_NOW);
-    if (!bnxtdv_handle_) {
+    dv_handle = dlopen("/usr/local/lib/libbnxt_re.so", RTLD_NOW);
+    if (!dv_handle) {
       DPRINTF("Could not open libbnxt_re.so. Returning\n");
-      return ROCSHMEM_ERROR;
     }
   }
+  return dv_handle;
+}
 
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, init_obj);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, create_qp);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, destroy_qp);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, modify_qp);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, qp_mem_alloc);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, create_cq);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, destroy_cq);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, cq_mem_alloc);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, umem_reg);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, umem_dereg);
-  DLSYM_HELPER(bnxtdv_ftable_, bnxt_re_dv_, bnxtdv_handle_, get_default_db_region);
+int GDABackend::bnxt_dv_dl_init() {
+  bnxtdv_handle_ = bnxt_dv_dlopen();
+  if (!bnxtdv_handle_)
+    return ROCSHMEM_ERROR;
+
+  DLSYM_HELPER(bnxt_re_dv, bnxt_re_dv_, bnxtdv_handle_, init_obj);
+  DLSYM_HELPER(bnxt_re_dv, bnxt_re_dv_, bnxtdv_handle_, create_qp);
+  DLSYM_HELPER(bnxt_re_dv, bnxt_re_dv_, bnxtdv_handle_, destroy_qp);
+  DLSYM_HELPER(bnxt_re_dv, bnxt_re_dv_, bnxtdv_handle_, modify_qp);
+  DLSYM_HELPER(bnxt_re_dv, bnxt_re_dv_, bnxtdv_handle_, qp_mem_alloc);
+  DLSYM_HELPER(bnxt_re_dv, bnxt_re_dv_, bnxtdv_handle_, create_cq);
+  DLSYM_HELPER(bnxt_re_dv, bnxt_re_dv_, bnxtdv_handle_, destroy_cq);
+  DLSYM_HELPER(bnxt_re_dv, bnxt_re_dv_, bnxtdv_handle_, cq_mem_alloc);
+  DLSYM_HELPER(bnxt_re_dv, bnxt_re_dv_, bnxtdv_handle_, umem_reg);
+  DLSYM_HELPER(bnxt_re_dv, bnxt_re_dv_, bnxtdv_handle_, umem_dereg);
+  DLSYM_HELPER(bnxt_re_dv, bnxt_re_dv_, bnxtdv_handle_, get_default_db_region);
 
   return ROCSHMEM_SUCCESS;
 }

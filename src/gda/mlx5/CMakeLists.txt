@@ -1,4 +1,3 @@
-#!/bin/bash
 ###############################################################################
 # Copyright (c) Advanced Micro Devices, Inc. All rights reserved.
 #
@@ -22,31 +21,17 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 ###############################################################################
+target_sources(
+  ${PROJECT_NAME}
+  PRIVATE
+    backend_gda_mlx5.cpp
+)
 
-set -e
-
-src_path=$(dirname "$(realpath $0)")/../../
-
-cmake \
-    -DBUILD_CODE_COVERAGE=${CODE_COV:-OFF} \
-    -DCMAKE_BUILD_TYPE=${BUILD_TYPE:-Release} \
-    -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX:-~/rocshmem} \
-    -DCMAKE_VERBOSE_MAKEFILE=OFF \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-    -DBUILD_FUNCTIONAL_TESTS=ON \
-    -DBUILD_UNIT_TESTS=ON \
-    -DDEBUG=OFF \
-    -DPROFILE=OFF \
-    -DUSE_GDA=ON \
-    -DGDA_MLX5=ON \
-    -DGDA_BNXT=ON \
-    -DGDA_IONIC=ON \
-    -DUSE_RO=ON \
-    -DUSE_IPC=ON \
-    -DUSE_THREADS=OFF \
-    -DUSE_WF_COAL=OFF \
-    -DUSE_HDP_FLUSH=OFF \
-    -DUSE_HDP_FLUSH_HOST_SIDE=OFF \
-    $* $src_path
-cmake --build . --parallel 8
-cmake --install .
+if(GDA_MLX5)
+target_sources(
+  ${PROJECT_NAME}
+  PRIVATE
+    queue_pair_mlx5.cpp
+    segment_builder.cpp
+)
+endif()

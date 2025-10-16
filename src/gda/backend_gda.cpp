@@ -122,11 +122,7 @@ GDABackend::~GDABackend() {
   cleanup_heap_memory_rkey();
   cleanup_ibv();
 
-  if (bnxtdv_handle_ != nullptr)
-    dlclose(bnxtdv_handle_);
-
-  if (mlx5dv_handle_ != nullptr)
-    dlclose(mlx5dv_handle_);
+  close_dv_libs();
 }
 
 void GDABackend::read_env() {
@@ -532,52 +528,45 @@ void GDABackend::rte_barrier() {
   }
 }
 
-int GDABackend::mlx5_dv_dl_init () {
-  mlx5dv_handle_ = dlopen("libmlx5.so", RTLD_NOW);
-  if (!mlx5dv_handle_) {
-    DPRINTF("Could not open libmlx5.so. Returning\n");
-    return ROCSHMEM_ERROR;
-  }
-
-  DLSYM_HELPER(mlx5dv_ftable_, mlx5dv_, mlx5dv_handle_, init_obj);
-  return ROCSHMEM_SUCCESS;
-}
-
 /* Currently we only check whether we can dlopen a Direct Verbs library.
-** We might need to extend this logic to check whether we have interfaces that
-** can use those DV libraries
-*/
+ * We might need to extend this logic to check whether we have interfaces that
+ * can use those DV libraries
+ */
 int GDABackend::backend_can_run() {
   void *handle{nullptr};
 
   /* Try opening bnxt DV libraries */
-  handle = dlopen("libbnxt_re.so", RTLD_NOW);
+#if defined(GDA_BNXT)
+  handle = bnxt_dv_dlopen();
   if (handle) {
     dlclose(handle);
     return ROCSHMEM_SUCCESS;
-  } else {
-    /* Try hard-coded PATH */
-    handle = dlopen("/usr/local/lib/libbnxt_re.so", RTLD_NOW);
-    if (handle) {
-      dlclose(handle);
-      return ROCSHMEM_SUCCESS;
-    }
   }
+#endif //defined(GDA_BNXT)
+
+  /* Try opening ionic DV libraries */
+#if defined(GDA_IONIC)
+  handle = ionic_dv_dlopen();
+  if (handle) {
+    dlclose(handle);
+    return ROCSHMEM_SUCCESS;
+  }
+#endif //defined(GDA_IONIC)
 
   /* Try opening mlx5 DV libraries */
-  handle = dlopen("libmlx5.so", RTLD_NOW);
+#if defined(GDA_MLX5)
+  handle = mlx5_dv_dlopen();
   if (handle) {
     dlclose(handle);
     return ROCSHMEM_SUCCESS;
   }
-
-  /* ToDo: opening ionic DV libraries */
+#endif //defined(GDA_MLX5)
 
   return ROCSHMEM_ERROR;
 }
 
 void GDABackend::setup_ibv() {
-  autodetect_dv_libs();
+  open_dv_libs();
 
   open_ib_device();
 
@@ -599,22 +588,22 @@ void GDABackend::cleanup_ibv() {
     CHECK_HIP(hipHostUnregister(db_region_attr.dbr));
 
     for (int i = 0; i < qps.size(); i++) {
-      err = bnxtdv_ftable_.destroy_qp(qps[i]);
+      err = bnxt_re_dv.destroy_qp(qps[i]);
       CHECK_ZERO(err, "bnxt_re_dv_destroy_qp");
 
-      err = bnxtdv_ftable_.umem_dereg(bnxt_qps[i].attr.rq_umem_handle);
+      err = bnxt_re_dv.umem_dereg(bnxt_qps[i].attr.rq_umem_handle);
       CHECK_ZERO(err, "bnxt_re_dv_umem_dereg (RQ)");
 
-      err = bnxtdv_ftable_.umem_dereg(bnxt_qps[i].attr.sq_umem_handle);
+      err = bnxt_re_dv.umem_dereg(bnxt_qps[i].attr.sq_umem_handle);
       CHECK_ZERO(err, "bnxt_re_dv_umem_dereg (SQ)");
 
       CHECK_HIP(hipFree(bnxt_qps[i].sq_buf));
       CHECK_HIP(hipFree(bnxt_qps[i].rq_buf));
 
-      err = bnxtdv_ftable_.destroy_cq(cqs[i]);
+      err = bnxt_re_dv.destroy_cq(cqs[i]);
       CHECK_ZERO(err, "bnxt_re_dv_destroy_cq");
 
-      err = bnxtdv_ftable_.umem_dereg(bnxt_cqs[i].umem_handle);
+      err = bnxt_re_dv.umem_dereg(bnxt_cqs[i].umem_handle);
       CHECK_ZERO(err, "bnxt_re_dv_umem_dereg");
 
       CHECK_HIP(hipFree(bnxt_cqs[i].buf));
@@ -647,13 +636,14 @@ void GDABackend::cleanup_ibv() {
   CHECK_ZERO(err, "ibv_close_device");
 }
 
-void GDABackend::autodetect_dv_libs() {
+void GDABackend::open_dv_libs() {
   int ret;
 
-#ifdef GDA_IONIC
-  gda_vendor = GDAVendor::IONIC;
-#endif
+  //TODO: environment variable selection/deselection
+  //this hardcoded init order will always prefer BNXT>IONIC>MLX5
+  //if all three drivers are installed
 
+#if defined(GDA_BNXT)
   if (gda_vendor == GDAVendor::NONE) {
     ret = bnxt_dv_dl_init();
 
@@ -663,7 +653,21 @@ void GDABackend::autodetect_dv_libs() {
       DPRINTF("Initializing rocSHMEM BNXT GDA support failed\n");
     }
   }
+#endif // defined(GDA_BNXT)
 
+#if defined(GDA_IONIC)
+  if (gda_vendor == GDAVendor::NONE) {
+    ret = ionic_dv_dl_init();
+
+    if (ret == ROCSHMEM_SUCCESS) {
+      gda_vendor = GDAVendor::IONIC;
+    } else {
+      DPRINTF("Initializing rocSHMEM IONIC GDA support failed\n");
+    }
+  }
+#endif // defined(GDA_IONIC)
+
+#if defined(GDA_MLX5)
   if (gda_vendor == GDAVendor::NONE) {
     ret = mlx5_dv_dl_init();
 
@@ -673,13 +677,26 @@ void GDABackend::autodetect_dv_libs() {
       DPRINTF("Initializing rocSHMEM MLX5 GDA support failed\n");
     }
   }
+#endif // defined(GDA_MLX5)
 
   if (gda_vendor == GDAVendor::NONE) {
-    printf("Initializing rocSHMEM with IONIC, BNXT, or MLX5 GDA support failed\n");
+    printf("Initializing rocSHMEM with IONIC, BNXT, or MLX5 GDA support failed: no DV library found\n");
     abort();
   }
 }
 
+void GDABackend::close_dv_libs() {
+  if (ionicdv_handle_ != nullptr)
+    dlclose(ionicdv_handle_);
+
+  if (bnxtdv_handle_ != nullptr)
+    dlclose(bnxtdv_handle_);
+
+  if (mlx5dv_handle_ != nullptr)
+    dlclose(mlx5dv_handle_);
+
+  gda_vendor = GDAVendor::NONE;
+}
 
 void GDABackend::exchange_qp_dest_info() {
   for (int i = 0; i < qps.size(); i++) {
@@ -752,11 +769,7 @@ void GDABackend::setup_gpu_qps() {
     new (&host_qps[i]) QueuePair(pd_orig, gda_vendor);
     CHECK_HIP(hipMemcpy(&gpu_qps[i], &host_qps[i], sizeof(QueuePair), hipMemcpyDefault));
 
-    if (gda_vendor == GDAVendor::BNXT) {
-      bnxt_initialize_gpu_qp(&gpu_qps[i], i);
-    } else {
-      initialize_gpu_qp(&gpu_qps[i], i);
-    }
+    initialize_gpu_qp(&gpu_qps[i], i);
   }
 }
 
@@ -844,7 +857,7 @@ void GDABackend::modify_qps_reset_to_init() {
 
   for (int i =0; i < qps.size() ; i++) {
     if (gda_vendor == GDAVendor::BNXT) {
-      err = bnxtdv_ftable_.modify_qp(qps[i], &attr, attr_mask, 0, 0);
+      err = bnxt_re_dv.modify_qp(qps[i], &attr, attr_mask, 0, 0);
     } else {
       err = ibv_modify_qp(qps[i], &attr, attr_mask);
     }
@@ -896,7 +909,7 @@ void GDABackend::modify_qps_init_to_rtr() {
     }
 
     if (gda_vendor == GDAVendor::BNXT) {
-      err = bnxtdv_ftable_.modify_qp(qps[i], &attr, attr_mask, 0, 0);
+      err = bnxt_re_dv.modify_qp(qps[i], &attr, attr_mask, 0, 0);
     } else {
       err = ibv_modify_qp(qps[i], &attr, attr_mask);
     }
@@ -932,7 +945,7 @@ void GDABackend::modify_qps_rtr_to_rts() {
     attr.sq_psn = dest_info[i].psn;
 
     if (gda_vendor == GDAVendor::BNXT) {
-      err = bnxtdv_ftable_.modify_qp(qps[i], &attr, attr_mask, 0, 0);
+      err = bnxt_re_dv.modify_qp(qps[i], &attr, attr_mask, 0, 0);
     } else {
       err = ibv_modify_qp(qps[i], &attr, attr_mask);
     }
@@ -1057,19 +1070,9 @@ void GDABackend::create_parent_domain() {
   CHECK_NNULL(pd_parent, "ibv_alloc_parent_domain");
   dump_ibv_pd(pd_parent);
 
-#ifdef GDA_IONIC
-  ionic_dv_pd_set_sqcmb(pd_parent, false, false, false);
-  ionic_dv_pd_set_rqcmb(pd_parent, false, false, false);
-
-  for (int uxdma_i = 0; uxdma_i < 2; ++uxdma_i) {
-    pd_uxdma[uxdma_i] = ibv_alloc_parent_domain(context, &pattr);
-    CHECK_NNULL(pd_uxdma[uxdma_i], "ibv_alloc_parent_domain (uxdma)");
-
-    ionic_dv_pd_set_sqcmb(pd_uxdma[uxdma_i], false, false, false);
-    ionic_dv_pd_set_rqcmb(pd_uxdma[uxdma_i], false, false, false);
-    ionic_dv_pd_set_udma_mask(pd_uxdma[uxdma_i], 1u << uxdma_i);
+  if (gda_vendor == GDAVendor::IONIC) {
+    ionic_setup_parent_domain(&pattr);
   }
-#endif /* GDA_IONIC */
 }
 
 void GDABackend::create_cqs(int cqe) {
@@ -1099,123 +1102,18 @@ void GDABackend::create_cqs(int cqe) {
 }
 
 void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
-  int hip_dev_id{-1};
-  CHECK_HIP(hipGetDevice(&hip_dev_id));
-
-#ifdef GDA_IONIC
-  ionic_dv_ctx dvctx;
-  ionic_dv_get_ctx(&dvctx, context);
-
-  void* gpu_db_page = nullptr;
-  rocm_memory_lock_to_fine_grain(dvctx.db_page, 0x1000, &gpu_db_page, hip_dev_id);
-
-  uint64_t *db_page_u64 = reinterpret_cast<uint64_t*>(dvctx.db_page);
-  uint64_t *gpu_db_page_u64 = reinterpret_cast<uint64_t*>(gpu_db_page);
-
-  uint64_t *gpu_db_ptr = &gpu_db_page_u64[dvctx.db_ptr - db_page_u64];
-
-  gpu_db_page = gpu_db_page;
-  gpu_db_cq = &gpu_db_ptr[dvctx.cq_qtype];
-  gpu_db_sq = &gpu_db_ptr[dvctx.sq_qtype];
-
-  uint8_t udma_idx = ionic_dv_qp_get_udma_idx(qps[conn_num]);
-
-  ionic_dv_cq dvcq;
-  ionic_dv_get_cq(&dvcq, cqs[conn_num], udma_idx);
-
-  gpu_qp->cq_dbreg = gpu_db_cq;
-  gpu_qp->cq_dbval = dvcq.q.db_val;
-  gpu_qp->cq_mask = dvcq.q.mask;
-
-  gpu_qp->ionic_cq_buf = reinterpret_cast<ionic_v1_cqe*>(dvcq.q.ptr);
-
-  ionic_dv_qp dvqp;
-  ionic_dv_get_qp(&dvqp, qps[conn_num]);
-
-  gpu_qp->sq_dbreg = gpu_db_sq;
-  gpu_qp->sq_dbval = dvqp.sq.db_val;
-  gpu_qp->sq_mask = dvqp.sq.mask;
-  gpu_qp->ionic_sq_buf = reinterpret_cast<ionic_v1_wqe *>(dvqp.sq.ptr);
-
-  strncpy(gpu_qp->dev_name,
-          qps[conn_num]->context->device->name,
-          sizeof(gpu_qp->dev_name));
-  gpu_qp->dev_name[sizeof(gpu_qp->dev_name) - 1] = 0;
-
-  gpu_qp->qp_num = qps[conn_num]->qp_num;
-  gpu_qp->lkey = heap_mr->lkey;
-  gpu_qp->rkey = heap_rkey[conn_num % num_pes];
-  gpu_qp->inline_threshold = 32;
-#endif /* GDA_IONIC */
-  if (gda_vendor == GDAVendor::MLX5) {
-    mlx5dv_cq cq_out;
-    mlx5dv_obj mlx_obj;
-    mlx_obj.cq.in = cqs[conn_num];
-    mlx_obj.cq.out = &cq_out;
-    mlx5dv_ftable_.init_obj(&mlx_obj, MLX5DV_OBJ_CQ);
-    dump_mlx5dv_cq(&cq_out, conn_num);
-
-    /*
-     * struct mlx5dv_cq {
-     *   void                    *buf;
-     *   __be32                  *dbrec;
-     *   uint32_t                cqe_cnt;
-     *   uint32_t                cqe_size;
-     *   void                    *cq_uar;
-     *   uint32_t                cqn;
-     *   uint64_t                comp_mask;
-     * };
-    */
-
-    gpu_qp->cq_buf = reinterpret_cast<mlx5_cqe64*>(cq_out.buf);
-    gpu_qp->cq_cnt = cq_out.cqe_cnt;
-    gpu_qp->cq_log_cnt = log2(cq_out.cqe_cnt);
-    gpu_qp->cq_dbrec = cq_out.dbrec;
-
-    mlx5dv_qp qp_out;
-    mlx_obj.qp.in = qps[conn_num];
-    mlx_obj.qp.out = &qp_out;
-    mlx5dv_ftable_.init_obj(&mlx_obj, MLX5DV_OBJ_QP);
-    dump_mlx5dv_qp(&qp_out, conn_num);
-
-    /*
-     * struct mlx5dv_qp {
-     *   __be32 *dbrec;
-     *   struct {
-     *     void *buf;
-     *     uint32_t wqe_cnt;
-     *     uint32_t stride;
-     *   } sq;
-     *   struct {
-     *     void *buf;
-     *     uint32_t wqe_cnt;
-     *     uint32_t stride;
-     *   } rq;
-     *   struct {
-     *     void *reg;
-     *     uint32_t size;
-     *   } bf;
-     *   uint64_t comp_mask;
-     *   off_t uar_mmap_offset;
-     *   uint32_t tirn;
-     *   uint32_t tisn;
-     *   uint32_t rqn;
-     *   uint32_t sqn;
-     *   uint64_t tir_icm_addr;
-     * };
-     */
-
-    gpu_qp->dbrec = &qp_out.dbrec[1]; // points to two pointers: 0 -> MLX5_REC_DBR, 1 -> MLX5_SND_DBR
-    gpu_qp->sq_buf = reinterpret_cast<uint64_t*>(qp_out.sq.buf);
-    gpu_qp->sq_wqe_cnt = qp_out.sq.wqe_cnt;
-    gpu_qp->rkey = htobe32(heap_rkey[conn_num % num_pes]);
-    gpu_qp->lkey = htobe32(heap_mr->lkey);
-    gpu_qp->qp_num = qps[conn_num]->qp_num;
-    gpu_qp->inline_threshold = inline_threshold;
-    // The 2 in qp_out.bf.size * 2 below facilitates the switching between blue flame registers
-    void* gpu_ptr{nullptr};
-    rocm_memory_lock_to_fine_grain(qp_out.bf.reg, qp_out.bf.size * 2, &gpu_ptr, hip_dev_id);
-    gpu_qp->db.ptr = reinterpret_cast<uint64_t*>(gpu_ptr);
+  switch (gda_vendor) {
+  case GDAVendor::IONIC:
+    ionic_initialize_gpu_qp(gpu_qp, conn_num);
+    break;
+  case GDAVendor::BNXT:
+    bnxt_initialize_gpu_qp(gpu_qp, conn_num);
+    break;
+  case GDAVendor::MLX5:
+    mlx5_initialize_gpu_qp(gpu_qp, conn_num);
+    break;
+  default:
+    assert(false /* GDAVendor initialize_gpu_qp */);
   }
 }
 

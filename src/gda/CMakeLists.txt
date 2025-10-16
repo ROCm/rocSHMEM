@@ -35,7 +35,6 @@ target_sources(
     gda_team.cpp
     queue_pair.cpp
     endian.cpp
-    segment_builder.cpp
     topology.cpp
 )
 
@@ -48,4 +47,6 @@ target_link_libraries(
     numa
 )
 
+add_subdirectory(mlx5)
 add_subdirectory(bnxt)
+add_subdirectory(ionic)

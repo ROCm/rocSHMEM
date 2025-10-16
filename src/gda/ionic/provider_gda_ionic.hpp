@@ -25,11 +25,19 @@
 #ifndef LIBRARY_SRC_GDA_IONIC_GDA_PROVIDER_HPP_
 #define LIBRARY_SRC_GDA_IONIC_GDA_PROVIDER_HPP_
 
-#ifdef GDA_IONIC
 extern "C" {
-#include <infiniband/ionic_dv.h>
-#include <infiniband/ionic_fw.h>
+#include "gda/ionic/ionic_dv.h"
+#include "gda/ionic/ionic_fw.h"
 }
-#endif
+
+struct ionicdv_funcs_t {
+  int (*get_ctx)(struct ionic_dv_ctx *dvctx, struct ibv_context *ibctx);
+  uint8_t (*qp_get_udma_idx)(struct ibv_qp *ibqp);
+  int (*get_cq)(struct ionic_dv_cq *dvcq, struct ibv_cq *ibcq, uint8_t udma_idx);
+  int (*get_qp)(struct ionic_dv_qp *dvqp, struct ibv_qp *ibqp);
+  int (*pd_set_sqcmb)(struct ibv_pd *ibpd, bool enable, bool expdb, bool require);
+  int (*pd_set_rqcmb)(struct ibv_pd *ibpd, bool enable, bool expdb, bool require);
+  int (*pd_set_udma_mask)(struct ibv_pd *ibpd, uint8_t udma_mask);
+};
 
 #endif  //LIBRARY_SRC_GDA_IONIC_GDA_PROVIDER_HPP_

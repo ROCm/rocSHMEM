@@ -34,4 +34,8 @@ typedef union db_reg {
   uintptr_t uint;
 } db_reg_t;
 
+struct mlx5dv_funcs_t {
+  int (*init_obj)(struct mlx5dv_obj *obj, uint64_t obj_type);
+};
+
 #endif  //LIBRARY_SRC_GDA_MLX5_GDA_PROVIDER_HPP_

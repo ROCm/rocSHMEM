@@ -83,4 +83,26 @@ struct bnxt_host_qp {
 
 /*****************************************************************************/
 
+struct bnxtdv_funcs_t {
+  int (*init_obj)(struct bnxt_re_dv_obj *obj, uint64_t obj_type);
+  struct ibv_qp* (*create_qp)(struct ibv_pd *pd,
+                              struct bnxt_re_dv_qp_init_attr *qp_attr);
+  int (*destroy_qp)(struct ibv_qp *ibvqp);
+  int (*modify_qp)(struct ibv_qp *ibv_qp, struct ibv_qp_attr *attr,
+                   int attr_mask, uint32_t type, uint32_t value);
+  int (*qp_mem_alloc)(struct ibv_pd *ibvpd,
+                      struct ibv_qp_init_attr *attr,
+                      struct bnxt_re_dv_qp_mem_info *dv_qp_mem);
+  struct ibv_cq* (*create_cq)(struct ibv_context *ibvctx,
+                              struct bnxt_re_dv_cq_init_attr *cq_attr);
+  int (*destroy_cq)(struct ibv_cq *ibv_cq);
+  void* (*cq_mem_alloc)(struct ibv_context *ibvctx, int num_cqe,
+                        struct bnxt_re_dv_cq_attr *cq_attr);
+  void* (*umem_reg)(struct ibv_context *ibvctx,
+                    struct bnxt_re_dv_umem_reg_attr *in);
+  int (*umem_dereg)(void *umem_handle);
+  int (*get_default_db_region)(struct ibv_context *ibvctx,
+                               struct bnxt_re_dv_db_region_attr *out);
+};
+
 #endif  //LIBRARY_SRC_GDA_BNXT_GDA_PROVIDER_HPP_

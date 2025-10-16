@@ -163,14 +163,17 @@ class QueuePair {
 #if defined(GDA_MLX5)
   __device__ uint64_t mlx5_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
   __device__ void mlx5_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
+  __device__ void mlx5_quiet();
 #endif
 #if defined(GDA_BNXT)
   __device__ uint64_t bnxt_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
   __device__ void bnxt_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
+  __device__ void bnxt_quiet();
 #endif
 #if defined(GDA_IONIC)
   __device__ uint64_t ionic_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
   __device__ void ionic_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
+  __device__ void ionic_quiet();
 #endif
 
   /**
@@ -189,65 +192,6 @@ class QueuePair {
   __device__ void ionic_ring_doorbell(uint32_t pos);
 #endif
 
-#ifdef GDA_IONIC
-  __device__ uint64_t get_same_qp_lane_mask();
-
-  /**
-   * @brief Reserve space in the sq to post this many wqes.
-   * @param my_tid my logical thread id.
-   * @param num_wqes number of sq wqes to reserve for this wave.
-   * @return position of my_tid=0's wqe.
-   */
-  __device__ uint32_t reserve_sq(uint64_t active_lane_mask, uint32_t num_wqes);
-
-  /**
-   * @brief Ring the sq doorbell maintaining order between waves.
-   * @param last this is the last wqe posted in this wave.
-   * @param my_sq_prod position of my_tid=0's wqe.
-   * @param num_wqes number of sq wqes posted in this wave.
-   * @param wqe this thread's wqe.
-   * @return doorbell producer index.
-   */
-  __device__ uint32_t commit_sq(uint64_t activemask, uint32_t my_sq_prod, uint32_t my_sq_pos, uint32_t num_wqes);
-
-  /**
-   * @brief Helper method to poll the next completion queue entry.
-   */
-  __device__ __attribute__((noinline)) void poll_wave_cqes(uint64_t active_lane_mask);
-
-  /**
-   * @brief Helper method to drain completion queue entries.
-   * @param cons wait for sq_msn to catch up to this position.
-   */
-  __device__ __attribute__((noinline)) void ionic_quiet_internal(uint64_t active_lane_mask, uint32_t cons);
-
-  uint64_t *cq_dbreg{nullptr};
-  uint64_t cq_dbval{0};
-  uint64_t cq_mask{0};
-  struct ionic_v1_cqe *ionic_cq_buf{nullptr};
-  uint32_t cq_lock{SPIN_LOCK_UNLOCKED};
-  uint32_t cq_pos{0};
-  uint32_t cq_dbpos{0};
-
-  uint64_t *sq_dbreg{nullptr};
-  uint64_t sq_dbval{0};
-  uint64_t sq_mask{0};
-  struct ionic_v1_wqe *ionic_sq_buf{nullptr};
-  uint32_t sq_lock{SPIN_LOCK_UNLOCKED};
-  uint32_t sq_dbprod{0};
-  uint32_t sq_prod{0};
-  uint32_t sq_msn{0};
-#endif
-
-#if defined(GDA_MLX5)
-  __device__ void mlx5_quiet();
-#endif
-#if defined(GDA_BNXT)
-  __device__ void bnxt_quiet();
-#endif
-#if defined(GDA_IONIC)
-  __device__ void ionic_quiet();
-#endif
   int gda_vendor_{0};
 
   /* GDAVendor::BNXT START */
@@ -321,6 +265,58 @@ class QueuePair {
   uint64_t outstanding_wqes[OUTSTANDING_TABLE_SIZE]{0};
 
   /* GDAVendor::MLX5 END */
+
+  /* GDAVendor::IONIC START */
+
+  uint64_t *cq_dbreg{nullptr};
+  uint64_t cq_dbval{0};
+  uint64_t cq_mask{0};
+  struct ionic_v1_cqe *ionic_cq_buf{nullptr};
+  uint32_t cq_lock{SPIN_LOCK_UNLOCKED};
+  uint32_t cq_pos{0};
+  uint32_t cq_dbpos{0};
+
+  uint64_t *sq_dbreg{nullptr};
+  uint64_t sq_dbval{0};
+  uint64_t sq_mask{0};
+  struct ionic_v1_wqe *ionic_sq_buf{nullptr};
+  uint32_t sq_lock{SPIN_LOCK_UNLOCKED};
+  uint32_t sq_dbprod{0};
+  uint32_t sq_prod{0};
+  uint32_t sq_msn{0};
+
+  __device__ uint64_t get_same_qp_lane_mask();
+
+  /**
+   * @brief Reserve space in the sq to post this many wqes.
+   * @param my_tid my logical thread id.
+   * @param num_wqes number of sq wqes to reserve for this wave.
+   * @return position of my_tid=0's wqe.
+   */
+  __device__ uint32_t reserve_sq(uint64_t active_lane_mask, uint32_t num_wqes);
+
+  /**
+   * @brief Ring the sq doorbell maintaining order between waves.
+   * @param last this is the last wqe posted in this wave.
+   * @param my_sq_prod position of my_tid=0's wqe.
+   * @param num_wqes number of sq wqes posted in this wave.
+   * @param wqe this thread's wqe.
+   * @return doorbell producer index.
+   */
+  __device__ uint32_t commit_sq(uint64_t activemask, uint32_t my_sq_prod, uint32_t my_sq_pos, uint32_t num_wqes);
+
+  /**
+   * @brief Helper method to poll the next completion queue entry.
+   */
+  __device__ __attribute__((noinline)) void poll_wave_cqes(uint64_t active_lane_mask);
+
+  /**
+   * @brief Helper method to drain completion queue entries.
+   * @param cons wait for sq_msn to catch up to this position.
+   */
+  __device__ __attribute__((noinline)) void ionic_quiet_internal(uint64_t active_lane_mask, uint32_t cons);
+
+  /* GDAVendor::IONIC END */
 
   uint32_t inline_threshold{0};
 
