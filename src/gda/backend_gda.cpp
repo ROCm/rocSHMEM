@@ -854,6 +854,8 @@ void GDABackend::open_ib_device() {
   dump_ibv_context(context);
   dump_ibv_device(context->device);
 
+  validate_ib_device();
+
   pd_orig = ibv_alloc_pd(context);
   CHECK_NNULL(pd_orig, "ib allocate pd");
   dump_ibv_pd(pd_orig);
@@ -870,6 +872,34 @@ void GDABackend::open_ib_device() {
   select_gid_index();
 
   ibv_free_device_list(device_list);
+}
+
+void GDABackend::validate_ib_device() {
+  int err;
+
+  err = ibv_query_device(context, &device_attr);
+  CHECK_ZERO(err, "ibv_query_device");
+
+  if (gda_vendor == GDAVendor::BNXT) {
+    const uint32_t bnxt_vendor_id =  0x14E4;
+    const std::set<uint32_t> supported_bnxt_part_ids = { 0x1760 /* BCM57608 */};
+    const std::set<std::string> supported_bnxt_fw_ver = { "233.2.104.0" };
+
+    if (bnxt_vendor_id != device_attr.vendor_id) {
+      printf("GDAVendor::BNXT requested but an invalid device is selected\n");
+      abort();
+    }
+
+    if (supported_bnxt_part_ids.find(device_attr.vendor_part_id) == supported_bnxt_part_ids.end()) {
+      printf("Unsupported Broadcom Part: %x\n", device_attr.vendor_part_id);
+      abort();
+    }
+
+    if (supported_bnxt_fw_ver.find(device_attr.fw_ver) == supported_bnxt_fw_ver.end()) {
+      printf("Unsupported firmware version: %s\n", device_attr.fw_ver);
+      abort();
+    }
+  }
 }
 
 void GDABackend::modify_qps_reset_to_init() {
