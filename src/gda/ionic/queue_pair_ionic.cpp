@@ -30,19 +30,11 @@
 namespace rocshmem {
 
 __device__ uint64_t QueuePair::get_same_qp_lane_mask() {
-  uint64_t lane_mask = get_active_lane_mask();
-  uintptr_t this_val = reinterpret_cast<uintptr_t>(this);
-
-  // exclude threads operating on a different qp from this thread lane mask
-  #pragma unroll
-  for (int i = 0; i < wf_size; ++i) {
-    uint64_t bit_i = 1ull << i;
-    if ((lane_mask & bit_i) && __shfl(this_val, i) != this_val) {
-      lane_mask &= ~bit_i;
-    }
-  }
-
-  return lane_mask;
+  uint64_t active = get_active_lane_mask();
+  uintptr_t this_qp = reinterpret_cast<uintptr_t>(this);
+  // Bitmask of lanes in this warp whose value == this_qp
+  uint64_t same_qp_mask = __match_any_sync(active, this_qp);
+  return same_qp_mask;
 }
 
 __device__ uint32_t QueuePair::reserve_sq(uint64_t activemask, uint32_t num_wqes) {
