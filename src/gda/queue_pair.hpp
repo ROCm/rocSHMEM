@@ -57,7 +57,7 @@ class QueuePair {
   /**
    * @brief Constructor.
    */
-  explicit QueuePair(struct ibv_pd* pd, int gda_vendor);
+  explicit QueuePair(struct ibv_pd* pd, int gda_provider);
 
   /**
    * @brief Destructor.
@@ -192,18 +192,18 @@ class QueuePair {
   __device__ void ionic_ring_doorbell(uint32_t pos);
 #endif
 
-  int gda_vendor_{0};
+  int gda_provider_{0};
 
-  /* GDAVendor::BNXT START */
+  /* GDAProvider::BNXT START */
   uint64_t *dbr;
   struct bnxt_device_cq cq;
   struct bnxt_device_sq sq;
 
   __device__ int poll_cq();
 
-  /* GDAVendor::BNXT END */
+  /* GDAProvider::BNXT END */
 
-  /* GDAVendor::MLX5 START */
+  /* GDAProvider::MLX5 START */
 
   db_reg_t db{};
 
@@ -264,9 +264,9 @@ class QueuePair {
   static constexpr size_t OUTSTANDING_TABLE_SIZE = 65536;
   uint64_t outstanding_wqes[OUTSTANDING_TABLE_SIZE]{0};
 
-  /* GDAVendor::MLX5 END */
+  /* GDAProvider::MLX5 END */
 
-  /* GDAVendor::IONIC START */
+  /* GDAProvider::IONIC START */
 
   uint64_t *cq_dbreg{nullptr};
   uint64_t cq_dbval{0};
@@ -316,7 +316,7 @@ class QueuePair {
    */
   __device__ __attribute__((noinline)) void ionic_quiet_internal(uint64_t active_lane_mask, uint32_t cons);
 
-  /* GDAVendor::IONIC END */
+  /* GDAProvider::IONIC END */
 
   uint32_t inline_threshold{0};
 

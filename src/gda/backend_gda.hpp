@@ -47,8 +47,8 @@ class GDAHostContext;
 class QueuePair;
 class HostInterface;
 
-enum GDAVendor {
-  NONE,
+enum GDAProvider {
+  UNSET,
   IONIC,
   BNXT,
   MLX5
@@ -66,7 +66,7 @@ class GDABackend : public Backend {
   const char *requested_dev = nullptr;
   struct ibv_context *context = nullptr;;
   struct ibv_pd *pd_orig = nullptr;
-  enum GDAVendor gda_vendor = GDAVendor::NONE;
+  enum GDAProvider gda_provider = GDAProvider::UNSET;
 
   struct ibv_port_attr portinfo;
   union ibv_gid gid;
@@ -109,7 +109,7 @@ class GDABackend : public Backend {
   /**
    * @brief return user-preferred GDA provider (or NONE if not specified)
    */
-  static GDAVendor requested_provider();
+  static GDAProvider requested_provider();
 
  public:
   friend GDAContext;
