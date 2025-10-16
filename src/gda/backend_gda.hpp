@@ -102,9 +102,14 @@ class GDABackend : public Backend {
   /* GDA_IONIC END */
 
  /**
-   * @brief Common code invoked from the different constructors
+   * @brief Choose nic device according to locality/user preferences
    */
-  void read_env();
+  void select_nic();
+
+  /**
+   * @brief return user-preferred GDA provider (or NONE if not specified)
+   */
+  static GDAVendor requested_provider();
 
  public:
   friend GDAContext;

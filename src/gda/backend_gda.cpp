@@ -75,7 +75,7 @@ void GDABackend::init() {
 
   type = BackendType::GDA_BACKEND;
 
-  read_env();
+  select_nic();
 
   //TODO setup_host_interface();
   /* Initialize the host interface */
@@ -125,7 +125,7 @@ GDABackend::~GDABackend() {
   close_dv_libs();
 }
 
-void GDABackend::read_env() {
+void GDABackend::select_nic() {
   if (!envvar::requested_dev.is_default()) {
     requested_dev = envvar::requested_dev.get_value().c_str();
   } else {
@@ -528,37 +528,63 @@ void GDABackend::rte_barrier() {
   }
 }
 
+GDAVendor GDABackend::requested_provider() {
+  /* Check whether the user explicitely requests a particular provider type */
+  std::string envstr = envvar::gda::provider;
+  std::transform(envstr.begin(), envstr.end(), envstr.begin(), ::tolower);
+  if (!envstr.empty()) {
+    printf("Found environment variable ROCSHMEM_GDA_PROVIDER, value is %s\n", envstr.c_str());
+    if (envstr.find("bnxt") != std::string::npos) {
+      return GDAVendor::BNXT;
+    }
+    if (envstr.find("ionic") != std::string::npos) {
+      return GDAVendor::IONIC;
+    }
+    if (envstr.find("mlx5") != std::string::npos) {
+      return GDAVendor::MLX5;
+    }
+  }
+  return GDAVendor::NONE;
+}
+
 /* Currently we only check whether we can dlopen a Direct Verbs library.
  * We might need to extend this logic to check whether we have interfaces that
  * can use those DV libraries
  */
 int GDABackend::backend_can_run() {
   void *handle{nullptr};
+  GDAVendor requested = requested_provider();
 
   /* Try opening bnxt DV libraries */
 #if defined(GDA_BNXT)
-  handle = bnxt_dv_dlopen();
-  if (handle) {
-    dlclose(handle);
-    return ROCSHMEM_SUCCESS;
+  if (requested == GDAVendor::NONE || requested == GDAVendor::BNXT) {
+    handle = bnxt_dv_dlopen();
+    if (handle) {
+      dlclose(handle);
+      return ROCSHMEM_SUCCESS;
+    }
   }
 #endif //defined(GDA_BNXT)
 
   /* Try opening ionic DV libraries */
 #if defined(GDA_IONIC)
-  handle = ionic_dv_dlopen();
-  if (handle) {
-    dlclose(handle);
-    return ROCSHMEM_SUCCESS;
+  if (requested == GDAVendor::NONE || requested == GDAVendor::IONIC) {
+    handle = ionic_dv_dlopen();
+    if (handle) {
+      dlclose(handle);
+      return ROCSHMEM_SUCCESS;
+    }
   }
 #endif //defined(GDA_IONIC)
 
   /* Try opening mlx5 DV libraries */
 #if defined(GDA_MLX5)
-  handle = mlx5_dv_dlopen();
-  if (handle) {
-    dlclose(handle);
-    return ROCSHMEM_SUCCESS;
+  if (requested == GDAVendor::NONE || requested == GDAVendor::MLX5) {
+    handle = mlx5_dv_dlopen();
+    if (handle) {
+      dlclose(handle);
+      return ROCSHMEM_SUCCESS;
+    }
   }
 #endif //defined(GDA_MLX5)
 
@@ -636,15 +662,17 @@ void GDABackend::cleanup_ibv() {
   CHECK_ZERO(err, "ibv_close_device");
 }
 
+
 void GDABackend::open_dv_libs() {
   int ret;
+  GDAVendor requested = requested_provider();
 
-  //TODO: environment variable selection/deselection
   //this hardcoded init order will always prefer BNXT>IONIC>MLX5
-  //if all three drivers are installed
+  //if all three drivers are installed and enabled
 
 #if defined(GDA_BNXT)
-  if (gda_vendor == GDAVendor::NONE) {
+  if (gda_vendor == GDAVendor::NONE
+  && (requested == GDAVendor::NONE || requested == GDAVendor::BNXT)) {
     ret = bnxt_dv_dl_init();
 
     if (ret == ROCSHMEM_SUCCESS) {
@@ -656,7 +684,8 @@ void GDABackend::open_dv_libs() {
 #endif // defined(GDA_BNXT)
 
 #if defined(GDA_IONIC)
-  if (gda_vendor == GDAVendor::NONE) {
+  if (gda_vendor == GDAVendor::NONE
+  && (requested == GDAVendor::NONE || requested == GDAVendor::IONIC)) {
     ret = ionic_dv_dl_init();
 
     if (ret == ROCSHMEM_SUCCESS) {
@@ -668,7 +697,8 @@ void GDABackend::open_dv_libs() {
 #endif // defined(GDA_IONIC)
 
 #if defined(GDA_MLX5)
-  if (gda_vendor == GDAVendor::NONE) {
+  if (gda_vendor == GDAVendor::NONE
+  && (requested == GDAVendor::NONE || requested == GDAVendor::MLX5)) {
     ret = mlx5_dv_dl_init();
 
     if (ret == ROCSHMEM_SUCCESS) {
