@@ -1,16 +1,35 @@
 # Changelog for rocSHMEM
 
-## rocSHMEM 3.x.x for ROCm 7.x.x
+## Unreleased - rocSHMEM 3.x.x for ROCm 7.x.x
+### Added
+* Allow for IPC, RO, GDA backends to be selected at runtime
+* Added the GDA conduit for different NIC vendors
+   * AMD Pensando IONIC
+   * Broadcom BNXT\_RE (Thor 2)
+   * Mellanox MLX5 (IB and RoCE ConnectX-7)
+* Added new APIs:
+   * `rocshmem_get_device_ctx`
 
 ### Changed
-
 * The following APIs have been deprecated:
   * `rocshmem_wg_init`
   * `rocshmem_wg_finalize`
   * `rocshmem_wg_init_thread`
+* `rocshmem_ptr`  can now return non-null pointer to
+   a shared memory region when the IPC transport is available to reach that region.
+   Previously, it would return a null pointer.
+* `ROCSHMEM_RO_DISABLE_IPC` was renamed to `ROCSHMEM_DISABLE_MIXED_IPC`.
+  This enviroment variable was not documented for prior releases.
+  It is now documented to inform users who were using this undocumented feature.
+
+### Removed
+* rocSHMEM no-longer requires rocPRIM and rocThrust as dependencies
+* Removed MPI compile-time dependency
+
+### Known issues
+* Only a subset of rocSHMEM APIs are implemented for the GDA conduit
 
 ## rocSHMEM 3.0.0 for ROCm 7.0.0
-
 ### Added
 
 * Added the Reverse Offload conduit

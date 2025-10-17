@@ -80,9 +80,9 @@ __host__ void rocshmem_init(void);
 /**
  * @brief Query rocSHMEM context from host API
  *
- * @param[out] ctx      Returns ROCSHMEM_CTX_DEFAULT device pointer that users 
+ * @param[out] ctx      Returns ROCSHMEM_CTX_DEFAULT device pointer that users
  *                      can query from one instance of rocshmem host library and
- *                      use use later for dynamic module initialization in 
+ *                      use use later for dynamic module initialization in
  *                      kernel bitcode device library in the same application
  */
 __host__ void * rocshmem_get_device_ctx();
@@ -91,14 +91,15 @@ __host__ void * rocshmem_get_device_ctx();
  * @brief Query rocSHMEM remote symmetric heap pointer
  *
  * @param[in]  dest     local symmetric heap allocation pointer for current pe/device
- * 
+ *
  * @param[in]  pe       remote PE
- * 
+ *
  * @param[out] ptr      Returns remote symmetric heap device pointer from host-side API.
  *                      This can be used to issue load/store from custom kernels
  *                      instead of using rocshmem device side get/put APIs for RMA operations.
  */
-__host__ void *rocshmem_ptr(void *dest, int pe);
+__host__ void* rocshmem_ptr(const void *dest, int pe);
+__device__ ATTR_NO_INLINE void* rocshmem_ptr(const void *dest, int pe);
 
 #if defined(HAVE_EXTERNAL_MPI)
 /**
