@@ -59,7 +59,6 @@ option(USE_SHARED_CTX "Request support for shared ctx between WG" OFF)
 option(USE_SINGLE_NODE "Enable single node support only." OFF)
 option(USE_HDP_FLUSH "Force flush the HDP cache." OFF)
 option(USE_HDP_FLUSH_HOST_SIDE "Use a polling thread to flush the HDP cache on the host." OFF)
-option(USE_EXTERNAL_MPI "Link with an external MPI (required if used MPI is ABI incompatible with Open MPI v5" OFF)
 
 option(BUILD_FUNCTIONAL_TESTS "Build the functional tests (Requires MPI)" OFF)
 option(BUILD_EXAMPLES "Build the examples" ON)
@@ -73,6 +72,9 @@ option(BUILD_CODE_COVERAGE "Build with code coverage flags (gcc only)" OFF)
 option(GDA_IONIC "Build for AMD Pensando IONIC RDMA provider" OFF)
 option(GDA_BNXT "Build for Broadcom RDMA provider" OFF)
 option(GDA_MLX5 "Build for Mellanox MLX5 RDMA provider" OFF)
+
+set(USE_EXTERNAL_MPI AUTO CACHE STRING "Link with an external MPI (required if used MPI is ABI incompatible with Open MPI v5)")
+set_property(CACHE USE_EXTERNAL_MPI PROPERTY STRINGS AUTO ON OFF)
 
 ###############################################################################
 # PROJECT
@@ -151,7 +153,12 @@ if (NOT BUILD_TESTS_ONLY)
   #############################################################################
   # PACKAGE DEPENDENCIES
   #############################################################################
-  find_package(MPI)
+  if (NOT USE_EXTERNAL_MPI STREQUAL "OFF")
+    find_package(MPI)
+  else()
+    message ("-- External MPI detection disabled by user")
+  endif()
+
   if (MPI_FOUND)
     set(HAVE_EXTERNAL_MPI ON)
   else()
