@@ -43,6 +43,7 @@ enum rocshmem_stats {
   NUM_GET_NBI,
   NUM_FENCE,
   NUM_QUIET,
+  NUM_PE_QUIET,
   NUM_TO_ALL,
   NUM_BARRIER_ALL,
   NUM_BARRIER_ALL_WAVE,

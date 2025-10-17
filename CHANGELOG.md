@@ -1,6 +1,11 @@
 # Changelog for rocSHMEM
 
 ## rocSHMEM 3.x.x for ROCm 7.x.x
+### Added
+
+* Added new APIs:
+   * `rocshmem_ctx_pe_quiet`
+   * `rocshmem_pe_quiet`
 
 ### Changed
 

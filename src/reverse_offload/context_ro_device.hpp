@@ -61,6 +61,8 @@ class ROContext : public Context {
 
   __device__ void quiet();
 
+  __device__ void pe_quiet(const int *target_pes, size_t npes);
+
   __device__ void *shmem_ptr(const void *dest, int pe);
 
   __device__ void barrier_all();

@@ -80,9 +80,9 @@ __host__ void rocshmem_init(void);
 /**
  * @brief Query rocSHMEM context from host API
  *
- * @param[out] ctx      Returns ROCSHMEM_CTX_DEFAULT device pointer that users 
+ * @param[out] ctx      Returns ROCSHMEM_CTX_DEFAULT device pointer that users
  *                      can query from one instance of rocshmem host library and
- *                      use use later for dynamic module initialization in 
+ *                      use use later for dynamic module initialization in
  *                      kernel bitcode device library in the same application
  */
 __host__ void * rocshmem_get_device_ctx();
@@ -91,9 +91,9 @@ __host__ void * rocshmem_get_device_ctx();
  * @brief Query rocSHMEM remote symmetric heap pointer
  *
  * @param[in]  dest     local symmetric heap allocation pointer for current pe/device
- * 
+ *
  * @param[in]  pe       remote PE
- * 
+ *
  * @param[out] ptr      Returns remote symmetric heap device pointer from host-side API.
  *                      This can be used to issue load/store from custom kernels
  *                      instead of using rocshmem device side get/put APIs for RMA operations.
@@ -496,6 +496,23 @@ __device__ ATTR_NO_INLINE void rocshmem_fence(int pe);
 __device__ ATTR_NO_INLINE void rocshmem_ctx_quiet(rocshmem_ctx_t ctx);
 
 __device__ ATTR_NO_INLINE void rocshmem_quiet();
+
+/**
+ * @brief Completes all previous operations posted to this context for PEs in the
+ *        `target_pes` array.
+ *
+ * @param[in] ctx Context with which to perform this operation.
+ *
+ * @param[in] target_pes Address of target PE array where the operations need to be completed.
+ *
+ * @param[in] npes The number of PEs in the target PE array.
+ *
+ * @return void.
+ */
+
+__device__ ATTR_NO_INLINE void rocshmem_ctx_pe_quiet(rocshmem_ctx_t ctx, const int *target_pes, size_t npes);
+
+__device__ ATTR_NO_INLINE void rocshmem_pe_quiet(const int *target_pes, size_t npes);
 
 /**
  * @brief Query the total number of PEs.

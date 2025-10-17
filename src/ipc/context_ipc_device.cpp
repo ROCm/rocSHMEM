@@ -96,6 +96,12 @@ __device__ void IPCContext::quiet() {
   fence();
 }
 
+__device__ void IPCContext::pe_quiet(const int *target_pes, size_t npes) {
+  for (int i = 0; i < npes; i++) {
+    fence(target_pes[i]);
+  }
+}
+
 __device__ void *IPCContext::shmem_ptr(const void *dest, int pe) {
   void *ret = nullptr;
   void *dst = const_cast<void *>(dest);
