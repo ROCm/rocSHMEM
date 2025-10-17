@@ -75,7 +75,7 @@ void GDABackend::init() {
 
   type = BackendType::GDA_BACKEND;
 
-  read_env();
+  select_nic();
 
   //TODO setup_host_interface();
   /* Initialize the host interface */
@@ -125,7 +125,7 @@ GDABackend::~GDABackend() {
   close_dv_libs();
 }
 
-void GDABackend::read_env() {
+void GDABackend::select_nic() {
   if (!envvar::requested_dev.is_default()) {
     requested_dev = envvar::requested_dev.get_value().c_str();
   } else {
@@ -528,37 +528,63 @@ void GDABackend::rte_barrier() {
   }
 }
 
+GDAProvider GDABackend::requested_provider() {
+  /* Check whether the user explicitely requests a particular provider type */
+  std::string envstr = envvar::gda::provider;
+  std::transform(envstr.begin(), envstr.end(), envstr.begin(), ::tolower);
+  if (!envstr.empty()) {
+    printf("Found environment variable ROCSHMEM_GDA_PROVIDER, value is %s\n", envstr.c_str());
+    if (envstr.find("bnxt") != std::string::npos) {
+      return GDAProvider::BNXT;
+    }
+    if (envstr.find("ionic") != std::string::npos) {
+      return GDAProvider::IONIC;
+    }
+    if (envstr.find("mlx5") != std::string::npos) {
+      return GDAProvider::MLX5;
+    }
+  }
+  return GDAProvider::UNSET;
+}
+
 /* Currently we only check whether we can dlopen a Direct Verbs library.
  * We might need to extend this logic to check whether we have interfaces that
  * can use those DV libraries
  */
 int GDABackend::backend_can_run() {
   void *handle{nullptr};
+  GDAProvider requested = requested_provider();
 
   /* Try opening bnxt DV libraries */
 #if defined(GDA_BNXT)
-  handle = bnxt_dv_dlopen();
-  if (handle) {
-    dlclose(handle);
-    return ROCSHMEM_SUCCESS;
+  if (requested == GDAProvider::UNSET || requested == GDAProvider::BNXT) {
+    handle = bnxt_dv_dlopen();
+    if (handle) {
+      dlclose(handle);
+      return ROCSHMEM_SUCCESS;
+    }
   }
 #endif //defined(GDA_BNXT)
 
   /* Try opening ionic DV libraries */
 #if defined(GDA_IONIC)
-  handle = ionic_dv_dlopen();
-  if (handle) {
-    dlclose(handle);
-    return ROCSHMEM_SUCCESS;
+  if (requested == GDAProvider::UNSET || requested == GDAProvider::IONIC) {
+    handle = ionic_dv_dlopen();
+    if (handle) {
+      dlclose(handle);
+      return ROCSHMEM_SUCCESS;
+    }
   }
 #endif //defined(GDA_IONIC)
 
   /* Try opening mlx5 DV libraries */
 #if defined(GDA_MLX5)
-  handle = mlx5_dv_dlopen();
-  if (handle) {
-    dlclose(handle);
-    return ROCSHMEM_SUCCESS;
+  if (requested == GDAProvider::UNSET || requested == GDAProvider::MLX5) {
+    handle = mlx5_dv_dlopen();
+    if (handle) {
+      dlclose(handle);
+      return ROCSHMEM_SUCCESS;
+    }
   }
 #endif //defined(GDA_MLX5)
 
@@ -584,7 +610,7 @@ void GDABackend::setup_ibv() {
 void GDABackend::cleanup_ibv() {
   int err;
 
-  if (gda_vendor == GDAVendor::BNXT) {
+  if (gda_provider == GDAProvider::BNXT) {
     CHECK_HIP(hipHostUnregister(db_region_attr.dbr));
 
     for (int i = 0; i < qps.size(); i++) {
@@ -617,7 +643,7 @@ void GDABackend::cleanup_ibv() {
       CHECK_ZERO(err, "ibv_destroy_cqs");
     }
 
-    if (gda_vendor == GDAVendor::IONIC) {
+    if (gda_provider == GDAProvider::IONIC) {
       err = ibv_dealloc_pd(pd_uxdma[0]);
       CHECK_ZERO(err, "ibv_dealloc_pd (uxdma[0])");
 
@@ -636,19 +662,21 @@ void GDABackend::cleanup_ibv() {
   CHECK_ZERO(err, "ibv_close_device");
 }
 
+
 void GDABackend::open_dv_libs() {
   int ret;
+  GDAProvider requested = requested_provider();
 
-  //TODO: environment variable selection/deselection
   //this hardcoded init order will always prefer BNXT>IONIC>MLX5
-  //if all three drivers are installed
+  //if all three drivers are installed and enabled
 
 #if defined(GDA_BNXT)
-  if (gda_vendor == GDAVendor::NONE) {
+  if (gda_provider == GDAProvider::UNSET
+  && (requested == GDAProvider::UNSET || requested == GDAProvider::BNXT)) {
     ret = bnxt_dv_dl_init();
 
     if (ret == ROCSHMEM_SUCCESS) {
-      gda_vendor = GDAVendor::BNXT;
+      gda_provider = GDAProvider::BNXT;
     } else {
       DPRINTF("Initializing rocSHMEM BNXT GDA support failed\n");
     }
@@ -656,11 +684,12 @@ void GDABackend::open_dv_libs() {
 #endif // defined(GDA_BNXT)
 
 #if defined(GDA_IONIC)
-  if (gda_vendor == GDAVendor::NONE) {
+  if (gda_provider == GDAProvider::UNSET
+  && (requested == GDAProvider::UNSET || requested == GDAProvider::IONIC)) {
     ret = ionic_dv_dl_init();
 
     if (ret == ROCSHMEM_SUCCESS) {
-      gda_vendor = GDAVendor::IONIC;
+      gda_provider = GDAProvider::IONIC;
     } else {
       DPRINTF("Initializing rocSHMEM IONIC GDA support failed\n");
     }
@@ -668,18 +697,19 @@ void GDABackend::open_dv_libs() {
 #endif // defined(GDA_IONIC)
 
 #if defined(GDA_MLX5)
-  if (gda_vendor == GDAVendor::NONE) {
+  if (gda_provider == GDAProvider::UNSET
+  && (requested == GDAProvider::UNSET || requested == GDAProvider::MLX5)) {
     ret = mlx5_dv_dl_init();
 
     if (ret == ROCSHMEM_SUCCESS) {
-      gda_vendor = GDAVendor::MLX5;
+      gda_provider = GDAProvider::MLX5;
     } else {
       DPRINTF("Initializing rocSHMEM MLX5 GDA support failed\n");
     }
   }
 #endif // defined(GDA_MLX5)
 
-  if (gda_vendor == GDAVendor::NONE) {
+  if (gda_provider == GDAProvider::UNSET) {
     printf("Initializing rocSHMEM with IONIC, BNXT, or MLX5 GDA support failed: no DV library found\n");
     abort();
   }
@@ -695,7 +725,7 @@ void GDABackend::close_dv_libs() {
   if (mlx5dv_handle_ != nullptr)
     dlclose(mlx5dv_handle_);
 
-  gda_vendor = GDAVendor::NONE;
+  gda_provider = GDAProvider::UNSET;
 }
 
 void GDABackend::exchange_qp_dest_info() {
@@ -766,7 +796,7 @@ void GDABackend::setup_gpu_qps() {
   CHECK_NNULL(host_qps, "malloc (host_qps)");
 
   for (size_t i = 0; i < qp_objs_count; i++) {
-    new (&host_qps[i]) QueuePair(pd_orig, gda_vendor);
+    new (&host_qps[i]) QueuePair(pd_orig, gda_provider);
     CHECK_HIP(hipMemcpy(&gpu_qps[i], &host_qps[i], sizeof(QueuePair), hipMemcpyDefault));
 
     initialize_gpu_qp(&gpu_qps[i], i);
@@ -821,7 +851,7 @@ void GDABackend::open_ib_device() {
   CHECK_NNULL(pd_orig, "ib allocate pd");
   dump_ibv_pd(pd_orig);
 
-  if (gda_vendor == GDAVendor::IONIC || gda_vendor == GDAVendor::MLX5) {
+  if (gda_provider == GDAProvider::IONIC || gda_provider == GDAProvider::MLX5) {
     create_parent_domain();
   }
 
@@ -856,7 +886,7 @@ void GDABackend::modify_qps_reset_to_init() {
             | IBV_QP_ACCESS_FLAGS;
 
   for (int i =0; i < qps.size() ; i++) {
-    if (gda_vendor == GDAVendor::BNXT) {
+    if (gda_provider == GDAProvider::BNXT) {
       err = bnxt_re_dv.modify_qp(qps[i], &attr, attr_mask, 0, 0);
     } else {
       err = ibv_modify_qp(qps[i], &attr, attr_mask);
@@ -876,7 +906,7 @@ void GDABackend::modify_qps_init_to_rtr() {
   attr.min_rnr_timer          = 12;
   attr.ah_attr.port_num       = port;
 
-  if (gda_vendor == GDAVendor::IONIC) {
+  if (gda_provider == GDAProvider::IONIC) {
     attr.max_dest_rd_atomic = 15;
   } else {
     attr.max_dest_rd_atomic = 1;
@@ -908,7 +938,7 @@ void GDABackend::modify_qps_init_to_rtr() {
       attr.ah_attr.dlid = dest_info[i].lid;
     }
 
-    if (gda_vendor == GDAVendor::BNXT) {
+    if (gda_provider == GDAProvider::BNXT) {
       err = bnxt_re_dv.modify_qp(qps[i], &attr, attr_mask, 0, 0);
     } else {
       err = ibv_modify_qp(qps[i], &attr, attr_mask);
@@ -928,7 +958,7 @@ void GDABackend::modify_qps_rtr_to_rts() {
   attr.retry_cnt     = 7;
   attr.rnr_retry     = 7;
 
-  if (gda_vendor == GDAVendor::IONIC) {
+  if (gda_provider == GDAProvider::IONIC) {
     attr.max_rd_atomic = 15;
   } else {
     attr.max_rd_atomic = 1;
@@ -944,7 +974,7 @@ void GDABackend::modify_qps_rtr_to_rts() {
   for (int i = 0; i < qps.size(); i++) {
     attr.sq_psn = dest_info[i].psn;
 
-    if (gda_vendor == GDAVendor::BNXT) {
+    if (gda_provider == GDAProvider::BNXT) {
       err = bnxt_re_dv.modify_qp(qps[i], &attr, attr_mask, 0, 0);
     } else {
       err = ibv_modify_qp(qps[i], &attr, attr_mask);
@@ -957,7 +987,7 @@ void GDABackend::create_queues() {
   int ncqes;
   size_t resize_length;
 
-  if (gda_vendor == GDAVendor::IONIC) {
+  if (gda_provider == GDAProvider::IONIC) {
     ncqes = envvar::sq_size << 1;
   } else {
     ncqes = envvar::sq_size;
@@ -972,7 +1002,7 @@ void GDABackend::create_queues() {
   bnxt_cqs.resize(resize_length);
   bnxt_qps.resize(resize_length);
 
-  if (gda_vendor == GDAVendor::BNXT) {
+  if (gda_provider == GDAProvider::BNXT) {
     bnxt_create_cqs(ncqes);
     bnxt_create_qps(envvar::sq_size);
   } else {
@@ -1060,7 +1090,7 @@ void GDABackend::create_parent_domain() {
   pattr.free       = GDABackend::pd_release;
   pattr.pd_context = nullptr;
 
-  if (gda_vendor == GDAVendor::IONIC) {
+  if (gda_provider == GDAProvider::IONIC) {
     pattr.alloc      = GDABackend::pd_alloc_device_uncached;
   } else {
     pattr.alloc      = GDABackend::pd_alloc_host;
@@ -1070,7 +1100,7 @@ void GDABackend::create_parent_domain() {
   CHECK_NNULL(pd_parent, "ibv_alloc_parent_domain");
   dump_ibv_pd(pd_parent);
 
-  if (gda_vendor == GDAVendor::IONIC) {
+  if (gda_provider == GDAProvider::IONIC) {
     ionic_setup_parent_domain(&pattr);
   }
 }
@@ -1089,7 +1119,7 @@ void GDABackend::create_cqs(int cqe) {
   cq_attr.parent_domain = pd_parent;
 
   for (int i = 0; i < qps.size(); i++) {
-    if (gda_vendor == GDAVendor::IONIC) {
+    if (gda_provider == GDAProvider::IONIC) {
       cq_attr.parent_domain = pd_uxdma[i & 1];
     }
 
@@ -1102,18 +1132,18 @@ void GDABackend::create_cqs(int cqe) {
 }
 
 void GDABackend::initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
-  switch (gda_vendor) {
-  case GDAVendor::IONIC:
+  switch (gda_provider) {
+  case GDAProvider::IONIC:
     ionic_initialize_gpu_qp(gpu_qp, conn_num);
     break;
-  case GDAVendor::BNXT:
+  case GDAProvider::BNXT:
     bnxt_initialize_gpu_qp(gpu_qp, conn_num);
     break;
-  case GDAVendor::MLX5:
+  case GDAProvider::MLX5:
     mlx5_initialize_gpu_qp(gpu_qp, conn_num);
     break;
   default:
-    assert(false /* GDAVendor initialize_gpu_qp */);
+    assert(false /* GDAProvider initialize_gpu_qp */);
   }
 }
 
@@ -1129,12 +1159,12 @@ void GDABackend::create_qps(int sq_length) {
   attr.comp_mask           = IBV_QP_INIT_ATTR_PD;
   attr.pd                  = pd_parent;
 
-  if (gda_vendor == GDAVendor::IONIC) {
+  if (gda_provider == GDAProvider::IONIC) {
     attr.cap.max_recv_sge    = 1; // TODO allow zero sges in the driver
   }
 
   for (int i = 0; i < qps.size(); i++) {
-    if (gda_vendor == GDAVendor::IONIC) {
+    if (gda_provider == GDAProvider::IONIC) {
       attr.pd      = pd_uxdma[i & 1];
     }
     attr.send_cq = cqs[i];

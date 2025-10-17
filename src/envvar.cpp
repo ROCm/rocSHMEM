@@ -65,6 +65,7 @@ namespace envvar {
   }  // namespace ro
 
   namespace gda {
+    const var<std::string> provider("PROVIDER", "");
     const var<bool> alternate_qp_ports("ALTERNATE_QP_PORTS", "", true);
     const var<uint8_t> traffic_class("TRAFFIC_CLASS", "", 0);
   }  // namespace gda
