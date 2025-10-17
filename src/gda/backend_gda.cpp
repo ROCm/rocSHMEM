@@ -883,7 +883,8 @@ void GDABackend::validate_ib_device() {
   if (gda_vendor == GDAVendor::BNXT) {
     const uint32_t bnxt_vendor_id =  0x14E4;
     const std::set<uint32_t> supported_bnxt_part_ids = { 0x1760 /* BCM57608 */};
-    const std::set<std::string> supported_bnxt_fw_ver = { "233.2.104.0" };
+    const char min_supported_bnxt_fw_ver[12] = "233.2.104.0";
+
 
     if (bnxt_vendor_id != device_attr.vendor_id) {
       printf("GDAVendor::BNXT requested but an invalid device is selected\n");
@@ -895,7 +896,7 @@ void GDABackend::validate_ib_device() {
       abort();
     }
 
-    if (supported_bnxt_fw_ver.find(device_attr.fw_ver) == supported_bnxt_fw_ver.end()) {
+    if (strverscmp(min_supported_bnxt_fw_ver, device_attr.fw_ver) > 0) {
       printf("Unsupported firmware version: %s\n", device_attr.fw_ver);
       abort();
     }
