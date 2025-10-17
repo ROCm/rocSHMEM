@@ -161,7 +161,7 @@ __device__ void ROContext::quiet() {
                       true, get_status_flag(), is_default_ctx);
 }
 
-__device__ void ROContext::pe_quiet(const int *target_pes, size_t npes) {
+__device__ void ROContext::pe_quiet(size_t pe) {
   // TODO: Optimize
   quiet();
 }
