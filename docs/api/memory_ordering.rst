@@ -38,7 +38,7 @@ This routine completes all previous operations posted to this context.
 ROCSHMEM_PE_QUIET
 --------------
 
-.. cpp:function:: __device__ void rocshmem_ctx_quiet(shmem_ctx_t ctx, const int *target_pes, size_t npes)
+.. cpp:function:: __device__ void rocshmem_ctx_pe_quiet(shmem_ctx_t ctx, const int *target_pes, size_t npes)
 .. cpp:function:: __device__ void rocshmem_quiet(const int *target_pes, size_t npes)
 
  :param ctx: Context with which to perform this operation.
