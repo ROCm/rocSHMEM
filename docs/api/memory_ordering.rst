@@ -39,7 +39,7 @@ ROCSHMEM_PE_QUIET
 --------------
 
 .. cpp:function:: __device__ void rocshmem_ctx_pe_quiet(shmem_ctx_t ctx, const int *target_pes, size_t npes)
-.. cpp:function:: __device__ void rocshmem_quiet(const int *target_pes, size_t npes)
+.. cpp:function:: __device__ void rocshmem_pe_quiet(const int *target_pes, size_t npes)
 
  :param ctx: Context with which to perform this operation.
  :param target_pes: Address of target PE array where the operations need to be completed
