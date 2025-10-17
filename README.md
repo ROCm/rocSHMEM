@@ -5,10 +5,10 @@ initiative to provide GPU-centric networking through an OpenSHMEM-like interface
 This intra-kernel networking library simplifies application
 code complexity and enables more fine-grained communication/computation
 overlap than traditional host-driven networking.
-rocSHMEM uses a single symmetric heap (SHEAP) that is allocated on GPU memories.
+rocSHMEM uses a single symmetric heap that is allocated on GPU memories.
 
 There are currently three backends for rocSHMEM;
-IPC, Reverse Offload (RO), and GPU-IB.
+IPC, Reverse Offload (RO), and GDA.
 The backends primarily differ in their implementations of intra-kernel networking.
 
 The IPC backend implements communication primitives using load/store operations issued from the GPU.
@@ -18,7 +18,14 @@ to the host-side runtime, which calls into a traditional MPI or OpenSHMEM
 implementation. This forwarding of requests is transparent to the
 programmer, who only sees the GPU-side interface.
 
-The RO backend is provided as-is with limited support from AMD or AMD Research.
+The GPU Direct Async (GDA) backend allows for rocSHMEM to issue communication operations to the NIC directly from the device-side code, without involving a CPU proxy.
+within the GPU.
+During initialization we prepare network resources for each NIC vendor using the vendor-appropriate
+Direct Verbs APIs.
+When calling the device-side rocSHMEM API, the device threads are used to construct Work Queue Entries (WQEs) and post the communication to the send queues of the NIC directly.
+Completion Queues (CQs) are polled from the device-side code as well.
+
+The RO and GDA backend is provided as-is with limited support from AMD or AMD Research.
 
 ## Requirements
 
@@ -60,9 +67,18 @@ cd build
 ../scripts/build_configs/ro_ipc
 ```
 
+To create an out-of-source build for the GDA backend, we do the following.
+Ensure you select the correct NIC vendor script
+
+```
+mkdir build
+cd build
+../scripts/build_configs/gda_<vendor>
+```
+
 The build script passes configuration options to CMake to setup canonical builds.
 There are other scripts in `./scripts/build_configs`
-directory but currently, only `ipc_single` is supported.
+directory but currently, only `ipc_single` and `ro_ipc` is supported.
 
 By default, the library is installed in `~/rocshmem`. You may provide a
 custom install path by supplying it as an argument. For example:
@@ -183,6 +199,20 @@ rocSHMEM requires a ROCm-Aware Open MPI and UCX.
 Other MPI implementations, such as MPICH,
 _should_ be compatible with rocSHMEM but it has not been thoroughly tested.
 
+## Building the Dependencies using our Helper Script
+We have a script to install dependencies.
+However, it is not guaranteed to work and perform optimally on all platforms.
+Configuration options are platform dependent.
+
+```
+BUILD_DIR=/path/to/not_rocshmem_src_or_build/dependencies /path/to/rocshmem_src/sripts/install_dependencies.sh
+```
+
+After compiling and installing UCX and Open MPI, please update your `PATH` and `LD_LIBRARY_PATH`
+to point to the installation locations.
+The exact locations will be printed if the script ran successfully.
+
+## Building the Dependencies from Source
 To build and configure ROCm-Aware UCX (1.17.0 or later), you need to:
 
 ```
@@ -210,15 +240,6 @@ After compiling and installing UCX and Open MPI, please update your PATH and LD_
 ```
 export PATH=<ompi_install_dir>/bin:$PATH
 export LD_LIBRARY_PATH=<ompi_install_dir>/lib:<ucx_install_dir>/lib:$LD_LIBRARY_PATH
-```
-
-
-Alternatively, we have script to install dependencies.
-However, it is not guaranteed to work and perform optimally on all platforms.
-Configuration options are platform dependent.
-
-```
-BUILD_DIR=/path/to/not_rocshmem_src_or_build/dependencies /path/to/rocshmem_src/sripts/install_dependencies.sh
 ```
 
 For more information on OpenMPI-UCX support, please visit:

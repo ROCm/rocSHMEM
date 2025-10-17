@@ -31,7 +31,7 @@
 
 namespace rocshmem {
 
-QueuePair::QueuePair(struct ibv_pd* pd, int gda_vendor) {
+QueuePair::QueuePair(struct ibv_pd* pd, int gda_provider) {
   int access = IBV_ACCESS_LOCAL_WRITE
              | IBV_ACCESS_REMOTE_WRITE
              | IBV_ACCESS_REMOTE_READ
@@ -51,7 +51,7 @@ QueuePair::QueuePair(struct ibv_pd* pd, int gda_vendor) {
   mr_fetching_atomic = ibv_reg_mr(pd, fetching_atomic, 8 * FETCHING_ATOMIC_CNT, access);
   CHECK_NNULL(mr_fetching_atomic, "ibv_reg_mr");
 
-  if (gda_vendor == GDAVendor::MLX5) {
+  if (gda_provider == GDAProvider::MLX5) {
     nonfetching_atomic_lkey = htobe32(mr_nonfetching_atomic->lkey);
     fetching_atomic_lkey = htobe32(mr_fetching_atomic->lkey);
   } else {
@@ -64,9 +64,9 @@ QueuePair::QueuePair(struct ibv_pd* pd, int gda_vendor) {
   }
 
   /* Set Correct opcodes for each NIC */
-  switch (gda_vendor) {
+  switch (gda_provider) {
 #if defined(GDA_IONIC)
-  case GDAVendor::IONIC:
+  case GDAProvider::IONIC:
     gda_op_rdma_write = IONIC_V2_OP_RDMA_WRITE;
     gda_op_rdma_read  = IONIC_V2_OP_RDMA_READ;
     gda_op_atomic_fa  = IONIC_V2_OP_ATOMIC_FA;
@@ -74,7 +74,7 @@ QueuePair::QueuePair(struct ibv_pd* pd, int gda_vendor) {
     break;
 #endif //defined(GDA_IONIC)
 #if defined(GDA_BNXT)
-  case GDAVendor::BNXT:
+  case GDAProvider::BNXT:
     gda_op_rdma_write = BNXT_RE_WR_OPCD_RDMA_WRITE;
     gda_op_rdma_read  = BNXT_RE_WR_OPCD_RDMA_READ;
     gda_op_atomic_fa  = BNXT_RE_WR_OPCD_ATOMIC_FA;
@@ -82,7 +82,7 @@ QueuePair::QueuePair(struct ibv_pd* pd, int gda_vendor) {
     break;
 #endif //defined(GDA_BNXT)
 #if defined(GDA_MLX5)
-  case GDAVendor::MLX5:
+  case GDAProvider::MLX5:
     gda_op_rdma_write = MLX5_OPCODE_RDMA_WRITE;
     gda_op_rdma_read  = MLX5_OPCODE_RDMA_READ;
     gda_op_atomic_fa  = MLX5_OPCODE_ATOMIC_FA;
@@ -92,7 +92,7 @@ QueuePair::QueuePair(struct ibv_pd* pd, int gda_vendor) {
   default:
     assert(false /* invalid nic provider */);
   }
-  gda_vendor_ = gda_vendor;
+  gda_provider_ = gda_provider;
 }
 
 QueuePair::~QueuePair() {
@@ -115,19 +115,19 @@ QueuePair::~QueuePair() {
  ************************ PROVIDER-SPECIFIC HELPERS ***************************
  *****************************************************************************/
 __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
-  switch (gda_vendor_) {
+  switch (gda_provider_) {
 #if defined(GDA_MLX5)
-  case GDAVendor::MLX5:
+  case GDAProvider::MLX5:
     mlx5_post_wqe_rma(pe, size, laddr, raddr, opcode);
     return;
 #endif
 #if defined(GDA_BNXT)
-  case GDAVendor::BNXT:
+  case GDAProvider::BNXT:
     bnxt_post_wqe_rma(pe, size, laddr, raddr, opcode);
     return;
 #endif
 #if defined(GDA_IONIC)
-  case GDAVendor::IONIC:
+  case GDAProvider::IONIC:
     ionic_post_wqe_rma(pe, size, laddr, raddr, opcode);
     return;
 #endif
@@ -138,17 +138,17 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, 
 
 __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode,
                                             int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
-  switch (gda_vendor_) {
+  switch (gda_provider_) {
 #if defined(GDA_MLX5)
-  case GDAVendor::MLX5:
+  case GDAProvider::MLX5:
     return mlx5_post_wqe_amo(pe, size, raddr, opcode, atomic_data, atomic_cmp, fetching);
 #endif
 #if defined(GDA_BNXT)
-  case GDAVendor::BNXT:
+  case GDAProvider::BNXT:
     return bnxt_post_wqe_amo(pe, size, raddr, opcode, atomic_data, atomic_cmp, fetching);
 #endif
 #if defined(GDA_IONIC)
-  case GDAVendor::IONIC:
+  case GDAProvider::IONIC:
     return ionic_post_wqe_amo(pe, size, raddr, opcode, atomic_data, atomic_cmp, fetching);
 #endif
   default:
@@ -158,19 +158,19 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
 }
 
 __device__ void QueuePair::quiet() {
-  switch (gda_vendor_) {
+  switch (gda_provider_) {
 #if defined(GDA_MLX5)
-  case GDAVendor::MLX5:
+  case GDAProvider::MLX5:
     mlx5_quiet();
     return;
 #endif
 #if defined(GDA_BNXT)
-  case GDAVendor::BNXT:
+  case GDAProvider::BNXT:
     bnxt_quiet();
     return;
 #endif
 #if defined(GDA_IONIC)
-  case GDAVendor::IONIC:
+  case GDAProvider::IONIC:
     ionic_quiet();
     return;
 #endif

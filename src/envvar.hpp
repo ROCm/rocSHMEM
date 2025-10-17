@@ -448,6 +448,7 @@ namespace envvar {
 
   namespace gda {
     template <typename T> using var = var<T, category::tag::GDA>;
+    extern const var<std::string> provider;
     extern const var<bool> alternate_qp_ports;
     extern const var<uint8_t> traffic_class;
   }  // namespace gda
