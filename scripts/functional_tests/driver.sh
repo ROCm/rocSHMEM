@@ -117,6 +117,7 @@ ExecTest() {
   NUM_WG=$3
   NUM_THREADS=$4
   MAX_MSG_SIZE=$5
+  NUM_GPUS=$(amd-smi list | grep GPU | wc -l)
 
   TIMEOUT=$((5 * 60)) # Timeout in seconds
 
@@ -159,9 +160,13 @@ ExecTest() {
   CMD+=" >> $LOG_DIR/$TEST_LOG_NAME.log 2>&1"
 
   # Run Test
-  echo $TEST_LOG_NAME
-  echo "# $CMD" >"$LOG_DIR/$TEST_LOG_NAME.log"
-  eval $CMD
+  if [ $NUM_RANKS -le $NUM_GPUS ]; then
+    echo $TEST_LOG_NAME
+    echo "# $CMD" >"$LOG_DIR/$TEST_LOG_NAME.log"
+    eval $CMD
+  else
+    echo "Skipping test $TEST_LOG_NAME"
+  fi
 
   # Validate Test
   if [ $? -ne 0 ]
