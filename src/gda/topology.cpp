@@ -386,8 +386,9 @@ namespace rocshmem
       // Query the number of IBV devices
       int numIbvDevices = 0;
       ibv_device** deviceList = ibv_get_device_list(&numIbvDevices);
+      CHECK_NNULL(deviceList, "ibv_get_device_list");
 
-      if (deviceList && numIbvDevices > 0) {
+      if (numIbvDevices > 0) {
         // Loop over each device to collect information
         for (int i = 0; i < numIbvDevices; i++) {
           IbvDevice ibvDevice;
@@ -453,6 +454,9 @@ namespace rocshmem
           }
           ibvDeviceList.push_back(ibvDevice);
         }
+      } else {
+        fprintf(stderr, "[Error] No visible InfiniBand devices found.\n");
+        exit(1);
       }
       ibv_free_device_list(deviceList);
       isInitialized = true;
