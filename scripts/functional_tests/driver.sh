@@ -289,7 +289,7 @@ TestRMA() {
   TestRMAGet
 }
 
-TestAMO() {
+TestAMORO() {
   ##############################################################################
   #       | Name             | Ranks | Workgroups | Threads | Max Message Size #
   ##############################################################################
@@ -306,6 +306,19 @@ TestAMO() {
   ExecTest  "amo_fcswap"       2       32           1
   ExecTest  "amo_fcswap"       2       8            1
 
+  ExecTest  "amo_fetchand"     2       1            1
+
+  ExecTest  "amo_and"          2       1            1
+
+  ExecTest  "amo_xor"          2       1            1
+}
+
+TestAMO() {
+  TestAMORO
+
+  ##############################################################################
+  #       | Name             | Ranks | Workgroups | Threads | Max Message Size #
+  ##############################################################################
   ExecTest  "amo_finc"         2       1            1
   ExecTest  "amo_finc"         2       1            1024
   ExecTest  "amo_finc"         2       8            1
@@ -325,12 +338,6 @@ TestAMO() {
   ExecTest  "amo_add"          2       1            1024
   ExecTest  "amo_add"          2       8            1
   ExecTest  "amo_add"          2       32           128
-
-  ExecTest  "amo_fetchand"     2       1            1
-
-  ExecTest  "amo_and"          2       1            1
-
-  ExecTest  "amo_xor"          2       1            1
 }
 
 TestSigOps() {
@@ -659,7 +666,7 @@ case $TEST in
     ;;
   *"all-ro")
     TestRMAPut
-    TestAMO
+    TestAMORO
     TestSigOps
     TestColl
     TestOther
