@@ -161,6 +161,11 @@ __device__ void ROContext::quiet() {
                       true, get_status_flag(), is_default_ctx);
 }
 
+__device__ void ROContext::pe_quiet(size_t pe) {
+  // TODO: Optimize
+  quiet();
+}
+
 __device__ void *ROContext::shmem_ptr(const void *dest, int pe) {
   void *ret = nullptr;
   int local_pe{-1};

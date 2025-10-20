@@ -139,6 +139,12 @@ __device__ void Context::quiet() {
   DISPATCH(quiet());
 }
 
+__device__ void Context::pe_quiet(size_t pe) {
+  ctxStats.incStat(NUM_PE_QUIET);
+
+  DISPATCH(pe_quiet(pe));
+}
+
 __device__ void* Context::shmem_ptr(const void* dest, int pe) {
   ctxStats.incStat(NUM_SHMEM_PTR);
 

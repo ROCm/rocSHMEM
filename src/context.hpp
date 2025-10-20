@@ -136,6 +136,8 @@ class Context {
 
   __device__ void quiet();
 
+  __device__ void pe_quiet(size_t pe);
+
   __device__ void* shmem_ptr(const void* dest, int pe);
 
   __device__ void barrier_all();
@@ -477,7 +479,7 @@ class Context {
    * @brief Duplicated local copy of backend's type
    */
   BackendType btype;
-  
+
   /**
    * @brief Stats common to all types of device contexts.
    */

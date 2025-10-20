@@ -107,7 +107,7 @@ __device__ void rocshmem_wg_finalize() {}
 
 
 /******************************************************************************
-* These host APIs use Device side symbol - ROCSHMEM_CTX_DEFAULT so it needs 
+* These host APIs use Device side symbol - ROCSHMEM_CTX_DEFAULT so it needs
 * to stay here to avoid getting pulled into other places in compilation
 ******************************************************************************/
 
@@ -186,6 +186,10 @@ __device__ void rocshmem_fence(int pe) {
 
 __device__ void rocshmem_quiet() {
   rocshmem_ctx_quiet(ROCSHMEM_CTX_DEFAULT);
+}
+
+__device__ void rocshmem_pe_quiet(const int *target_pes, size_t npes) {
+  rocshmem_ctx_pe_quiet(ROCSHMEM_CTX_DEFAULT, target_pes, npes);
 }
 
 __device__ void rocshmem_threadfence_system() {
@@ -483,6 +487,16 @@ __device__ void rocshmem_ctx_quiet(rocshmem_ctx_t ctx) {
     ctx.ctx_opaque);
 
   get_internal_ctx(ctx)->quiet();
+}
+
+__device__ void rocshmem_ctx_pe_quiet(rocshmem_ctx_t ctx, const int *target_pes, size_t npes) {
+  GPU_DPRINTF("Function: %s (ctx=%zd)\n", __FUNC__, ctx.ctx_opaque);
+
+  ContextTy *internal_ctx = get_internal_ctx(ctx);
+
+  for (int i = 0; i < npes;  i++) {
+    internal_ctx->pe_quiet(translate_pe(ctx, target_pes[i]));
+  }
 }
 
 __device__ void *rocshmem_ptr(const void *dest, int pe) {

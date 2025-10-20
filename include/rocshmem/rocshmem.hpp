@@ -499,6 +499,23 @@ __device__ ATTR_NO_INLINE void rocshmem_ctx_quiet(rocshmem_ctx_t ctx);
 __device__ ATTR_NO_INLINE void rocshmem_quiet();
 
 /**
+ * @brief Completes all previous operations posted to this context for PEs in the
+ *        `target_pes` array.
+ *
+ * @param[in] ctx Context with which to perform this operation.
+ *
+ * @param[in] target_pes Address of target PE array where the operations need to be completed.
+ *
+ * @param[in] npes The number of PEs in the target PE array.
+ *
+ * @return void.
+ */
+
+__device__ ATTR_NO_INLINE void rocshmem_ctx_pe_quiet(rocshmem_ctx_t ctx, const int *target_pes, size_t npes);
+
+__device__ ATTR_NO_INLINE void rocshmem_pe_quiet(const int *target_pes, size_t npes);
+
+/**
  * @brief Query the total number of PEs.
  *
  * Can be called per thread with no performance penalty.

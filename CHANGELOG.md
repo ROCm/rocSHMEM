@@ -9,6 +9,8 @@
    * Mellanox MLX5 (IB and RoCE ConnectX-7)
 * Added new APIs:
    * `rocshmem_get_device_ctx`
+   * `rocshmem_ctx_pe_quiet`
+   * `rocshmem_pe_quiet`
 
 ### Changed
 * The following APIs have been deprecated:

@@ -169,6 +169,7 @@ void Backend::dump_stats() {
          device_stats.getStat(NUM_GET_NBI_WAVE));
   printf("Fences %llu\n", device_stats.getStat(NUM_FENCE));
   printf("Quiets %llu\n", device_stats.getStat(NUM_QUIET));
+  printf("PE Quiets %llu\n", device_stats.getStat(NUM_PE_QUIET));
   printf("ToAll %llu\n", device_stats.getStat(NUM_TO_ALL));
   printf("BarrierAll %llu\n", device_stats.getStat(NUM_BARRIER_ALL));
   printf("WAVE_BarrierAll %llu\n", device_stats.getStat(NUM_BARRIER_ALL_WAVE));
