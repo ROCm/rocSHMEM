@@ -533,11 +533,11 @@ GDAProvider GDABackend::requested_provider() {
   std::string envstr = envvar::gda::provider;
   std::transform(envstr.begin(), envstr.end(), envstr.begin(), ::tolower);
   if (!envstr.empty()) {
-    printf("Found environment variable ROCSHMEM_GDA_PROVIDER, value is %s\n", envstr.c_str());
+    DPRINTF("Found environment variable ROCSHMEM_GDA_PROVIDER, value is %s\n", envstr.c_str());
     if (envstr.find("bnxt") != std::string::npos) {
       return GDAProvider::BNXT;
     }
-    if (envstr.find("ionic") != std::string::npos) {
+    if (envstr.find("ionic") != std::string::npos || envstr.find("pensando") != std::string::npos) {
       return GDAProvider::IONIC;
     }
     if (envstr.find("mlx5") != std::string::npos) {
@@ -710,8 +710,8 @@ void GDABackend::open_dv_libs() {
 #endif // defined(GDA_MLX5)
 
   if (gda_provider == GDAProvider::UNSET) {
-    printf("Initializing rocSHMEM with IONIC, BNXT, or MLX5 GDA support failed: no DV library found\n");
-    abort();
+    printf("rocshmem::gda:open_dv_libs: no DV library could dlopen for IONIC, BNXT, or MLX5 GDA support\n");
+    exit(1);
   }
 }
 
