@@ -880,14 +880,14 @@ void GDABackend::validate_ib_device() {
   err = ibv_query_device(context, &device_attr);
   CHECK_ZERO(err, "ibv_query_device");
 
-  if (gda_vendor == GDAVendor::BNXT) {
+  if (gda_provider == GDAProvider::BNXT) {
     const uint32_t bnxt_vendor_id =  0x14E4;
     const std::set<uint32_t> supported_bnxt_part_ids = { 0x1760 /* BCM57608 */};
     const char min_supported_bnxt_fw_ver[12] = "233.2.104.0";
 
 
     if (bnxt_vendor_id != device_attr.vendor_id) {
-      printf("GDAVendor::BNXT requested but an invalid device is selected\n");
+      printf("GDAProvider::BNXT requested but an invalid device is selected\n");
       abort();
     }
 
