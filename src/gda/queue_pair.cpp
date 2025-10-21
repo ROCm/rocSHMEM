@@ -28,6 +28,7 @@
 
 #include "backend_gda.hpp"
 #include "constants.hpp"
+#include "util.hpp"
 
 namespace rocshmem {
 
@@ -60,10 +61,9 @@ QueuePair::QueuePair(struct ibv_pd* pd, int gda_provider) {
   }
 
   int deviceId;
-  hipDeviceProp_t prop;
   CHECK_HIP(hipGetDevice(&deviceId));
-  CHECK_HIP(hipGetDeviceProperties(&prop, deviceId));
-  for(int i{0}; i < FETCHING_ATOMIC_CNT; i+=prop.warpSize) {
+  int wf_size = get_wf_size(deviceId);
+  for(int i{0}; i < FETCHING_ATOMIC_CNT; i+=wf_size) {
     fetching_atomic_freelist->push_back(fetching_atomic + i);
   }
 

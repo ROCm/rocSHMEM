@@ -44,6 +44,21 @@ typedef struct device_agent {
 std::vector<device_agent_t> gpu_agents;
 std::vector<device_agent_t> cpu_agents;
 
+std::vector<device_prop_t> device_properties;
+
+static void device_properties_init(void) {
+  int numDevices;
+  CHECK_HIP(hipGetDeviceCount(&numDevices));
+
+  device_prop_t prop;
+  hipDeviceProp_t hipprop;
+  for (int i=0; i<numDevices; i++) {
+    CHECK_HIP(hipGetDeviceProperties(&hipprop, i));
+    prop.warpSize = hipprop.warpSize;
+    prop.maxThreadsPerBlock = hipprop.maxThreadsPerBlock;
+    device_properties.push_back(prop);
+  }
+}
 hsa_status_t rocm_hsa_amd_memory_pool_callback(
     hsa_amd_memory_pool_t memory_pool, void* data) {
   hsa_amd_memory_pool_global_flag_t pool_flag{};
@@ -107,6 +122,8 @@ int rocm_init() {
     printf("Failure to iterate HSA agents: 0x%x", status);
     return 1;
   }
+
+  device_properties_init();
 
   return 0;
 }
