@@ -31,6 +31,7 @@
 #include "../src/containers/free_list_impl.hpp"
 #include "gtest/gtest.h"
 #include "../src/memory/hip_allocator.hpp"
+#include "wf_size.hpp"
 
 namespace rocshmem {
 
@@ -45,6 +46,7 @@ class FreeListTestFixture : public ::testing::Test {
  protected:
   void SetUp() override {
     free_list->push_back_range(h_input.begin(), h_input.end());
+    wf_size = get_wf_size();
   }
 
   using T = ValueType;
@@ -52,6 +54,7 @@ class FreeListTestFixture : public ::testing::Test {
   Allocator hip_allocator_ {};
   const std::size_t num_elements{32};
   std::vector<T> h_input{};
+  int wf_size;
 
   FreeListProxy<Allocator, T> list_proxy{};
   FreeList<T, Allocator>* free_list{};

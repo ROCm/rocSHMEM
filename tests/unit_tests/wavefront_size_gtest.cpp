@@ -28,16 +28,34 @@
 
 using namespace rocshmem;
 
+__global__ void check_wf_size(int wf_size_prop, int *ret) {
+  if (wf_size_prop == WF_SIZE) {
+    *ret = 0;
+  } else {
+    *ret = 1;
+  }
+}
+
+
 TEST_F(WavefrontSizeTestFixture, constant_matches_runtime) {
   int device_count = 0;
   hipDeviceProp_t prop;
+  int *ret;
 
   CHECK_HIP(hipGetDeviceCount(&device_count));
   ASSERT_GT(device_count, 0);
+  CHECK_HIP(hipHostMalloc(&ret, sizeof(int), 0));
 
   for (int i = 0; i < device_count; i++) {
+    *ret = -1;
+    CHECK_HIP(hipSetDevice(i));
     CHECK_HIP(hipGetDeviceProperties(&prop, i));
-    ASSERT_EQ(WF_SIZE, prop.warpSize);
+
+    check_wf_size<<<1, 1>>>(prop.warpSize, ret);
+    CHECK_HIP(hipDeviceSynchronize());
+
+    ASSERT_EQ(*ret, 0);
   }
+  CHECK_HIP(hipHostFree(ret));
 }
 

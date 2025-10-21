@@ -22,24 +22,25 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef ROCSHMEM_WAVEFRONT_SIZE_GTEST_HPP
-#define ROCSHMEM_WAVEFRONT_SIZE_GTEST_HPP
+#ifndef ROCSHMEM_WF_SIZE_HPP
+#define ROCSHMEM_WF_SIZE_HPP
 
-#include "gtest/gtest.h"
-#include "wf_size.hpp"
+#include <hip/hip_runtime.h>
+#include "mpi.h"
 
-namespace rocshmem {
+#define CHECK_HIP_MPI(cond) {                                      \
+  if(cond != hipSuccess){                                          \
+     fprintf(stderr,"HIP error: %d line: %d\n", cond,  __LINE__);  \
+     MPI_Abort(MPI_COMM_WORLD, 1);  	     	  	 	   \
+  }                                                                \
+}
 
-class WavefrontSizeTestFixture : public ::testing::Test {
-public:
-  void SetUp() override {
-      wf_size = get_wf_size();
-  }
+static int get_wf_size() {
+  int deviceId;
+  hipDeviceProp_t prop;
+  CHECK_HIP_MPI(hipGetDevice(&deviceId));
+  CHECK_HIP_MPI(hipGetDeviceProperties(&prop, deviceId));
+  return prop.warpSize;
+}
 
-protected:
-  int wf_size;
-};
-
-} // namespace rocshmem
-
-#endif  // ROCSHMEM_WAVEFRONT_SIZE_GTEST_HPP
+#endif
