@@ -71,7 +71,7 @@ struct mpilib_funcs_t {
   int (*Ibarrier)(MPI_Comm comm, MPI_Request *request);
   int (*Win_create)(void *base, MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, MPI_Win *win);
   int (*Win_free)(MPI_Win *win);
-  int (*Win_flush)(MPI_Win win);
+  int (*Win_flush)(int rank, MPI_Win win);
   int (*Win_flush_all)(MPI_Win win);
   int (*Win_flush_local)(int rank, MPI_Win win);
   int (*Win_lock)(int lock_type, int rank, int mpi_assert, MPI_Win win);
