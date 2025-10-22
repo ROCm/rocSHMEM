@@ -16,15 +16,19 @@ ROCSHMEM_CTX_CREATE
 
   :param team:    Team handle to derive the context from.
   :param options: Options for context creation. Ignored in current design; use the value ``0``.
-  :param ctx:     Context handle.
+  :param ctx:     A handle to the newly created context.
 
   :returns:       All threads returns ``0`` if the context was created successfully.
-                  If any thread returns non-zero value, the operation fails and a higher number of
-                  ``ROCSHMEM_MAX_NUM_CONTEXTS`` is required.
+                  If any thread returns non-zero value, the operation fails, ctx is set to ``ROCSHMEM_CTX_INVALID`` and a
+                  higher number of ``ROCSHMEM_MAX_NUM_CONTEXTS`` is required.
 
 **Description:**
-This routine creates an OpenSHMEM context. By design, the context is private to the calling work-group.
-It must be called collectively by all threads in the work-group.
+This routine creates an rocSHMEM context. By design, the context is private to the calling work-group.
+It must be called collectively by all threads in the work-group. If the context was created successfully, a value
+of zero is returned and the context handle pointed to by ctx specifies a valid context; otherwise, a nonzero value
+is returned and ctx is set to ``ROCSHMEM_CTX_INVALID``. An unsuccessful context creation call is not treated as an
+error and the rocSHMEM library remains in a correct state. The creation call can be reattempted after additional
+resources become available.
 
 ROCSHMEM_CTX_DESTROY
 --------------------
@@ -36,8 +40,8 @@ ROCSHMEM_CTX_DESTROY
   :returns:       None.
 
 **Description:**
-This routine destroys an rocSHMEM context.
-It must be called collectively by all threads in the work-group.
+This routine destroys an rocSHMEM context. It must be called collectively by all threads in the work-group.
+If ctx has the value ``ROCSHMEM_CTX_INVALID``, no operation is performed.
 
 ROCSHMEM_GET_DEVICE_CTX
 -----------------------

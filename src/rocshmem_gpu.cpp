@@ -74,6 +74,8 @@ __device__  rocshmem_ctx_t __attribute__((visibility("default"))) ROCSHMEM_CTX_D
 
 __constant__ Backend *device_backend_proxy;
 
+__constant__ rocshmem_ctx_t ROCSHMEM_CTX_INVALID = {nullptr, nullptr};
+
 #if defined(ENABLE_IPC_BITCODE)
   typedef IPCContext ContextTy;
 #else
@@ -324,6 +326,9 @@ __device__ int rocshmem_wg_ctx_create(long options, rocshmem_ctx_t *ctx) {
     if(result) {
       reinterpret_cast<Context *>(ctx->ctx_opaque)->setFence(options);
     }
+    else {
+      *ctx = ROCSHMEM_CTX_INVALID;
+    }
   }
   __syncthreads();
   return result == true ? 0 : -1;
@@ -346,6 +351,9 @@ __device__ int rocshmem_wg_team_create_ctx(rocshmem_team_t team, long options,
     if(result) {
       reinterpret_cast<Context *>(ctx->ctx_opaque)->setFence(options);
     }
+    else {
+      *ctx = ROCSHMEM_CTX_INVALID;
+    }
   }
   __syncthreads();
 
@@ -357,7 +365,7 @@ __device__ void rocshmem_wg_ctx_destroy(
   GPU_DPRINTF("Function: rocshmem_wg_ctx_destroy (ctx=%zd)\n",
     ctx->ctx_opaque);
 
-  if (get_flat_block_id() == 0) {
+  if (get_flat_block_id() == 0 && *ctx != ROCSHMEM_CTX_INVALID) {
     device_backend_proxy->destroy_ctx(ctx);
   }
 }

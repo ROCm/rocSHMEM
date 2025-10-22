@@ -106,9 +106,18 @@ const int ROCSHMEM_CTX_SHARED = 8;
  * @brief GPU side OpenSHMEM context created from each work-groups'
  * rocshmem_wg_handle_t
  */
-typedef struct {
+typedef struct rocshmem_ctx{
   void *ctx_opaque;
   void *team_opaque;
+
+  __host__ __device__ bool operator==(const struct rocshmem_ctx& other) const {
+    return (ctx_opaque == other.ctx_opaque &&
+            team_opaque == other.team_opaque);
+  }
+
+  __host__ __device__ bool operator!=(const struct rocshmem_ctx& other) const {
+    return !(*this == other);
+  }
 } rocshmem_ctx_t;
 
 /**
@@ -116,6 +125,14 @@ typedef struct {
  */
 extern "C" __device__  rocshmem_ctx_t __attribute__((visibility("default"))) ROCSHMEM_CTX_DEFAULT;
 
+/**
+ * A value corresponding to an invalid communication context. This value can be
+ * used to initialize or update context handles to indicate that they do not
+ * reference a valid context. When managed in this way, applications can use an
+ * equality comparison to test whether a given context handle references a
+ * valid context.
+ */
+extern __constant__ rocshmem_ctx_t ROCSHMEM_CTX_INVALID;
 /**
  * Used internally to set default context.
  */
