@@ -144,12 +144,6 @@ TEST_F(BitwiseTestFixture, verify_host_warp_matrix_init_1024_8) {
   verify_zeroed_warp_matrix();
 }
 
-TEST_F(BitwiseTestFixture, verify_warp_size_64) {
-  setup_fixture({1, 1, 1}, {1, 1, 1});
-
-  ASSERT_EQ(WF_SIZE, 64);
-}
-
 /*****************************************************************************
  ************************** Activate Lane Helper******************************
  *****************************************************************************/
@@ -1402,7 +1396,7 @@ TEST_F(BitwiseTestFixture, fetch_incr_kernel_4_1) {
   for (size_t i = 0; i < _warp_matrix->rows(); i++) {
     for (size_t j = 0; j < _warp_matrix->columns(); j++) {
       auto *elem = _warp_matrix->access(i, j);
-      ASSERT_EQ(*elem % WF_SIZE, 0);
+      ASSERT_EQ(*elem % this->_wf_size, 0);
     }
   }
 }
@@ -1426,7 +1420,7 @@ TEST_F(BitwiseTestFixture, fetch_incr_kernel_64_1) {
   for (size_t i = 0; i < _warp_matrix->rows(); i++) {
     for (size_t j = 0; j < _warp_matrix->columns(); j++) {
       auto *elem = _warp_matrix->access(i, j);
-      ASSERT_EQ(*elem % WF_SIZE, 0);
+      ASSERT_EQ(*elem % this->_wf_size, 0);
     }
   }
 }
@@ -1498,7 +1492,7 @@ TEST_F(BitwiseTestFixture, fetch_incr_kernel_1024_1024) {
   for (size_t i = 0; i < _warp_matrix->rows(); i++) {
     for (size_t j = 0; j < _warp_matrix->columns(); j++) {
       auto *elem = _warp_matrix->access(i, j);
-      ASSERT_EQ(*elem % WF_SIZE, 0);
+      ASSERT_EQ(*elem % this->_wf_size, 0);
     }
   }
 }
@@ -1522,7 +1516,7 @@ TEST_F(BitwiseTestFixture, fetch_incr_logical_1_kernel_1024_1024) {
   for (size_t i = 0; i < _warp_matrix->rows(); i++) {
     for (size_t j = 0; j < _warp_matrix->columns(); j++) {
       auto *elem = _warp_matrix->access(i, j);
-      ASSERT_EQ(*elem % WF_SIZE, 1);
+      ASSERT_EQ(*elem % this->_wf_size, 1);
     }
   }
 }

@@ -28,6 +28,7 @@
 
 #include "backend_gda.hpp"
 #include "constants.hpp"
+#include "util.hpp"
 
 namespace rocshmem {
 
@@ -59,7 +60,10 @@ QueuePair::QueuePair(struct ibv_pd* pd, int gda_provider) {
     fetching_atomic_lkey = mr_fetching_atomic->lkey;
   }
 
-  for(int i{0}; i < FETCHING_ATOMIC_CNT; i+=WF_SIZE) {
+  int deviceId;
+  CHECK_HIP(hipGetDevice(&deviceId));
+  int wf_size = get_wf_size(deviceId);
+  for(int i{0}; i < FETCHING_ATOMIC_CNT; i+=wf_size) {
     fetching_atomic_freelist->push_back(fetching_atomic + i);
   }
 

@@ -56,14 +56,11 @@ ROBackend::ROBackend(MPI_Comm comm)
   profiler_proxy_ = ProfilerProxyT(envvar::max_num_contexts);
 
   int device_id;
-  hipDeviceProp_t device_props;
-
   CHECK_HIP(hipGetDevice(&device_id));
-  CHECK_HIP(hipGetDeviceProperties(&device_props, device_id));
 
-  max_wg_size_ = device_props.maxThreadsPerBlock;
+  max_wg_size_ = get_threads_per_block(device_id);
 
-  wf_size_ = device_props.warpSize;
+  wf_size_ = get_wf_size(device_id);
 
   setup_default_ctx_buffers();
 

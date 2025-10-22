@@ -26,10 +26,19 @@
 #define ROCSHMEM_WAVEFRONT_SIZE_GTEST_HPP
 
 #include "gtest/gtest.h"
+#include "wf_size.hpp"
 
 namespace rocshmem {
 
-class WavefrontSizeTestFixture : public ::testing::Test { };
+class WavefrontSizeTestFixture : public ::testing::Test {
+public:
+  void SetUp() override {
+      wf_size = get_wf_size();
+  }
+
+protected:
+  int wf_size;
+};
 
 } // namespace rocshmem
 

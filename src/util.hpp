@@ -30,6 +30,8 @@
 #include <hsa/hsa_ext_amd.h>
 
 #include <cstdio>
+#include <cassert>
+#include <vector>
 
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "constants.hpp"
@@ -145,6 +147,24 @@ do {                                                                        \
 } while (0)
 
 extern const int gpu_clock_freq_mhz;
+
+
+typedef struct device_prop {
+  int warpSize;
+  int maxThreadsPerBlock;
+} device_prop_t;
+
+extern std::vector<device_prop_t> device_properties;
+
+static int get_threads_per_block(int device_id) {
+  assert(device_properties.size() > device_id);
+  return device_properties[device_id].maxThreadsPerBlock;
+}
+
+static int get_wf_size(int device_id) {
+  assert(device_properties.size() > device_id);
+  return device_properties[device_id].warpSize;
+}
 
 /* Device-side internal functions */
 __device__ __forceinline__ uint32_t lowerID() {

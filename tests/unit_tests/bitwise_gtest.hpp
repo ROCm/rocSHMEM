@@ -28,6 +28,7 @@
 #define HIP_ENABLE_PRINTF
 
 #include "gtest/gtest.h"
+#include "wf_size.hpp"
 
 #include "../src/memory/hip_allocator.hpp"
 #include "containers/matrix.hpp"
@@ -259,6 +260,7 @@ class BitwiseTestFixture : public ::testing::Test
     {
         _hip_block_dim = block_dim;
         _hip_grid_dim = grid_dim;
+        _wf_size = get_wf_size();
 
         assert(_device_methods == nullptr);
         _hip_allocator.allocate(reinterpret_cast<void**>(&_device_methods),
@@ -341,6 +343,7 @@ class BitwiseTestFixture : public ::testing::Test
     HIPAllocator _hip_allocator {};
     WarpMatrix *_warp_matrix = nullptr;
     BitwiseDeviceMethods *_device_methods = nullptr;
+    int _wf_size;
 };
 
 } // namespace rocshmem

@@ -118,6 +118,15 @@ ExecTest() {
   NUM_THREADS=$4
   MAX_MSG_SIZE=$5
 
+  if command -v amd-smi >/dev/null
+  then
+      NUM_GPUS=$(amd-smi list | grep GPU | wc -l)
+  elif command -v rocm-smi >/dev/null
+  then
+      NUM_GPUS=$(rocm-smi --showserial | grep GPU | wc -l)
+  else
+      NUM_GPUS=64
+  fi
   TIMEOUT=$((5 * 60)) # Timeout in seconds
 
   TEST_NUM=${TEST_NUMBERS[$TEST_NAME]}
@@ -159,9 +168,13 @@ ExecTest() {
   CMD+=" >> $LOG_DIR/$TEST_LOG_NAME.log 2>&1"
 
   # Run Test
-  echo $TEST_LOG_NAME
-  echo "# $CMD" >"$LOG_DIR/$TEST_LOG_NAME.log"
-  eval $CMD
+  if [ $NUM_RANKS -le $NUM_GPUS ] && [[ "" == "$HOSTFILE" ]]; then
+    echo $TEST_LOG_NAME
+    echo "# $CMD" >"$LOG_DIR/$TEST_LOG_NAME.log"
+    eval $CMD
+  else
+    echo "Skipping test $TEST_LOG_NAME"
+  fi
 
   # Validate Test
   if [ $? -ne 0 ]

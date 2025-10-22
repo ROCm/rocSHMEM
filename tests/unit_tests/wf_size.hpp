@@ -22,47 +22,25 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_CONSTANTS_HPP_
-#define LIBRARY_SRC_CONSTANTS_HPP_
+#ifndef ROCSHMEM_WF_SIZE_HPP
+#define ROCSHMEM_WF_SIZE_HPP
 
-/**
- * @file constants.hpp
- *
- * @brief Contains global constants for rocSHMEM library
- */
+#include <hip/hip_runtime.h>
+#include "mpi.h"
 
-namespace rocshmem {
+#define CHECK_HIP_MPI(cond) {                                      \
+  if(cond != hipSuccess){                                          \
+     fprintf(stderr,"HIP error: %d line: %d\n", cond,  __LINE__);  \
+     MPI_Abort(MPI_COMM_WORLD, 1);  	     	  	 	   \
+  }                                                                \
+}
 
-/**
- * @brief Minimum object alignment for symmetric heap.
- *
- * @note Cache line size on most systems is either 64 or 128.
- */
-inline const unsigned ALIGNMENT{128};
+static int get_wf_size() {
+  int deviceId;
+  hipDeviceProp_t prop;
+  CHECK_HIP_MPI(hipGetDevice(&deviceId));
+  CHECK_HIP_MPI(hipGetDeviceProperties(&prop, deviceId));
+  return prop.warpSize;
+}
 
-/**
- * @brief Constant number which holds maximum workgroup size.
- *
- * @todo Remove this member from this class. It belongs in a class
- * that specifically holds device hardware information. If this
- * device class existed, we could consolidate the various flavours of
- * the Instinct cards into their own groups and then set these
- * hard-coded fields by querying the rocm runtime during our library
- * initialization.
- */
-inline const unsigned MAX_WG_SIZE{1024};
-
-/**
- * @brief Constant number which holds the wavefront size
- *
- * @note Wavefront size on most systems is either 32 or 64.
- */
-#if defined(__gfx90a__) || defined(__gfx942__) || defined (__gfx950__)
-inline const int WF_SIZE{64};
-#else
-inline const int WF_SIZE{32};
 #endif
-
-}  // namespace rocshmem
-
-#endif  // LIBRARY_SRC_CONSTANTS_HPP_
