@@ -151,7 +151,7 @@ void TesterArguments::show_usage(std::string executable_name) {
   std::cout << "\t-m Atomics Address mode\n";
 }
 
-void TesterArguments::get_rocshmem_arguments() {
+void TesterArguments::get_arguments() {
   numprocs = rocshmem_n_pes();
   myid = rocshmem_my_pe();
 

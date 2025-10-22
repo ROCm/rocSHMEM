@@ -55,7 +55,7 @@ class TesterArguments {
    * Initialize rocshmem members
    * Valid after rocshmem_init function called.
    */
-  void get_rocshmem_arguments();
+  void get_arguments();
 
  private:
   /**

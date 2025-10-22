@@ -197,7 +197,7 @@ int main(int argc, char *argv[]) {
   /**
    * Now grab the arguments from rocshmem.
    */
-  args.get_rocshmem_arguments();
+  args.get_arguments();
 
   /**
    * Using the arguments we just constructed, call the tester factory
