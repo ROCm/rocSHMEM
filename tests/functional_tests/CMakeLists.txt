@@ -54,7 +54,6 @@ target_sources(
     primitive_tester.cpp
     primitive_mr_tester.cpp
     default_ctx_primitive_tester.cpp
-    sync_tester.cpp
     team_ctx_primitive_tester.cpp
     team_ctx_infra_tester.cpp
     amo_bitwise_tester.cpp

@@ -22,10 +22,11 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef _SYNC_TESTER_HPP_
-#define _SYNC_TESTER_HPP_
+#ifndef _TEAM_SYNC_TESTER_HPP_
+#define _TEAM_SYNC_TESTER_HPP_
 
-#include <rocshmem/rocshmem.hpp>
+#include <functional>
+#include <utility>
 
 #include "tester.hpp"
 
@@ -34,10 +35,10 @@ using namespace rocshmem;
 /******************************************************************************
  * HOST TESTER CLASS
  *****************************************************************************/
-class SyncTester : public Tester {
+class TeamSyncTester : public Tester {
  public:
-  explicit SyncTester(TesterArguments args);
-  virtual ~SyncTester();
+  explicit TeamSyncTester(TesterArguments args);
+  virtual ~TeamSyncTester();
 
  protected:
   virtual void resetBuffers(size_t size) override;
@@ -52,6 +53,8 @@ class SyncTester : public Tester {
   virtual void verifyResults(size_t size) override;
 
  private:
+  int my_pe = 0;
+  int n_pes = 0;
   /**
    * This constant should equal ROCSHMEM_MAX_NUM_TEAMS - 1.
    * The default value for the maximum number of teams is 40.
@@ -59,5 +62,7 @@ class SyncTester : public Tester {
   int num_teams = 39;
   rocshmem_team_t *team_sync_world_dup;
 };
+
+#include "team_sync_tester.cpp"
 
 #endif
