@@ -45,7 +45,7 @@ target_sources(
   ${PROJECT_NAME}
   PRIVATE
     barrier_all_tester.cpp
-    sync_tester.cpp
+    sync_all_tester.cpp
     test_driver.cpp
     tester.cpp
     tester_arguments.cpp
@@ -54,6 +54,7 @@ target_sources(
     primitive_tester.cpp
     primitive_mr_tester.cpp
     default_ctx_primitive_tester.cpp
+    sync_tester.cpp
     team_ctx_primitive_tester.cpp
     team_ctx_infra_tester.cpp
     amo_bitwise_tester.cpp

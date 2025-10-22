@@ -359,15 +359,15 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       return testers;
     case SyncAllTestType:
       if (rank == 0) std::cout << "SyncAll ###" << std::endl;
-      testers.push_back(new SyncTester(args));
+      testers.push_back(new SyncAllTester(args));
       return testers;
     case WAVESyncAllTestType:
       if (rank == 0) std::cout << "WAVE SyncAll ###" << std::endl;
-      testers.push_back(new SyncTester(args));
+      testers.push_back(new SyncAllTester(args));
       return testers;
     case WGSyncAllTestType:
       if (rank == 0) std::cout << "WG SyncAll ###" << std::endl;
-      testers.push_back(new SyncTester(args));
+      testers.push_back(new SyncAllTester(args));
       return testers;
     case SyncTestType:
       if (rank == 0) std::cout << "Sync ###" << std::endl;
