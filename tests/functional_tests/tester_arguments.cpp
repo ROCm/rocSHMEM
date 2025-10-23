@@ -102,7 +102,7 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
     case SyncAllTestType:
     case WAVESyncAllTestType:
     case WGSyncAllTestType:
-    case SyncTestType:
+    case TeamSyncTestType:
       min_msg_size = 8;
       max_msg_size = 8;
       break;
@@ -151,7 +151,7 @@ void TesterArguments::show_usage(std::string executable_name) {
   std::cout << "\t-m Atomics Address mode\n";
 }
 
-void TesterArguments::get_rocshmem_arguments() {
+void TesterArguments::get_arguments() {
   numprocs = rocshmem_n_pes();
   myid = rocshmem_my_pe();
 
@@ -159,8 +159,8 @@ void TesterArguments::get_rocshmem_arguments() {
   if ((type != BarrierAllTestType) && (type != WAVEBarrierAllTestType) &&
       (type != WGBarrierAllTestType) && (type != SyncAllTestType) &&
       (type != WAVESyncAllTestType) && (type != WGSyncAllTestType) &&
-      (type != SyncTestType) && (type != WAVESyncTestType) &&
-      (type != WGSyncTestType) && (type != TeamAllToAllTestType) &&
+      (type != TeamSyncTestType) && (type != TeamWAVESyncTestType) &&
+      (type != TeamWGSyncTestType) && (type != TeamAllToAllTestType) &&
       (type != TeamFCollectTestType) && (type != TeamReductionTestType) &&
       (type != TeamBroadcastTestType) && (type != PingAllTestType) &&
       (type != TeamBarrierTestType) && (type != TeamWAVEBarrierTestType) &&

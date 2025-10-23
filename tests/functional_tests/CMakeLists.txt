@@ -45,7 +45,7 @@ target_sources(
   ${PROJECT_NAME}
   PRIVATE
     barrier_all_tester.cpp
-    sync_tester.cpp
+    sync_all_tester.cpp
     test_driver.cpp
     tester.cpp
     tester_arguments.cpp

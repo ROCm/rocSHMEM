@@ -45,7 +45,7 @@
 #include "shmem_ptr_tester.hpp"
 #include "signaling_operations_tester.hpp"
 #include "sync_all_tester.hpp"
-#include "sync_tester.hpp"
+#include "team_sync_tester.hpp"
 #include "team_alltoall_tester.hpp"
 #include "team_barrier_tester.hpp"
 #include "team_broadcast_tester.hpp"
@@ -359,27 +359,27 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       return testers;
     case SyncAllTestType:
       if (rank == 0) std::cout << "SyncAll ###" << std::endl;
-      testers.push_back(new SyncTester(args));
+      testers.push_back(new SyncAllTester(args));
       return testers;
     case WAVESyncAllTestType:
       if (rank == 0) std::cout << "WAVE SyncAll ###" << std::endl;
-      testers.push_back(new SyncTester(args));
+      testers.push_back(new SyncAllTester(args));
       return testers;
     case WGSyncAllTestType:
       if (rank == 0) std::cout << "WG SyncAll ###" << std::endl;
-      testers.push_back(new SyncTester(args));
+      testers.push_back(new SyncAllTester(args));
       return testers;
-    case SyncTestType:
-      if (rank == 0) std::cout << "Sync ###" << std::endl;
-      testers.push_back(new SyncTester(args));
+    case TeamSyncTestType:
+      if (rank == 0) std::cout << "Team Sync ###" << std::endl;
+      testers.push_back(new TeamSyncTester(args));
       return testers;
-    case WAVESyncTestType:
-      if (rank == 0) std::cout << "WAVE Sync ###" << std::endl;
-      testers.push_back(new SyncTester(args));
+    case TeamWAVESyncTestType:
+      if (rank == 0) std::cout << "Team WAVE Sync ###" << std::endl;
+      testers.push_back(new TeamSyncTester(args));
       return testers;
-    case WGSyncTestType:
-      if (rank == 0) std::cout << "WG Sync ###" << std::endl;
-      testers.push_back(new SyncTester(args));
+    case TeamWGSyncTestType:
+      if (rank == 0) std::cout << "Team WG Sync ###" << std::endl;
+      testers.push_back(new TeamSyncTester(args));
       return testers;
     case RandomAccessTestType:
       if (rank == 0) std::cout << "Random_Access ###" << std::endl;
@@ -568,8 +568,8 @@ bool Tester::peLaunchesKernel() {
                 (_type == TeamAllToAllTestType) || (_type == TeamFCollectTestType) ||
                 (_type == PingPongTestType) || (_type == BarrierAllTestType) ||
                 (_type == WAVEBarrierAllTestType) || (_type == WGBarrierAllTestType) ||
-                (_type == SyncTestType) || (_type == WAVESyncTestType) ||
-                (_type == WGSyncTestType) || (_type == SyncAllTestType) ||
+                (_type == TeamSyncTestType) || (_type == TeamWAVESyncTestType) ||
+                (_type == TeamWGSyncTestType) || (_type == SyncAllTestType) ||
                 (_type == WAVESyncAllTestType) || (_type == WGSyncAllTestType) ||
                 (_type == RandomAccessTestType) || (_type == PingAllTestType) ||
                 (_type == TeamBarrierTestType) || (_type == TeamWAVEBarrierTestType) ||

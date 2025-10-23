@@ -49,7 +49,7 @@ declare -A TEST_NUMBERS=(
   ["randomaccess"]="13"
   ["barrierall"]="14"
   ["syncall"]="15"
-  ["sync"]="16"
+  ["teamsync"]="16"
   ["collect"]="17"
   ["fcollect"]="18"
   ["alltoall"]="19"
@@ -104,8 +104,8 @@ declare -A TEST_NUMBERS=(
   ["wgsyncall"]="68"
   ["teambarrier"]="69"
   ["teamwavebarrier"]="70"
-  ["wavesync"]="71"
-  ["wgsync"]="72"
+  ["teamwavesync"]="71"
+  ["teamwgsync"]="72"
   ["teamctxsingleinfra"]="73"
   ["teamctxblockinfra"]="74"
   ["teamctxoddeveninfra"]="75"
@@ -117,17 +117,16 @@ ExecTest() {
   NUM_WG=$3
   NUM_THREADS=$4
   MAX_MSG_SIZE=$5
-
-  if command -v amd-smi >/dev/null
-  then
-      NUM_GPUS=$(amd-smi list | grep GPU | wc -l)
-  elif command -v rocm-smi >/dev/null
-  then
-      NUM_GPUS=$(rocm-smi --showserial | grep GPU | wc -l)
-  else
-      NUM_GPUS=64
-  fi
   TIMEOUT=$((5 * 60)) # Timeout in seconds
+
+  if command -v amd-smi >/dev/null && amd-smi version 2>&1 >/dev/null
+  then
+    NUM_GPUS=${NUM_GPUS:-$(amd-smi list | grep GPU | wc -l)}
+  elif command -v rocm-smi >/dev/null && rocm-smi --version 2>&1 >/dev/null
+  then
+    NUM_GPUS=${NUM_GPUS:-$(rocm-smi --showserial | grep GPU | wc -l)}
+  fi
+  NUM_GPUS=$(($NUM_GPUS > 0? $NUM_GPUS: 8))
 
   TEST_NUM=${TEST_NUMBERS[$TEST_NAME]}
 
@@ -168,12 +167,12 @@ ExecTest() {
   CMD+=" >> $LOG_DIR/$TEST_LOG_NAME.log 2>&1"
 
   # Run Test
-  if [ $NUM_RANKS -le $NUM_GPUS ] && [[ "" == "$HOSTFILE" ]]; then
+  if [ $NUM_GPUS -ge $NUM_RANKS ] || [[ "" != "$HOSTFILE" ]]; then
     echo $TEST_LOG_NAME
     echo "# $CMD" >"$LOG_DIR/$TEST_LOG_NAME.log"
     eval $CMD
   else
-    echo "Skipping test $TEST_LOG_NAME"
+    echo "Skipping test $TEST_LOG_NAME ($NUM_RANKS greater than $NUM_GPUS)"
   fi
 
   # Validate Test
@@ -400,20 +399,20 @@ TestColl() {
   ExecTest  "teamwgbarrier"    2       32           256
   ExecTest  "teamwgbarrier"    2       39           1024
 
-  ExecTest  "sync"             2       1            1
-  ExecTest  "sync"             2       16           64
-  ExecTest  "sync"             2       32           256
-  ExecTest  "sync"             2       39           1024
+  ExecTest  "teamsync"         2       1            1
+  ExecTest  "teamsync"         2       16           64
+  ExecTest  "teamsync"         2       32           256
+  ExecTest  "teamsync"         2       39           1024
 
-  ExecTest  "wavesync"         2       1            1
-  ExecTest  "wavesync"         2       16           64
-  ExecTest  "wavesync"         2       32           256
-  ExecTest  "wavesync"         2       39           1024
+  ExecTest  "teamwavesync"     2       1            1
+  ExecTest  "teamwavesync"     2       16           64
+  ExecTest  "teamwavesync"     2       32           256
+  ExecTest  "teamwavesync"     2       39           1024
 
-  ExecTest  "wgsync"           2       1            1
-  ExecTest  "wgsync"           2       16           64
-  ExecTest  "wgsync"           2       32           256
-  ExecTest  "wgsync"           2       39           1024
+  ExecTest  "teamwgsync"       2       1            1
+  ExecTest  "teamwgsync"       2       16           64
+  ExecTest  "teamwgsync"       2       32           256
+  ExecTest  "teamwgsync"       2       39           1024
 
   ExecTest  "syncall"          2       1            1
 
@@ -607,7 +606,7 @@ TestGDA() {
   ExecTest  "barrierall"       2       1            1
   ExecTest  "teambarrier"      2       1            1
 
-  ExecTest  "sync"             2       1            1
+  ExecTest  "teamsync"         2       1            1
   ExecTest  "syncall"          2       1            1
 
 #  ExecTest  "alltoall"         2       1            1         512
