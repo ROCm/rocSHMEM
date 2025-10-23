@@ -2,4 +2,4 @@ __pycache__
 .DS_Store
 figures
 .venv/*
-.png
+*.png
