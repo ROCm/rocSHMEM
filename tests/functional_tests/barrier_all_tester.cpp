@@ -39,7 +39,6 @@ __global__ void BarrierAllTest(int loop, int skip, long long int *start_time,
   int wg_id = get_flat_grid_id();
   int wf_id = t_id / wf_size;
 
-  rocshmem_wg_init();
 
   for (int i = 0; i < loop + skip; i++) {
     if (hipThreadIdx_x == 0 && i == skip) {
@@ -84,7 +83,6 @@ __global__ void BarrierAllTest(int loop, int skip, long long int *start_time,
     end_time[wg_id] = wall_clock64();
   }
 
-  rocshmem_wg_finalize();
 }
 
 /******************************************************************************

@@ -62,6 +62,13 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
     } else if (arg == "-x") {
       i++;
       shmem_context = atoi(argv[i]);
+    } else if (arg == "-m") {
+      int atomics_addr_mode = atoi(argv[i]);
+      if(atomics_addr_mode >= static_cast<int>(AddrMode::PerGrid) &&
+         atomics_addr_mode <= static_cast<int>(AddrMode::PerBlock)) {
+         addr_mode = static_cast<AddrMode>(atomics_addr_mode);
+      }
+      i++;
     } else {
       show_usage(argv[0]);
       exit(-1);
@@ -95,7 +102,7 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
     case SyncAllTestType:
     case WAVESyncAllTestType:
     case WGSyncAllTestType:
-    case SyncTestType:
+    case TeamSyncTestType:
       min_msg_size = 8;
       max_msg_size = 8;
       break;
@@ -121,6 +128,10 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
     case PutNBIMRTestType:
       min_msg_size = max_msg_size;
       break;
+    case PTestType:
+    case GTestType:
+      min_msg_size = 1;
+      max_msg_size = 1;
     default:
       break;
   }
@@ -137,9 +148,10 @@ void TesterArguments::show_usage(std::string executable_name) {
   std::cout << "\t-o <Operation type for the random_access test>\n";
   std::cout << "\t-ta <Number of Thread Accessing the communication>\n";
   std::cout << "\t-x <shmem context>\n";
+  std::cout << "\t-m Atomics Address mode\n";
 }
 
-void TesterArguments::get_rocshmem_arguments() {
+void TesterArguments::get_arguments() {
   numprocs = rocshmem_n_pes();
   myid = rocshmem_my_pe();
 
@@ -147,8 +159,8 @@ void TesterArguments::get_rocshmem_arguments() {
   if ((type != BarrierAllTestType) && (type != WAVEBarrierAllTestType) &&
       (type != WGBarrierAllTestType) && (type != SyncAllTestType) &&
       (type != WAVESyncAllTestType) && (type != WGSyncAllTestType) &&
-      (type != SyncTestType) && (type != WAVESyncTestType) &&
-      (type != WGSyncTestType) && (type != TeamAllToAllTestType) &&
+      (type != TeamSyncTestType) && (type != TeamWAVESyncTestType) &&
+      (type != TeamWGSyncTestType) && (type != TeamAllToAllTestType) &&
       (type != TeamFCollectTestType) && (type != TeamReductionTestType) &&
       (type != TeamBroadcastTestType) && (type != PingAllTestType) &&
       (type != TeamBarrierTestType) && (type != TeamWAVEBarrierTestType) &&

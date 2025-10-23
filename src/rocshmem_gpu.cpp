@@ -53,15 +53,15 @@
 
 #if defined(USE_GDA)
 #include "gda/context_gda_tmpl_device.hpp"
-#elif defined(USE_RO)
+#endif
+#if defined(USE_RO)
 #include "reverse_offload/context_ro_tmpl_device.hpp"
-#elif defined(USE_IPC)
+#endif
+#if defined(USE_IPC)
 # if defined(ENABLE_IPC_BITCODE)
 #  include "ipc/backend_ipc.hpp"
 # endif
 #include "ipc/context_ipc_tmpl_device.hpp"
-#else
-#error "Select one backend among USE_RO, USE_IPC, USE_GDA"
 #endif
 
 /******************************************************************************
@@ -73,6 +73,8 @@ namespace rocshmem {
 __device__  rocshmem_ctx_t __attribute__((visibility("default"))) ROCSHMEM_CTX_DEFAULT{};
 
 __constant__ Backend *device_backend_proxy;
+
+__constant__ rocshmem_ctx_t ROCSHMEM_CTX_INVALID = {nullptr, nullptr};
 
 #if defined(ENABLE_IPC_BITCODE)
   typedef IPCContext ContextTy;
@@ -107,7 +109,7 @@ __device__ void rocshmem_wg_finalize() {}
 
 
 /******************************************************************************
-* These host APIs use Device side symbol - ROCSHMEM_CTX_DEFAULT so it needs 
+* These host APIs use Device side symbol - ROCSHMEM_CTX_DEFAULT so it needs
 * to stay here to avoid getting pulled into other places in compilation
 ******************************************************************************/
 
@@ -186,6 +188,10 @@ __device__ void rocshmem_fence(int pe) {
 
 __device__ void rocshmem_quiet() {
   rocshmem_ctx_quiet(ROCSHMEM_CTX_DEFAULT);
+}
+
+__device__ void rocshmem_pe_quiet(const int *target_pes, size_t npes) {
+  rocshmem_ctx_pe_quiet(ROCSHMEM_CTX_DEFAULT, target_pes, npes);
 }
 
 __device__ void rocshmem_threadfence_system() {
@@ -320,6 +326,9 @@ __device__ int rocshmem_wg_ctx_create(long options, rocshmem_ctx_t *ctx) {
     if(result) {
       reinterpret_cast<Context *>(ctx->ctx_opaque)->setFence(options);
     }
+    else {
+      *ctx = ROCSHMEM_CTX_INVALID;
+    }
   }
   __syncthreads();
   return result == true ? 0 : -1;
@@ -342,6 +351,9 @@ __device__ int rocshmem_wg_team_create_ctx(rocshmem_team_t team, long options,
     if(result) {
       reinterpret_cast<Context *>(ctx->ctx_opaque)->setFence(options);
     }
+    else {
+      *ctx = ROCSHMEM_CTX_INVALID;
+    }
   }
   __syncthreads();
 
@@ -353,7 +365,7 @@ __device__ void rocshmem_wg_ctx_destroy(
   GPU_DPRINTF("Function: rocshmem_wg_ctx_destroy (ctx=%zd)\n",
     ctx->ctx_opaque);
 
-  if (get_flat_block_id() == 0) {
+  if (get_flat_block_id() == 0 && *ctx != ROCSHMEM_CTX_INVALID) {
     device_backend_proxy->destroy_ctx(ctx);
   }
 }
@@ -483,6 +495,16 @@ __device__ void rocshmem_ctx_quiet(rocshmem_ctx_t ctx) {
     ctx.ctx_opaque);
 
   get_internal_ctx(ctx)->quiet();
+}
+
+__device__ void rocshmem_ctx_pe_quiet(rocshmem_ctx_t ctx, const int *target_pes, size_t npes) {
+  GPU_DPRINTF("Function: %s (ctx=%zd)\n", __FUNC__, ctx.ctx_opaque);
+
+  ContextTy *internal_ctx = get_internal_ctx(ctx);
+
+  for (int i = 0; i < npes;  i++) {
+    internal_ctx->pe_quiet(translate_pe(ctx, target_pes[i]));
+  }
 }
 
 __device__ void *rocshmem_ptr(const void *dest, int pe) {
@@ -621,6 +643,11 @@ __device__ int rocshmem_test(T *ivars, int cmp, T val) {
 
   return ctx_internal->test(ivars, cmp, val);
 }
+
+__global__ ATTR_NO_INLINE void rocshmem_barrier_all_kernel(){
+  rocshmem_barrier_all();
+}
+
 
 __device__ void rocshmem_barrier_all() {
   GPU_DPRINTF("Function: rocshmem_barrier_all (ctx=%zd)\n",

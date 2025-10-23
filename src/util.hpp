@@ -30,6 +30,8 @@
 #include <hsa/hsa_ext_amd.h>
 
 #include <cstdio>
+#include <cassert>
+#include <vector>
 
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "constants.hpp"
@@ -115,7 +117,54 @@ namespace rocshmem {
   } while (0);
 #endif
 
+/* Helper Macros for handling dynamic libraries */
+#define PPCAT_NX(prefix, func_name) prefix##func_name
+#define PPCAT(prefix, func_name) PPCAT_NX(prefix, func_name)
+
+#define STRINGIFY_NX(name) #name
+#define STRINGIFY(name) STRINGIFY_NX(name)
+
+#define DLSYM_HELPER(func_struct, prefix, handle, func_name)                                \
+do {                                                                                        \
+  *(void **) (&func_struct.func_name) = dlsym(handle, STRINGIFY(PPCAT(prefix, func_name))); \
+  if (!func_struct.func_name) {                                                             \
+    DPRINTF("Failed to find function %s \n",  STRINGIFY(PPCAT(prefix, func_name)));         \
+    dlclose(handle);                                                                        \
+    handle = nullptr;                                                                       \
+    return ROCSHMEM_ERROR;                                                                  \
+  }                                                                                         \
+} while (0)
+
+#define DLSYM_VAR_HELPER(func_struct, handle, var_name)                     \
+do {                                                                        \
+  *(void **) (&func_struct.var_name) = dlsym(handle, STRINGIFY(var_name));  \
+  if (!func_struct.var_name) {                                             \
+    DPRINTF("Failed to find function %s \n",  STRINGIFY(var_name));        \
+    dlclose(handle);                                                        \
+    handle = nullptr;                                                       \
+    return ROCSHMEM_ERROR;                                                  \
+  }                                                                         \
+} while (0)
+
 extern const int gpu_clock_freq_mhz;
+
+
+typedef struct device_prop {
+  int warpSize;
+  int maxThreadsPerBlock;
+} device_prop_t;
+
+extern std::vector<device_prop_t> device_properties;
+
+static int get_threads_per_block(int device_id) {
+  assert(device_properties.size() > device_id);
+  return device_properties[device_id].maxThreadsPerBlock;
+}
+
+static int get_wf_size(int device_id) {
+  assert(device_properties.size() > device_id);
+  return device_properties[device_id].warpSize;
+}
 
 /* Device-side internal functions */
 __device__ __forceinline__ uint32_t lowerID() {
@@ -160,6 +209,13 @@ __device__ __forceinline__ int get_flat_grid_size() {
 __device__ __forceinline__ int get_flat_block_id() {
   return hipThreadIdx_x + hipThreadIdx_y * hipBlockDim_x +
          hipThreadIdx_z * hipBlockDim_x * hipBlockDim_y;
+}
+
+/*
+ * Returns the number of blocks in the caller's flattened grid.
+ */
+__device__ __forceinline__ int get_grid_num_blocks() {
+  return hipGridDim_x * hipGridDim_y * hipGridDim_z;
 }
 
 /*
@@ -229,6 +285,76 @@ __device__ __forceinline__ bool is_last_active_lane() {
   return is_last_active_lane(get_active_lane_mask());
 }
 
+#define SPIN_LOCK_INVALID  0xdead
+#define SPIN_LOCK_UNLOCKED 0x1234
+#define SPIN_LOCK_LOCKED   0xabcd
+
+/*
+ * Each thread in wave tries to acquire a different lock.
+ */
+__device__ __forceinline__ bool spin_lock_try_acquire_unique(uint32_t *lock) {
+  uint32_t lock_val = SPIN_LOCK_UNLOCKED;
+
+  __hip_atomic_compare_exchange_strong(lock, &lock_val, SPIN_LOCK_LOCKED,
+                                       __ATOMIC_ACQUIRE, __ATOMIC_ACQUIRE,
+                                       __HIP_MEMORY_SCOPE_AGENT);
+
+  return lock_val == SPIN_LOCK_UNLOCKED;
+}
+
+/*
+ * Each thread in wave acquires a different lock.
+ * (deadlock if locks are not different)
+ */
+__device__ __forceinline__ void spin_lock_acquire_unique(uint32_t *lock) {
+  while (!spin_lock_try_acquire_unique(lock)) {
+    // spin
+  }
+}
+
+/*
+ * Each thread in wave releases a different lock.
+ */
+__device__ __forceinline__ void spin_lock_release_unique(uint32_t *lock) {
+  __hip_atomic_store(lock, SPIN_LOCK_UNLOCKED, __ATOMIC_RELEASE,
+                     __HIP_MEMORY_SCOPE_AGENT);
+}
+
+/*
+ * Threads in activemask together try to acquire the same lock.
+ */
+__device__ __forceinline__ bool spin_lock_try_acquire_shared(uint32_t *lock, uint64_t activemask) {
+  uint32_t lock_val = SPIN_LOCK_INVALID;
+
+  if (is_first_active_lane(activemask)) {
+    lock_val = SPIN_LOCK_UNLOCKED;
+    __hip_atomic_compare_exchange_strong(lock, &lock_val, SPIN_LOCK_LOCKED,
+                                         __ATOMIC_ACQUIRE, __ATOMIC_ACQUIRE,
+                                         __HIP_MEMORY_SCOPE_AGENT);
+  }
+  lock_val = __shfl(lock_val, get_first_active_lane_id(activemask));
+
+  return lock_val == SPIN_LOCK_UNLOCKED;
+}
+
+/*
+ * Threads in activemask together acquire the same lock.
+ */
+__device__ __forceinline__ void spin_lock_acquire_shared(uint32_t *lock, uint64_t activemask) {
+  while (!spin_lock_try_acquire_shared(lock, activemask)) {
+    // spin
+  }
+}
+
+/*
+ * Threads in activemask together release the same lock.
+ */
+__device__ __forceinline__ void spin_lock_release_shared(uint32_t *lock, uint64_t activemask) {
+  if (is_first_active_lane(activemask)) {
+    __hip_atomic_store(lock, SPIN_LOCK_UNLOCKED, __ATOMIC_RELEASE,
+                       __HIP_MEMORY_SCOPE_AGENT);
+  }
+}
 
 extern __constant__ int* print_lock;
 
@@ -356,30 +482,6 @@ __device__ __forceinline__ void memcpy_wave(void* dst, void* src, size_t size) {
 int rocm_init();
 
 void rocm_memory_lock_to_fine_grain(void* ptr, size_t size, void** gpu_ptr, int gpu_id);
-
-class rocshmem_env_config {
-public:
-  rocshmem_env_config();
-
-  int get_disable_ipc();
-  int get_ro_progress_delay();
-  int get_uniqueid_with_mpi();
-  int get_bootstrap_timeout();
-  std::string get_bootstrap_hostid();
-  std::string get_bootstrap_socket_family();
-  std::string get_bootstrap_socket_ifname();
-
-private:
-  int disable_ipc = 0;
-  int ro_progress_delay = 3;
-  int bootstrap_timeout = 5;
-  int uniqueid_with_mpi = 0;
-  std::string bootstrap_hostid;
-  std::string bootstrap_socket_family;
-  std::string bootstrap_socket_ifname;
-};
-
-extern rocshmem_env_config rocshmem_env_;
 
 }  // namespace rocshmem
 

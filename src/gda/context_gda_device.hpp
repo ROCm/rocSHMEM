@@ -60,6 +60,8 @@ class GDAContext : public Context {
 
   __device__ void quiet();
 
+  __device__ void pe_quiet(size_t pe);
+
   __device__ void *shmem_ptr(const void *dest, int pe);
 
   __device__ void barrier_all();

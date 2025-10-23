@@ -39,14 +39,15 @@
    int wg_id = get_flat_grid_id();
    int t_id  = get_flat_block_id();
    int wf_id = t_id / wf_size;
-   rocshmem_wg_init();
  
    /**
     * Shared array to capture the start time for each wavefront
-    * Max threads per block = 1024, wavefront size = 64 (in most GPUs)
-    * Maximum array size required = 1024/64 = 16
+   * Max threads per block = 1024, wavefront size = 64 or 32 depending
+   * on the GPUs. Using 32 since its safer for the dimensioning of the array,
+   * the last 16 elements will not be used on GPUs with a wf size of 64.
+   * Maximum array size required = 1024/32 = 32
     */
-   __shared__ long long int wf_start_time[16];
+   __shared__ long long int wf_start_time[32];
  
    /**
     * Calculate start index for each thread within the grid
@@ -121,7 +122,6 @@
      start_time[wg_id] = wf_start_time[0];
    }
  
-   rocshmem_wg_finalize();
  }
  
  /******************************************************************************
@@ -192,4 +192,3 @@
      }
    }
  }
- 

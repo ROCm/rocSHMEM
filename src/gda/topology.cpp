@@ -386,9 +386,11 @@ namespace rocshmem
       // Query the number of IBV devices
       int numIbvDevices = 0;
       ibv_device** deviceList = ibv_get_device_list(&numIbvDevices);
-      printf("[%d] found %d Ibv devices\n", getpid(), numIbvDevices);
 
-      if (deviceList && numIbvDevices > 0) {
+      printf("[%d] found %d Ibv devices\n", getpid(), numIbvDevices);
+      CHECK_NNULL(deviceList, "ibv_get_device_list");
+
+      if (numIbvDevices > 0) {
         // Loop over each device to collect information
         for (int i = 0; i < numIbvDevices; i++) {
           IbvDevice ibvDevice;
@@ -461,6 +463,9 @@ namespace rocshmem
           }
           ibvDeviceList.push_back(ibvDevice);
         }
+      } else {
+        fprintf(stderr, "[Error] No visible InfiniBand devices found.\n");
+        exit(1);
       }
       ibv_free_device_list(deviceList);
       isInitialized = true;
@@ -699,7 +704,7 @@ namespace rocshmem
   }
 
 
-  int GetClosestNicToGpu(int gpuIndex, char** dev_name)
+  int GetClosestNicToGpu(int gpuIndex, const char** dev_name)
   {
     static bool isInitialized = false;
     static std::vector<int> closestNicId;
@@ -781,8 +786,8 @@ namespace rocshmem
 
     DPRINTF("GPU Device id: %d closest NIC id : %d name: %s\n", gpuIndex, closestNicId[gpuIndex],
            ibvDeviceList[closestNicId[gpuIndex]].name.c_str());
-    if (dev_name != NULL) {
-      DPRINTF("[%d] Doing strdup\n", getpid());
+
+    if (dev_name != nullptr) {
       *dev_name = strdup(ibvDeviceList[closestNicId[gpuIndex]].name.c_str());
     }
 

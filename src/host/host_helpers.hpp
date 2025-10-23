@@ -27,6 +27,7 @@
 
 #include "host.hpp"
 #include "memory/window_info.hpp"
+#include "mpi_instance.hpp"
 
 #include <cassert>
 
@@ -42,15 +43,15 @@ __host__ inline MPI_Aint HostInterface::compute_offset(
   MPI_Aint dest_disp{};
   MPI_Aint start_disp{};
 
-  MPI_Get_address(dest, &dest_disp);
-  MPI_Get_address(win_start, &start_disp);
+  mpilib_ftable_.Get_address(dest, &dest_disp);
+  mpilib_ftable_.Get_address(win_start, &start_disp);
 
   return MPI_Aint_diff(dest_disp, start_disp);
 }
 
 __host__ inline void HostInterface::complete_all(MPI_Win win) {
-  MPI_Win_flush_all(win); /* RMA operations */
-  MPI_Win_sync(win);      /* memory stores */
+  mpilib_ftable_.Win_flush_all(win); /* RMA operations */
+  mpilib_ftable_.Win_sync(win);      /* memory stores */
 }
 
 __host__ inline void HostInterface::initiate_put(void* dest, const void* source,
@@ -74,7 +75,7 @@ __host__ inline void HostInterface::initiate_put(void* dest, const void* source,
   hdp_policy_->hdp_flush();
 
   /* Offload remote write operation to MPI */
-  MPI_Put(source, nelems, MPI_CHAR, pe, offset, nelems, MPI_CHAR, win);
+  mpilib_ftable_.Put(source, nelems, MPI_CHAR, pe, offset, nelems, MPI_CHAR, win);
 }
 
 __host__ inline void HostInterface::initiate_get(void* dest, const void* source,
@@ -88,7 +89,7 @@ __host__ inline void HostInterface::initiate_get(void* dest, const void* source,
   MPI_Aint offset = compute_offset(source, win_start, win_end);
 
   /* Offload remote fetch operation to MPI */
-  MPI_Get(dest, nelems, MPI_CHAR, pe, offset, nelems, MPI_CHAR, win);
+  mpilib_ftable_.Get(dest, nelems, MPI_CHAR, pe, offset, nelems, MPI_CHAR, win);
 }
 
 }  // namespace rocshmem

@@ -22,11 +22,9 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "context_gda_host.hpp"
-
-#include <mpi.h>
 
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
+#include "context_gda_host.hpp"
 #include "backend_type.hpp"
 #include "context_incl.hpp"
 #include "backend_gda.hpp"

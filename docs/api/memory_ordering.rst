@@ -34,3 +34,18 @@ ROCSHMEM_QUIET
 
 **Description:**
 This routine completes all previous operations posted to this context.
+
+ROCSHMEM_PE_QUIET
+--------------
+
+.. cpp:function:: __device__ void rocshmem_ctx_pe_quiet(shmem_ctx_t ctx, const int *target_pes, size_t npes)
+.. cpp:function:: __device__ void rocshmem_pe_quiet(const int *target_pes, size_t npes)
+
+ :param ctx: Context with which to perform this operation.
+ :param target_pes: Address of target PE array where the operations need to be completed
+ :param npes: The number of PEs in the target PE array
+ :returns:   None.
+
+**Description:**
+This routine completes all previous operations posted to this context
+for the PEs in the `target_pes` array.

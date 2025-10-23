@@ -73,7 +73,10 @@ class IPCImplSimpleCoarse : public ::testing::TestWithParam<std::tuple<int, int,
 
   public:
     IPCImplSimpleCoarse() {
-        ipc_impl_.ipcHostInit(mpi_.my_pe(), mpi_.get_heap_bases() , MPI_COMM_WORLD);
+        MPIInstance::mpilib_dl_init();
+        mpi_ = new MPI_T (heap_mem_.get_ptr(), heap_mem_.get_size(), MPI_COMM_WORLD);
+
+        ipc_impl_.ipcHostInit(mpi_->my_pe(), mpi_->get_heap_bases(), MPI_COMM_WORLD);
         assert(ipc_impl_dptr_ == nullptr);
         hip_allocator_.allocate((void**)&ipc_impl_dptr_, sizeof(IpcImpl));
         CHECK_HIP(hipMemcpy(ipc_impl_dptr_, &ipc_impl_,
@@ -85,6 +88,7 @@ class IPCImplSimpleCoarse : public ::testing::TestWithParam<std::tuple<int, int,
             hip_allocator_.deallocate(ipc_impl_dptr_);
         }
         ipc_impl_.ipcHostStop();
+        MPIInstance::mpilib_dl_close();
     }
 
     void launch(FN_T f, const dim3 grid, const dim3 block, int* src, int* dest, size_t bytes) {
@@ -132,7 +136,7 @@ class IPCImplSimpleCoarse : public ::testing::TestWithParam<std::tuple<int, int,
             return;
         }
         size_t bytes = golden_.size() * sizeof(int);
-        auto dev_src = reinterpret_cast<int*>(ipc_impl_.ipc_bases[mpi_.my_pe()]);
+        auto dev_src = reinterpret_cast<int*>(ipc_impl_.ipc_bases[mpi_->my_pe()]);
         CHECK_HIP(hipMemcpy(dev_src, golden_.data(), bytes, hipMemcpyHostToDevice));
         CHECK_HIP(hipStreamSynchronize(nullptr));
     }
@@ -140,14 +144,14 @@ class IPCImplSimpleCoarse : public ::testing::TestWithParam<std::tuple<int, int,
     bool pe_initializes_src_buffer(TestType test) {
         bool is_write_test = test;
         bool is_read_test = !test;
-        return (is_write_test && mpi_.my_pe() == 0) ||
-               (is_read_test && mpi_.my_pe() == 1);
+        return (is_write_test && mpi_->my_pe() == 0) ||
+               (is_read_test && mpi_->my_pe() == 1);
     }
 
     void execute(TestType test, FN_T fn, const dim3 grid, const dim3 block) {
-        if (mpi_.my_pe()) {
-            mpi_.barrier();
-            mpi_.barrier();
+        if (mpi_->my_pe()) {
+            mpi_->barrier();
+            mpi_->barrier();
             return;
         }
         int *src{nullptr};
@@ -160,9 +164,9 @@ class IPCImplSimpleCoarse : public ::testing::TestWithParam<std::tuple<int, int,
             dest = reinterpret_cast<int*>(ipc_impl_.ipc_bases[0]);
         }
         size_t bytes = golden_.size() * sizeof(int);
-        mpi_.barrier();
+        mpi_->barrier();
         launch(fn, grid, block, src, dest, bytes);
-        mpi_.barrier();
+        mpi_->barrier();
     }
 
     void validate_dest_buffer(TestType test) {
@@ -170,7 +174,7 @@ class IPCImplSimpleCoarse : public ::testing::TestWithParam<std::tuple<int, int,
             return;
         }
 
-        auto dev_dest = reinterpret_cast<int*>(ipc_impl_.ipc_bases[mpi_.my_pe()]);
+        auto dev_dest = reinterpret_cast<int*>(ipc_impl_.ipc_bases[mpi_->my_pe()]);
         for (int i = 0; i < static_cast<int>(golden_.size()); i++) {
             ASSERT_EQ(golden_[i], dev_dest[i]);
         }
@@ -184,7 +188,7 @@ class IPCImplSimpleCoarse : public ::testing::TestWithParam<std::tuple<int, int,
     std::vector<int> golden_;
 
     HEAP_T heap_mem_ {};
-    MPI_T mpi_ {heap_mem_.get_ptr(), heap_mem_.get_size()};
+    MPI_T *mpi_{nullptr};
 
     IpcImpl ipc_impl_ {};
     IpcImpl *ipc_impl_dptr_ {nullptr};

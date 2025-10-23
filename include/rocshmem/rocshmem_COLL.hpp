@@ -600,6 +600,14 @@ __host__ int rocshmem_ctx_double_prod_reduce(
     int nreduce);
 
 /**
+ * @brief kernel for performing a barrier synchronization.
+ * Caller enqueues the kernel on given stream
+ *
+ * @return void
+ */
+__global__ ATTR_NO_INLINE void rocshmem_barrier_all_kernel();
+
+/**
  * @brief perform a collective barrier between all PEs in the system.
  * The caller is blocked until the barrier is resolved.
  *
@@ -766,28 +774,6 @@ __device__ ATTR_NO_INLINE void rocshmem_ctx_sync_wave(
  */
 __device__ ATTR_NO_INLINE void rocshmem_ctx_sync_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team);
-
-/**
- * @brief Query a local pointer to a symmetric data object on the
- * specified \pe . Returns an address that may be used to directly reference
- * dest on the specified \pe. This address can be accesses with LD/ST ops.
- *
- * Can be called per thread with no performance penalty.
- */
-__device__ ATTR_NO_INLINE void *rocshmem_ptr(const void *dest, int pe);
-
-/**
- * @brief Make all uncacheable GPU data visible to other agents in the sytem.
- *
- * This only works for data that was explicitly allocated uncacheable on the
- * GPU!
- *
- * Can be called per thread with no performance penalty.
- *
- * @param[in] GPU-side handle.
- *
- * @return void
- */
 
 }  // namespace rocshmem
 

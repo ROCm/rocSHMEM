@@ -59,6 +59,7 @@
  */
 
 #include <rocshmem/rocshmem.hpp>
+#include <mpi.h>
 
 #include "util.h"
 

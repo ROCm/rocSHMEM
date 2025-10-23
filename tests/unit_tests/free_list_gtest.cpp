@@ -108,7 +108,7 @@ TYPED_TEST(FreeListTestFixture, push_host_pop_device) {
 
   CHECK_HIP(hipMemset(results, 0, size_bytes));
   is_empty = reinterpret_cast<bool*>(results + h_input.size());
-  const auto block_size = WF_SIZE;
+  const auto block_size = this->wf_size;
   rocshmem::pop_all<<<1, block_size>>>(free_list, results, h_input.size());
   CHECK_HIP(hipDeviceSynchronize());
 
@@ -140,7 +140,7 @@ TYPED_TEST(FreeListTestFixture, push_host_concurrent_pop_device) {
   CHECK_HIP(hipMemset(results, 0, size_bytes));
   is_empty = reinterpret_cast<bool*>(results + h_input.size());
   const auto num_blocks = h_input.size();
-  const auto block_size = WF_SIZE;
+  const auto block_size = this->wf_size;
   rocshmem::pop_all<<<num_blocks, block_size>>>(
             free_list, results, h_input.size());
   CHECK_HIP(hipDeviceSynchronize());
@@ -184,7 +184,7 @@ TYPED_TEST(FreeListTestFixture, push_host_pop_push_device) {
   CHECK_HIP(hipMemset(results, 0, size_bytes));
   d_input = reinterpret_cast<T*>(results + h_input.size());
   is_empty = reinterpret_cast<bool*>(d_input + h_input.size());
-  const auto block_size = WF_SIZE;
+  const auto block_size = this->wf_size;
 
   CHECK_HIP(hipMemcpy(d_input, h_input.data(), sizeof(T) * h_input.size(),
                       hipMemcpyHostToDevice));
@@ -223,7 +223,7 @@ TYPED_TEST(FreeListTestFixture, push_host_pop_concurrent_push_device) {
 
   CHECK_HIP(hipMemset(results, 0, size_bytes));
   d_input = reinterpret_cast<T*>(results + h_input.size());
-  const auto block_size = WF_SIZE;
+  const auto block_size = this->wf_size;
 
   CHECK_HIP(hipMemcpy(d_input, h_input.data(), sizeof(T) * h_input.size(),
                       hipMemcpyHostToDevice));
@@ -277,7 +277,7 @@ TYPED_TEST(FreeListTestFixture, push_host_concurrent_pop_push_device) {
   CHECK_HIP(hipMemcpy(d_input, h_input.data(), sizeof(T) * h_input.size(),
                       hipMemcpyHostToDevice));
 
-  const auto block_size = WF_SIZE;
+  const auto block_size = this->wf_size;
   rocshmem::pop_all<FreeListType, T><<<1, block_size>>>(
             free_list, nullptr, h_input.size());
   CHECK_HIP(hipDeviceSynchronize());

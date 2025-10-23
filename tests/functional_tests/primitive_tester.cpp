@@ -39,15 +39,16 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
   int wg_id = get_flat_grid_id();
   int t_id  = get_flat_block_id();
   int wf_id = t_id / wf_size;
-  rocshmem_wg_init();
   rocshmem_wg_ctx_create(ctx_type, &ctx);
 
   /**
    * Shared array to capture the start time for each wavefront
-   * Max threads per block = 1024, wavefront size = 64 (in most GPUs)
-   * Maximum array size required = 1024/64 = 16
+   * Max threads per block = 1024, wavefront size = 64 or 32 depending
+   * on the GPUs. Using 32 since its safer for the dimensioning of the array,
+   * the last 16 elements will not be used on GPUs with a wf size of 64.
+   * Maximum array size required = 1024/32 = 32
    */
-  __shared__ long long int wf_start_time[16];
+  __shared__ long long int wf_start_time[32];
 
   /**
    * Calculate start index for each thread within the grid
@@ -82,16 +83,14 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
         rocshmem_ctx_putmem_nbi(ctx, dest, source, size, 1);
         break;
       case PTestType:
-        for (int s = 0; s < size; s++) {
-          char val = source[s];
-          rocshmem_ctx_char_p(ctx, &dest[s], val, 1);
+        {
+          /* Assigment required to verify we can send non-symetric memory */
+          char val = *source;
+          rocshmem_ctx_char_p(ctx, dest, val, 1);
         }
         break;
       case GTestType:
-        for (int s = 0; s < size; s++) {
-          char ret = rocshmem_ctx_char_g(ctx, &source[s], 1);
-          dest[s] = ret;
-        }
+        *dest = rocshmem_ctx_char_g(ctx, source, 1);
         break;
       default:
         break;
@@ -123,7 +122,6 @@ __global__ void PrimitiveTest(int loop, int skip, long long int *start_time,
   }
 
   rocshmem_wg_ctx_destroy(&ctx);
-  rocshmem_wg_finalize();
 }
 
 /******************************************************************************

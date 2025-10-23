@@ -22,8 +22,8 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef _BARRIER_ALL_TESTER_HPP_
-#define _BARRIER_ALL_TESTER_HPP_
+#ifndef _SYNC_ALL_TESTER_HPP_
+#define _SYNC_ALL_TESTER_HPP_
 
 #include "tester.hpp"
 

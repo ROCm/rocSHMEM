@@ -27,6 +27,8 @@
 
 #include "gtest/gtest.h"
 
+#include <mpi.h>
+
 #include "../src/memory/heap_memory.hpp"
 #include "../src/memory/hip_allocator.hpp"
 #include "../src/memory/remote_heap_info.hpp"
@@ -55,7 +57,8 @@ class RemoteHeapInfoTestFixture : public ::testing::Test
      * @brief Remote heap info with MPI Communicator
      */
     MPI_T mpi_ {heap_mem_.get_ptr(),
-                heap_mem_.get_size()};
+                heap_mem_.get_size(),
+                MPI_COMM_WORLD};
 };
 
 } // namespace rocshmem

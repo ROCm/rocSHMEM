@@ -30,11 +30,8 @@ static void dump_ibv_device(struct ibv_device *x);
 static void dump_ibv_pd(struct ibv_pd *x);
 static void dump_ibv_port_attr(struct ibv_port_attr *x);
 static void dump_ibv_qp(struct ibv_qp *qp, int conn_num);
-
-#if defined(GDA_MLX5)
 static void dump_mlx5dv_qp(struct mlx5dv_qp *qp_dv, int conn_num);
 static void dump_mlx5dv_cq(struct mlx5dv_cq *cq_dv, int conn_num);
-#endif
 
 static void dump_ibv_context(struct ibv_context* x) {
   /*
@@ -194,7 +191,6 @@ void dump_ibv_qp(struct ibv_qp *qp, int conn_num) {
   DPRINTF("=========== QP_DUMP_END CONNECTION#%d  ========\n", conn_num);
 }
 
-#if defined(GDA_MLX5)
 void dump_mlx5dv_qp(struct mlx5dv_qp *qp_dv, int conn_num) {
   DPRINTF("\n");
   DPRINTF("===============================================\n");
@@ -235,6 +231,5 @@ void dump_mlx5dv_cq(struct mlx5dv_cq *cq_dv, int conn_num) {
   DPRINTF("  (uint64_t) comp_mask       = 0x%lx\n",  cq_dv->comp_mask);
   DPRINTF("================== CQ_DUMP_END ================\n");
 }
-#endif // GDA_MLX5
 
 #endif /* LIBRARY_SRC_GDA_DEBUG_GDA_HPP_ */

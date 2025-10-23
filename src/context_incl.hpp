@@ -31,14 +31,14 @@
 #if defined(USE_GDA)
 #include "gda/context_gda_device.hpp"
 #include "gda/context_gda_host.hpp"
-#elif defined(USE_RO)
+#endif
+#if defined(USE_RO)
 #include "reverse_offload/context_ro_device.hpp"
 #include "reverse_offload/context_ro_host.hpp"
-#elif defined(USE_IPC)
+#endif
+#if defined(USE_IPC)
 #include "ipc/context_ipc_device.hpp"
 #include "ipc/context_ipc_host.hpp"
-#else
-#error "Select one backend among USE_RO, USE_IPC, USE_GDA"
 #endif
 
 #endif  // LIBRARY_SRC_CONTEXT_INCL_HPP_

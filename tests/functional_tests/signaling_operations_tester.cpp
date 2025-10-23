@@ -38,7 +38,6 @@ __global__ void PutmemSignalTest(int loop, int skip, long long int *start_time,
                                  int sig_op) {
   __shared__ rocshmem_ctx_t ctx;
   int wg_id = get_flat_grid_id();
-  rocshmem_wg_init();
   rocshmem_wg_ctx_create(ctx_type, &ctx);
 
   uint64_t signal = 1;
@@ -88,13 +87,11 @@ __global__ void PutmemSignalTest(int loop, int skip, long long int *start_time,
   }
 
   rocshmem_wg_ctx_destroy(&ctx);
-  rocshmem_wg_finalize();
 }
 
 __global__ void SignalFetchTest(int loop, int skip, long long int *start_time,
                                 long long int *end_time, uint64_t *sig_addr,
                                 uint64_t *fetched_value, TestType type) {
-  rocshmem_wg_init();
 
   int wg_id = get_flat_grid_id();
 
@@ -125,7 +122,6 @@ __global__ void SignalFetchTest(int loop, int skip, long long int *start_time,
     end_time[wg_id] = wall_clock64();
   }
 
-  rocshmem_wg_finalize();
 }
 
 /******************************************************************************

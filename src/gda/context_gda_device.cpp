@@ -177,6 +177,10 @@ __device__ void GDAContext::quiet() {
   }
 }
 
+__device__ void GDAContext::pe_quiet(size_t pe) {
+  qps[pe].quiet();
+}
+
 __device__ void *GDAContext::shmem_ptr(const void *dest, int pe) {
   void *ret = nullptr;
   int local_pe{-1};

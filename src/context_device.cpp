@@ -32,7 +32,8 @@ namespace rocshmem {
 __device__ Context::Context(Backend* handle, bool shareable)
     : num_pes(handle->getNumPEs()),
       my_pe(handle->getMyPE()),
-      fence_(shareable) {
+      fence_(shareable),
+      btype(handle->type) {
   /*
    * Device-side context constructor is a work-group collective, so make
    * sure all the members have their default values before returning.
@@ -136,6 +137,12 @@ __device__ void Context::quiet() {
   ctxStats.incStat(NUM_QUIET);
 
   DISPATCH(quiet());
+}
+
+__device__ void Context::pe_quiet(size_t pe) {
+  ctxStats.incStat(NUM_PE_QUIET);
+
+  DISPATCH(pe_quiet(pe));
 }
 
 __device__ void* Context::shmem_ptr(const void* dest, int pe) {

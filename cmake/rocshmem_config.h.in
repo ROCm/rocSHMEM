@@ -45,3 +45,4 @@
 #cmakedefine GDA_IONIC
 #cmakedefine GDA_BNXT
 #cmakedefine GDA_MLX5
+#cmakedefine HAVE_EXTERNAL_MPI

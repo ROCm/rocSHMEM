@@ -36,58 +36,9 @@
 #include "queue_pair.hpp"
 #include "bootstrap/bootstrap.hpp"
 #include "debug_gda.hpp"
-
-#ifdef GDA_BNXT
-#include <infiniband/bnxt_re_dv.h>
-
-struct bnxtdv_funcs_t {
-  int (*init_obj)(struct bnxt_re_dv_obj *obj, uint64_t obj_type);
-  struct ibv_qp* (*create_qp)(struct ibv_pd *pd,
-                              struct bnxt_re_dv_qp_init_attr *qp_attr);
-  int (*destroy_qp)(struct ibv_qp *ibvqp);
-  int (*modify_qp)(struct ibv_qp *ibv_qp, struct ibv_qp_attr *attr,
-                   int attr_mask, uint32_t type, uint32_t value);
-  int (*qp_mem_alloc)(struct ibv_pd *ibvpd,
-                      struct ibv_qp_init_attr *attr,
-                      struct bnxt_re_dv_qp_mem_info *dv_qp_mem);
-  struct ibv_cq* (*create_cq)(struct ibv_context *ibvctx,
-                              struct bnxt_re_dv_cq_init_attr *cq_attr);
-  int (*destroy_cq)(struct ibv_cq *ibv_cq);
-  void* (*cq_mem_alloc)(struct ibv_context *ibvctx, int num_cqe,
-                        struct bnxt_re_dv_cq_attr *cq_attr);
-  void* (*umem_reg)(struct ibv_context *ibvctx,
-                    struct bnxt_re_dv_umem_reg_attr *in);
-  int (*umem_dereg)(void *umem_handle);
-  int (*get_default_db_region)(struct ibv_context *ibvctx,
-                               struct bnxt_re_dv_db_region_attr *out);
-};
-#endif /* GDA_BNXT */
-
-#ifdef GDA_MLX5
-#include <infiniband/mlx5dv.h>
-
-struct mlx5dv_funcs_t {
-  int (*init_obj)(struct mlx5dv_obj *obj, uint64_t obj_type);
-};
-#endif /* GDA_MLX5 */
-
-/* Helper Macros for handling dynamic libraries */
-#define PPCAT_NX(prefix, func_name) prefix##func_name
-#define PPCAT(prefix, func_name) PPCAT_NX(prefix, func_name)
-
-#define STRINGIFY_NX(name) #name
-#define STRINGIFY(name) STRINGIFY_NX(name)
-
-#define DLSYM_HELPER(func_struct, prefix, handle, func_name)                                \
-do {                                                                                        \
-  *(void **) (&func_struct.func_name) = dlsym(handle, STRINGIFY(PPCAT(prefix, func_name))); \
-  if (!func_struct.func_name) {                                                             \
-    DPRINTF("Failed to find function %s \n",  STRINGIFY(PPCAT(prefix, func_name)));         \
-    dlclose(handle);                                                                        \
-    handle = nullptr;                                                                       \
-    return ROCSHMEM_ERROR;                                                                  \
-  }                                                                                         \
-} while (0)
+#include "gda/ionic/provider_gda_ionic.hpp"
+#include "gda/bnxt/provider_gda_bnxt.hpp"
+#include "gda/mlx5/provider_gda_mlx5.hpp"
 
 namespace rocshmem {
 
@@ -95,6 +46,13 @@ class GDAContext;
 class GDAHostContext;
 class QueuePair;
 class HostInterface;
+
+enum GDAProvider {
+  UNSET,
+  IONIC,
+  BNXT,
+  MLX5
+};
 
 class GDABackend : public Backend {
  private:
@@ -105,19 +63,20 @@ class GDABackend : public Backend {
     union ibv_gid gid;
   } dest_info_t;
 
-  char *requested_dev = nullptr;
+  const char *requested_dev = nullptr;
   struct ibv_context *context = nullptr;;
+  struct ibv_device_attr device_attr;
   struct ibv_pd *pd_orig = nullptr;
+  enum GDAProvider gda_provider = GDAProvider::UNSET;
 
   struct ibv_port_attr portinfo;
   union ibv_gid gid;
   int port = 1;
-  int gid_index;
+  int gid_index = 0;
 
   uint32_t *heap_rkey = nullptr;
   struct ibv_mr *heap_mr = nullptr;
 
-  uint32_t sq_size = 1024;
   uint32_t inline_threshold = 8;
   QueuePair *host_qps = nullptr;
   QueuePair *gpu_qps = nullptr;
@@ -125,26 +84,34 @@ class GDABackend : public Backend {
   std::vector<ibv_cq*> cqs;
   std::vector<dest_info_t> dest_info;
 
-#ifdef GDA_BNXT
+  /* GDA_BNXT START */
   std::vector<struct bnxt_host_qp> bnxt_qps;
-  std::vector<struct bnxt_host_cq> bnxt_cqs;
+  std::vector<struct bnxt_host_cq> bnxt_scqs;
+  std::vector<struct bnxt_host_cq> bnxt_rcqs;
 
   struct bnxt_re_dv_db_region_attr db_region_attr;
-#else
-  struct ibv_pd *pd_parent = nullptr;
-#endif
+  /* GDA_BNXT END */
 
-#ifdef GDA_IONIC
+  /* GDA_IONIC & GDA_MLX5 START */
+  struct ibv_pd *pd_parent = nullptr;
+  /* GDA_IONIC & GDA_MLX5 END */
+
+  /* GDA_IONIC START */
   struct ibv_pd *pd_uxdma[2];
   void *gpu_db_page = nullptr;
   uint64_t *gpu_db_cq = nullptr;
   uint64_t *gpu_db_sq = nullptr;
-#endif
+  /* GDA_IONIC END */
 
  /**
-   * @brief Common code invoked from the different constructors
+   * @brief Choose nic device according to locality/user preferences
    */
-  void read_env();
+  void select_nic();
+
+  /**
+   * @brief return user-preferred GDA provider (or NONE if not specified)
+   */
+  static GDAProvider requested_provider();
 
  public:
   friend GDAContext;
@@ -160,6 +127,17 @@ class GDABackend : public Backend {
    */
   virtual ~GDABackend();
 
+  /**
+   * @brief Verify whether GDA Backend could run
+   *
+   * @return ROSCHMEM_SUCCESS if GDA Backend can most likely be used
+   *         ROCSHMEM_ERROR otherwise
+   */
+  static int backend_can_run(void);
+
+  /**
+   * @brief
+   */
   __device__ bool create_ctx(int64_t options, rocshmem_ctx_t *ctx);
 
   /**
@@ -327,6 +305,9 @@ class GDABackend : public Backend {
   void cleanup_heap_memory_rkey();
 
   void initialize_gpu_qp(QueuePair* qp, int conn_num);
+  void bnxt_initialize_gpu_qp(QueuePair* qp, int conn_num);
+  void ionic_initialize_gpu_qp(QueuePair* qp, int conn_num);
+  void mlx5_initialize_gpu_qp(QueuePair* qp, int conn_num);
 
   /**
    * @brief Setup InfiniBand Resources
@@ -339,9 +320,24 @@ class GDABackend : public Backend {
   void cleanup_ibv();
 
   /**
+   * @brief Detect and load the available direct verbs libraries
+   */
+  void open_dv_libs();
+
+  /**
+   * @ brief Close opened direct verbs libraries
+   */
+  void close_dv_libs();
+
+  /**
    * @brief Open InfiniBand Device and create common structures
    */
   void open_ib_device();
+
+  /**
+   * @brief Validated the rocSHMEM will run with the currently open InfiniBand Device
+   */
+  void validate_ib_device();
 
   /**
    * @brief Selects the best GID index
@@ -357,11 +353,18 @@ class GDABackend : public Backend {
    * @brief Create all CQs with a of length ncqes
    */
   void create_cqs(int ncqes);
+  void bnxt_create_cqs(int ncqes);
 
   /**
    * @brief Create all QPs with a SQ of length sq_length
    */
   void create_qps(int sq_length);
+  void bnxt_create_qps(int sq_length);
+
+  /**
+   * @brief Reorders QPs to that we map rocSHMEM contexts to the correct QPs
+   */
+  void alternate_qp_ports();
 
   /**
    * @brief Exchange QP information for connection
@@ -388,13 +391,13 @@ class GDABackend : public Backend {
    */
   int ibv_mtu_to_int(enum ibv_mtu mtu);
 
-#ifndef GDA_BNXT
-  static void* pd_alloc(ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type);
+  static void* pd_alloc_host(ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type);
+  static void* pd_alloc_device_uncached(ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type);
 
   static void pd_release(ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type);
 
   void create_parent_domain();
-#endif
+  void ionic_setup_parent_domain(struct ibv_parent_domain_init_attr* pattr);
 
   void setup_gpu_qps();
   void cleanup_gpu_qps();
@@ -421,11 +424,6 @@ class GDABackend : public Backend {
    * @brief A free-list containing contexts.
    */
   FreeListProxy<HIPAllocator, GDAContext *> ctx_free_list{};
-
-  /**
-   * @brief Holds maximum number of contexts used in library
-   */
-  size_t maximum_num_contexts_{32};
 
   /**
    * @brief The bitmask representing the availability of teams in the pool
@@ -501,12 +499,11 @@ class GDABackend : public Backend {
    */
   void rte_barrier();
 
-#ifdef GDA_BNXT
   /**
    * @brief structures holding the function pointers to the direct verbs functionality
    * of each network driver.
    */
-  bnxtdv_funcs_t bnxtdv_ftable_;
+  bnxtdv_funcs_t bnxt_re_dv;
 
   /**
    * @brief handle used for the dlopen of the BCOM library
@@ -517,14 +514,17 @@ class GDABackend : public Backend {
    * @brief initialize function table for BCOM direct verbs support
    */
   int bnxt_dv_dl_init();
-#endif
 
-#ifdef GDA_MLX5
+  /**
+   * @brief open bnxt dv lib
+   */
+  static void* bnxt_dv_dlopen();
+
   /**
    * @brief structures holding the function pointers to the direct verbs functionality
    * of each network driver.
    */
-  mlx5dv_funcs_t mlx5dv_ftable_;
+  mlx5dv_funcs_t mlx5dv;
 
   /**
    * @brief handle used for the dlopen of the MLX5 library
@@ -535,7 +535,32 @@ class GDABackend : public Backend {
    * @brief initialize function table for MLNX direct verbs support
    */
   int mlx5_dv_dl_init();
-#endif
+
+  /**
+   * @brief open mlx5 dv lib
+   */
+  static void* mlx5_dv_dlopen();
+
+  /**
+   * @brief structures holding the function pointers to the direct verbs functionality
+   * of each network driver.
+   */
+  ionicdv_funcs_t ionic_dv;
+
+  /**
+   * @brief handle used for the dlopen of the IONIC library
+   */
+  void *ionicdv_handle_{nullptr};
+
+  /**
+   * @brief initialize function table for IONIC direct verbs support
+   */
+  int ionic_dv_dl_init();
+
+  /**
+   * @brief open ionic dv lib
+   */
+  static void* ionic_dv_dlopen();
 };
 
 }  // namespace rocshmem

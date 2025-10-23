@@ -25,7 +25,6 @@
 find_package(PkgConfig QUIET)
 if (PkgConfig_FOUND)
 if (IBVerbs_ROOT )
-  # We don't use IBVerbs_DIR as this is supposed to be used when finding hwloc-config.cmake only
   set(ENV{PKG_CONFIG_PATH} "${IBVerbs_ROOT}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
 endif()
 pkg_check_modules(PC_IBVerbs QUIET libibverbs)
@@ -42,30 +41,11 @@ find_library(IBVerbs_LIBRARY
   PATH_SUFFIXES lib lib64
 )
 
-if (GDA_IONIC)
-find_library(IBVerbs_PROVIDER_LIBRARY
-  NAMES ionic libionic
-  HINTS ${PC_IBVerbs_LIBDIR} ${PC_IBVerbs_LIBRARY_DIRS}
-  PATH_SUFFIXES lib lib64
-)
-elseif (GDA_BNXT)
-find_library(IBVerbs_PROVIDER_LIBRARY
-  NAMES bnxt_re libbnxt_re
-  HINTS ${PC_IBVerbs_LIBDIR} ${PC_IBVerbs_LIBRARY_DIRS}
-  PATH_SUFFIXES lib lib64
-)
-else()
-find_library(IBVerbs_PROVIDER_LIBRARY
-  NAMES mlx5 libmlx5
-  HINTS ${PC_IBVerbs_LIBDIR} ${PC_IBVerbs_LIBRARY_DIRS}
-  PATH_SUFFIXES lib lib64
-)
-endif()
-
 find_package_handle_standard_args(IBVerbs DEFAULT_MSG
-  IBVerbs_LIBRARY IBVerbs_INCLUDE_DIR IBVerbs_PROVIDER_LIBRARY
+  IBVerbs_LIBRARY
+  IBVerbs_INCLUDE_DIR
 )
-mark_as_advanced(IBVerbs_LIBRARY IBVerbs_INCLUDE_DIR IBVerbs_PROVIDER_LIBRARY)
+mark_as_advanced(IBVerbs_LIBRARY IBVerbs_INCLUDE_DIR)
 
 if (IBVerbs_FOUND)
 add_library(IBVerbs::verbs UNKNOWN IMPORTED)
@@ -74,10 +54,4 @@ set_target_properties(IBVerbs::verbs PROPERTIES
   INTERFACE_COMPILE_OPTIONS "${PC_IBVerbs_CFLAGS_OTHER}"
   INTERFACE_INCLUDE_DIRECTORIES "${IBVerbs_INCLUDE_DIR}"
 )
-add_library(IBVerbs::verbs_provider UNKNOWN IMPORTED)
-set_target_properties(IBVerbs::verbs_provider PROPERTIES
-  IMPORTED_LOCATION "${IBVerbs_PROVIDER_LIBRARY}"
-  INTERFACE_INCLUDE_DIRECTORIES "${IBVerbs_PROVIDER_INCLUDE_DIR}"
-)
-target_link_libraries(IBVerbs::verbs INTERFACE IBVerbs::verbs_provider)
 endif()

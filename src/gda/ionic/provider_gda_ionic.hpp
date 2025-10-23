@@ -22,44 +22,22 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_GDA_SEGMENT_BUILDER_HPP_
-#define LIBRARY_SRC_GDA_SEGMENT_BUILDER_HPP_
+#ifndef LIBRARY_SRC_GDA_IONIC_GDA_PROVIDER_HPP_
+#define LIBRARY_SRC_GDA_IONIC_GDA_PROVIDER_HPP_
 
-#include <infiniband/mlx5dv.h>
+extern "C" {
+#include "gda/ionic/ionic_dv.h"
+#include "gda/ionic/ionic_fw.h"
+}
 
-#include "util.hpp"
-
-namespace rocshmem {
-
-class SegmentBuilder {
-  public:
-    __device__ SegmentBuilder(uint64_t wqe_idx, void *base);
-
-    __device__ void update_ctrl_seg(uint16_t pi, uint8_t opcode, uint8_t opmod, uint32_t qp_num,
-                                    uint8_t fm_ce_se, uint8_t ds, uint8_t signature, uint32_t imm);
-
-    __device__ void update_raddr_seg(uint64_t *raddr, uint32_t rkey);
-
-    __device__ void update_data_seg(uint64_t *laddr, uint32_t size, uint32_t lkey);
-
-    __device__ void update_inl_data_seg(uintptr_t *laddr, int32_t size);
-
-    __device__ void update_atomic_seg(uint64_t atomic_data, uint64_t atomic_cmp);
-
-  private:
-    const int SEGMENTS_PER_WQE = 4;
-
-    union mlx5_segment {
-      mlx5_wqe_ctrl_seg ctrl_seg;
-      mlx5_wqe_raddr_seg raddr_seg;
-      mlx5_wqe_data_seg data_seg;
-      mlx5_wqe_inl_data_seg inl_data_seg;
-      mlx5_wqe_atomic_seg atomic_seg;
-    };
-
-    mlx5_segment *segp;
+struct ionicdv_funcs_t {
+  int (*get_ctx)(struct ionic_dv_ctx *dvctx, struct ibv_context *ibctx);
+  uint8_t (*qp_get_udma_idx)(struct ibv_qp *ibqp);
+  int (*get_cq)(struct ionic_dv_cq *dvcq, struct ibv_cq *ibcq, uint8_t udma_idx);
+  int (*get_qp)(struct ionic_dv_qp *dvqp, struct ibv_qp *ibqp);
+  int (*pd_set_sqcmb)(struct ibv_pd *ibpd, bool enable, bool expdb, bool require);
+  int (*pd_set_rqcmb)(struct ibv_pd *ibpd, bool enable, bool expdb, bool require);
+  int (*pd_set_udma_mask)(struct ibv_pd *ibpd, uint8_t udma_mask);
 };
 
-}  // namespace rocshmem
-
-#endif  // LIBRARY_SRC_GDA_SEGMENT_BUILDER_HPP_
+#endif  //LIBRARY_SRC_GDA_IONIC_GDA_PROVIDER_HPP_

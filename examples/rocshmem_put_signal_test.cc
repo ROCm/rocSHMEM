@@ -63,7 +63,6 @@ using namespace rocshmem;
 __global__ void simple_put_signal_test(uint64_t *data, uint64_t *message, size_t nelem,
                                        uint64_t *sig_addr, int my_pe, int dst_pe)
 {
-    rocshmem_wg_init();
 
     int threadId = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -78,7 +77,6 @@ __global__ void simple_put_signal_test(uint64_t *data, uint64_t *message, size_t
     }
 
     __syncthreads();
-    rocshmem_wg_finalize();
 }
 
 #define MAX_ELEM 256

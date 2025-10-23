@@ -37,47 +37,18 @@
 #include "rocshmem_config.h"
 #include "endian.h"
 #include "constants.hpp"
-#ifdef GDA_IONIC
-extern "C" {
-#include <infiniband/ionic_dv.h>
-#include <infiniband/ionic_fw.h>
-}
-#elif defined(GDA_BNXT)
-#include "bnxt/provider_gda_bnxt.hpp"
-#elif defined(GDA_MLX5)
-#include <infiniband/mlx5dv.h>
-#else
-#error "Please select an RDMA provider"
-#endif
+#include "util.hpp"
+
+#include "gda/ionic/provider_gda_ionic.hpp"
+#include "gda/mlx5/provider_gda_mlx5.hpp"
+#include "gda/bnxt/provider_gda_bnxt.hpp"
 
 #include "containers/free_list.hpp"
 #include "memory/hip_allocator.hpp"
 
-#ifdef GDA_IONIC
-#define GDA_MAX_ATOMIC     15
-#define GDA_OP_RDMA_WRITE  IONIC_V2_OP_RDMA_WRITE
-#define GDA_OP_ATOMIC_FA   IONIC_V2_OP_ATOMIC_FA
-#define GDA_OP_ATOMIC_CS   IONIC_V2_OP_ATOMIC_CS
-#elif defined(GDA_MLX5)
-#define GDA_MAX_ATOMIC     1
-#define GDA_OP_RDMA_WRITE  MLX5_OPCODE_RDMA_WRITE
-#define GDA_OP_RDMA_READ   MLX5_OPCODE_RDMA_READ
-#define GDA_OP_ATOMIC_FA   MLX5_OPCODE_ATOMIC_FA
-#define GDA_OP_ATOMIC_CS   MLX5_OPCODE_ATOMIC_CS
-#endif
-
 namespace rocshmem {
 
 class GDABackend;
-
-typedef union db_reg {
-  uint64_t *ptr;
-  uintptr_t uint;
-} db_reg_t;
-
-#define SPIN_LOCK_INVALID  0xdead
-#define SPIN_LOCK_UNLOCKED 0x1234
-#define SPIN_LOCK_LOCKED   0xabcd
 
 class QueuePair {
  public:
@@ -86,7 +57,7 @@ class QueuePair {
   /**
    * @brief Constructor.
    */
-  explicit QueuePair(struct ibv_pd* pd);
+  explicit QueuePair(struct ibv_pd* pd, int gda_provider);
 
   /**
    * @brief Destructor.
@@ -125,11 +96,10 @@ class QueuePair {
    * @param[in] value Data value for the atomic operation.
    * @param[in] cond Used in atomic comparisons.
    * @param[in] pe Destination processing element of data transmission.
-   * @param[in] atomic_op The atomic operation to perform.
    *
    * @return An atomic value
    */
-  __device__ int64_t atomic_fetch(void *dest, int64_t value, int64_t cond, int pe, uint8_t atomic_op);
+  __device__ int64_t atomic_fetch(void *dest, int64_t value, int64_t cond, int pe);
 
   /**
    * @brief Create and enqueue an atomic fetch work queue entry (wqe).
@@ -138,9 +108,30 @@ class QueuePair {
    * @param[in] value Data value for the atomic operation.
    * @param[in] cond Used in atomic comparisons.
    * @param[in] pe Destination processing element of data transmission.
-   * @param[in] atomic_op The atomic operation to perform.
    */
-  __device__ void atomic_nofetch(void *dest, int64_t value, int64_t cond, int pe, uint8_t atomic_op);
+  __device__ void atomic_nofetch(void *dest, int64_t value, int64_t cond, int pe);
+
+  /**
+   * @brief Create and enqueue an atomic cas work queue entry (wqe).
+   *
+   * @param[in] dest Destination address for data transmission.
+   * @param[in] value Data value for the atomic operation.
+   * @param[in] cond Used in atomic comparisons.
+   * @param[in] pe Destination processing element of data transmission.
+   *
+   * @return An atomic value
+   */
+  __device__ int64_t atomic_cas(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe);
+
+  /**
+   * @brief Create and enqueue an atomic cas work queue entry (wqe).
+   *
+   * @param[in] dest Destination address for data transmission.
+   * @param[in] value Data value for the atomic operation.
+   * @param[in] cond Used in atomic comparisons.
+   * @param[in] pe Destination processing element of data transmission.
+   */
+  __device__ int64_t atomic_cas_nofetch(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe);
 
   char *const *base_heap{nullptr};
 
@@ -169,78 +160,50 @@ class QueuePair {
    */
   __device__ __attribute__((noinline)) void post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
 
+#if defined(GDA_MLX5)
+  __device__ uint64_t mlx5_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
+  __device__ void mlx5_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
+  __device__ void mlx5_quiet();
+#endif
+#if defined(GDA_BNXT)
+  __device__ uint64_t bnxt_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
+  __device__ void bnxt_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
+  __device__ void bnxt_quiet();
+#endif
+#if defined(GDA_IONIC)
+  __device__ uint64_t ionic_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
+  __device__ void ionic_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
+  __device__ void ionic_quiet();
+#endif
+
   /**
    * @brief Helper method to ring the doorbell
    *
    * @param[in] db_val Doorbell value is written by method.
    */
+#if defined(GDA_MLX5)
+  __device__ void mlx5_ring_doorbell(uint64_t db_val, uint64_t my_sq_counter);
+#endif
+#if defined(GDA_BNXT)
+  __device__ void bnxt_ring_doorbell(uint32_t slot_idx);
+#endif
 #if defined(GDA_IONIC)
-  __device__ void ring_doorbell(uint32_t pos);
-#elif defined(GDA_BNXT)
-  __device__ void ring_sq_doorbell(uint32_t slot_idx);
-  __device__ void ring_cq_doorbell(uint32_t slot_idx);
-#else
-  __device__ void ring_doorbell(uint64_t db_val, uint64_t my_sq_counter);
+  __device__ void ionic_ring_doorbell(uint32_t pos);
 #endif
 
-#ifdef GDA_IONIC
-  __device__ uint64_t get_same_qp_lane_mask();
+  int gda_provider_{0};
 
-  __device__ bool cq_lock_try_acquire(uint64_t active_lane_mask);
-  __device__ void cq_lock_release(uint64_t active_lane_mask);
-
-  /**
-   * @brief Reserve space in the sq to post this many wqes.
-   * @param my_tid my logical thread id.
-   * @param num_wqes number of sq wqes to reserve for this wave.
-   * @return position of my_tid=0's wqe.
-   */
-  __device__ uint32_t reserve_sq(uint64_t active_lane_mask, uint32_t num_wqes);
-
-  /**
-   * @brief Ring the sq doorbell maintaining order between waves.
-   * @param last this is the last wqe posted in this wave.
-   * @param my_sq_prod position of my_tid=0's wqe.
-   * @param num_wqes number of sq wqes posted in this wave.
-   * @param wqe this thread's wqe.
-   * @return doorbell producer index.
-   */
-  __device__ uint32_t commit_sq(bool last, uint32_t my_sq_prod, uint32_t num_wqes, struct ionic_v1_wqe *wqe);
-
-  /**
-   * @brief Helper method to poll the next completion queue entry.
-   */
-  __device__ __attribute__((noinline)) void poll_wave_cqes(uint64_t active_lane_mask);
-
-  /**
-   * @brief Helper method to drain completion queue entries.
-   * @param cons wait for sq_msn to catch up to this position.
-   */
-  __device__ __attribute__((noinline)) void quiet_internal(uint64_t active_lane_mask, uint32_t cons);
-
-  uint64_t *cq_dbreg{nullptr};
-  uint64_t cq_dbval{0};
-  uint64_t cq_mask{0};
-  struct ionic_v1_cqe *cq_buf{nullptr};
-  uint32_t cq_lock{SPIN_LOCK_UNLOCKED};
-  uint32_t cq_pos{0};
-  uint32_t cq_dbpos{0};
-
-  uint64_t *sq_dbreg{nullptr};
-  uint64_t sq_dbval{0};
-  uint64_t sq_mask{0};
-  struct ionic_v1_wqe *sq_buf{nullptr};
-  uint32_t sq_dbprod{0};
-  uint32_t sq_prod{0};
-  uint32_t sq_msn{0};
-
-#elif defined(GDA_BNXT)
+  /* GDAProvider::BNXT START */
   uint64_t *dbr;
   struct bnxt_device_cq cq;
   struct bnxt_device_sq sq;
 
-  __device__ int poll_cq();
-#else // GDA_MLX5
+  __device__ void poll_cq_until(uint32_t requested_available_slots);
+  __device__ void bnxt_check_cqe_error(struct bnxt_re_req_cqe *cqe);
+
+  /* GDAProvider::BNXT END */
+
+  /* GDAProvider::MLX5 START */
 
   db_reg_t db{};
 
@@ -301,10 +264,63 @@ class QueuePair {
   static constexpr size_t OUTSTANDING_TABLE_SIZE = 65536;
   uint64_t outstanding_wqes[OUTSTANDING_TABLE_SIZE]{0};
 
-#endif // GDA_IONIC
+  /* GDAProvider::MLX5 END */
+
+  /* GDAProvider::IONIC START */
+
+  uint64_t *cq_dbreg{nullptr};
+  uint64_t cq_dbval{0};
+  uint64_t cq_mask{0};
+  struct ionic_v1_cqe *ionic_cq_buf{nullptr};
+  uint32_t cq_lock{SPIN_LOCK_UNLOCKED};
+  uint32_t cq_pos{0};
+  uint32_t cq_dbpos{0};
+
+  uint64_t *sq_dbreg{nullptr};
+  uint64_t sq_dbval{0};
+  uint64_t sq_mask{0};
+  struct ionic_v1_wqe *ionic_sq_buf{nullptr};
+  uint32_t sq_lock{SPIN_LOCK_UNLOCKED};
+  uint32_t sq_dbprod{0};
+  uint32_t sq_prod{0};
+  uint32_t sq_msn{0};
+
+  __device__ uint64_t get_same_qp_lane_mask();
+
+  /**
+   * @brief Reserve space in the sq to post this many wqes.
+   * @param my_tid my logical thread id.
+   * @param num_wqes number of sq wqes to reserve for this wave.
+   * @return position of my_tid=0's wqe.
+   */
+  __device__ uint32_t reserve_sq(uint64_t active_lane_mask, uint32_t num_wqes);
+
+  /**
+   * @brief Ring the sq doorbell maintaining order between waves.
+   * @param last this is the last wqe posted in this wave.
+   * @param my_sq_prod position of my_tid=0's wqe.
+   * @param num_wqes number of sq wqes posted in this wave.
+   * @param wqe this thread's wqe.
+   * @return doorbell producer index.
+   */
+  __device__ uint32_t commit_sq(uint64_t activemask, uint32_t my_sq_prod, uint32_t my_sq_pos, uint32_t num_wqes);
+
+  /**
+   * @brief Helper method to poll the next completion queue entry.
+   */
+  __device__ __attribute__((noinline)) void poll_wave_cqes(uint64_t active_lane_mask);
+
+  /**
+   * @brief Helper method to drain completion queue entries.
+   * @param cons wait for sq_msn to catch up to this position.
+   */
+  __device__ __attribute__((noinline)) void ionic_quiet_internal(uint64_t active_lane_mask, uint32_t cons);
+
+  /* GDAProvider::IONIC END */
 
   uint32_t inline_threshold{0};
 
+  char dev_name[24];
   uint32_t qp_num{0};
   uint32_t rkey{0};
   uint32_t lkey{0};
@@ -325,6 +341,10 @@ class QueuePair {
 
   HIPAllocator allocator{};
 
+  uint8_t gda_op_rdma_write;
+  uint8_t gda_op_rdma_read;
+  uint8_t gda_op_atomic_fa;
+  uint8_t gda_op_atomic_cs;
 };
 
 }  // namespace rocshmem

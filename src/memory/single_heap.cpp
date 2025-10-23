@@ -28,15 +28,7 @@
 
 namespace rocshmem {
 
-SingleHeap::SingleHeap() {
-  if (auto heap_size_cstr = getenv("ROCSHMEM_HEAP_SIZE")) {
-    std::stringstream sstream(heap_size_cstr);
-    size_t heap_size;
-    sstream >> heap_size;
-    heap_mem_ = HEAP_T{heap_size};
-    strat_ = STRAT_T{&heap_mem_};
-  }
-}
+SingleHeap::SingleHeap() { }
 
 void SingleHeap::malloc(void** ptr, size_t size) {
   strat_.alloc(reinterpret_cast<char**>(ptr), size);

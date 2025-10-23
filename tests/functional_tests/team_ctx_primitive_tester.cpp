@@ -43,15 +43,16 @@ __global__ void TeamCtxPrimitiveTest(int loop, int skip, long long int *start_ti
   int t_id  = get_flat_block_id();
   int wf_id = t_id / wf_size;
 
-  rocshmem_wg_init();
   rocshmem_wg_team_create_ctx(team, ctx_type, &ctx);
 
   /**
    * Shared array to capture the start time for each wavefront
-   * Max threads per block = 1024, wavefront size = 64 (in most GPUs)
-   * Maximum array size required = 1024/64 = 16
+   * Max threads per block = 1024, wavefront size = 64 or 32 depending
+   * on the GPUs. Using 32 since its safer for the dimensioning of the array,
+   * the last 16 elements will not be used on GPUs with a wf size of 64.
+   * Maximum array size required = 1024/32 = 32
    */
-  __shared__ long long int wf_start_time[16];
+  __shared__ long long int wf_start_time[32];
 
   /**
    * Calculate start index for each thread within the grid
@@ -114,7 +115,6 @@ __global__ void TeamCtxPrimitiveTest(int loop, int skip, long long int *start_ti
   }
 
   rocshmem_wg_ctx_destroy(&ctx);
-  rocshmem_wg_finalize();
 }
 
 /******************************************************************************

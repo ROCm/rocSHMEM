@@ -60,9 +60,9 @@ option(USE_SINGLE_NODE "Enable single node support only." OFF)
 option(USE_HDP_FLUSH "Force flush the HDP cache." OFF)
 option(USE_HDP_FLUSH_HOST_SIDE "Use a polling thread to flush the HDP cache on the host." OFF)
 
-option(BUILD_FUNCTIONAL_TESTS "Build the functional tests" OFF)
+option(BUILD_FUNCTIONAL_TESTS "Build the functional tests (Requires MPI)" OFF)
 option(BUILD_EXAMPLES "Build the examples" ON)
-option(BUILD_UNIT_TESTS "Build the unit tests" OFF)
+option(BUILD_UNIT_TESTS "Build the unit tests (Requires MPI)" OFF)
 option(BUILD_TESTS_ONLY "Build only tests. Used to link agains rocSHMEM in a ROCm Release" OFF)
 option(BUILD_TOOLS "Build binary tools (e.g., rocshmem_info)" ON)
 
@@ -72,6 +72,9 @@ option(BUILD_CODE_COVERAGE "Build with code coverage flags (gcc only)" OFF)
 option(GDA_IONIC "Build for AMD Pensando IONIC RDMA provider" OFF)
 option(GDA_BNXT "Build for Broadcom RDMA provider" OFF)
 option(GDA_MLX5 "Build for Mellanox MLX5 RDMA provider" OFF)
+
+set(USE_EXTERNAL_MPI AUTO CACHE STRING "Link with an external MPI (required if used MPI is ABI incompatible with Open MPI v5)")
+set_property(CACHE USE_EXTERNAL_MPI PROPERTY STRINGS AUTO ON OFF)
 
 ###############################################################################
 # PROJECT
@@ -105,6 +108,7 @@ include(cmake/rocm_local_targets.cmake)
 set(DEFAULT_GPUS
     gfx90a:xnack-;
     gfx90a:xnack+;
+    gfx1100;
     gfx942)
 
 if(${ROCM_MAJOR_VERSION} GREATER 6)
@@ -150,7 +154,26 @@ if (NOT BUILD_TESTS_ONLY)
   #############################################################################
   # PACKAGE DEPENDENCIES
   #############################################################################
-  find_package(MPI REQUIRED)
+  if (NOT USE_EXTERNAL_MPI STREQUAL "OFF")
+    find_package(MPI)
+  else()
+    message ("-- External MPI detection disabled by user")
+  endif()
+
+  if (MPI_FOUND)
+    set(HAVE_EXTERNAL_MPI ON)
+  else()
+    set(HAVE_EXTERNAL_MPI OFF)
+    set(BUILD_FUNCTIONAL_TESTS OFF)
+    set(BUILD_UNIT_TESTS OFF)
+  endif()
+
+  if (USE_EXTERNAL_MPI)
+    if(NOT HAVE_EXTERNAL_MPI)
+      message(FATAL_ERROR "External MPI support requested but MPI support not found. Build Aborted")
+    endif()
+  endif()
+
   find_package(hip REQUIRED PATHS /opt/rocm)
   find_package(hsa-runtime64 REQUIRED)
 
@@ -182,10 +205,11 @@ if (NOT BUILD_TESTS_ONLY)
   target_link_libraries(
     ${PROJECT_NAME}
     PUBLIC
+      $<$<BOOL:${HAVE_EXTERNAL_MPI}>:MPI::MPI_CXX>
       Threads::Threads
-      MPI::MPI_CXX
       hip::device
       hip::host
+      dl
       hsa-runtime64::hsa-runtime64
       -fgpu-rdc
   )

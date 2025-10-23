@@ -22,42 +22,25 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef _SYNC_TESTER_HPP_
-#define _SYNC_TESTER_HPP_
+#ifndef ROCSHMEM_WF_SIZE_HPP
+#define ROCSHMEM_WF_SIZE_HPP
 
-#include <rocshmem/rocshmem.hpp>
+#include <hip/hip_runtime.h>
+#include "mpi.h"
 
-#include "tester.hpp"
+#define CHECK_HIP_MPI(cond) {                                      \
+  if(cond != hipSuccess){                                          \
+     fprintf(stderr,"HIP error: %d line: %d\n", cond,  __LINE__);  \
+     MPI_Abort(MPI_COMM_WORLD, 1);  	     	  	 	   \
+  }                                                                \
+}
 
-using namespace rocshmem;
-
-/******************************************************************************
- * HOST TESTER CLASS
- *****************************************************************************/
-class SyncTester : public Tester {
- public:
-  explicit SyncTester(TesterArguments args);
-  virtual ~SyncTester();
-
- protected:
-  virtual void resetBuffers(size_t size) override;
-
-  virtual void preLaunchKernel() override;
-
-  virtual void launchKernel(dim3 gridSize, dim3 blockSize, int loop,
-                            size_t size) override;
-
-  virtual void postLaunchKernel() override;
-
-  virtual void verifyResults(size_t size) override;
-
- private:
-  /**
-   * This constant should equal ROCSHMEM_MAX_NUM_TEAMS - 1.
-   * The default value for the maximum number of teams is 40.
-   */
-  int num_teams = 39;
-  rocshmem_team_t *team_sync_world_dup;
-};
+static int get_wf_size() {
+  int deviceId;
+  hipDeviceProp_t prop;
+  CHECK_HIP_MPI(hipGetDevice(&deviceId));
+  CHECK_HIP_MPI(hipGetDeviceProperties(&prop, deviceId));
+  return prop.warpSize;
+}
 
 #endif

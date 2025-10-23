@@ -30,27 +30,27 @@ TEST_F(SymmetricHeapTestFixture, malloc_free) {
   void *ptr{nullptr};
   size_t request_bytes{48};
 
-  symmetric_heap_.malloc(&ptr, request_bytes);
+  symmetric_heap_->malloc(&ptr, request_bytes);
   ASSERT_NE(ptr, nullptr);
-  ASSERT_NO_FATAL_FAILURE(symmetric_heap_.free(ptr));
+  ASSERT_NO_FATAL_FAILURE(symmetric_heap_->free(ptr));
 }
 
 TEST_F(SymmetricHeapTestFixture, window_info) {
-  auto win_info_ptr{symmetric_heap_.get_window_info()};
+  auto win_info_ptr{symmetric_heap_->get_window_info()};
 
   WindowInfoMPI* window_info_mpi = dynamic_cast<WindowInfoMPI*>(win_info_ptr);
   if (window_info_mpi) {
     void *window_base_addr{nullptr};
     int flag{0};
     MPI_Win_get_attr(window_info_mpi->get_win(), MPI_WIN_BASE, &window_base_addr,
-		     &flag);
+                     &flag);
     ASSERT_NE(0, flag);
     ASSERT_NE(nullptr, window_base_addr);
   }
 }
 
 TEST_F(SymmetricHeapTestFixture, heap_bases) {
-  auto heap_bases{symmetric_heap_.get_heap_bases()};
+  auto heap_bases{symmetric_heap_->get_heap_bases()};
   for (const auto &base : heap_bases) {
     ASSERT_NE(nullptr, base);
   }

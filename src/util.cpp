@@ -26,6 +26,8 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cctype>
+#include <algorithm>
 #include <vector>
 
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
@@ -33,8 +35,6 @@
 namespace rocshmem {
 
 __constant__ int* print_lock;
-
-rocshmem_env_config rocshmem_env_;
 
 typedef struct device_agent {
   hsa_agent_t agent;
@@ -44,6 +44,21 @@ typedef struct device_agent {
 std::vector<device_agent_t> gpu_agents;
 std::vector<device_agent_t> cpu_agents;
 
+std::vector<device_prop_t> device_properties;
+
+static void device_properties_init(void) {
+  int numDevices;
+  CHECK_HIP(hipGetDeviceCount(&numDevices));
+
+  device_prop_t prop;
+  hipDeviceProp_t hipprop;
+  for (int i=0; i<numDevices; i++) {
+    CHECK_HIP(hipGetDeviceProperties(&hipprop, i));
+    prop.warpSize = hipprop.warpSize;
+    prop.maxThreadsPerBlock = hipprop.maxThreadsPerBlock;
+    device_properties.push_back(prop);
+  }
+}
 hsa_status_t rocm_hsa_amd_memory_pool_callback(
     hsa_amd_memory_pool_t memory_pool, void* data) {
   hsa_amd_memory_pool_global_flag_t pool_flag{};
@@ -108,6 +123,8 @@ int rocm_init() {
     return 1;
   }
 
+  device_properties_init();
+
   return 0;
 }
 
@@ -121,79 +138,6 @@ void rocm_memory_lock_to_fine_grain(void* ptr, size_t size, void** gpu_ptr,
     printf("Failed to lock memory pool (%p): 0x%x\n", ptr, status);
     exit(-1);
   }
-}
-
-
-rocshmem_env_config::rocshmem_env_config() {
-  char* env_value = NULL;
-
-  env_value = getenv("ROCSHMEM_DISABLE_IPC");
-  if (NULL != env_value) {
-    disable_ipc = atoi(env_value);
-  }
-  // For backward compatibility, synonymous with ROCSHMEM_DISABLE_IPC
-  env_value = getenv("ROCSHMEM_RO_DISABLE_IPC");
-  if (NULL != env_value) {
-    disable_ipc = atoi(env_value);
-  }
-
-  env_value = getenv("ROCSHMEM_RO_PROGRESS_DELAY");
-  if (nullptr != env_value) {
-    ro_progress_delay = atoi(env_value);
-  }
-
-  env_value = getenv("ROCSHMEM_UNIQUEID_WITH_MPI");
-  if (nullptr != env_value) {
-    uniqueid_with_mpi = atoi(env_value);
-  }
-
-  env_value = getenv("ROCSHMEM_BOOTSTRAP_TIMEOUT");
-  if (nullptr != env_value) {
-    bootstrap_timeout = atoi(env_value);
-  }
-
-  env_value = getenv("ROCSHMEM_BOOTSTRAP_HOSTID");
-  if (nullptr != env_value) {
-    bootstrap_hostid = std::string(env_value);
-  }
-
-  env_value = getenv("ROCSHMEM_BOOTSTRAP_SOCKET_FAMILY");
-  if (nullptr != env_value) {
-    bootstrap_socket_family = std::string(env_value);
-  }
-
-  env_value = getenv("ROCSHMEM_BOOTSTRAP_SOCKET_IFNAME");
-  if (nullptr != env_value) {
-    bootstrap_socket_ifname = std::string(env_value);
-  }
-}
-
-int rocshmem_env_config::get_disable_ipc() {
-  return disable_ipc;
-}
-
-int rocshmem_env_config::get_ro_progress_delay() {
-  return ro_progress_delay;
-}
-
-int rocshmem_env_config::get_uniqueid_with_mpi() {
-  return uniqueid_with_mpi;
-}
-
-int rocshmem_env_config::get_bootstrap_timeout() {
-  return bootstrap_timeout;
-}
-
-std::string rocshmem_env_config::get_bootstrap_hostid() {
-  return bootstrap_hostid;
-}
-
-std::string rocshmem_env_config::get_bootstrap_socket_family() {
-  return bootstrap_socket_family;
-}
-
-std::string rocshmem_env_config::get_bootstrap_socket_ifname() {
-  return bootstrap_socket_ifname;
 }
 
 }  // namespace rocshmem

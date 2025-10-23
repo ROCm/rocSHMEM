@@ -162,7 +162,7 @@ namespace rocshmem
    * @param[out] dev_name Name of of IB Verbs capable NIC index closest to GPU gpuIndex
    * @returns index of IB Verbs capable NIC index closest to GPU gpuIndex, or -1 if unable to detect
    */
-  int GetClosestNicToGpu(int gpuIndex, char **dev_name);
+  int GetClosestNicToGpu(int gpuIndex, const char** dev_name);
 
   /**
    * Returns information about number of available Devices

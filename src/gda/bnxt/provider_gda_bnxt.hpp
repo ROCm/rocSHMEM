@@ -26,22 +26,11 @@
 #define LIBRARY_SRC_GDA_BNXT_GDA_PROVIDER_HPP_
 
 extern "C" {
-#include <infiniband/bnxt_re_dv.h>
-#include <infiniband/bnxt_re_hsi.h>
+#include "gda/bnxt/bnxt_re_dv.h"
+#include "gda/bnxt/bnxt_re_hsi.h"
 }
 
-#define GDA_DEFAULT_GID    3
-#define GDA_MAX_ATOMIC     1
-#define GDA_OP_RDMA_WRITE  BNXT_RE_WR_OPCD_RDMA_WRITE
-#define GDA_OP_RDMA_READ   BNXT_RE_WR_OPCD_RDMA_READ
-#define GDA_OP_ATOMIC_FA   BNXT_RE_WR_OPCD_ATOMIC_FA
-#define GDA_OP_ATOMIC_CS   BNXT_RE_WR_OPCD_ATOMIC_CS
-
-#define bnxt_re_get_cqe_sz() (sizeof(struct bnxt_re_req_cqe) + \
-                              sizeof(struct bnxt_re_bcqe))
-
-#define bnxt_re_is_cqe_valid(valid, phase)              \
-        (((valid) & BNXT_RE_BCQE_PH_MASK) == (phase))
+#define GDA_BNXT_WQE_SLOT_COUNT 3
 
 struct bnxt_device_wq {
   void *buf;
@@ -57,12 +46,10 @@ struct bnxt_device_wq {
 } __attribute__((packed));
 
 struct bnxt_device_cq : public bnxt_device_wq {
-  uint32_t phase;
 } __attribute__((packed));
 
 struct bnxt_device_sq : public bnxt_device_wq {
   uint32_t psn;
-  volatile uint32_t posted;
 
   void *msntbl;
   uint32_t msn;
@@ -77,6 +64,7 @@ struct bnxt_host_cq {
   void *umem_handle;
   uint64_t length;
   uint32_t depth;
+  struct ibv_cq *cq;
 } __attribute__((packed));
 
 struct bnxt_host_qp {
@@ -89,5 +77,27 @@ struct bnxt_host_qp {
 } __attribute__((packed));
 
 /*****************************************************************************/
+
+struct bnxtdv_funcs_t {
+  int (*init_obj)(struct bnxt_re_dv_obj *obj, uint64_t obj_type);
+  struct ibv_qp* (*create_qp)(struct ibv_pd *pd,
+                              struct bnxt_re_dv_qp_init_attr *qp_attr);
+  int (*destroy_qp)(struct ibv_qp *ibvqp);
+  int (*modify_qp)(struct ibv_qp *ibv_qp, struct ibv_qp_attr *attr,
+                   int attr_mask, uint32_t type, uint32_t value);
+  int (*qp_mem_alloc)(struct ibv_pd *ibvpd,
+                      struct ibv_qp_init_attr *attr,
+                      struct bnxt_re_dv_qp_mem_info *dv_qp_mem);
+  struct ibv_cq* (*create_cq)(struct ibv_context *ibvctx,
+                              struct bnxt_re_dv_cq_init_attr *cq_attr);
+  int (*destroy_cq)(struct ibv_cq *ibv_cq);
+  void* (*cq_mem_alloc)(struct ibv_context *ibvctx, int num_cqe,
+                        struct bnxt_re_dv_cq_attr *cq_attr);
+  void* (*umem_reg)(struct ibv_context *ibvctx,
+                    struct bnxt_re_dv_umem_reg_attr *in);
+  int (*umem_dereg)(void *umem_handle);
+  int (*get_default_db_region)(struct ibv_context *ibvctx,
+                               struct bnxt_re_dv_db_region_attr *out);
+};
 
 #endif  //LIBRARY_SRC_GDA_BNXT_GDA_PROVIDER_HPP_

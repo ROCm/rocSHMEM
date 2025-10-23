@@ -136,6 +136,8 @@ class Context {
 
   __device__ void quiet();
 
+  __device__ void pe_quiet(size_t pe);
+
   __device__ void* shmem_ptr(const void* dest, int pe);
 
   __device__ void barrier_all();
@@ -393,6 +395,8 @@ class Context {
 
   __host__ void barrier_all();
 
+  __host__ void barrier_all_on_stream(hipStream_t stream);
+
   __host__ void sync_all();
 
   template <typename T>
@@ -470,6 +474,11 @@ class Context {
    * @brief Duplicated local copy of backend's my_pe
    */
   int my_pe{-1};
+
+  /**
+   * @brief Duplicated local copy of backend's type
+   */
+  BackendType btype;
 
   /**
    * @brief Stats common to all types of device contexts.

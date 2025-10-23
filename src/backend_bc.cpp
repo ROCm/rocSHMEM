@@ -29,9 +29,11 @@
 
 #if defined(USE_GDA)
 #include "gda/backend_gda.hpp"
-#elif defined(USE_RO)
+#endif
+#if defined(USE_RO)
 #include "reverse_offload/backend_ro.hpp"
-#elif defined(USE_IPC)
+#endif
+#if defined(USE_IPC)
 #include "ipc/backend_ipc.hpp"
 #endif
 
@@ -59,6 +61,7 @@ Backend::Backend(MPI_Comm comm) : heap(comm, nullptr) {
 Backend::Backend(TcpBootstrap* bootstrap) : heap(MPI_COMM_NULL, bootstrap) {
   init();
   backend_bootstr = bootstrap;
+  backend_comm = MPI_COMM_NULL;
 
   my_pe = bootstrap->getRank();
   num_pes = bootstrap->getNranks();
@@ -106,9 +109,9 @@ void Backend::init(void) {
 
 void Backend::init_mpi_once(MPI_Comm comm) {
   if (comm == MPI_COMM_NULL) comm = MPI_COMM_WORLD;
-  NET_CHECK(MPI_Comm_dup(comm, &backend_comm));
-  NET_CHECK(MPI_Comm_size(backend_comm, &num_pes));
-  NET_CHECK(MPI_Comm_rank(backend_comm, &my_pe));
+  NET_CHECK(mpilib_ftable_.Comm_dup(comm, &backend_comm));
+  NET_CHECK(mpilib_ftable_.Comm_size(backend_comm, &num_pes));
+  NET_CHECK(mpilib_ftable_.Comm_rank(backend_comm, &my_pe));
 }
 
 void Backend::track_ctx(Context* ctx) {
@@ -140,7 +143,7 @@ void Backend::destroy_remaining_ctxs() {
 Backend::~Backend() {
   CHECK_HIP(hipFree(print_lock));
   if (backend_comm != MPI_COMM_NULL)
-    NET_CHECK(MPI_Comm_free(&backend_comm));
+    NET_CHECK(mpilib_ftable_.Comm_free(&backend_comm));
 }
 
 void Backend::dump_stats() {
@@ -166,6 +169,7 @@ void Backend::dump_stats() {
          device_stats.getStat(NUM_GET_NBI_WAVE));
   printf("Fences %llu\n", device_stats.getStat(NUM_FENCE));
   printf("Quiets %llu\n", device_stats.getStat(NUM_QUIET));
+  printf("PE Quiets %llu\n", device_stats.getStat(NUM_PE_QUIET));
   printf("ToAll %llu\n", device_stats.getStat(NUM_TO_ALL));
   printf("BarrierAll %llu\n", device_stats.getStat(NUM_BARRIER_ALL));
   printf("WAVE_BarrierAll %llu\n", device_stats.getStat(NUM_BARRIER_ALL_WAVE));
@@ -249,7 +253,20 @@ void Backend::reset_stats() {
 }
 
 __device__ bool Backend::create_ctx(int64_t option, rocshmem_ctx_t* ctx) {
-#if defined(USE_GDA)
+#if defined(USE_GDA) && defined(USE_RO) && defined(USE_IPC)
+  switch(this->type) {
+  case BackendType::GDA_BACKEND:
+    return static_cast<GDABackend*>(this)->create_ctx(option, ctx);
+    break;
+  case BackendType::RO_BACKEND:
+    return static_cast<ROBackend*>(this)->create_ctx(option, ctx);
+    break;
+  case BackendType::IPC_BACKEND:
+  default:
+      return static_cast<IPCBackend*>(this)->create_ctx(option, ctx);
+      break;
+  }
+#elif defined(USE_GDA)
   return static_cast<GDABackend*>(this)->create_ctx(option, ctx);
 #elif defined(USE_RO)
   return static_cast<ROBackend*>(this)->create_ctx(option, ctx);
@@ -259,7 +276,20 @@ __device__ bool Backend::create_ctx(int64_t option, rocshmem_ctx_t* ctx) {
 }
 
 __device__ void Backend::destroy_ctx(rocshmem_ctx_t* ctx) {
-#if defined(USE_GDA)
+#if defined(USE_GDA) && defined(USE_RO) && defined(USE_IPC)
+  switch(this->type) {
+  case BackendType::GDA_BACKEND:
+    static_cast<GDABackend*>(this)->destroy_ctx(ctx);
+    break;
+  case BackendType::RO_BACKEND:
+    static_cast<ROBackend*>(this)->destroy_ctx(ctx);
+    break;
+  case BackendType::IPC_BACKEND:
+  default:
+    static_cast<IPCBackend*>(this)->destroy_ctx(ctx);
+    break;
+  }
+#elif defined(USE_GDA)
   static_cast<GDABackend*>(this)->destroy_ctx(ctx);
 #elif defined(USE_RO)
   static_cast<ROBackend*>(this)->destroy_ctx(ctx);

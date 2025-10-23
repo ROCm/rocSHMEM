@@ -85,49 +85,59 @@ __device__ void IPCContext::amo_set(void *dest, T value, int pe) {
 }
 
 template <typename T>
-__device__ T IPCContext::amo_swap(void *dst, T value, int pe) {
-  printf("IPC amo_swap not implemented\n");
-  abort();
-  return 0;
+__device__ T IPCContext::amo_swap(void *dest, T value, int pe) {
+  uint64_t L_offset =
+      reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
+  return ipcImpl_.ipcAMOSwap(
+      reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), value);
 }
 
 template <typename T>
-__device__ T IPCContext::amo_fetch_and(void *dst, T value, int pe) {
-  printf("IPC amo_fetch_and not implemented\n");
-  abort();
-  return 0;
+__device__ T IPCContext::amo_fetch_and(void *dest, T value, int pe) {
+  uint64_t L_offset =
+      reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
+  return ipcImpl_.ipcAMOFetchAnd(
+      reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), value);
 }
 
 template <typename T>
-__device__ void IPCContext::amo_and(void *dst, T value, int pe) {
-  printf("IPC amo_and not implemented\n");
-  abort();
+__device__ void IPCContext::amo_and(void *dest, T value, int pe) {
+  uint64_t L_offset =
+      reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
+  ipcImpl_.ipcAMOAnd(
+      reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), value);
 }
 
 template <typename T>
-__device__ T IPCContext::amo_fetch_or(void *dst, T value, int pe) {
-  printf("IPC amo_fetch_or not implemented\n");
-  abort();
-  return 0;
+__device__ T IPCContext::amo_fetch_or(void *dest, T value, int pe) {
+  uint64_t L_offset =
+      reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
+  return ipcImpl_.ipcAMOFetchOr(
+      reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), value);
 }
 
 template <typename T>
-__device__ void IPCContext::amo_or(void *dst, T value, int pe) {
-  printf("IPC amo_or not implemented\n");
-  abort();
+__device__ void IPCContext::amo_or(void *dest, T value, int pe) {
+  uint64_t L_offset =
+      reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
+  ipcImpl_.ipcAMOOr(
+      reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), value);
 }
 
 template <typename T>
-__device__ T IPCContext::amo_fetch_xor(void *dst, T value, int pe) {
-  printf("IPC amo_fetch_xor not implemented\n");
-  abort();
-  return 0;
+__device__ T IPCContext::amo_fetch_xor(void *dest, T value, int pe) {
+  uint64_t L_offset =
+      reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
+  return ipcImpl_.ipcAMOFetchXor(
+      reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), value);
 }
 
 template <typename T>
-__device__ void IPCContext::amo_xor(void *dst, T value, int pe) {
-  printf("IPC amo_xor not implemented\n");
-  abort();
+__device__ void IPCContext::amo_xor(void *dest, T value, int pe) {
+  uint64_t L_offset =
+      reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
+  ipcImpl_.ipcAMOXor(
+      reinterpret_cast<T *>(ipcImpl_.ipc_bases[pe] + L_offset), value);
 }
 
 template <typename T>
@@ -150,7 +160,7 @@ __device__ T IPCContext::amo_fetch_cas(void *dest, T value, T cond, int pe) {
 
 // Collectives
 template <typename T, ROCSHMEM_OP Op>
-__device__ void compute_reduce(T *src, T *dst, int size, int wg_id, int wg_size) {
+__device__ void ipc_compute_reduce(T *src, T *dst, int size, int wg_id, int wg_size) {
   for (int i = wg_id; i < size; i += wg_size) {
     OpWrap<Op>::Calc(src, dst, i);
   }
@@ -203,7 +213,7 @@ __device__ void IPCContext::internal_direct_allreduce(
       __syncthreads();
 
       T *ptr = &pWrk[i * nelems];
-      compute_reduce<T, Op>(ptr, dst, nelems, wg_id, wg_size);
+      ipc_compute_reduce<T, Op>(ptr, dst, nelems, wg_id, wg_size);
       threadfence_system();
     }
   }
@@ -321,7 +331,7 @@ __device__ void IPCContext::internal_ring_allreduce(
         wait_until(&pSync[iter], ROCSHMEM_CMP_EQ, wait_val);
       }
       __syncthreads();
-      compute_reduce<T, Op>(&pWrk[off_recv], &dst[off_seg + off_recv],
+      ipc_compute_reduce<T, Op>(&pWrk[off_recv], &dst[off_seg + off_recv],
                             chunk_size, wg_id, wg_size);
     }
 

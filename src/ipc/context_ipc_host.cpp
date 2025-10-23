@@ -24,8 +24,6 @@
 
 #include "context_ipc_host.hpp"
 
-#include <mpi.h>
-
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "backend_type.hpp"
 #include "context_incl.hpp"
@@ -101,6 +99,10 @@ __host__ void IPCHostContext::sync_all() {
 
 __host__ void IPCHostContext::barrier_all() {
   host_interface->barrier_all(context_window_info);
+}
+
+__host__ void IPCHostContext::barrier_all_on_stream(hipStream_t stream) {
+  host_interface->barrier_all_on_stream(stream);
 }
 
 }  // namespace rocshmem
