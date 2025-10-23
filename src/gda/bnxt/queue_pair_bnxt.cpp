@@ -27,36 +27,6 @@
 
 namespace rocshmem {
 
-static const __device__ char bnxt_re_wc_error_strings[12][14] = {
-  "OK",
-  "BAD_RESP",
-  "LOC_LEN",
-  "LOC_QP_OP",
-  "PROT",
-  "MEM_OP",
-  "REM_INVAL",
-  "REM_ACC",
-  "REM_OP",
-  "RNR_NAK_XCED",
-  "TRNSP_XCED",
-  "WR_FLUSH",
-};
-
-__device__ static inline void bnxt_re_init_db_hdr(struct bnxt_re_db_hdr *hdr,
-                                                  uint32_t indx, uint32_t toggle,
-                                                  uint32_t qid, uint32_t typ) {
-  uint64_t key_lo;
-  uint64_t key_hi;
-
-  key_lo = (indx | toggle);
-
-  key_hi = (qid & BNXT_RE_DB_QID_MASK)
-         | ((typ & BNXT_RE_DB_TYP_MASK) << BNXT_RE_DB_TYP_SHIFT)
-         | (0x1UL << BNXT_RE_DB_VALID_SHIFT);
-
-  hdr->typ_qid_indx = (key_lo | (key_hi << 32));
-}
-
 __device__ static inline struct bnxt_re_msns* bnxt_re_pull_psn_buff(struct bnxt_device_sq *sq) {
   return (struct bnxt_re_msns*)(((char *) sq->msntbl) + ((sq->msn) << sq->psn_sz_log2));
 }
@@ -126,23 +96,6 @@ __device__ static inline void* bnxt_re_get_hwqe(struct bnxt_device_sq *sq, uint3
   return (void *)((char*)sq->buf + (idx << 4));
 }
 
-__device__ static inline void bnxt_re_incr_head(struct bnxt_device_cq *cq, uint8_t cnt)
-{
-  cq->head += cnt;
-  if (cq->head >= cq->depth) {
-    cq->head %= cq->depth;
-    /* Rolled over, Toggle HEAD bit in epoch flags */
-    cq->flags ^= 1UL << BNXT_RE_FLAG_EPOCH_HEAD_SHIFT;
-  }
-}
-
-__device__ static inline void bnxt_re_change_cq_phase(struct bnxt_device_cq *cq)
-{
-  if (!cq->head) {
-    cq->phase = !(cq->phase & BNXT_RE_BCQE_PH_MASK);
-  }
-}
-
 __device__ static inline void aquire_lock(uint32_t *lock) {
   uint32_t expected;
 
@@ -158,68 +111,94 @@ __device__ static inline void release_lock(uint32_t *lock) {
   *lock = 0;
 }
 
-__device__ void QueuePair::ring_cq_doorbell(uint32_t slot_idx) {
+__device__ void QueuePair::bnxt_ring_doorbell(uint32_t slot_idx) {
   struct bnxt_re_db_hdr hdr;
   uint32_t epoch;
-
-  epoch = (cq.flags & BNXT_RE_FLAG_EPOCH_HEAD_MASK) << BNXT_RE_DB_EPOCH_HEAD_SHIFT;
-
-  bnxt_re_init_db_hdr(&hdr, (slot_idx | epoch), 0, cq.flags, BNXT_RE_QUE_TYPE_CQ);
-
-  __threadfence_system();
-  __hip_atomic_store(dbr, hdr.typ_qid_indx, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
-}
-
-__device__ void QueuePair::ring_sq_doorbell(uint32_t slot_idx) {
-  struct bnxt_re_db_hdr hdr;
-  uint32_t epoch;
+  uint64_t key_lo;
+  uint64_t key_hi;
 
   epoch = (sq.flags & BNXT_RE_FLAG_EPOCH_TAIL_MASK) << BNXT_RE_DB_EPOCH_TAIL_SHIFT;
 
-  bnxt_re_init_db_hdr(&hdr, (slot_idx | epoch), 0, sq.id, BNXT_RE_QUE_TYPE_SQ);
+  key_lo = (slot_idx | epoch);
+
+  key_hi = (sq.id & BNXT_RE_DB_QID_MASK)
+         | (((uint64_t) BNXT_RE_QUE_TYPE_SQ & BNXT_RE_DB_TYP_MASK) << BNXT_RE_DB_TYP_SHIFT)
+         | (0x1UL << BNXT_RE_DB_VALID_SHIFT);
+
+  hdr.typ_qid_indx = (key_lo | (key_hi << 32));
 
   __threadfence_system();
   __hip_atomic_store(dbr, hdr.typ_qid_indx, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
 }
 
-__device__ int QueuePair::poll_cq() {
+__device__ void QueuePair::bnxt_check_cqe_error(struct bnxt_re_req_cqe *cqe) {
   struct bnxt_re_bcqe *hdr;
-  void *cqe;
   uint32_t flg_val;
-  int type;
   uint8_t status;
 
-  cqe = (void*) ((char*) cq.buf + (cq.head * bnxt_re_get_cqe_sz()));
+  const char bnxt_re_wc_error_strings[12][14] = {
+    "OK",
+    "BAD_RESP",
+    "LOC_LEN",
+    "LOC_QP_OP",
+    "PROT",
+    "MEM_OP",
+    "REM_INVAL",
+    "REM_ACC",
+    "REM_OP",
+    "RNR_NAK_XCED",
+    "TRNSP_XCED",
+    "WR_FLUSH",
+  };
+
   hdr = (struct bnxt_re_bcqe*) ((char*)cqe + sizeof(struct bnxt_re_req_cqe));
 
   flg_val = hdr->flg_st_typ_ph;
 
-  __threadfence_system();
+  __threadfence();
 
-  if (bnxt_re_is_cqe_valid(flg_val, cq.phase)) {
-    // Is the CQE valid?
-    status = (flg_val >> BNXT_RE_BCQE_STATUS_SHIFT)
-           & BNXT_RE_BCQE_STATUS_MASK;
+  // Is the CQE valid?
+  status = (flg_val >> BNXT_RE_BCQE_STATUS_SHIFT)
+         & BNXT_RE_BCQE_STATUS_MASK;
 
-    if (status != BNXT_RE_REQ_ST_OK) {
-      printf("CQ Error %s (%x)\n", bnxt_re_wc_error_strings[status], status);
-      abort();
-      return -1;
-    }
-
-    /* Update the CQ Ptr */
-    bnxt_re_incr_head(&cq, 1);
-    bnxt_re_change_cq_phase(&cq);
-
-    /* Ring Doorbell */
-    ring_cq_doorbell(cq.head);
-
-    __hip_atomic_fetch_sub(&sq.posted, 1, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
-
-    return 1;
+  if (status != BNXT_RE_REQ_ST_OK) {
+    printf("CQ Error %s (%x)\n", bnxt_re_wc_error_strings[status], status);
+    abort();
   }
+}
 
-  return 0;
+__device__ void QueuePair::poll_cq_until(uint32_t requested_available_slots) {
+  struct bnxt_re_req_cqe *cqe;
+  uint32_t sq_tail;
+  uint32_t sq_head;
+  uint32_t sq_depth;
+  uint32_t consumed_slots;
+  uint32_t available_slots;
+
+  sq_depth = sq.depth;
+
+  aquire_lock(&cq.lock);
+
+  do {
+    cqe = (struct bnxt_re_req_cqe *) cq.buf;
+
+#ifdef DEBUG
+    bnxt_check_cqe_error(cqe);
+#endif
+
+    /* Update the SQ head
+     * This param provides us the wqe_idx but we need to convert to the slot idx.
+     * We assume a static slots size of GDA_BNXT_WQE_SLOT_COUNT thus can multipy by this value */
+    sq_head = (((cqe->con_indx & 0xFFFF) * GDA_BNXT_WQE_SLOT_COUNT) % sq_depth);
+    sq.head = sq_head;
+
+    sq_tail = __hip_atomic_load(&sq.tail, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+
+    consumed_slots  = (sq_tail - sq_head + sq_depth) % sq_depth;
+    available_slots = sq_depth - consumed_slots;
+  } while (available_slots < requested_available_slots);
+
+  release_lock(&cq.lock);
 }
 
 __device__ void QueuePair::bnxt_quiet() {
@@ -230,11 +209,7 @@ __device__ void QueuePair::bnxt_quiet() {
   active_lane_id    = get_active_lane_num(active_lane_mask);
 
   if (0 == active_lane_id) {
-    aquire_lock(&cq.lock);
-    while (__hip_atomic_load(&sq.posted, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT)) {
-      poll_cq();
-    }
-    release_lock(&cq.lock);
+    poll_cq_until(sq.depth);
   }
 }
 
@@ -264,10 +239,10 @@ __device__ void QueuePair::bnxt_post_wqe_rma(int pe, int32_t length, uintptr_t *
       uint32_t hdr_flags;
       uint32_t inline_msg;
 
-      uint32_t rma_slots  = 3; // (Three slots: hdr, rdma, sge)
-
       inline_msg = length <= inline_threshold &&
                    opcode == gda_op_rdma_write;
+
+      poll_cq_until(GDA_BNXT_WQE_SLOT_COUNT);
 
       hdr_ptr  = (struct bnxt_re_bsqe*) bnxt_re_get_hwqe(&sq, 0);
       rdma_ptr = (struct bnxt_re_rdma*) bnxt_re_get_hwqe(&sq, 1);
@@ -275,7 +250,7 @@ __device__ void QueuePair::bnxt_post_wqe_rma(int pe, int32_t length, uintptr_t *
 
       /* Populate Header Segment */
       wqe_type  = BNXT_RE_HDR_WT_MASK & opcode;
-      wqe_size  = BNXT_RE_HDR_WS_MASK & rma_slots;
+      wqe_size  = BNXT_RE_HDR_WS_MASK & GDA_BNXT_WQE_SLOT_COUNT;
       hdr_flags = ((uint32_t) BNXT_RE_HDR_FLAGS_MASK)
                 & ((uint32_t) BNXT_RE_WR_FLAGS_SIGNALED);
 
@@ -314,16 +289,11 @@ __device__ void QueuePair::bnxt_post_wqe_rma(int pe, int32_t length, uintptr_t *
       bnxt_re_fill_psns_for_msntbl(&sq, length);
 
       /* Update SQ Pointer */
-      bnxt_re_incr_tail(&sq, rma_slots);
+      bnxt_re_incr_tail(&sq, GDA_BNXT_WQE_SLOT_COUNT);
 
       /* Ring Doorbell */
-      ring_sq_doorbell(sq.tail);
-
-      __hip_atomic_fetch_add(&sq.posted, 1, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
-
+      bnxt_ring_doorbell(sq.tail);
     }
-    __threadfence_system();
-    quiet();
   }
 
   if (0 == active_lane_id) {
@@ -357,17 +327,18 @@ __device__ uint64_t QueuePair::bnxt_post_wqe_amo(int pe, int32_t length, uintptr
       uint32_t wqe_size;
       uint32_t wqe_type;
       uint32_t hdr_flags;
-      uint32_t amo_slots = 3; // (Three slots: hdr, amo, sge)
+
+      poll_cq_until(GDA_BNXT_WQE_SLOT_COUNT);
 
       hdr_ptr = (struct bnxt_re_bsqe*)   bnxt_re_get_hwqe(&sq, 0);
       amo_ptr = (struct bnxt_re_atomic*) bnxt_re_get_hwqe(&sq, 1);
       sge_ptr = (struct bnxt_re_sge*)    bnxt_re_get_hwqe(&sq, 2);
 
       /* Populate Header Segment */
-      wqe_size  = BNXT_RE_HDR_WS_MASK    & amo_slots;
+      wqe_size  = BNXT_RE_HDR_WS_MASK & GDA_BNXT_WQE_SLOT_COUNT;
       hdr_flags = ((uint32_t) BNXT_RE_HDR_FLAGS_MASK)
                 & ((uint32_t) BNXT_RE_WR_FLAGS_SIGNALED);
-      wqe_type  = BNXT_RE_HDR_WT_MASK    & opcode;
+      wqe_type  = BNXT_RE_HDR_WT_MASK & opcode;
 
       hdr.rsv_ws_fl_wt  = (wqe_size  << BNXT_RE_HDR_WS_SHIFT)
                         | (hdr_flags << BNXT_RE_HDR_FLAGS_SHIFT)
@@ -399,15 +370,11 @@ __device__ uint64_t QueuePair::bnxt_post_wqe_amo(int pe, int32_t length, uintptr
       bnxt_re_fill_psns_for_msntbl(&sq, length);
 
       /* Update SQ Pointer */
-      bnxt_re_incr_tail(&sq, amo_slots);
+      bnxt_re_incr_tail(&sq, GDA_BNXT_WQE_SLOT_COUNT);
 
       /* Ring Doorbell */
-      ring_sq_doorbell(sq.tail);
-
-      __hip_atomic_fetch_add(&sq.posted, 1, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+      bnxt_ring_doorbell(sq.tail);
     }
-    __threadfence_system();
-    quiet();
   }
 
   if (0 == active_lane_id) {
@@ -415,6 +382,7 @@ __device__ uint64_t QueuePair::bnxt_post_wqe_amo(int pe, int32_t length, uintptr
   }
 
   if (fetching) {
+    quiet();
     return fetching_atomic[atomic_idx];
   }
 

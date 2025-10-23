@@ -65,6 +65,7 @@ class GDABackend : public Backend {
 
   const char *requested_dev = nullptr;
   struct ibv_context *context = nullptr;;
+  struct ibv_device_attr device_attr;
   struct ibv_pd *pd_orig = nullptr;
   enum GDAProvider gda_provider = GDAProvider::UNSET;
 
@@ -85,7 +86,8 @@ class GDABackend : public Backend {
 
   /* GDA_BNXT START */
   std::vector<struct bnxt_host_qp> bnxt_qps;
-  std::vector<struct bnxt_host_cq> bnxt_cqs;
+  std::vector<struct bnxt_host_cq> bnxt_scqs;
+  std::vector<struct bnxt_host_cq> bnxt_rcqs;
 
   struct bnxt_re_dv_db_region_attr db_region_attr;
   /* GDA_BNXT END */
@@ -331,6 +333,11 @@ class GDABackend : public Backend {
    * @brief Open InfiniBand Device and create common structures
    */
   void open_ib_device();
+
+  /**
+   * @brief Validated the rocSHMEM will run with the currently open InfiniBand Device
+   */
+  void validate_ib_device();
 
   /**
    * @brief Selects the best GID index

@@ -626,13 +626,20 @@ void GDABackend::cleanup_ibv() {
       CHECK_HIP(hipFree(bnxt_qps[i].sq_buf));
       CHECK_HIP(hipFree(bnxt_qps[i].rq_buf));
 
-      err = bnxt_re_dv.destroy_cq(cqs[i]);
-      CHECK_ZERO(err, "bnxt_re_dv_destroy_cq");
+      err = bnxt_re_dv.destroy_cq(bnxt_scqs[i].cq);
+      CHECK_ZERO(err, "bnxt_re_dv_destroy_cq (SCQ)");
 
-      err = bnxt_re_dv.umem_dereg(bnxt_cqs[i].umem_handle);
-      CHECK_ZERO(err, "bnxt_re_dv_umem_dereg");
+      err = bnxt_re_dv.destroy_cq(bnxt_rcqs[i].cq);
+      CHECK_ZERO(err, "bnxt_re_dv_destroy_cq (RCQ)");
 
-      CHECK_HIP(hipFree(bnxt_cqs[i].buf));
+      err = bnxt_re_dv.umem_dereg(bnxt_scqs[i].umem_handle);
+      CHECK_ZERO(err, "bnxt_re_dv_umem_dereg (SCQ)");
+
+      err = bnxt_re_dv.umem_dereg(bnxt_rcqs[i].umem_handle);
+      CHECK_ZERO(err, "bnxt_re_dv_umem_dereg (RCQ)");
+
+      CHECK_HIP(hipFree(bnxt_scqs[i].buf));
+      CHECK_HIP(hipFree(bnxt_rcqs[i].buf));
     }
   } else {
     for (int i = 0; i < qps.size(); i++) {
@@ -847,6 +854,8 @@ void GDABackend::open_ib_device() {
   dump_ibv_context(context);
   dump_ibv_device(context->device);
 
+  validate_ib_device();
+
   pd_orig = ibv_alloc_pd(context);
   CHECK_NNULL(pd_orig, "ib allocate pd");
   dump_ibv_pd(pd_orig);
@@ -863,6 +872,35 @@ void GDABackend::open_ib_device() {
   select_gid_index();
 
   ibv_free_device_list(device_list);
+}
+
+void GDABackend::validate_ib_device() {
+  int err;
+
+  err = ibv_query_device(context, &device_attr);
+  CHECK_ZERO(err, "ibv_query_device");
+
+  if (gda_provider == GDAProvider::BNXT) {
+    const uint32_t bnxt_vendor_id =  0x14E4;
+    const std::set<uint32_t> supported_bnxt_part_ids = { 0x1760 /* BCM57608 */};
+    const char min_supported_bnxt_fw_ver[12] = "233.2.104.0";
+
+
+    if (bnxt_vendor_id != device_attr.vendor_id) {
+      printf("GDAProvider::BNXT requested but an invalid device is selected\n");
+      abort();
+    }
+
+    if (supported_bnxt_part_ids.find(device_attr.vendor_part_id) == supported_bnxt_part_ids.end()) {
+      printf("Unsupported Broadcom Part: %x\n", device_attr.vendor_part_id);
+      abort();
+    }
+
+    if (strverscmp(min_supported_bnxt_fw_ver, device_attr.fw_ver) > 0) {
+      printf("Unsupported firmware version: %s\n", device_attr.fw_ver);
+      abort();
+    }
+  }
 }
 
 void GDABackend::modify_qps_reset_to_init() {
@@ -999,7 +1037,8 @@ void GDABackend::create_queues() {
   cqs.resize(resize_length);
   qps.resize(resize_length);
 
-  bnxt_cqs.resize(resize_length);
+  bnxt_scqs.resize(resize_length);
+  bnxt_rcqs.resize(resize_length);
   bnxt_qps.resize(resize_length);
 
   if (gda_provider == GDAProvider::BNXT) {
@@ -1052,10 +1091,11 @@ void GDABackend::alternate_qp_ports() {
 
         if (new_qp_idx < qps.size()) {
           // Swap QPs
-          std::swap(cqs[cur_qp_idx],      cqs[new_qp_idx]);
-          std::swap(qps[cur_qp_idx],      qps[new_qp_idx]);
-          std::swap(bnxt_cqs[cur_qp_idx], bnxt_cqs[new_qp_idx]);
-          std::swap(bnxt_qps[cur_qp_idx], bnxt_qps[new_qp_idx]);
+          std::swap(cqs[cur_qp_idx],       cqs[new_qp_idx]);
+          std::swap(qps[cur_qp_idx],       qps[new_qp_idx]);
+          std::swap(bnxt_scqs[cur_qp_idx], bnxt_scqs[new_qp_idx]);
+          std::swap(bnxt_rcqs[cur_qp_idx], bnxt_rcqs[new_qp_idx]);
+          std::swap(bnxt_qps[cur_qp_idx],  bnxt_qps[new_qp_idx]);
         }
       }
     }
