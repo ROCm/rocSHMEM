@@ -119,7 +119,13 @@ ExecTest() {
   MAX_MSG_SIZE=$5
   TIMEOUT=$((5 * 60)) # Timeout in seconds
 
-  NUM_GPUS=$(rocminfo | grep amdgcn | wc -l)
+  if command -v amd-smi >/dev/null && amd-smi version 2>&1 >/dev/null
+  then
+    NUM_GPUS=${NUM_GPUS:-$(amd-smi list | grep GPU | wc -l)}
+  elif command -v rocm-smi >/dev/null && rocm-smi --version 2>&1 >/dev/null
+  then
+    NUM_GPUS=${NUM_GPUS:-$(rocm-smi --showserial | grep GPU | wc -l)}
+  fi
   NUM_GPUS=$(($NUM_GPUS > 0? $NUM_GPUS: 8))
 
   TEST_NUM=${TEST_NUMBERS[$TEST_NAME]}
