@@ -32,9 +32,11 @@ if [[ -z "${_ROCM_DIR}" ]]; then
 fi
 
 # Location of dependencies source code
-export _INSTALL_DIR=$BUILD_DIR/install
-export _DEPS_SRC_DIR=$_INSTALL_DIR/src
+BUILD_DIR=${BUILD_DIR:-$PWD}
+export _INSTALL_DIR=${INSTALL_DIR:-$BUILD_DIR/install}
+echo "rocSHMEM dependencies UCX and Open MPI will install in $_INSTALL_DIR"
 
+export _DEPS_SRC_DIR=$_INSTALL_DIR/src
 mkdir -p $_DEPS_SRC_DIR
 
 #Adjust branches and installation location as necessary
@@ -70,7 +72,8 @@ git clone --recursive $_OMPI_REPO
 cd ompi
 git checkout $_OMPI_COMMIT_HASH
 git submodule update --init --recursive
-pip install -r docs/requirements.txt
+python3 -m venv --system-site-packages venv
+venv/bin/python3 -m pip install -r docs/requirements.txt
 ./autogen.pl
 ./configure --prefix=$_OMPI_INSTALL_DIR  \
             --with-rocm=$_ROCM_DIR       \
