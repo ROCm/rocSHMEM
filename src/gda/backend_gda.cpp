@@ -896,17 +896,17 @@ void GDABackend::validate_ib_device() {
 
     if (bnxt_vendor_id != device_attr.vendor_id) {
       printf("%s GDAProvider::BNXT requested but an invalid device is selected\n", debug_str.c_str());
-      abort();
+      exit(1);
     }
 
     if (supported_bnxt_part_ids.find(device_attr.vendor_part_id) == supported_bnxt_part_ids.end()) {
       printf("%s Unsupported Broadcom Part: %x\n", debug_str.c_str(), device_attr.vendor_part_id);
-      abort();
+      exit(1);
     }
 
     if (strverscmp(min_supported_bnxt_fw_ver, device_attr.fw_ver) > 0) {
       printf("%s Unsupported firmware version: %s\n", debug_str.c_str(), device_attr.fw_ver);
-      abort();
+      exit(1);
     }
   }
 }
