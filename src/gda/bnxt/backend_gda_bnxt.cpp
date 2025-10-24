@@ -87,6 +87,9 @@ void GDABackend::bnxt_initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
 
   /* Export Inline Threshold */
   gpu_qp->inline_threshold = inline_threshold;
+
+  /* Export Debug String*/
+  strcpy(gpu_qp->debug_str, debug_str.c_str());
 }
 
 void GDABackend::bnxt_create_cqs(int cqe) {
