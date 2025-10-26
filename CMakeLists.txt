@@ -109,6 +109,7 @@ set(DEFAULT_GPUS
     gfx90a:xnack-;
     gfx90a:xnack+;
     gfx1100;
+    gfx1201;
     gfx942)
 
 if(${ROCM_MAJOR_VERSION} GREATER 6)

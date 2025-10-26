@@ -60,6 +60,13 @@ __device__ __forceinline__ int uncached_load_ubyte(uint8_t* src) {
       : "=v"(ret)
       : "v"(src));
 #endif
+#if defined(__gfx1201__)
+  asm volatile(
+      "global_load_u8 %0 %1 off scope:SCOPE_SYS \n"
+      "s_wait_loadcnt 0x0"
+      : "=v"(ret)
+      : "v"(src));
+#endif
   return ret;
 }
 
@@ -83,6 +90,13 @@ __device__ __forceinline__ void refresh_volatile_sbyte(volatile int *assigned_va
     : "=v"(*assigned_value)
     : "v"(read_value));
 #endif
+#if defined(__gfx1201__)
+  asm volatile(
+      "global_load_i8 %0 %1 off scope:SCOPE_SYS \n"
+      "s_wait_loadcnt 0x0"
+      : "=v"(*assigned_value)
+      : "v"(read_value));
+#endif
 }
 
 __device__ __forceinline__ void refresh_volatile_dwordx2(volatile uint64_t *assigned_value,
@@ -104,6 +118,13 @@ __device__ __forceinline__ void refresh_volatile_dwordx2(volatile uint64_t *assi
     "s_waitcnt vmcnt(0)"
     : "=v"(*assigned_value)
     : "v"(read_value));
+#endif
+ #if defined(__gfx1201__)
+  asm volatile(
+      "global_load_b64 %0 %1 off scope:SCOPE_SYS \n"
+      "s_wait_loadcnt 0x0"
+      : "=v"(*assigned_value)
+      : "v"(read_value));
 #endif
 }
 
@@ -136,6 +157,13 @@ NOWARN(-Wdeprecated-volatile,
             : "=v"(ret)
             : "v"(src));
 #endif
+#if defined(__gfx1201__)
+        asm volatile(
+            "global_load_b32 %0 %1 off scope:SCOPE_SYS \n"
+            "s_wait_loadcnt 0x0"
+            : "=v"(ret)
+            : "v"(src));
+#endif
         break;
       case 8:
 #if defined(__gfx906__)
@@ -153,6 +181,13 @@ NOWARN(-Wdeprecated-volatile,
         asm volatile(
             "global_load_dwordx2 %0 %1 off sc0 sc1 \n"
             "s_waitcnt vmcnt(0)"
+            : "=v"(ret)
+            : "v"(src));
+#endif
+#if defined(__gfx1201__)
+        asm volatile(
+            "global_load_b64 %0 %1 off scope:SCOPE_SYS \n"
+            "s_wait_loadcnt 0x0"
             : "=v"(ret)
             : "v"(src));
 #endif
@@ -197,6 +232,9 @@ __device__ __forceinline__ void store_asm(uint8_t* val, uint8_t* dst,
 #if defined(__gfx942__) || defined(__gfx950__)
       asm volatile("flat_store_short %0 %1 sc0 sc1" : : "v"(dst), "v"(val16));
 #endif
+#if defined(__gfx1201__)
+      asm volatile("flat_store_b16 %0 %1 scope:SCOPE_SYS" : : "v"(dst), "v"(val16));
+#endif
       break;
     }
     case 4: {
@@ -211,6 +249,9 @@ __device__ __forceinline__ void store_asm(uint8_t* val, uint8_t* dst,
 #if defined(__gfx942__) || defined(__gfx950__)
       asm volatile("flat_store_dword %0 %1 sc0 sc1" : : "v"(dst), "v"(val32));
 #endif
+#if defined(__gfx1201__)
+      asm volatile("flat_store_b32 %0 %1 scope:SCOPE_SYS" : : "v"(dst), "v"(val32));
+#endif
       break;
     }
     case 8: {
@@ -224,6 +265,9 @@ __device__ __forceinline__ void store_asm(uint8_t* val, uint8_t* dst,
 #endif
 #if defined(__gfx942__) || defined(__gfx950__)
       asm volatile("flat_store_dwordx2 %0 %1 sc0 sc1" : : "v"(dst), "v"(val64));
+#endif
+#if defined(__gfx1201__)
+      asm volatile("flat_store_b64 %0 %1 scope:SCOPE_SYS" : : "v"(dst), "v"(val64));
 #endif
       break;
     }
