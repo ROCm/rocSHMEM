@@ -168,7 +168,7 @@ if (NOT BUILD_TESTS_ONLY)
     set(BUILD_UNIT_TESTS OFF)
   endif()
 
-  if (USE_EXTERNAL_MPI)
+  if (USE_EXTERNAL_MPI STREQUAL "ON")
     if(NOT HAVE_EXTERNAL_MPI)
       message(FATAL_ERROR "External MPI support requested but MPI support not found. Build Aborted")
     endif()
