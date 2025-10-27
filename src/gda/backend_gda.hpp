@@ -64,6 +64,7 @@ class GDABackend : public Backend {
   } dest_info_t;
 
   const char *requested_dev = nullptr;
+  struct ibv_device *device = nullptr;
   struct ibv_context *context = nullptr;;
   struct ibv_device_attr device_attr;
   struct ibv_pd *pd_orig = nullptr;
@@ -76,6 +77,8 @@ class GDABackend : public Backend {
 
   uint32_t *heap_rkey = nullptr;
   struct ibv_mr *heap_mr = nullptr;
+
+  std::string debug_str;
 
   uint32_t inline_threshold = 8;
   QueuePair *host_qps = nullptr;

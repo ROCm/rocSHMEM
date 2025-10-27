@@ -828,7 +828,6 @@ void GDABackend::cleanup_gpu_qps() {
 //TODO this ifdef sequence should go in a nic-specific file, like it is for bnxt, maybe whats above too?
 void GDABackend::open_ib_device() {
   struct ibv_device **device_list = nullptr;
-  struct ibv_device *device = nullptr;
   int num_devices = 0;
   int err;
 
@@ -875,7 +874,17 @@ void GDABackend::open_ib_device() {
 }
 
 void GDABackend::validate_ib_device() {
+  char hostname[HOST_NAME_MAX + 1];
+  const char *nicname;
   int err;
+
+  err = gethostname(hostname, sizeof(hostname));
+  CHECK_ZERO(err, "gethostname");
+
+  nicname = ibv_get_device_name(device);
+  CHECK_NNULL(nicname, "ibv_get_device_name");
+
+  debug_str = "[" + std::string(hostname) + ", " + std::string(nicname) + "]";
 
   err = ibv_query_device(context, &device_attr);
   CHECK_ZERO(err, "ibv_query_device");
@@ -885,20 +894,19 @@ void GDABackend::validate_ib_device() {
     const std::set<uint32_t> supported_bnxt_part_ids = { 0x1760 /* BCM57608 */};
     const char min_supported_bnxt_fw_ver[12] = "233.2.104.0";
 
-
     if (bnxt_vendor_id != device_attr.vendor_id) {
-      printf("GDAProvider::BNXT requested but an invalid device is selected\n");
-      abort();
+      printf("%s GDAProvider::BNXT requested but an invalid device is selected\n", debug_str.c_str());
+      exit(1);
     }
 
     if (supported_bnxt_part_ids.find(device_attr.vendor_part_id) == supported_bnxt_part_ids.end()) {
-      printf("Unsupported Broadcom Part: %x\n", device_attr.vendor_part_id);
-      abort();
+      printf("%s Unsupported Broadcom Part: %x\n", debug_str.c_str(), device_attr.vendor_part_id);
+      exit(1);
     }
 
     if (strverscmp(min_supported_bnxt_fw_ver, device_attr.fw_ver) > 0) {
-      printf("Unsupported firmware version: %s\n", device_attr.fw_ver);
-      abort();
+      printf("%s Unsupported firmware version: %s\n", debug_str.c_str(), device_attr.fw_ver);
+      exit(1);
     }
   }
 }
