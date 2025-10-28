@@ -72,8 +72,9 @@ git clone --recursive $_OMPI_REPO
 cd ompi
 git checkout $_OMPI_COMMIT_HASH
 git submodule update --init --recursive
-python3 -m venv --system-site-packages venv
-venv/bin/python3 -m pip install -r docs/requirements.txt
+python3 -m venv --system-site-packages --without-pip venv
+. venv/bin/activate
+python3 -m pip install -r docs/requirements.txt
 ./autogen.pl
 ./configure --prefix=$_OMPI_INSTALL_DIR  \
             --with-rocm=$_ROCM_DIR       \
