@@ -219,7 +219,7 @@ __host__ void IpcOnImpl::ipcHostStop() {
 }
 
 __device__ void IpcOnImpl::ipcCopy(void *dst, void *src, size_t size) {
-  memcpy(dst, src, size);
+  memcpy_lane(dst, src, size);
 }
 
 __device__ void IpcOnImpl::ipcCopy_wave(void *dst, void *src, size_t size) {

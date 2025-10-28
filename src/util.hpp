@@ -385,7 +385,7 @@ __device__ void gpu_dprintf(const char* fmt, const Args&... args) {
 #define LOAD(VAR) __atomic_load_n((VAR), __ATOMIC_SEQ_CST)
 #define STORE(DST, SRC) __atomic_store_n((DST), (SRC), __ATOMIC_SEQ_CST)
 
-__device__ __forceinline__ void memcpy(void* dst, void* src, size_t size) {
+__device__ __forceinline__ void memcpy_lane(void* dst, void* src, size_t size) {
   uint8_t* dst_bytes{static_cast<uint8_t*>(dst)};
   uint8_t* src_bytes{static_cast<uint8_t*>(src)};
 
