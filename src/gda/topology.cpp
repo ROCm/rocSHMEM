@@ -304,7 +304,7 @@ namespace rocshmem
     close(fd);
 
     if (ret == -1) {
-      fprintf(stderr, "Failed while reading RoCE version");
+      fprintf(stderr, "Failed while reading RoCE version for gidIndex %d path %s\n", gidIndex, roceTypePath);
       return -1;
     }
 
