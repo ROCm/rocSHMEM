@@ -32,19 +32,19 @@ if [[ -z "${_ROCM_DIR}" ]]; then
 fi
 
 # Location of dependencies source code
-BUILD_DIR=${BUILD_DIR:-$PWD}
-export _INSTALL_DIR=${INSTALL_DIR:-$BUILD_DIR/install}
+_BUILD_DIR=${BUILD_DIR:-$PWD}
+export _INSTALL_DIR=${INSTALL_DIR:-$_BUILD_DIR/install}
 echo "rocSHMEM dependencies UCX and Open MPI will install in $_INSTALL_DIR"
 
-export _DEPS_SRC_DIR=$_INSTALL_DIR/src
+export _DEPS_SRC_DIR=$_BUILD_DIR/deps-src
 mkdir -p $_DEPS_SRC_DIR
 
 #Adjust branches and installation location as necessary
-export _UCX_INSTALL_DIR=$_INSTALL_DIR/ucx
+export _UCX_INSTALL_DIR=${INSTALL_DIR:-$_INSTALL_DIR/ucx}
 export _UCX_REPO=https://github.com/ROCm/ucx.git
 export _UCX_COMMIT_HASH=18770fdc1c3b5de202d14a088a14b734d2c4bbf3
 
-export _OMPI_INSTALL_DIR=$_INSTALL_DIR/ompi
+export _OMPI_INSTALL_DIR=${INSTALL_DIR:-$_INSTALL_DIR/ompi}
 export _OMPI_REPO=https://github.com/ROCm/ompi.git
 export _OMPI_COMMIT_HASH=697a596dde68815fe50db3c2a75a42ddb41b5ef4
 
