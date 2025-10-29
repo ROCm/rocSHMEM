@@ -62,20 +62,39 @@ __device__ void GDAContext::internal_direct_barrier_wg(int pe, int PE_start,
                                                        int stride, int n_pes,
                                                        int64_t *pSync) {
   int64_t flag_val{1};
-  if (pe == PE_start) {
-    if (is_thread_zero_in_block()) {
-      // Go through all PE offsets (except current offset = 0)
-      // and wait until they all reach
-      for (int i = 1; i < n_pes; i++) {
-        wait_until(&pSync[i], ROCSHMEM_CMP_EQ, flag_val);
-        pSync[i] = ROCSHMEM_SYNC_VALUE;
-      }
-      __threadfence_system();
 
-      // Announce to other PEs that all have reached
-      for (int i = 1, j = PE_start + stride; i < n_pes; ++i, j += stride) {
-        put(&pSync[0], &flag_val, 1, j);
+  if (pe == PE_start) {
+    int wf_id = get_flat_block_id() / WF_SIZE;
+    int wf_count = get_flat_block_size() / WF_SIZE;
+    bool wf_leader = 0 == get_active_lane_num();
+
+    // Go through all PE offsets (except current offset = 0)
+    // and wait until they all reach
+    if (wf_leader) {
+      for (int j = wf_id + 1; j < n_pes; j+= wf_count) {
+        wait_until(&pSync[j], ROCSHMEM_CMP_EQ, flag_val);
+        pSync[j] = ROCSHMEM_SYNC_VALUE;
       }
+    }
+
+    __syncthreads();
+
+    // Announce to other PEs that all have reached
+    for (int i = wf_id + 1, j = PE_start + stride + wf_id;
+             i < n_pes;
+             i+= wf_count, j += (wf_count * stride)) {
+      put_nbi_wave(&pSync[0], &flag_val, 1, j);
+    }
+
+    for (int i = wf_id + 1, j = PE_start + stride + wf_id;
+             i < n_pes;
+             i+= wf_count, j += (wf_count * stride)) {
+      pe_quiet(j);
+    }
+
+    __syncthreads();
+
+    if (is_thread_zero_in_block()) {
       pSync[0] = ROCSHMEM_SYNC_VALUE;
     }
   } else {
