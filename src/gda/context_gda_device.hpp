@@ -267,6 +267,9 @@ class GDAContext : public Context {
   __device__ void internal_direct_barrier(int pe, int PE_start, int stride,
                                           int n_pes, int64_t *pSync);
 
+  __device__ void internal_direct_barrier_wg(int pe, int PE_start, int stride,
+                                             int n_pes, int64_t *pSync);
+
   __device__ void internal_atomic_barrier(int pe, int PE_start, int stride,
                                           int n_pes, int64_t *pSync);
 
