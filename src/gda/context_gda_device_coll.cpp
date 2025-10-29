@@ -37,6 +37,9 @@ __device__ void GDAContext::internal_direct_barrier(int pe, int PE_start,
   if (pe == PE_start) {
     // Go through all PE offsets (except current offset = 0)
     // and wait until they all reach
+#if defined(__gfx90a__)
+    __threadfence_system();
+#endif /* __gfx90a__ */
     for (int i = 1; i < n_pes; i++) {
       wait_until(&pSync[i], ROCSHMEM_CMP_EQ, flag_val);
       pSync[i] = ROCSHMEM_SYNC_VALUE;
@@ -45,15 +48,24 @@ __device__ void GDAContext::internal_direct_barrier(int pe, int PE_start,
 
     // Announce to other PEs that all have reached
     for (int i = 1, j = PE_start + stride; i < n_pes; ++i, j += stride) {
-      put(&pSync[0], &flag_val, 1, j);
+      pSync[0] = flag_val;
+      put(&pSync[0], &pSync[0], 1, j);
+#if defined(__gfx90a__)
+      __threadfence_system();
+#endif /* __gfx90a__ */
     }
     pSync[0] = ROCSHMEM_SYNC_VALUE;
   } else {
     // Mark current PE offset as reached
     size_t pe_offset = (pe - PE_start) / stride;
-    put(&pSync[pe_offset], &flag_val, 1, PE_start);
+    pSync[pe_offset] = flag_val;
+    put(&pSync[pe_offset], &pSync[pe_offset], 1, PE_start);
+#if defined(__gfx90a__)
+    __threadfence_system();
+#endif /* __gfx90a__ */
     wait_until(&pSync[0], ROCSHMEM_CMP_EQ, flag_val);
     pSync[0] = ROCSHMEM_SYNC_VALUE;
+    pSync[pe_offset] = ROCSHMEM_SYNC_VALUE;
     __threadfence_system();
   }
 }
