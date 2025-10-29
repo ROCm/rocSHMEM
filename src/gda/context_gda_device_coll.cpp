@@ -77,7 +77,7 @@ __device__ void GDAContext::internal_direct_barrier_wg(int pe, int PE_start,
 
   if (pe == PE_start) {
     int wf_id = get_flat_block_id() / WF_SIZE;
-    int wf_count = get_flat_block_size() / WF_SIZE;
+    int wf_count = (int) ceil((double)get_flat_block_size() / (double)WF_SIZE);
     bool wf_leader = 0 == get_active_lane_num();
 
     // Go through all PE offsets (except current offset = 0)
