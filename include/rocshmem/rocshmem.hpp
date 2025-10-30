@@ -35,8 +35,10 @@
 #include "rocshmem_COLL.hpp"
 #include "rocshmem_P2P_SYNC.hpp"
 #include "rocshmem_RMA_X.hpp"
+#ifndef DISABLE_MPI
 #if defined(HAVE_EXTERNAL_MPI)
 #include <mpi.h>
+#endif
 #endif
 
 /**
@@ -60,6 +62,7 @@ constexpr char VERSION[] = "3.0.0";
 /******************************************************************************
  **************************** HOST INTERFACE **********************************
  *****************************************************************************/
+#ifndef DISABLE_MPI
 #if defined(HAVE_EXTERNAL_MPI)
 /**
  * @brief Initialize the rocSHMEM runtime and underlying transport layer.
@@ -68,6 +71,7 @@ constexpr char VERSION[] = "3.0.0";
  *                      If MPI_COMM_NULL, rocSHMEM will be using MPI_COMM_WORLD
  */
 [[deprecated]] __host__ void rocshmem_init(MPI_Comm comm);
+#endif
 #endif
 
 /**
@@ -100,6 +104,7 @@ __host__ void * rocshmem_get_device_ctx();
  */
 __host__ void *rocshmem_ptr(void *dest, int pe);
 
+#ifndef DISABLE_MPI
 #if defined(HAVE_EXTERNAL_MPI)
 /**
  * @brief Initialize the rocSHMEM runtime and underlying transport layer
@@ -117,6 +122,7 @@ __host__ void *rocshmem_ptr(void *dest, int pe);
  */
 [[deprecated]] __host__ int rocshmem_init_thread(int requested, int *provided,
                                                  MPI_Comm comm);
+#endif
 #endif
 
 /**
