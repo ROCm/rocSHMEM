@@ -69,6 +69,19 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
          addr_mode = static_cast<AddrMode>(atomics_addr_mode);
       }
       i++;
+    } else if (arg == "-n") {
+      i++;
+      loop = atoi(argv[i]);
+      loop_large = loop;
+    } else if (arg == "-nloop") {
+      i++;
+      loop = atoi(argv[i]);
+    } else if (arg == "-nlarge") {
+      i++;
+      loop_large = atoi(argv[i]);
+    } else if (arg == "-nskip") {
+      i++;
+      skip = atoi(argv[i]);
     } else {
       show_usage(argv[0]);
       exit(-1);
@@ -149,6 +162,10 @@ void TesterArguments::show_usage(std::string executable_name) {
   std::cout << "\t-ta <Number of Thread Accessing the communication>\n";
   std::cout << "\t-x <shmem context>\n";
   std::cout << "\t-m Atomics Address mode\n";
+  std::cout << "\t-n Set both loop and loop_large count\n";
+  std::cout << "\t-nloop Set loop count\n";
+  std::cout << "\t-nlarge Set loop_large count\n";
+  std::cout << "\t-nskip Set skip/warmup count\n";
 }
 
 void TesterArguments::get_arguments() {
