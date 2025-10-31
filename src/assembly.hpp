@@ -182,49 +182,61 @@ __device__ __forceinline__ void __roc_flush() {
 #endif
 }
 
+__device__ __forceinline__ void store_asm2(uint16_t& val, uint16_t* dst) {
+#if defined(__gfx906__)
+#endif
+#if defined(__gfx908__)
+#endif
+#if defined(__gfx90a__) || defined (__gfx1100__)
+  asm volatile("flat_store_short %0 %1 glc slc" : : "v"(dst), "v"(val));
+#endif
+#if defined(__gfx942__) || defined(__gfx950__)
+  asm volatile("flat_store_short %0 %1 sc0 sc1" : : "v"(dst), "v"(val));
+#endif
+}
+
+__device__ __forceinline__ void store_asm4(uint32_t& val, uint32_t* dst) {
+#if defined(__gfx906__)
+#endif
+#if defined(__gfx908__)
+#endif
+#if defined(__gfx90a__) || defined (__gfx1100__)
+      asm volatile("flat_store_dword %0 %1 glc slc" : : "v"(dst), "v"(val));
+#endif
+#if defined(__gfx942__) || defined(__gfx950__)
+      asm volatile("flat_store_dword %0 %1 sc0 sc1" : : "v"(dst), "v"(val));
+#endif
+}
+
+__device__ __forceinline__ void store_asm8(uint64_t& val, uint64_t* dst) {
+#if defined(__gfx906__)
+#endif
+#if defined(__gfx908__)
+#endif
+#if defined(__gfx90a__) || defined (__gfx1100__)
+      asm volatile("flat_store_dwordx2 %0 %1 glc slc" : : "v"(dst), "v"(val));
+#endif
+#if defined(__gfx942__) || defined(__gfx950__)
+      asm volatile("flat_store_dwordx2 %0 %1 sc0 sc1" : : "v"(dst), "v"(val));
+#endif
+}
+
 __device__ __forceinline__ void store_asm(uint8_t* val, uint8_t* dst,
                                           int size) {
   switch (size) {
     case 2: {
-      int16_t val16{*(reinterpret_cast<int16_t*>(val))};
-#if defined(__gfx906__)
-#endif
-#if defined(__gfx908__)
-#endif
-#if defined(__gfx90a__) || defined (__gfx1100__)
-      asm volatile("flat_store_short %0 %1 glc slc" : : "v"(dst), "v"(val16));
-#endif
-#if defined(__gfx942__) || defined(__gfx950__)
-      asm volatile("flat_store_short %0 %1 sc0 sc1" : : "v"(dst), "v"(val16));
-#endif
+      uint16_t val16{*(reinterpret_cast<uint16_t*>(val))};
+      store_asm2(val16, (uint16_t*)dst);
       break;
     }
     case 4: {
-      int32_t val32{*(reinterpret_cast<int32_t*>(val))};
-#if defined(__gfx906__)
-#endif
-#if defined(__gfx908__)
-#endif
-#if defined(__gfx90a__) || defined (__gfx1100__)
-      asm volatile("flat_store_dword %0 %1 glc slc" : : "v"(dst), "v"(val32));
-#endif
-#if defined(__gfx942__) || defined(__gfx950__)
-      asm volatile("flat_store_dword %0 %1 sc0 sc1" : : "v"(dst), "v"(val32));
-#endif
+      uint32_t val32{*(reinterpret_cast<uint32_t*>(val))};
+      store_asm4(val32, (uint32_t*)dst);
       break;
     }
     case 8: {
-      int64_t val64{*(reinterpret_cast<int64_t*>(val))};
-#if defined(__gfx906__)
-#endif
-#if defined(__gfx908__)
-#endif
-#if defined(__gfx90a__) || defined (__gfx1100__)
-      asm volatile("flat_store_dwordx2 %0 %1 glc slc" : : "v"(dst), "v"(val64));
-#endif
-#if defined(__gfx942__) || defined(__gfx950__)
-      asm volatile("flat_store_dwordx2 %0 %1 sc0 sc1" : : "v"(dst), "v"(val64));
-#endif
+      uint64_t val64{*(reinterpret_cast<uint64_t*>(val))};
+      store_asm8(val64, (uint64_t*)dst);
       break;
     }
     default:
@@ -234,4 +246,4 @@ __device__ __forceinline__ void store_asm(uint8_t* val, uint8_t* dst,
 
 }  // namespace rocshmem
 
-#endif  // LIBRARY_SRC_ASSEMBLY_HPP_
+#endif  // 

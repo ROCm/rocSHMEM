@@ -64,7 +64,7 @@ class HdpHostSideFlushRocmPolicy {
    * @param hdp_ptr A pointer to use as the HDP flush ptr
    */
   __device__ static void hdp_flush(unsigned int* hdp_ptr) {
-    STORE(hdp_ptr, static_cast<unsigned int>(hdp_poll_flag::FLUSH));
+    __atomic_store_n(hdp_ptr, static_cast<unsigned int>(hdp_poll_flag::FLUSH), __ATOMIC_SEQ_CST);
   }
 
   /**
@@ -141,7 +141,7 @@ class HdpDeviceSideFlushRocmPolicy {
    * @brief Flush the HDP by setting the flush control signal
    */
   __host__ __device__ void hdp_flush() {
-    STORE(hdp_flush_ptr_, static_cast<unsigned int>(HDP_FLUSH_VAL));
+    __atomic_store_n(hdp_flush_ptr_, static_cast<unsigned int>(HDP_FLUSH_VAL), __ATOMIC_SEQ_CST);
   }
   __device__ void flushCoherency() { hdp_flush(); }
 
