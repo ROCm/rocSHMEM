@@ -276,6 +276,8 @@ class Backend {
    */
   TeamTracker team_tracker{};
 
+  BackendType get_backend_type() { return type; }
+
  protected:
   /**
    * @brief Required to support static inheritance for device calls.

@@ -46,7 +46,7 @@ namespace rocshmem {
  * @note Derived classes which use Backend as a base class must add
  * themselves to this enum class to support static polymorphism.
  */
-enum class BackendType { GDA_BACKEND, RO_BACKEND, IPC_BACKEND };
+//enum class BackendType { GDA_BACKEND, RO_BACKEND, IPC_BACKEND };
 
 /**
  * @brief Helper macro for some dispatch calls
