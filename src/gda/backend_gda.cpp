@@ -643,29 +643,29 @@ void GDABackend::cleanup_ibv() {
     }
   } else {
     for (int i = 0; i < qps.size(); i++) {
-      err = ibv_destroy_qp(qps[i]);
+      err = ibv.destroy_qp(qps[i]);
       CHECK_ZERO(err, "ibv_destroy_qp");
 
-      err = ibv_destroy_cq(cqs[i]);
+      err = ibv.destroy_cq(cqs[i]);
       CHECK_ZERO(err, "ibv_destroy_cqs");
     }
 
     if (gda_provider == GDAProvider::IONIC) {
-      err = ibv_dealloc_pd(pd_uxdma[0]);
+      err = ibv.dealloc_pd(pd_uxdma[0]);
       CHECK_ZERO(err, "ibv_dealloc_pd (uxdma[0])");
 
-      err = ibv_dealloc_pd(pd_uxdma[1]);
+      err = ibv.dealloc_pd(pd_uxdma[1]);
       CHECK_ZERO(err, "ibv_dealloc_pd (uxdma[1])");
     }
 
-    err = ibv_dealloc_pd(pd_parent);
+    err = ibv.dealloc_pd(pd_parent);
     CHECK_ZERO(err, "ibv_dealloc_pd (pd_parent)");
   }
 
-  err = ibv_dealloc_pd(pd_orig);
+  err = ibv.dealloc_pd(pd_orig);
   CHECK_ZERO(err, "ibv_dealloc_pd (pd_orig)");
 
-  err = ibv_close_device(context);
+  err = ibv.close_device(context);
   CHECK_ZERO(err, "ibv_close_device");
 }
 
@@ -723,11 +723,11 @@ void GDABackend::open_dv_libs() {
 }
 
 void GDABackend::close_dv_libs() {
-  if (ionicdv_handle_ != nullptr)
-    dlclose(ionicdv_handle_);
-
   if (bnxtdv_handle_ != nullptr)
     dlclose(bnxtdv_handle_);
+
+  if (ionicdv_handle_ != nullptr)
+    dlclose(ionicdv_handle_);
 
   if (mlx5dv_handle_ != nullptr)
     dlclose(mlx5dv_handle_);
@@ -756,7 +756,7 @@ void GDABackend::setup_heap_memory_rkey() {
   auto *base_heap = heap.get_local_heap_base();
   int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
 
-  heap_mr = ibv_reg_mr(pd_orig, base_heap, heap.get_size(), access);
+  heap_mr = ibv.reg_mr(pd_orig, base_heap, heap.get_size(), access);
   CHECK_NNULL(heap_mr, "ibv_reg_mr");
 
   const size_t rkeys_size = sizeof(uint32_t) * num_pes;
@@ -784,7 +784,7 @@ void GDABackend::setup_heap_memory_rkey() {
 }
 
 void GDABackend::cleanup_heap_memory_rkey() {
-  int ret = ibv_dereg_mr(heap_mr);
+  int ret = ibv.dereg_mr(heap_mr);
   CHECK_ZERO(ret, "ibv_dereg_mr");
 
   CHECK_HIP(hipHostFree(heap_rkey));
@@ -831,14 +831,14 @@ void GDABackend::open_ib_device() {
   int num_devices = 0;
   int err;
 
-  device_list = ibv_get_device_list(&num_devices);
+  device_list = ibv.get_device_list(&num_devices);
   CHECK_NNULL(device_list, "ibv_get_device_list");
 
   device = device_list[0]; //TODO default to HIP selected device?
 
   if (requested_dev) {
     for (int i = 0; i < num_devices; i++) {
-      const char *select_device = ibv_get_device_name(device_list[i]);
+      const char *select_device = ibv.get_device_name(device_list[i]);
       CHECK_NNULL(select_device, "ibv_get_device_name");
 
       if (strstr(select_device, requested_dev)) {
@@ -848,14 +848,14 @@ void GDABackend::open_ib_device() {
     }
   }
 
-  context = ibv_open_device(device);
+  context = ibv.open_device(device);
   CHECK_NNULL(context, "ib open device");
   dump_ibv_context(context);
   dump_ibv_device(context->device);
 
   validate_ib_device();
 
-  pd_orig = ibv_alloc_pd(context);
+  pd_orig = ibv.alloc_pd(context);
   CHECK_NNULL(pd_orig, "ib allocate pd");
   dump_ibv_pd(pd_orig);
 
@@ -863,14 +863,14 @@ void GDABackend::open_ib_device() {
     create_parent_domain();
   }
 
-  err = ibv_query_port(context, port, &portinfo);
+  err = ibv.query_port(context, port, &portinfo);
   CHECK_ZERO(err, "ibv_query_port");
   dump_ibv_port_attr(&portinfo);
 
   /* Must init after querying port */
   select_gid_index();
 
-  ibv_free_device_list(device_list);
+  ibv.free_device_list(device_list);
 }
 
 void GDABackend::validate_ib_device() {
@@ -881,12 +881,12 @@ void GDABackend::validate_ib_device() {
   err = gethostname(hostname, sizeof(hostname));
   CHECK_ZERO(err, "gethostname");
 
-  nicname = ibv_get_device_name(device);
+  nicname = ibv.get_device_name(device);
   CHECK_NNULL(nicname, "ibv_get_device_name");
 
   debug_str = "[" + std::string(hostname) + ", " + std::string(nicname) + "]";
 
-  err = ibv_query_device(context, &device_attr);
+  err = ibv.query_device(context, &device_attr);
   CHECK_ZERO(err, "ibv_query_device");
 
   if (gda_provider == GDAProvider::BNXT) {
@@ -935,7 +935,7 @@ void GDABackend::modify_qps_reset_to_init() {
     if (gda_provider == GDAProvider::BNXT) {
       err = bnxt_re_dv.modify_qp(qps[i], &attr, attr_mask, 0, 0);
     } else {
-      err = ibv_modify_qp(qps[i], &attr, attr_mask);
+      err = ibv.modify_qp(qps[i], &attr, attr_mask);
     }
     CHECK_ZERO(err, "modify_qp (INIT)");
   }
@@ -987,7 +987,7 @@ void GDABackend::modify_qps_init_to_rtr() {
     if (gda_provider == GDAProvider::BNXT) {
       err = bnxt_re_dv.modify_qp(qps[i], &attr, attr_mask, 0, 0);
     } else {
-      err = ibv_modify_qp(qps[i], &attr, attr_mask);
+      err = ibv.modify_qp(qps[i], &attr, attr_mask);
     }
     CHECK_ZERO(err, "modify_qp (RTR)");
   }
@@ -1023,7 +1023,7 @@ void GDABackend::modify_qps_rtr_to_rts() {
     if (gda_provider == GDAProvider::BNXT) {
       err = bnxt_re_dv.modify_qp(qps[i], &attr, attr_mask, 0, 0);
     } else {
-      err = ibv_modify_qp(qps[i], &attr, attr_mask);
+      err = ibv.modify_qp(qps[i], &attr, attr_mask);
     }
     CHECK_ZERO(err, "modify_qp (RTS)");
   }
@@ -1144,7 +1144,7 @@ void GDABackend::create_parent_domain() {
     pattr.alloc      = GDABackend::pd_alloc_host;
   }
 
-  pd_parent = ibv_alloc_parent_domain(context, &pattr);
+  pd_parent = ibv.alloc_parent_domain(context, &pattr);
   CHECK_NNULL(pd_parent, "ibv_alloc_parent_domain");
   dump_ibv_pd(pd_parent);
 
@@ -1171,10 +1171,10 @@ void GDABackend::create_cqs(int cqe) {
       cq_attr.parent_domain = pd_uxdma[i & 1];
     }
 
-    cq_ex = ibv_create_cq_ex(context, &cq_attr);
+    cq_ex = ibv.create_cq_ex(context, &cq_attr);
     CHECK_NNULL(cq_ex, "ibv_create_cq_ex");
 
-    cqs[i] = ibv_cq_ex_to_cq(cq_ex);
+    cqs[i] = ibv.cq_ex_to_cq(cq_ex);
     CHECK_NNULL(cqs[i], "ibv_cq_ex_to_cq");
   }
 }
@@ -1218,7 +1218,7 @@ void GDABackend::create_qps(int sq_length) {
     attr.send_cq = cqs[i];
     attr.recv_cq = cqs[i];
 
-    qps[i] = ibv_create_qp_ex(context, &attr);
+    qps[i] = ibv.create_qp_ex(context, &attr);
     CHECK_NNULL(qps[i], "ibv_create_qp_ex");
   }
 }
@@ -1240,7 +1240,7 @@ void GDABackend::select_gid_index() {
 
   gid_entries = (struct ibv_gid_entry*) calloc(gid_tbl_len, sizeof(struct ibv_gid_entry));
 
-  gid_tbl_entries = ibv_query_gid_table(context, gid_entries, gid_tbl_len, 0);
+  gid_tbl_entries = ibv.query_gid_table(context, gid_entries, gid_tbl_len, 0);
   if (gid_tbl_entries < 0) {
     fprintf(stderr, "[Warning] ibv_query_gid_table failed. No available GIDs\n");
     free(gid_entries);
@@ -1257,7 +1257,7 @@ void GDABackend::select_gid_index() {
 
     current_gid = gid_entries[i].gid;
 
-    err = ibv_query_gid(context, port, i, &current_gid);
+    err = ibv.query_gid(context, port, i, &current_gid);
     CHECK_ZERO(err, "ibv_query_gid");
 
     /* We don't want local GIDs */

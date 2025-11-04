@@ -81,7 +81,7 @@ void GDABackend::ionic_setup_parent_domain(struct ibv_parent_domain_init_attr* p
   ionic_dv.pd_set_rqcmb(pd_parent, false, false, false);
 
   for (int uxdma_i = 0; uxdma_i < 2; ++uxdma_i) {
-    pd_uxdma[uxdma_i] = ibv_alloc_parent_domain(context, pattr);
+    pd_uxdma[uxdma_i] = ibv.alloc_parent_domain(context, pattr);
     CHECK_NNULL(pd_uxdma[uxdma_i], "ibv_alloc_parent_domain (uxdma)");
 
     ionic_dv.pd_set_sqcmb(pd_uxdma[uxdma_i], false, false, false);

@@ -36,6 +36,7 @@
 #include "queue_pair.hpp"
 #include "bootstrap/bootstrap.hpp"
 #include "debug_gda.hpp"
+#include "ibv_wrapper.hpp"
 #include "gda/ionic/provider_gda_ionic.hpp"
 #include "gda/bnxt/provider_gda_bnxt.hpp"
 #include "gda/mlx5/provider_gda_mlx5.hpp"

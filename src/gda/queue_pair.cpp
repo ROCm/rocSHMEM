@@ -46,10 +46,10 @@ QueuePair::QueuePair(struct ibv_pd* pd, int gda_provider) {
   CHECK_HIP(hipMemset(nonfetching_atomic, 0, 8));
   CHECK_HIP(hipMemset(fetching_atomic, 0, 8 * FETCHING_ATOMIC_CNT));
 
-  mr_nonfetching_atomic = ibv_reg_mr(pd, nonfetching_atomic, 8, access);
+  mr_nonfetching_atomic = ibv.reg_mr(pd, nonfetching_atomic, 8, access);
   CHECK_NNULL(mr_nonfetching_atomic, "ibv_reg_mr");
 
-  mr_fetching_atomic = ibv_reg_mr(pd, fetching_atomic, 8 * FETCHING_ATOMIC_CNT, access);
+  mr_fetching_atomic = ibv.reg_mr(pd, fetching_atomic, 8 * FETCHING_ATOMIC_CNT, access);
   CHECK_NNULL(mr_fetching_atomic, "ibv_reg_mr");
 
   if (gda_provider == GDAProvider::MLX5) {
@@ -102,10 +102,10 @@ QueuePair::QueuePair(struct ibv_pd* pd, int gda_provider) {
 QueuePair::~QueuePair() {
   int err;
 
-  err = ibv_dereg_mr(mr_nonfetching_atomic);
+  err = ibv.dereg_mr(mr_nonfetching_atomic);
   CHECK_ZERO(err, "ibv_dereg_mr (nonfetching_atomic)");
 
-  err = ibv_dereg_mr(mr_fetching_atomic);
+  err = ibv.dereg_mr(mr_fetching_atomic);
   CHECK_ZERO(err, "ibv_dereg_mr (fetching_atomic)");
 
   allocator.deallocate((void*)nonfetching_atomic);

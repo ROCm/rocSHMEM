@@ -39,6 +39,8 @@
 #include "constants.hpp"
 #include "util.hpp"
 
+#include "ibv_wrapper.hpp"
+
 #include "gda/ionic/provider_gda_ionic.hpp"
 #include "gda/mlx5/provider_gda_mlx5.hpp"
 #include "gda/bnxt/provider_gda_bnxt.hpp"
@@ -340,6 +342,8 @@ class QueuePair {
   FreeListT* fetching_atomic_freelist{nullptr};
 
   HIPAllocator allocator{};
+
+  IBVWrapper ibv;
 
   uint8_t gda_op_rdma_write;
   uint8_t gda_op_rdma_read;
