@@ -418,7 +418,7 @@ static BackendType select_backend_type() {
   backend->heap.free(ptr);
 }
 
-__host__ void * rocshmem_ptr(void * dest, int pe){
+__host__ void * rocshmem_ptr(const void * dest, int pe){
 
   Context *ctx = reinterpret_cast<Context *>(ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque);
 
