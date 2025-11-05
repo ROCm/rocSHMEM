@@ -232,15 +232,13 @@ __device__ void GDAContext::barrier_all() {
 }
 
 __device__ void GDAContext::barrier_all_wave() {
-  if (is_thread_zero_in_wave()) {
-    quiet();
-  }
+  quiet_wave();
   sync_all_wave();
 }
 
 __device__ void GDAContext::barrier_all_wg() {
-  if (is_thread_zero_in_block()) {
-    quiet();
+  if (is_wave_zero_in_block()) {
+    quiet_wave();
   }
   sync_all_wg();
   __syncthreads();
@@ -268,9 +266,7 @@ __device__ void GDAContext::barrier_wave(rocshmem_team_t team) {
   int pe_size = team_obj->num_pes;
   long *p_sync = team_obj->barrier_pSync;
 
-  if (is_thread_zero_in_wave()) {
-    quiet();
-  }
+  quiet_wave();
   internal_sync_wave(pe, pe_start, pe_stride, pe_size, p_sync);
 }
 
@@ -283,8 +279,8 @@ __device__ void GDAContext::barrier_wg(rocshmem_team_t team) {
   int pe_size = team_obj->num_pes;
   long *p_sync = team_obj->barrier_pSync;
 
-  if (is_thread_zero_in_block()) {
-    quiet();
+  if (is_wave_zero_in_block()) {
+    quiet_wave();
   }
   internal_sync_wg(pe, pe_start, pe_stride, pe_size, p_sync);
   __syncthreads();

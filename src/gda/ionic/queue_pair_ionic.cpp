@@ -171,7 +171,8 @@ __device__ void QueuePair::ionic_quiet_internal(uint64_t activemask, uint32_t co
 }
 
 __device__ void QueuePair::ionic_ring_doorbell(uint32_t pos) {
-  // TODO When threads write at once to the same address, not all writes reach the bus.
+  // When threads write at once to the same address, not all writes reach the bus.
+  // Take turns and insert a thread fence between writes to the same address.
   for (int i = 0; i < 64; ++i) {
     if (__lane_id() == i) {
       __threadfence();
@@ -185,11 +186,22 @@ __device__ void QueuePair::ionic_quiet() {
   ionic_quiet_internal(get_same_qp_lane_mask(), sq_prod);
 }
 
-__device__ void QueuePair::ionic_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
+__device__ void QueuePair::ionic_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, Collectivity cy) {
   uint64_t activemask = get_same_qp_lane_mask();
-  uint32_t num_wqes = get_active_lane_count(activemask);
   uint32_t my_logical_lane_id = get_active_lane_num(activemask);
+  uint32_t num_wqes = 1;
+  if (cy == THREAD) {
+    num_wqes = get_active_lane_count(activemask);
+  }
+
   uint32_t my_sq_prod = reserve_sq(activemask, num_wqes);
+  if (cy == WAVE) {
+    if (!is_first_active_lane(activemask)) {
+      return;
+    }
+    activemask &= activemask ^ (activemask - 1);
+  }
+
   uint32_t my_sq_pos = my_sq_prod + my_logical_lane_id;
   struct ionic_v1_wqe *wqe = &ionic_sq_buf[my_sq_pos & sq_mask];
   uint16_t wqe_flags = 0;

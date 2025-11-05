@@ -55,11 +55,11 @@ __global__ void WaveFrontPrimitiveTest(int loop, int skip,
   for (int i = 0; i < loop + skip; i++) {
     if (i == skip) {
       // Ensures all RMA calls from the skip loops are completed
-      if(is_thread_zero_in_wave()) {
-        rocshmem_ctx_quiet(ctx);
-      }
+      rocshmem_ctx_quiet(ctx);
       __syncthreads();
-      start_time[idx] = wall_clock64();
+      if (is_thread_zero_in_wave()) {
+        start_time[idx] = wall_clock64();
+      }
     }
     switch (type) {
       case WAVEGetTestType:
@@ -79,8 +79,8 @@ __global__ void WaveFrontPrimitiveTest(int loop, int skip,
     }
   }
 
+  rocshmem_ctx_quiet(ctx);
   if (is_thread_zero_in_wave()) {
-    rocshmem_ctx_quiet(ctx);
     end_time[idx] = wall_clock64();
   }
 

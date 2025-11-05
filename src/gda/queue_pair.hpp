@@ -64,6 +64,8 @@ class QueuePair {
    */
   virtual ~QueuePair();
 
+  enum Collectivity { THREAD, WAVE };
+
   /**
    * @brief Create and enqueue a non-blocking put work queue entry (wqe).
    *
@@ -72,7 +74,7 @@ class QueuePair {
    * @param[in] nelems Size in bytes of data transmission.
    * @param[in] pe Destination processing element of data transmission.
    */
-  __device__ void put_nbi(void *dest, const void *source, size_t nelems, int pe);
+  __device__ void put_nbi(void *dest, const void *source, size_t nelems, int pe, Collectivity cy = THREAD);
 
   /**
    * @brief Create and enqueue a non-blocking get work queue entry (wqe).
@@ -82,12 +84,12 @@ class QueuePair {
    * @param[in] nelems Size in bytes of data transmission.
    * @param[in] pe Destination processing element of data transmission.
    */
-  __device__ void get_nbi(void *dest, const void *source, size_t nelems, int pe);
+  __device__ void get_nbi(void *dest, const void *source, size_t nelems, int pe, Collectivity cy = THREAD);
 
   /**
    * @brief Empty all completions from the completion queue.
    */
-  __device__ void quiet();
+  __device__ void quiet(Collectivity cy = THREAD);
 
   /**
    * @brief Create and enqueue an atomic fetch work queue entry (wqe).
@@ -158,7 +160,9 @@ class QueuePair {
    * @param[in] raddr Remote address.
    * @param[in] opcode Operation to be performed.
    */
-  __device__ __attribute__((noinline)) void post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
+  __device__ __attribute__((noinline)) void post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, Collectivity cy);
+  __device__ __attribute__((noinline)) void post_wqe_rma_turn(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, Collectivity cy);
+  __device__ __attribute__((noinline)) void post_wqe_rma_single(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
 
 #if defined(GDA_MLX5)
   __device__ uint64_t mlx5_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
@@ -172,7 +176,7 @@ class QueuePair {
 #endif
 #if defined(GDA_IONIC)
   __device__ uint64_t ionic_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
-  __device__ void ionic_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
+  __device__ void ionic_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, Collectivity cy);
   __device__ void ionic_quiet();
 #endif
 

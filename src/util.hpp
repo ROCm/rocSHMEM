@@ -241,6 +241,13 @@ __device__ __forceinline__ bool is_thread_zero_in_wave() {
   return (get_flat_block_id() % WF_SIZE) == 0;
 }
 
+/*
+ * Returns true if the caller's thread flat_id is in the zero'th wave.
+ */
+__device__ __forceinline__ bool is_wave_zero_in_block() {
+  return (get_flat_block_id() / WF_SIZE) == 0;
+}
+
 __device__ __forceinline__ uint64_t get_active_lane_mask() {
   return __ballot(true);
 }
