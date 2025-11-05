@@ -343,8 +343,6 @@ class QueuePair {
 
   HIPAllocator allocator{};
 
-  IBVWrapper ibv;
-
   uint8_t gda_op_rdma_write;
   uint8_t gda_op_rdma_read;
   uint8_t gda_op_atomic_fa;
