@@ -214,7 +214,7 @@ __device__ void GDAContext::getmem_nbi_wg(void *dest, const void *source,
   }
   uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
   if (is_wave_zero_in_block()) {
-    qps[pe].get_nbi(base_heap[pe] + L_offset, source, nelems, pe, QueuePair::WAVE);
+    qps[pe].get_nbi(dest, base_heap[pe] + L_offset, nelems, pe, QueuePair::WAVE);
   }
 }
 
