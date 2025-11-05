@@ -56,6 +56,9 @@
 #include "wavefront_primitives.hpp"
 #include "workgroup_primitives.hpp"
 
+#include "backend_bc.hpp"
+extern Backend* backend;
+
 Tester::Tester(TesterArguments args) : args(args) {
   _type = (TestType)args.algorithm;
   _shmem_context = args.shmem_context;
@@ -102,6 +105,7 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
 
   if (rank == 0) std::cout << "### Creating Test: ";
 
+  BackendType backend_type = get_backend_type();
   TestType type = (TestType)args.algorithm;
 
   switch (type) {
@@ -245,85 +249,99 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       if (rank == 0) std::cout << "AMO Fetch_Add ###" << std::endl;
       testers.push_back(new AMOStandardTester<long long>(args));
       testers.push_back(new AMOStandardTester<long>(args));
-      testers.push_back(new AMOStandardTester<int>(args));
+      if (BackendType::GDA_BACKEND != backend_type) // not implemented for GDA
+        testers.push_back(new AMOStandardTester<int>(args));
       return testers;
     case AMO_FIncTestType:
       if (rank == 0) std::cout << "AMO Fetch_Inc ###" << std::endl;
       testers.push_back(new AMOStandardTester<long long>(args));
       testers.push_back(new AMOStandardTester<long>(args));
-      testers.push_back(new AMOStandardTester<int>(args));
+      if (BackendType::GDA_BACKEND != backend_type) // not implemented for GDA
+        testers.push_back(new AMOStandardTester<int>(args));
       return testers;
     case AMO_FetchTestType:
       if (rank == 0) std::cout << "AMO Fetch ###" << std::endl;
       testers.push_back(new AMOExtendedTester<long long>(args));
       testers.push_back(new AMOExtendedTester<long>(args));
-      testers.push_back(new AMOExtendedTester<int>(args));
+      if (BackendType::GDA_BACKEND != backend_type) // not implemented for GDA
+        testers.push_back(new AMOExtendedTester<int>(args));
       return testers;
     case AMO_FCswapTestType:
       if (rank == 0) std::cout << "AMO Fetch_CSWAP ###" << std::endl;
       testers.push_back(new AMOStandardTester<long long>(args));
       testers.push_back(new AMOStandardTester<long>(args));
-      testers.push_back(new AMOStandardTester<int>(args));
+      if (BackendType::GDA_BACKEND != backend_type) // not implemented for GDA
+        testers.push_back(new AMOStandardTester<int>(args));
       return testers;
     case AMO_AddTestType:
       if (rank == 0) std::cout << "AMO Add ###" << std::endl;
       testers.push_back(new AMOStandardTester<long long>(args));
       testers.push_back(new AMOStandardTester<long>(args));
-      testers.push_back(new AMOStandardTester<int>(args));
+      if (BackendType::GDA_BACKEND != backend_type) // not implemented for GDA
+        testers.push_back(new AMOStandardTester<int>(args));
       return testers;
     case AMO_SetTestType:
       if (rank == 0) std::cout << "AMO Set ###" << std::endl;
       testers.push_back(new AMOExtendedTester<long long>(args));
       testers.push_back(new AMOExtendedTester<long>(args));
-      testers.push_back(new AMOExtendedTester<int>(args));
+      if (BackendType::GDA_BACKEND != backend_type) // not implemented for GDA
+        testers.push_back(new AMOExtendedTester<int>(args));
       return testers;
     case AMO_SwapTestType:
       if (rank == 0) std::cout << "AMO Swap ###" << std::endl;
       testers.push_back(new AMOExtendedTester<long long>(args));
       testers.push_back(new AMOExtendedTester<long>(args));
-      testers.push_back(new AMOExtendedTester<int>(args));
+      if (BackendType::GDA_BACKEND != backend_type) // not implemented for GDA
+        testers.push_back(new AMOExtendedTester<int>(args));
       return testers;
     case AMO_FetchAndTestType:
       if (rank == 0) std::cout << "AMO Fetch And ###" << std::endl;
       testers.push_back(new AMOBitwiseTester<unsigned long long>(args));
       testers.push_back(new AMOBitwiseTester<unsigned long>(args));
-      testers.push_back(new AMOBitwiseTester<unsigned int>(args));
+      if (BackendType::GDA_BACKEND != backend_type) // not implemented for GDA
+        testers.push_back(new AMOBitwiseTester<unsigned int>(args));
       return testers;
     case AMO_AndTestType:
       if (rank == 0) std::cout << "AMO And ###" << std::endl;
       testers.push_back(new AMOBitwiseTester<unsigned long long>(args));
       testers.push_back(new AMOBitwiseTester<unsigned long>(args));
-      testers.push_back(new AMOBitwiseTester<unsigned int>(args));
+      if (BackendType::GDA_BACKEND != backend_type) // not implemented for GDA
+        testers.push_back(new AMOBitwiseTester<unsigned int>(args));
       return testers;
     case AMO_FetchOrTestType:
       if (rank == 0) std::cout << "AMO Fetch Or ###" << std::endl;
       testers.push_back(new AMOBitwiseTester<unsigned long long>(args));
       testers.push_back(new AMOBitwiseTester<unsigned long>(args));
-      testers.push_back(new AMOBitwiseTester<unsigned int>(args));
+      if (BackendType::GDA_BACKEND != backend_type) // not implemented for GDA
+        testers.push_back(new AMOBitwiseTester<unsigned int>(args));
       return testers;
     case AMO_OrTestType:
       if (rank == 0) std::cout << "AMO Or ###" << std::endl;
       testers.push_back(new AMOBitwiseTester<unsigned long long>(args));
       testers.push_back(new AMOBitwiseTester<unsigned long>(args));
-      testers.push_back(new AMOBitwiseTester<unsigned int>(args));
+      if (BackendType::GDA_BACKEND != backend_type) // not implemented for GDA
+        testers.push_back(new AMOBitwiseTester<unsigned int>(args));
       return testers;
     case AMO_FetchXorTestType:
       if (rank == 0) std::cout << "AMO Fetch Xor ###" << std::endl;
       testers.push_back(new AMOBitwiseTester<unsigned long long>(args));
       testers.push_back(new AMOBitwiseTester<unsigned long>(args));
-      testers.push_back(new AMOBitwiseTester<unsigned int>(args));
+      if (BackendType::GDA_BACKEND != backend_type) // not implemented for GDA
+        testers.push_back(new AMOBitwiseTester<unsigned int>(args));
       return testers;
     case AMO_XorTestType:
       if (rank == 0) std::cout << "AMO Xor ###" << std::endl;
       testers.push_back(new AMOBitwiseTester<unsigned long long>(args));
       testers.push_back(new AMOBitwiseTester<unsigned long>(args));
-      testers.push_back(new AMOBitwiseTester<unsigned int>(args));
+      if (BackendType::GDA_BACKEND != backend_type) // not implemented for GDA
+        testers.push_back(new AMOBitwiseTester<unsigned int>(args));
       return testers;
     case AMO_IncTestType:
       if (rank == 0) std::cout << "AMO Inc ###" << std::endl;
       testers.push_back(new AMOStandardTester<long long>(args));
       testers.push_back(new AMOStandardTester<long>(args));
-      testers.push_back(new AMOStandardTester<int>(args));
+      if (BackendType::GDA_BACKEND != backend_type) // not implemented for GDA
+        testers.push_back(new AMOStandardTester<int>(args));
       return testers;
     case PingPongTestType:
       if (rank == 0) std::cout << "PingPong ###" << std::endl;

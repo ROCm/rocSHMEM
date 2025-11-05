@@ -556,48 +556,44 @@ TestGDA() {
   ##############################################################################
   #       | Name             | Ranks | Workgroups | Threads | Max Message Size #
   ##############################################################################
-#  ExecTest  "amo_fetch"        2       1            1
-#  ExecTest  "amo_fetch"        2       1            1024
-#  ExecTest  "amo_fetch"        2       8            1
-#  ExecTest  "amo_fetch"        2       32           128
+  ExecTest  "amo_fetch"        2       1            1
+  ExecTest  "amo_fetch"        2       1            1024
+  ExecTest  "amo_fetch"        2       8            1
+  ExecTest  "amo_fetch"        2       32           128
 
-#  ExecTest  "amo_set"          2       1            1
-#  ExecTest  "amo_set"          2       8            1
-#  ExecTest  "amo_set"          2       32           1
+  ExecTest  "amo_set"          2       1            1
+  ExecTest  "amo_set"          2       8            1
+  ExecTest  "amo_set"          2       32           1
 
-#  ExecTest  "amo_fcswap"       2       1            1
-#  ExecTest  "amo_fcswap"       2       32           1
-#  ExecTest  "amo_fcswap"       2       8            1
+  ExecTest  "amo_fcswap"       2       1            1
+  ExecTest  "amo_fcswap"       2       32           1
+  ExecTest  "amo_fcswap"       2       8            1
 
-#This works but tester requires 32bit amos to be implemented
-#  ExecTest  "amo_finc"         2       1            1
-#  ExecTest  "amo_finc"         2       1            1024
-#  ExecTest  "amo_finc"         2       8            1
-#  ExecTest  "amo_finc"         2       32           128
+  ExecTest  "amo_finc"         2       1            1
+  ExecTest  "amo_finc"         2       1            1024
+  ExecTest  "amo_finc"         2       8            1
+  ExecTest  "amo_finc"         2       32           128
 
-#This works but tester requires get
-#  ExecTest  "amo_inc"          2       1            1
-#  ExecTest  "amo_inc"          2       1            1024
-#  ExecTest  "amo_inc"          2       8            1
-#  ExecTest  "amo_inc"          2       32           128
+  ExecTest  "amo_inc"          2       1            1
+  ExecTest  "amo_inc"          2       1            1024
+  ExecTest  "amo_inc"          2       8            1
+  ExecTest  "amo_inc"          2       32           128
 
-#This works but tester requires 32bit amos to be implemented
-#  ExecTest  "amo_fadd"         2       1            1
-#  ExecTest  "amo_fadd"         2       1            1024
-#  ExecTest  "amo_fadd"         2       8            1
-#  ExecTest  "amo_fadd"         2       32           128
+  ExecTest  "amo_fadd"         2       1            1
+  ExecTest  "amo_fadd"         2       1            1024
+  ExecTest  "amo_fadd"         2       8            1
+  ExecTest  "amo_fadd"         2       32           128
 
-#This works but tester requires get
-#  ExecTest  "amo_add"          2       1            1
-#  ExecTest  "amo_add"          2       1            1024
-#  ExecTest  "amo_add"          2       8            1
-#  ExecTest  "amo_add"          2       32           128
+  ExecTest  "amo_add"          2       1            1
+  ExecTest  "amo_add"          2       1            1024
+  ExecTest  "amo_add"          2       8            1
+  ExecTest  "amo_add"          2       32           128
 
-#  ExecTest  "amo_fetchand"     2       1            1
+  ExecTest  "amo_fetchand"     2       1            1
 
-#  ExecTest  "amo_and"          2       1            1
+  ExecTest  "amo_and"          2       1            1
 
-#  ExecTest  "amo_xor"          2       1            1
+  ExecTest  "amo_xor"          2       1            1
 
 #TestColl() {
   ##############################################################################
@@ -609,13 +605,14 @@ TestGDA() {
   ExecTest  "teamsync"         2       1            1
   ExecTest  "syncall"          2       1            1
 
-#  ExecTest  "alltoall"         2       1            1         512
+  ExecTest  "alltoall"         2       1            1         512
 
-#  ExecTest  "teambroadcast"    2       1            1         32768
+  ExecTest  "teambroadcast"    2       1            1         32768
 
-#  ExecTest  "fcollect"         2       1            1         512
-#  ExecTest  "fcollect"         2       1            1         32768
+  ExecTest  "fcollect"         2       1            1         512
+  ExecTest  "fcollect"         2       1            1         32768
 
+# deadlock on gda, size 8KB
 #  ExecTest  "teamreduction"    2       1            1         32768
 
 #TestOther() {
@@ -631,6 +628,11 @@ TestGDA() {
   # This test requires more contexts than workgroups
   export ROCSHMEM_MAX_NUM_CONTEXTS=1024
   ExecTest  "teamctxinfra"     2       1            1
+  ExecTest  "teamctxsingleinfra"  2       1            1
+  ExecTest  "teamctxblockinfra"   4       1            1
+  ExecTest  "teamctxblockinfra"   5       1            1
+  ExecTest  "teamctxoddeveninfra" 4       1            1
+  ExecTest  "teamctxoddeveninfra" 5       1            1
   unset ROCSHMEM_MAX_NUM_CONTEXTS
 }
 

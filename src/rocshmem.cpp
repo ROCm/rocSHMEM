@@ -81,6 +81,8 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
  * Begin Host Code
  **/
 
+BackendType get_backend_type() { return backend->get_backend_type(); }
+
 #if defined(USE_GDA) && defined(USE_RO) && defined(USE_IPC)
 static BackendType select_backend_type() {
   BackendType type;

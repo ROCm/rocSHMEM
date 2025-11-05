@@ -138,6 +138,13 @@ extern __constant__ rocshmem_ctx_t ROCSHMEM_CTX_INVALID;
  */
 void set_internal_ctx(rocshmem_ctx_t *ctx);
 
+/**
+ * Used internally to query the loaded backend
+ */
+//TODO: this should remain internal?
+enum class BackendType { GDA_BACKEND, RO_BACKEND, IPC_BACKEND };
+BackendType get_backend_type();
+
 typedef uint64_t *rocshmem_team_t;
 extern rocshmem_team_t ROCSHMEM_TEAM_WORLD;
 
