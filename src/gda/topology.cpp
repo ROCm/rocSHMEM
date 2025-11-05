@@ -23,6 +23,7 @@
  *****************************************************************************/
 
 #include "topology.hpp"
+#include "ibv_wrapper.hpp"
 
 using namespace rocshmem;
 
@@ -288,7 +289,7 @@ namespace rocshmem
                                   int const&  gidIndex,
                                   int&        version)
   {
-    char const* deviceName = ibv_get_device_name(context->device);
+    char const* deviceName = ibv.get_device_name(context->device);
     char gidRoceVerStr[16]      = {};
     char roceTypePath[PATH_MAX] = {};
     sprintf(roceTypePath, "/sys/class/infiniband/%s/ports/%d/gid_attrs/types/%d",
@@ -347,7 +348,7 @@ namespace rocshmem
     int gidIndex = -1;
 
     for (int i = 0; i < gidTblLen; ++i) {
-      IBV_CALL(ibv_query_gid, context, portNum, i, &gid);
+      IBV_CALL(ibv.query_gid, context, portNum, i, &gid);
       if (!IsConfiguredGid(gid)) continue;
       int gidCurrRoceVersion;
       if(GetRoceVersionNumber(context, portNum, i, gidCurrRoceVersion) != ROCSHMEM_SUCCESS) continue;
@@ -385,7 +386,7 @@ namespace rocshmem
 
       // Query the number of IBV devices
       int numIbvDevices = 0;
-      ibv_device** deviceList = ibv_get_device_list(&numIbvDevices);
+      ibv_device** deviceList = ibv.get_device_list(&numIbvDevices);
       CHECK_NNULL(deviceList, "ibv_get_device_list");
 
       if (numIbvDevices > 0) {
@@ -396,15 +397,15 @@ namespace rocshmem
           ibvDevice.name = deviceList[i]->name;
           ibvDevice.hasActivePort = false;
           {
-            struct ibv_context *context = ibv_open_device(ibvDevice.devicePtr);
+            struct ibv_context *context = ibv.open_device(ibvDevice.devicePtr);
             if (context) {
               struct ibv_device_attr deviceAttr;
-              if (!ibv_query_device(context, &deviceAttr)) {
+              if (!ibv.query_device(context, &deviceAttr)) {
                 int activePort;
                 ibvDevice.gidIndex = -1;
                 for (int port = 1; port <= deviceAttr.phys_port_cnt; ++port) {
                   struct ibv_port_attr portAttr;
-                  if (ibv_query_port(context, port, &portAttr)) continue;
+                  if (ibv.query_port(context, port, &portAttr)) continue;
                   if (portAttr.state == IBV_PORT_ACTIVE) {
                     activePort = port;
                     ibvDevice.hasActivePort = true;
@@ -421,7 +422,7 @@ namespace rocshmem
                   }
                 }
               }
-              ibv_close_device(context);
+              ibv.close_device(context);
             }
           }
           ibvDevice.busId = "";
@@ -458,7 +459,7 @@ namespace rocshmem
         fprintf(stderr, "[Error] No visible InfiniBand devices found.\n");
         exit(1);
       }
-      ibv_free_device_list(deviceList);
+      ibv.free_device_list(deviceList);
       isInitialized = true;
     }
     return ibvDeviceList;

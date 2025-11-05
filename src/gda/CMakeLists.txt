@@ -32,18 +32,16 @@ target_sources(
     context_gda_device_coll.cpp
     context_gda_host.cpp
     backend_gda.cpp
+    ibv_wrapper.cpp
     gda_team.cpp
     queue_pair.cpp
     endian.cpp
     topology.cpp
 )
 
-find_package(IBVerbs REQUIRED)
-
 target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC
-    IBVerbs::verbs
     numa
 )
 
