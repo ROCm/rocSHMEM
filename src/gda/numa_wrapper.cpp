@@ -33,6 +33,9 @@
 
 namespace rocshmem {
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wvla-cxx-extension"
+
 NUMAWrapper numa;
 
 NUMAWrapper::NUMAWrapper() {
@@ -99,7 +102,6 @@ int NUMAWrapper::max_node(void) {
   return numa.max_node();
 }
 
-
 long NUMAWrapper::move_pages(int pid, unsigned long count, void *pages[count],
                              const int nodes[count], int status[count], int flags) {
   return move_pages(pid, count, pages, nodes, status, flags);
@@ -108,5 +110,7 @@ long NUMAWrapper::move_pages(int pid, unsigned long count, void *pages[count],
 int NUMAWrapper::distance(int node1, int node2) {
   return numa.distance(node1, node2);
 }
+
+#pragma clang diagnostic pop
 
 }  // namespace rocshmem

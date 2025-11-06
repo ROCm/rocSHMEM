@@ -31,6 +31,9 @@ class NUMAWrapper;
 
 extern NUMAWrapper numa;
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wvla-cxx-extension"
+
 class NUMAWrapper {
   public:
     explicit NUMAWrapper();
@@ -76,6 +79,8 @@ class NUMAWrapper {
      */
     int init_function_table();
 };
+
+#pragma clang diagnostic pop
 
 }  // namespace rocshmem
 
