@@ -27,8 +27,7 @@
 #include <cstring>
 #include <future>
 #include <map>
-#include <numa.h> // If not found, try installing libnuma-dev (e.g apt-get install libnuma-dev)
-#include <numaif.h>
+#include "numa_wrapper.hpp"
 #include <random>
 #include <set>
 #include <sstream>

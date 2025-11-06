@@ -24,6 +24,7 @@
 
 #include "topology.hpp"
 #include "ibv_wrapper.hpp"
+#include "numa_wrapper.hpp"
 
 using namespace rocshmem;
 
@@ -53,7 +54,7 @@ namespace rocshmem
       pages[i] = (char*)pages[i-1] + pageSize;
     }
 
-    long const retCode = move_pages(0, numPages, pages.data(), NULL, status.data(), 0);
+    long const retCode = numa.move_pages(0, numPages, pages.data(), NULL, status.data(), 0);
     if (retCode) {
       fprintf(stderr,"Unable to collect page table information for allocated memory. "
               "Ensure NUMA library is installed properly");
@@ -90,7 +91,7 @@ namespace rocshmem
 
     if (IsCpuMemType(memType)) {
       // Set numa policy prior to call to hipHostMalloc
-      numa_set_preferred(memDevice.memIndex);
+      numa.set_preferred(memDevice.memIndex);
 
       // Allocate host-pinned memory (should respect NUMA mem policy)
       CHECK_HIP(hipHostMalloc((void **)memPtr, numBytes, hipHostMallocNumaUser | hipHostMallocNonCoherent));
@@ -99,7 +100,7 @@ namespace rocshmem
       memset(*memPtr, 0, numBytes);
       ERR_CHECK(CheckPages((char*)*memPtr, numBytes, memDevice.memIndex));
       // Reset to default numa mem policy
-      numa_set_preferred(-1);
+      numa.set_preferred(-1);
     } else if (IsGpuMemType(memType)) {
       int prev_dev;
       CHECK_HIP(hipGetDevice(&prev_dev));
@@ -653,7 +654,7 @@ namespace rocshmem
   {
     switch (exeType) {
     case rocshmem::EXE_CPU:
-      return numa_num_configured_nodes();
+      return numa.num_configured_nodes();
     case rocshmem::EXE_GPU:
       {
         int numDetectedGpus = 0;
@@ -790,8 +791,8 @@ namespace rocshmem
     // Build CPU remapping on first use
     // Skip numa nodes that are not configured
     if (remappingCpu.empty()) {
-      for (int node = 0; node <= numa_max_node(); node++)
-        if (numa_bitmask_isbitset(numa_get_mems_allowed(), node))
+      for (int node = 0; node <= numa.max_node(); node++)
+        if (numa.bitmask_isbitset(numa.get_mems_allowed(), node))
           remappingCpu.push_back(node);
     }
     return remappingCpu[origIdx];
@@ -842,7 +843,7 @@ namespace rocshmem
     } else {
       printf("\nDetected Topology:\n");
       printf("==================\n");
-      printf("  %d configured CPU NUMA node(s) [%d total]\n", numCpus, numa_max_node() + 1);
+      printf("  %d configured CPU NUMA node(s) [%d total]\n", numCpus, numa.max_node() + 1);
       printf("  %d GPU device(s)\n", numGpus);
       printf("  %d Supported NIC device(s)\n", numNics);
     }
@@ -865,13 +866,13 @@ namespace rocshmem
       printf("NUMA %02d (%02d)%c", i, nodeI, sep);
       for (int j = 0; j < numCpus; j++) {
         int nodeJ = RemappedCpuIndex(j);
-        int numaDist = numa_distance(nodeI, nodeJ);
+        int numaDist = numa.distance(nodeI, nodeJ);
         printf(" %5d %c", numaDist, sep);
       }
 
       int numCpuCores = 0;
-      for (int j = 0; j < numa_num_configured_cpus(); j++)
-        if (numa_node_of_cpu(j) == nodeI) numCpuCores++;
+      for (int j = 0; j < numa.num_configured_cpus(); j++)
+        if (numa.node_of_cpu(j) == nodeI) numCpuCores++;
       printf(" %5d %c", numCpuCores, sep);
 
       for (int j = 0; j < numGpus; j++) {
