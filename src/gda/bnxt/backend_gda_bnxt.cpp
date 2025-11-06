@@ -111,6 +111,7 @@ void GDABackend::bnxt_create_cqs(int cqe) {
     bnxt_scqs[i].length = cq_attr.ncqe * cq_attr.cqe_size;
     bnxt_scqs[i].depth  = cq_attr.ncqe;
     CHECK_HIP(hipExtMallocWithFlags(&bnxt_scqs[i].buf, bnxt_scqs[i].length, hipDeviceMallocUncached));
+    CHECK_HIP(hipMemset(bnxt_scqs[i].buf, 0, bnxt_scqs[i].length));
 
     /* Register SCQ UMEM */
     memset(&umem_attr, 0, sizeof(struct bnxt_re_dv_umem_reg_attr));
@@ -142,6 +143,7 @@ void GDABackend::bnxt_create_cqs(int cqe) {
     bnxt_rcqs[i].length = cq_attr.ncqe * cq_attr.cqe_size;
     bnxt_rcqs[i].depth  = cq_attr.ncqe;
     CHECK_HIP(hipExtMallocWithFlags(&bnxt_rcqs[i].buf, bnxt_rcqs[i].length, hipDeviceMallocUncached));
+    CHECK_HIP(hipMemset(bnxt_rcqs[i].buf, 0, bnxt_rcqs[i].length));
 
     /* Register RCQ UMEM */
     memset(&umem_attr, 0, sizeof(struct bnxt_re_dv_umem_reg_attr));
@@ -194,6 +196,7 @@ void GDABackend::bnxt_create_qps(int sq_length) {
 
     /* Alloc SQ */
     CHECK_HIP(hipExtMallocWithFlags(&sq_ptr, bnxt_qps[i].mem_info.sq_len, hipDeviceMallocUncached));
+    CHECK_HIP(hipMemset(sq_ptr, 0,  bnxt_qps[i].mem_info.sq_len));
     bnxt_qps[i].mem_info.sq_va = (uint64_t) sq_ptr;
     bnxt_qps[i].sq_buf = sq_ptr;
 
@@ -205,6 +208,7 @@ void GDABackend::bnxt_create_qps(int sq_length) {
 
     /* Alloc RQ */
     CHECK_HIP(hipExtMallocWithFlags(&rq_ptr, bnxt_qps[i].mem_info.rq_len, hipDeviceMallocUncached));
+    CHECK_HIP(hipMemset(rq_ptr, 0,  bnxt_qps[i].mem_info.rq_len));
     bnxt_qps[i].mem_info.rq_va = (uint64_t) rq_ptr;
     bnxt_qps[i].rq_buf = rq_ptr;
 
