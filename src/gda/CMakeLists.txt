@@ -35,14 +35,9 @@ target_sources(
     ibv_wrapper.cpp
     gda_team.cpp
     queue_pair.cpp
+    numa_wrapper.cpp
     endian.cpp
     topology.cpp
-)
-
-target_link_libraries(
-  ${PROJECT_NAME}
-  PUBLIC
-    numa
 )
 
 add_subdirectory(mlx5)
