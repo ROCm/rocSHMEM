@@ -37,7 +37,6 @@ __global__ void PrimitiveMRTest(int loop, long long int *start_time,
                                 ShmemContextType ctx_type) {
   __shared__ rocshmem_ctx_t ctx;
   int wg_id = get_flat_grid_id();
-  rocshmem_wg_init();
   rocshmem_wg_ctx_create(ctx_type, &ctx);
 
   if (hipThreadIdx_x == 0) {
@@ -57,7 +56,6 @@ __global__ void PrimitiveMRTest(int loop, long long int *start_time,
   __syncthreads();
 
   rocshmem_wg_ctx_destroy(&ctx);
-  rocshmem_wg_finalize();
 }
 
 /******************************************************************************

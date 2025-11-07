@@ -39,6 +39,14 @@ enum TeamSplitType {
   ROCSHMEM_TEST_TEAM_ODDEVEN,    // odd-even splitting
 };
 
+/*-----------------------------------------
+ * Atomics Addressing modes (contention model)
+ *-----------------------------------------*/
+enum class AddrMode : int {
+  PerGrid,     // all WGs -> same address
+  PerBlock,    // each WG -> its own address (default)
+};
+
 class TesterArguments {
  public:
   TesterArguments(int argc, char *argv[]);
@@ -69,6 +77,7 @@ public:
   unsigned coal_coef = 64;
   unsigned op_type = 0;
   unsigned shmem_context = rocshmem::ROCSHMEM_CTX_WG_PRIVATE;
+  AddrMode addr_mode = AddrMode::PerBlock;
 
   /**
    * Arguments obtained from rocshmem

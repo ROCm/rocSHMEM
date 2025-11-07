@@ -158,7 +158,10 @@ class IPCImplTiledFine : public ::testing::TestWithParam<std::tuple<int, int, in
 
   public:
     IPCImplTiledFine() {
-        ipc_impl_.ipcHostInit(mpi_.my_pe(), mpi_.get_heap_bases() , MPI_COMM_WORLD);
+        MPIInstance::mpilib_dl_init();
+        mpi_ = new MPI_T (heap_mem_.get_ptr(), heap_mem_.get_size(), MPI_COMM_WORLD);
+
+        ipc_impl_.ipcHostInit(mpi_->my_pe(), mpi_->get_heap_bases(), MPI_COMM_WORLD);
 
         assert(ipc_impl_dptr_ == nullptr);
         hip_allocator_.allocate((void**)&ipc_impl_dptr_, sizeof(IpcImpl));
@@ -181,6 +184,7 @@ class IPCImplTiledFine : public ::testing::TestWithParam<std::tuple<int, int, in
         }
 
         ipc_impl_.ipcHostStop();
+        MPIInstance::mpilib_dl_close();
     }
 
     void launch(FN_T1 f, const dim3 grid, const dim3 block, int* src, int* dest, size_t bytes, TestType test) {
@@ -232,7 +236,7 @@ class IPCImplTiledFine : public ::testing::TestWithParam<std::tuple<int, int, in
 
     void initialize_signal(TestType test, int signal_value = 0) {
         bool is_write_test = test;
-        if (is_write_test && mpi_.my_pe() == 0) {
+        if (is_write_test && mpi_->my_pe() == 0) {
             int *dest = reinterpret_cast<int*>(ipc_impl_.ipc_bases[1]);
             *(dest + SIGNAL_OFFSET) = signal_value;
         }
@@ -243,28 +247,28 @@ class IPCImplTiledFine : public ::testing::TestWithParam<std::tuple<int, int, in
             return;
         }
         size_t bytes = golden_.size() * sizeof(int);
-        auto dev_src = reinterpret_cast<int*>(ipc_impl_.ipc_bases[mpi_.my_pe()]);
+        auto dev_src = reinterpret_cast<int*>(ipc_impl_.ipc_bases[mpi_->my_pe()]);
         CHECK_HIP(hipMemcpy(dev_src, golden_.data(), bytes, hipMemcpyHostToDevice));
     }
 
     bool pe_initializes_src_buffer(TestType test) {
         bool is_write_test = test;
         bool is_read_test = !test;
-        return (is_write_test && mpi_.my_pe() == 0) ||
-               (is_read_test && mpi_.my_pe() == 1);
+        return (is_write_test && mpi_->my_pe() == 0) ||
+               (is_read_test && mpi_->my_pe() == 1);
     }
 
     void execute(TestType test, FN_T1 fn, const dim3 grid, const dim3 block) {
         size_t bytes = golden_.size() * sizeof(int);
-        if (mpi_.my_pe()) {
-            mpi_.barrier();
+        if (mpi_->my_pe()) {
+            mpi_->barrier();
             if (test == WRITE) {
                 int *dest = reinterpret_cast<int*>(ipc_impl_.ipc_bases[1]);
                 FN_T2 val_fn = kernel_put_with_signal_tiled_validator;
                 launch(val_fn, grid, block, dest, bytes);
                 ASSERT_EQ(*(dest + SIGNAL_OFFSET), 0);
             }
-            mpi_.barrier();
+            mpi_->barrier();
             return;
         }
         int *src{nullptr};
@@ -276,9 +280,9 @@ class IPCImplTiledFine : public ::testing::TestWithParam<std::tuple<int, int, in
             src = reinterpret_cast<int*>(ipc_impl_.ipc_bases[1]);
             dest = reinterpret_cast<int*>(ipc_impl_.ipc_bases[0]);
         }
-        mpi_.barrier();
+        mpi_->barrier();
         launch(fn, grid, block, src, dest, bytes, test);
-        mpi_.barrier();
+        mpi_->barrier();
     }
 
     void check_device_validation_errors(TestType test) {
@@ -293,7 +297,7 @@ class IPCImplTiledFine : public ::testing::TestWithParam<std::tuple<int, int, in
             return;
         }
 
-        auto dev_dest = reinterpret_cast<int*>(ipc_impl_.ipc_bases[mpi_.my_pe()]);
+        auto dev_dest = reinterpret_cast<int*>(ipc_impl_.ipc_bases[mpi_->my_pe()]);
         for (int i = 0; i < static_cast<int>(golden_.size()); i++) {
             ASSERT_EQ(golden_[i], dev_dest[i]);
         }
@@ -310,7 +314,7 @@ class IPCImplTiledFine : public ::testing::TestWithParam<std::tuple<int, int, in
 
     HEAP_T heap_mem_ {};
 
-    MPI_T mpi_ {heap_mem_.get_ptr(), heap_mem_.get_size()};
+    MPI_T *mpi_ {nullptr};
 
     std::vector<int> golden_;
 

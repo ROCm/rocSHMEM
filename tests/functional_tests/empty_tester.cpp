@@ -35,11 +35,9 @@ __global__ void EmptyTest(int loop, int skip, long long int *start_time,
                           long long int *end_time, int size, TestType type,
                           ShmemContextType ctx_type) {
   __shared__ rocshmem_ctx_t ctx;
-  rocshmem_wg_init();
   rocshmem_wg_ctx_create(ctx_type, &ctx);
 
   rocshmem_wg_ctx_destroy(&ctx);
-  rocshmem_wg_finalize();
 }
 
 /******************************************************************************

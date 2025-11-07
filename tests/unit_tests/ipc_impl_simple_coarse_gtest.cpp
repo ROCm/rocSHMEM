@@ -32,13 +32,13 @@ TEST_P(DegenerateSimpleCoarse, ptr_check) {
 }
 
 TEST_P(DegenerateSimpleCoarse, MPI_num_pes) {
-    ASSERT_EQ(mpi_.num_pes(), 2);
+    ASSERT_EQ(mpi_->num_pes(), 2);
 }
 
 TEST_P(DegenerateSimpleCoarse, IPC_bases) {
-    ASSERT_EQ(mpi_.num_pes(), 2);
+    ASSERT_EQ(mpi_->num_pes(), 2);
     ASSERT_NE(ipc_impl_.ipc_bases, nullptr);
-    for(int i{0}; i < mpi_.num_pes(); i++) {
+    for(int i{0}; i < mpi_->num_pes(); i++) {
         ASSERT_NE(ipc_impl_.ipc_bases[i], nullptr);
     }
 }

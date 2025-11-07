@@ -24,11 +24,10 @@
 
 #include "ipc_policy.hpp"
 
-#include <mpi.h>
-
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "backend_bc.hpp"
 #include "context_incl.hpp"
+#include "envvar.hpp"
 #include "util.hpp"
 
 namespace rocshmem {
@@ -39,20 +38,20 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
    * Create an MPI communicator that deals only with local processes.
    */
   MPI_Comm shmcomm;
-  MPI_Comm_split_type(thread_comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL,
-                      &shmcomm);
+  mpilib_ftable_.Comm_split_type(thread_comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL,
+                                 &shmcomm);
 
   /*
    * Figure out how many local process there are.
    */
   int Shm_size;
-  MPI_Comm_size(shmcomm, &Shm_size);
+  mpilib_ftable_.Comm_size(shmcomm, &Shm_size);
   shm_size = Shm_size;
 
   /*
    * Figure out how this process' rank among local processes.
    */
-  MPI_Comm_rank(shmcomm, &shm_rank);
+  mpilib_ftable_.Comm_rank(shmcomm, &shm_rank);
 
   /*
    * Allocate a host-side c-array to hold the IPC handles.
@@ -73,8 +72,8 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
    * Do an all-to-all exchange with each local processing element to
    * share the symmetric heap IPC handles.
    */
-  MPI_Allgather(MPI_IN_PLACE, sizeof(hipIpcMemHandle_t), MPI_CHAR,
-                vec_ipc_handle, sizeof(hipIpcMemHandle_t), MPI_CHAR, shmcomm);
+  mpilib_ftable_.Allgather(MPI_IN_PLACE, sizeof(hipIpcMemHandle_t), MPI_CHAR,
+                           vec_ipc_handle, sizeof(hipIpcMemHandle_t), MPI_CHAR, shmcomm);
 
   /*
    * Allocate device-side array to hold the IPC symmetric heap base
@@ -109,25 +108,35 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
    */
   free(vec_ipc_handle);
 
-  if (0 == rocshmem_env_.get_ro_disable_ipc()) {
-    int thread_comm_rank {-1};
-
+  if (envvar::ro::disable_ipc || envvar::disable_ipc) {
+    if (0 == my_pe) {
+      printf("ROCSHMEM_RO_DISABLE_IPC and RO_DISABLE_IPC environment variables have been deprecated.\n"
+             "  Please use ROCSHMEM_DISABLE_MIXED_IPC as a replacement.\n");
+    }
+  }
+  auto disable_ipc = envvar::disable_mixed_ipc || envvar::ro::disable_ipc || envvar::disable_ipc;
+  if (!disable_ipc) {
     CHECK_HIP(hipMalloc(reinterpret_cast<void**>(&pes_with_ipc_avail), shm_size * sizeof(int)));
 
-    MPI_Comm_rank(thread_comm, &thread_comm_rank);
-    MPI_Allgather(&thread_comm_rank, 1, MPI_INT, pes_with_ipc_avail, 1, MPI_INT, shmcomm);
+    MPI_Group thread_grp;
+    MPI_Group shm_grp;
+    mpilib_ftable_.Comm_group(thread_comm, &thread_grp);
+    mpilib_ftable_.Comm_group(shmcomm, &shm_grp);
+    int *seqranks = new int[shm_size];
+    for(int i = 0; i < shm_size; i++)
+      seqranks[i] = i;
+    mpilib_ftable_.Group_translate_ranks(shm_grp, shm_size, seqranks, thread_grp, pes_with_ipc_avail);
+    delete [] seqranks;
+    mpilib_ftable_.Group_free(&shm_grp);
+    mpilib_ftable_.Group_free(&thread_grp);
   }
 }
 
 __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
                                      TcpBootstrap *bootstr) {
-  /*
-   * The non-MPI based version only works for ipc conduit for now,
-   * i.e. total number of ranks and number of local ranks have to match.
-   */
   shm_size = bootstr->getNranksPerNode();
-  assert (shm_size == bootstr->getNranks());
-  shm_rank = my_pe;
+  auto shm_ranks = bootstr->getLocalRanks();
+  shm_rank = std::find(shm_ranks.begin(), shm_ranks.end(), my_pe) - shm_ranks.begin();
 
   /*
    * Allocate a host-side c-array to hold the IPC handles.
@@ -148,7 +157,7 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
    * Do an all-to-all exchange with each local processing element to
    * share the symmetric heap IPC handles.
    */
-  bootstr->allGather(vec_ipc_handle, sizeof(hipIpcMemHandle_t));
+  bootstr->groupAllGather(vec_ipc_handle, sizeof(hipIpcMemHandle_t), shm_ranks);
 
   /*
    * Allocate device-side array to hold the IPC symmetric heap base
@@ -182,6 +191,18 @@ __host__ void IpcOnImpl::ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
    * addresses.
    */
   free(vec_ipc_handle);
+
+  if (envvar::ro::disable_ipc || envvar::disable_ipc) {
+    if (0 == my_pe) {
+      printf("ROCSHMEM_RO_DISABLE_IPC and RO_DISABLE_IPC environment variables have been deprecated.\n"
+             "  Please use ROCSHMEM_DISABLE_MIXED_IPC as a replacement.\n");
+    }
+  }
+  auto disable_ipc = envvar::disable_mixed_ipc || envvar::ro::disable_ipc || envvar::disable_ipc;
+  if (!disable_ipc) {
+    CHECK_HIP(hipMalloc(reinterpret_cast<void**>(&pes_with_ipc_avail), shm_size * sizeof(int)));
+    std::copy(shm_ranks.begin(), shm_ranks.end(), pes_with_ipc_avail);
+  }
 }
 
 __host__ void IpcOnImpl::ipcHostStop() {

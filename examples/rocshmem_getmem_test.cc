@@ -62,7 +62,6 @@ using namespace rocshmem;
 
 __global__ void simple_getmem_test(int *src, int *dst, size_t nelem)
 {
-    rocshmem_wg_init();
 
     int threadId = blockIdx.x * blockDim.x + threadIdx.x;
     if (threadId == 0) {
@@ -73,7 +72,6 @@ __global__ void simple_getmem_test(int *src, int *dst, size_t nelem)
     }
 
     __syncthreads();
-    rocshmem_wg_finalize();
 }
 
 #define MAX_ELEM 256

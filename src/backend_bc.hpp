@@ -33,12 +33,11 @@
  * It is the top-level interface for these resources.
  */
 
-#include <mpi.h>
-
 #include <vector>
 
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "rocshmem/rocshmem.hpp"
+#include "mpi_instance.hpp"
 #include "backend_type.hpp"
 #include "ipc_policy.hpp"
 #include "memory/symmetric_heap.hpp"
@@ -64,6 +63,8 @@ class TeamInfo;
  */
 class Backend {
  public:
+  friend Context;
+
   /**
    * @brief Constructor.
    *
@@ -225,7 +226,7 @@ class Backend {
    * @todo document where this is used and try to coalesce this into another
    * class
    */
-  MPI_Comm backend_comm{MPI_COMM_NULL};
+  MPI_Comm backend_comm;
 
   /**
    * @todo document where this is used
@@ -287,7 +288,7 @@ class Backend {
    * rely on the normal inheritance mechanism to tailor behavior for
    * derived backend types.
    */
-  BackendType type{BackendType::RO_BACKEND};
+  BackendType type;
 
   /**
    * @brief Dumps derived class statistics.

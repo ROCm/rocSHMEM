@@ -24,12 +24,14 @@
 
 #include <cstring>
 
-#include "backend_ipc.hpp"
-#include "ipc_team.hpp"
-
 #include <hip/hip_runtime.h>
 #include <cstdlib>
 #include <cassert>
+
+#include "backend_ipc.hpp"
+#include "envvar.hpp"
+#include "ipc_team.hpp"
+#include "mpi_instance.hpp"
 
 namespace rocshmem {
 
@@ -47,7 +49,7 @@ rocshmem_team_t get_external_team(IPCTeam *team) {
   return reinterpret_cast<rocshmem_team_t>(team);
 }
 
-int get_ls_non_zero_bit(char *bitmask, int mask_length) {
+static int get_ls_non_zero_bit(char *bitmask, int mask_length) {
   int position = -1;
 
   for (int bit_i = 0; bit_i < mask_length; bit_i++) {
@@ -104,11 +106,6 @@ IPCBackend::IPCBackend(TcpBootstrap *bootstrap):  Backend(bootstrap) {
 }
 
 void IPCBackend::init() {
-  if (auto maximum_num_contexts_str = getenv("ROCSHMEM_MAX_NUM_CONTEXTS")) {
-    std::stringstream sstream(maximum_num_contexts_str);
-    sstream >> maximum_num_contexts_;
-  }
-
   ROCSHMEM_HOST_CTX_DEFAULT.ctx_opaque = default_host_ctx.get();
 
   setup_team_world();
@@ -143,9 +140,9 @@ IPCBackend::~IPCBackend() {
 }
 
 void IPCBackend::setup_ctxs() {
-  CHECK_HIP(hipMalloc(&ctx_array, sizeof(IPCContext) * maximum_num_contexts_));
+  CHECK_HIP(hipMalloc(&ctx_array, sizeof(IPCContext) * envvar::max_num_contexts));
   // 0th context is default context
-  for (size_t i = 0; i < maximum_num_contexts_; i++) {
+  for (size_t i = 0; i < envvar::max_num_contexts; i++) {
     new (&ctx_array[i]) IPCContext(this, i + 1);
     ctx_free_list.get()->push_back(ctx_array + i);
   }
@@ -249,8 +246,8 @@ void IPCBackend::create_new_team([[maybe_unused]] Team *parent_team,
    * the pool of available work arrays.
    */
   if (team_comm != MPI_COMM_NULL) {
-    NET_CHECK(MPI_Allreduce(team_pool_bitmask_, team_reduced_bitmask_, team_bitmask_size_,
-                            MPI_CHAR, MPI_BAND, team_comm));
+    NET_CHECK(mpilib_ftable_.Allreduce(team_pool_bitmask_, team_reduced_bitmask_, team_bitmask_size_,
+                                       MPI_CHAR, MPI_BAND, team_comm));
   } else {
     Allreduce_char_BAND (team_pool_bitmask_, team_reduced_bitmask_, team_bitmask_size_, parent_team);
   }
@@ -321,7 +318,7 @@ void IPCBackend::initIPC(TcpBootstrap *bootstr) {
 
 void IPCBackend::global_exit(int status) {
   if (backend_comm != MPI_COMM_NULL)
-    MPI_Abort(backend_comm, status);
+    mpilib_ftable_.Abort(backend_comm, status);
   else
     abort();
 }
@@ -388,8 +385,8 @@ void IPCBackend::setup_wrk_sync_buffers() {
    * all-to-all exchange with each PE to share the IPC handles.
    */
   if (backend_comm != MPI_COMM_NULL) {
-    MPI_Allgather(MPI_IN_PLACE, sizeof(hipIpcMemHandle_t), MPI_CHAR,
-                  ipc_handle, sizeof(hipIpcMemHandle_t), MPI_CHAR, backend_comm);
+    mpilib_ftable_.Allgather(MPI_IN_PLACE, sizeof(hipIpcMemHandle_t), MPI_CHAR,
+                             ipc_handle, sizeof(hipIpcMemHandle_t), MPI_CHAR, backend_comm);
   } else {
     assert (backend_bootstr != nullptr);
     backend_bootstr->allGather(ipc_handle, sizeof(hipIpcMemHandle_t));
@@ -460,7 +457,7 @@ void IPCBackend::rocshmem_collective_init() {
    * continuing.
    */
   if (backend_comm != MPI_COMM_NULL) {
-    NET_CHECK(MPI_Barrier(backend_comm));
+    NET_CHECK(mpilib_ftable_.Barrier(backend_comm));
   } else {
     backend_bootstr->barrier();
   }
@@ -551,7 +548,7 @@ void IPCBackend::teams_init() {
    * continuing.
    */
   if (backend_comm != MPI_COMM_NULL) {
-    NET_CHECK(MPI_Barrier(backend_comm));
+    NET_CHECK(mpilib_ftable_.Barrier(backend_comm));
   } else {
     backend_bootstr->barrier();
   }

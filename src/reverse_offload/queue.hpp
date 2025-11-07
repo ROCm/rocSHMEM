@@ -70,8 +70,6 @@ class Queue {
 
   HdpProxy<HIPHostAllocator> hdp_proxy_{};
 
-  bool gpu_queue{false};
-
   size_t max_queues_{};
 
   size_t queue_size_{};

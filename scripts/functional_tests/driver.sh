@@ -286,9 +286,7 @@ TestRMAGet() {
 
 TestRMA() {
   TestRMAPut
-  if [ "0" == "$ROCSHMEM_DRIVER_DISABLE_GET" ]; then
-    TestRMAGet
-  fi
+  TestRMAGet
 }
 
 TestAMO() {
@@ -463,36 +461,35 @@ TestGDA() {
   ExecTest  "teamctxput"       2       4            128       1024
   ExecTest  "teamctxput"       2       16           256       1024
 
- ExecTest  "get"              2       1            1         1048576
- ExecTest  "get"              2       1            1024      512
- ExecTest  "get"              2       8            1         1048576
- ExecTest  "get"              2       16           128       8
- ExecTest  "get"              2       32           256       512
- ExecTest  "get"              2       64           1024      8
+  ExecTest  "get"              2       1            1         1048576
+  ExecTest  "get"              2       1            1024      512
+  ExecTest  "get"              2       8            1         1048576
+  ExecTest  "get"              2       16           128       8
+  ExecTest  "get"              2       32           256       512
+  ExecTest  "get"              2       64           1024      8
 
- ExecTest  "wgget"            2       1            64        1048576
- ExecTest  "wgget"            2       2            64        1048576
- ExecTest  "wgget"            2       16           64        8
+  ExecTest  "wgget"            2       1            64        1048576
+  ExecTest  "wgget"            2       2            64        1048576
+  ExecTest  "wgget"            2       16           64        8
 
- ExecTest  "waveget"          2       1            64        1048576
- ExecTest  "waveget"          2       2            64        1048576
- ExecTest  "waveget"          2       2            128       1048576
- ExecTest  "waveget"          2       16           128       8
+  ExecTest  "waveget"          2       1            64        1048576
+  ExecTest  "waveget"          2       2            64        1048576
+  ExecTest  "waveget"          2       2            128       1048576
+  ExecTest  "waveget"          2       16           128       8
 
- ExecTest  "defaultctxget"    2       4            128       1024
- ExecTest  "teamctxget"       2       4            128       1024
- ExecTest  "teamctxget"       2       16           256       1024
+  ExecTest  "defaultctxget"    2       4            128       1024
+  ExecTest  "teamctxget"       2       4            128       1024
+  ExecTest  "teamctxget"       2       16           256       1024
 
 #  ExecTest  "g"                2       1            1         128
 #  ExecTest  "g"                2       1            1024      2
 #  ExecTest  "g"                2       8            1         32
 #  ExecTest  "g"                2       16           128       4
 
-#Implemented but known incorrect
-#  ExecTest  "p"                2       1            1         128
-#  ExecTest  "p"                2       1            1024      2
-#  ExecTest  "p"                2       8            1         32
-#  ExecTest  "p"                2       16           128       4
+  ExecTest  "p"                2       1            1         128
+  ExecTest  "p"                2       1            1024      2
+  ExecTest  "p"                2       8            1         32
+  ExecTest  "p"                2       16           128       4
 
   ################################ Non-Blocking ################################
 
@@ -516,25 +513,25 @@ TestGDA() {
   ExecTest  "teamctxputnbi"    2       4            128       1024
   ExecTest  "teamctxputnbi"    2       16           256       1024
 
- ExecTest  "getnbi"           2       1            1         1048576
- ExecTest  "getnbi"           2       1            1024      512
- ExecTest  "getnbi"           2       8            1         1048576
- ExecTest  "getnbi"           2       16           128       8
- ExecTest  "getnbi"           2       32           256       512
- ExecTest  "getnbi"           2       64           1024      8
+  ExecTest  "getnbi"           2       1            1         1048576
+  ExecTest  "getnbi"           2       1            1024      512
+  ExecTest  "getnbi"           2       8            1         1048576
+  ExecTest  "getnbi"           2       16           128       8
+  ExecTest  "getnbi"           2       32           256       512
+  ExecTest  "getnbi"           2       64           1024      8
 
- ExecTest  "wggetnbi"         2       1            64        1048576
- ExecTest  "wggetnbi"         2       2            64        1048576
- ExecTest  "wggetnbi"         2       16           64        8
+  ExecTest  "wggetnbi"         2       1            64        1048576
+  ExecTest  "wggetnbi"         2       2            64        1048576
+  ExecTest  "wggetnbi"         2       16           64        8
 
- ExecTest  "wavegetnbi"       2       1            64        1048576
- ExecTest  "wavegetnbi"       2       2            64        1048576
- ExecTest  "wavegetnbi"       2       2            128       1048576
- ExecTest  "wavegetnbi"       2       16           128       8
+  ExecTest  "wavegetnbi"       2       1            64        1048576
+  ExecTest  "wavegetnbi"       2       2            64        1048576
+  ExecTest  "wavegetnbi"       2       2            128       1048576
+  ExecTest  "wavegetnbi"       2       16           128       8
 
- ExecTest  "defaultctxgetnbi" 2       4            128       1024
- ExecTest  "teamctxgetnbi"    2       4            128       1024
- ExecTest  "teamctxgetnbi"    2       16           256       1024
+  ExecTest  "defaultctxgetnbi" 2       4            128       1024
+  ExecTest  "teamctxgetnbi"    2       4            128       1024
+  ExecTest  "teamctxgetnbi"    2       16           256       1024
 
 #TestAMO() {
   ##############################################################################
@@ -553,7 +550,7 @@ TestGDA() {
 #  ExecTest  "amo_fcswap"       2       32           1
 #  ExecTest  "amo_fcswap"       2       8            1
 
-#Works on CX7, not implemented on BNXT
+#This works but tester requires 32bit amos to be implemented
 #  ExecTest  "amo_finc"         2       1            1
 #  ExecTest  "amo_finc"         2       1            1024
 #  ExecTest  "amo_finc"         2       8            1
@@ -565,7 +562,7 @@ TestGDA() {
 #  ExecTest  "amo_inc"          2       8            1
 #  ExecTest  "amo_inc"          2       32           128
 
-#Works on CX7, not implemented on BNXT
+#This works but tester requires 32bit amos to be implemented
 #  ExecTest  "amo_fadd"         2       1            1
 #  ExecTest  "amo_fadd"         2       1            1024
 #  ExecTest  "amo_fadd"         2       8            1
@@ -608,9 +605,9 @@ TestGDA() {
   ##############################################################################
   ExecTest  "init"             2       1            1
 
-#  ExecTest  "pingpong"         2       1            1
-#  ExecTest  "pingpong"         2       8            1
-#  ExecTest  "pingpong"         2       32           1
+  ExecTest  "pingpong"         2       1            1
+  ExecTest  "pingpong"         2       8            1
+  ExecTest  "pingpong"         2       32           1
 
   # This test requires more contexts than workgroups
   export ROCSHMEM_MAX_NUM_CONTEXTS=1024
@@ -645,7 +642,6 @@ LOG_DIR=$3
 HOSTFILE=$4
 
 DRIVER_RETURN_STATUS=0
-ROCSHMEM_DRIVER_DISABLE_GET="${ROCSHMEM_DRIVER_DISABLE_GET:-1}"
 
 ValidateInput $#
 ValidateLogDir $LOG_DIR
@@ -661,8 +657,21 @@ case $TEST in
     TestColl
     TestOther
     ;;
+  *"all-ro")
+    TestRMAPut
+    TestAMO
+    TestSigOps
+    TestColl
+    TestOther
+    ;;
   *"rma")
     TestRMA
+    ;;
+  *"put")
+    TestRMAPut
+    ;;
+  *"get")
+    TestRMAGet
     ;;
   *"amo")
     TestAMO

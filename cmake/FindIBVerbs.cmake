@@ -43,29 +43,31 @@ find_library(IBVerbs_LIBRARY
 )
 
 if (GDA_IONIC)
-find_library(IBVerbs_PROVIDER_LIBRARY
+list(APPEND provider_vars IBVerbs_IONIC_LIBRARY IBVerbs_IONIC_INCLUDE_DIR)
+find_path(IBVerbs_IONIC_INCLUDE_DIR infiniband/ionic_dv.h
+  HINTS ${PC_IBVerbs_INCLUDEDIR} ${PC_IBVerbs_INCLUDE_DIRS}
+  PATH_SUFFIXES include
+)
+
+find_library(IBVerbs_IONIC_LIBRARY
   NAMES ionic libionic
   HINTS ${PC_IBVerbs_LIBDIR} ${PC_IBVerbs_LIBRARY_DIRS}
   PATH_SUFFIXES lib lib64
 )
-elseif (GDA_BNXT)
-find_library(IBVerbs_PROVIDER_LIBRARY
-  NAMES bnxt_re libbnxt_re
-  HINTS ${PC_IBVerbs_LIBDIR} ${PC_IBVerbs_LIBRARY_DIRS}
-  PATH_SUFFIXES lib lib64
-)
-else()
-find_library(IBVerbs_PROVIDER_LIBRARY
-  NAMES mlx5 libmlx5
-  HINTS ${PC_IBVerbs_LIBDIR} ${PC_IBVerbs_LIBRARY_DIRS}
-  PATH_SUFFIXES lib lib64
+
+add_library(IBVerbs::verbs_ionic UNKNOWN IMPORTED)
+set_target_properties(IBVerbs::verbs_ionic PROPERTIES
+  IMPORTED_LOCATION "${IBVerbs_IONIC_LIBRARY}"
+  INTERFACE_INCLUDE_DIRECTORIES "${IBVerbs_IONIC_INCLUDE_DIR}"
 )
 endif()
 
 find_package_handle_standard_args(IBVerbs DEFAULT_MSG
-  IBVerbs_LIBRARY IBVerbs_INCLUDE_DIR IBVerbs_PROVIDER_LIBRARY
+  IBVerbs_LIBRARY
+  IBVerbs_INCLUDE_DIR
+  ${provider_vars}
 )
-mark_as_advanced(IBVerbs_LIBRARY IBVerbs_INCLUDE_DIR IBVerbs_PROVIDER_LIBRARY)
+mark_as_advanced(IBVerbs_LIBRARY IBVerbs_INCLUDE_DIR ${provider_vars})
 
 if (IBVerbs_FOUND)
 add_library(IBVerbs::verbs UNKNOWN IMPORTED)
@@ -74,10 +76,9 @@ set_target_properties(IBVerbs::verbs PROPERTIES
   INTERFACE_COMPILE_OPTIONS "${PC_IBVerbs_CFLAGS_OTHER}"
   INTERFACE_INCLUDE_DIRECTORIES "${IBVerbs_INCLUDE_DIR}"
 )
-add_library(IBVerbs::verbs_provider UNKNOWN IMPORTED)
-set_target_properties(IBVerbs::verbs_provider PROPERTIES
-  IMPORTED_LOCATION "${IBVerbs_PROVIDER_LIBRARY}"
-  INTERFACE_INCLUDE_DIRECTORIES "${IBVerbs_PROVIDER_INCLUDE_DIR}"
+
+target_link_libraries(IBVerbs::verbs INTERFACE
+  $<TARGET_NAME_IF_EXISTS:IBVerbs::verbs_ionic>
 )
-target_link_libraries(IBVerbs::verbs INTERFACE IBVerbs::verbs_provider)
+
 endif()

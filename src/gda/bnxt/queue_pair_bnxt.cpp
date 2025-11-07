@@ -27,6 +27,21 @@
 
 namespace rocshmem {
 
+static const __device__ char bnxt_re_wc_error_strings[12][14] = {
+  "OK",
+  "BAD_RESP",
+  "LOC_LEN",
+  "LOC_QP_OP",
+  "PROT",
+  "MEM_OP",
+  "REM_INVAL",
+  "REM_ACC",
+  "REM_OP",
+  "RNR_NAK_XCED",
+  "TRNSP_XCED",
+  "WR_FLUSH",
+};
+
 __device__ static inline void bnxt_re_init_db_hdr(struct bnxt_re_db_hdr *hdr,
                                                   uint32_t indx, uint32_t toggle,
                                                   uint32_t qid, uint32_t typ) {
@@ -187,7 +202,7 @@ __device__ int QueuePair::poll_cq() {
            & BNXT_RE_BCQE_STATUS_MASK;
 
     if (status != BNXT_RE_REQ_ST_OK) {
-      printf("CQ Error (%x)\n", status);
+      printf("CQ Error %s (%x)\n", bnxt_re_wc_error_strings[status], status);
       abort();
       return -1;
     }
@@ -207,7 +222,7 @@ __device__ int QueuePair::poll_cq() {
   return 0;
 }
 
-__device__ void QueuePair::quiet() {
+__device__ void QueuePair::bnxt_quiet() {
   uint64_t active_lane_mask;
   uint8_t active_lane_id;
 
@@ -223,7 +238,7 @@ __device__ void QueuePair::quiet() {
   }
 }
 
-__device__ void QueuePair::post_wqe_rma(int pe, int32_t length, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
+__device__ void QueuePair::bnxt_post_wqe_rma(int pe, int32_t length, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
   uint64_t active_lane_mask;
   uint8_t active_lane_count;
   uint8_t active_lane_id;
@@ -247,17 +262,26 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t length, uintptr_t *laddr
       uint32_t wqe_size;
       uint32_t wqe_type;
       uint32_t hdr_flags;
-      uint32_t rma_slots = 3; // (Three slots: hdr, rdma)
+      uint32_t inline_msg;
+
+      uint32_t rma_slots  = 3; // (Three slots: hdr, rdma, sge)
+
+      inline_msg = length <= inline_threshold &&
+                   opcode == gda_op_rdma_write;
 
       hdr_ptr  = (struct bnxt_re_bsqe*) bnxt_re_get_hwqe(&sq, 0);
       rdma_ptr = (struct bnxt_re_rdma*) bnxt_re_get_hwqe(&sq, 1);
       sge_ptr  = (struct bnxt_re_sge*)  bnxt_re_get_hwqe(&sq, 2);
 
       /* Populate Header Segment */
-      wqe_size  = BNXT_RE_HDR_WS_MASK    & rma_slots;
+      wqe_type  = BNXT_RE_HDR_WT_MASK & opcode;
+      wqe_size  = BNXT_RE_HDR_WS_MASK & rma_slots;
       hdr_flags = ((uint32_t) BNXT_RE_HDR_FLAGS_MASK)
                 & ((uint32_t) BNXT_RE_WR_FLAGS_SIGNALED);
-      wqe_type  = BNXT_RE_HDR_WT_MASK    & opcode;
+
+      if (inline_msg) {
+        hdr_flags |= ((uint32_t) BNXT_RE_WR_FLAGS_INLINE);
+      }
 
       hdr.rsv_ws_fl_wt  = (wqe_size  << BNXT_RE_HDR_WS_SHIFT)
                         | (hdr_flags << BNXT_RE_HDR_FLAGS_SHIFT)
@@ -269,15 +293,22 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t length, uintptr_t *laddr
       rdma.rva  = (uint64_t) raddr;
       rdma.rkey = rkey;
 
-      /* Populate SG Segment */
-      sge.pa     = (uint64_t) laddr;
-      sge.lkey   = lkey;
-      sge.length = length;
+      if (!inline_msg) {
+        /* Populate SG Segment */
+        sge.pa     = (uint64_t) laddr;
+        sge.lkey   = lkey;
+        sge.length = length;
+      }
 
       /* Write WQE to SQ */
       memcpy(hdr_ptr,  &hdr,  sizeof(struct bnxt_re_bsqe));
       memcpy(rdma_ptr, &rdma, sizeof(struct bnxt_re_rdma));
-      memcpy(sge_ptr,  &sge,  sizeof(struct bnxt_re_sge));
+
+      if (inline_msg) {
+        memcpy(sge_ptr,  laddr,  length);
+      } else {
+        memcpy(sge_ptr,  &sge,  sizeof(struct bnxt_re_sge));
+      }
 
       /* Populate MSN Table */
       bnxt_re_fill_psns_for_msntbl(&sq, length);
@@ -300,11 +331,12 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t length, uintptr_t *laddr
   }
 }
 
-__device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t length, uintptr_t *raddr, uint8_t opcode,
-                                            int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
+__device__ uint64_t QueuePair::bnxt_post_wqe_amo(int pe, int32_t length, uintptr_t *raddr, uint8_t opcode,
+                                                 int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
   uint64_t active_lane_mask;
   uint8_t active_lane_count;
   uint8_t active_lane_id;
+  uint32_t atomic_idx = 0;
 
   active_lane_mask  = get_active_lane_mask();
   active_lane_count = get_active_lane_count(active_lane_mask);
@@ -345,10 +377,17 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t length, uintptr_t *r
 
       /* Populate AMO Segment */
       amo.swp_dt = atomic_data;
+      amo.cmp_dt = atomic_cmp;
 
       /* Populate SG Segment - (Return address of atomic) */
-      sge.pa     = (uint64_t) nonfetching_atomic;
-      sge.lkey   = nonfetching_atomic_lkey;
+      if (fetching) {
+        atomic_idx = fetching_atomic_idx++ % FETCHING_ATOMIC_CNT;
+        sge.pa     = (uint64_t) &fetching_atomic[atomic_idx];
+        sge.lkey   = fetching_atomic_lkey;
+      } else {
+        sge.pa     = (uint64_t) nonfetching_atomic;
+        sge.lkey   = nonfetching_atomic_lkey;
+      }
       sge.length = length;
 
       /* Write WQE to SQ */
@@ -373,6 +412,10 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t length, uintptr_t *r
 
   if (0 == active_lane_id) {
     release_lock(&sq.lock);
+  }
+
+  if (fetching) {
+    return fetching_atomic[atomic_idx];
   }
 
   return 0;

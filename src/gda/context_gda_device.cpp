@@ -49,6 +49,12 @@ __host__ GDAContext::GDAContext(Backend *b, unsigned int ctx_id)
     CHECK_HIP(hipMemcpy(&qps[i], &backend->gpu_qps[offset], sizeof(QueuePair), hipMemcpyDefault));
     qps[i].base_heap = base_heap;
   }
+
+  ipcImpl_.ipc_bases = backend->ipcImpl.ipc_bases;
+  ipcImpl_.shm_size = backend->ipcImpl.shm_size;
+  ipcImpl_.shm_rank = backend->ipcImpl.shm_rank;
+  ipcImpl_.pes_with_ipc_avail = backend->ipcImpl.pes_with_ipc_avail;
+
   ctx_id_ = ctx_id;
 }
 
@@ -63,7 +69,13 @@ __device__ void GDAContext::ctx_destroy(){
 }
 
 __device__ void GDAContext::putmem(void *dest, const void *source, size_t nelems,
-                                  int pe) {
+                                   int pe) {
+  int local_pe{-1};
+  if (ipcImpl_.isIpcAvailable(my_pe, pe, &local_pe)) {
+    uint64_t L_offset = reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[ipcImpl_.shm_rank];
+    ipcImpl_.ipcCopy(ipcImpl_.ipc_bases[local_pe] + L_offset, const_cast<void *>(source), nelems);
+    return;
+  }
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
   bool need_turn {true};
   uint64_t turns = __ballot(need_turn);
@@ -80,8 +92,14 @@ __device__ void GDAContext::putmem(void *dest, const void *source, size_t nelems
 }
 
 __device__ void GDAContext::getmem(void *dest, const void *source, size_t nelems,
-                                  int pe) {
+                                   int pe) {
   const char *src_typed = reinterpret_cast<const char *>(source);
+  int local_pe{-1};
+  if (ipcImpl_.isIpcAvailable(my_pe, pe, &local_pe)) {
+    uint64_t L_offset = const_cast<char *>(src_typed) - ipcImpl_.ipc_bases[ipcImpl_.shm_rank];
+    ipcImpl_.ipcCopy(dest, ipcImpl_.ipc_bases[local_pe] + L_offset, nelems);
+    return;
+  }
   uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
   bool need_turn {true};
   uint64_t turns = __ballot(need_turn);
@@ -98,7 +116,13 @@ __device__ void GDAContext::getmem(void *dest, const void *source, size_t nelems
 }
 
 __device__ void GDAContext::putmem_nbi(void *dest, const void *source,
-                                      size_t nelems, int pe) {
+                                       size_t nelems, int pe) {
+  int local_pe{-1};
+  if (ipcImpl_.isIpcAvailable(my_pe, pe, &local_pe)) {
+    uint64_t L_offset = reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[ipcImpl_.shm_rank];
+    ipcImpl_.ipcCopy(ipcImpl_.ipc_bases[local_pe] + L_offset, const_cast<void *>(source), nelems);
+    return;
+  }
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
   bool need_turn {true};
   uint64_t turns = __ballot(need_turn);
@@ -114,8 +138,14 @@ __device__ void GDAContext::putmem_nbi(void *dest, const void *source,
 }
 
 __device__ void GDAContext::getmem_nbi(void *dest, const void *source,
-                                      size_t nelems, int pe) {
+                                       size_t nelems, int pe) {
   const char *src_typed = reinterpret_cast<const char *>(source);
+  int local_pe{-1};
+  if (ipcImpl_.isIpcAvailable(my_pe, pe, &local_pe)) {
+    uint64_t L_offset = const_cast<char *>(src_typed) - ipcImpl_.ipc_bases[ipcImpl_.shm_rank];
+    ipcImpl_.ipcCopy(dest, ipcImpl_.ipc_bases[local_pe] + L_offset, nelems);
+    return;
+  }
   uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
   bool need_turn {true};
   uint64_t turns = __ballot(need_turn);
@@ -148,11 +178,24 @@ __device__ void GDAContext::quiet() {
 }
 
 __device__ void *GDAContext::shmem_ptr(const void *dest, int pe) {
-  return nullptr;
+  void *ret = nullptr;
+  int local_pe{-1};
+  if (ipcImpl_.isIpcAvailable(my_pe, pe, &local_pe)) {
+    void *dst = const_cast<void *>(dest);
+    uint64_t L_offset = reinterpret_cast<char *>(dst) - ipcImpl_.ipc_bases[ipcImpl_.shm_rank];
+    ret = ipcImpl_.ipc_bases[local_pe] + L_offset;
+  }
+  return ret;
 }
 
 __device__ void GDAContext::putmem_wg(void *dest, const void *source,
-                                     size_t nelems, int pe) {
+                                      size_t nelems, int pe) {
+  int local_pe{-1};
+  if (ipcImpl_.isIpcAvailable(my_pe, pe, &local_pe)) {
+    uint64_t L_offset = reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[ipcImpl_.shm_rank];
+    ipcImpl_.ipcCopy_wg(ipcImpl_.ipc_bases[local_pe] + L_offset, const_cast<void *>(source), nelems);
+    return;
+  }
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
   if (is_thread_zero_in_block()) {
     qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
@@ -161,8 +204,14 @@ __device__ void GDAContext::putmem_wg(void *dest, const void *source,
 }
 
 __device__ void GDAContext::getmem_wg(void *dest, const void *source,
-                                     size_t nelems, int pe) {
+                                      size_t nelems, int pe) {
   const char *src_typed = reinterpret_cast<const char *>(source);
+  int local_pe{-1};
+  if (ipcImpl_.isIpcAvailable(my_pe, pe, &local_pe)) {
+    uint64_t L_offset = const_cast<char *>(src_typed) - ipcImpl_.ipc_bases[ipcImpl_.shm_rank];
+    ipcImpl_.ipcCopy_wg(dest, ipcImpl_.ipc_bases[local_pe] + L_offset, nelems);
+    return;
+  }
   uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
   if (is_thread_zero_in_block()) {
     qps[pe].get_nbi(dest, base_heap[pe] + L_offset, nelems, pe);
@@ -171,7 +220,13 @@ __device__ void GDAContext::getmem_wg(void *dest, const void *source,
 }
 
 __device__ void GDAContext::putmem_nbi_wg(void *dest, const void *source,
-                                         size_t nelems, int pe) {
+                                          size_t nelems, int pe) {
+  int local_pe{-1};
+  if (ipcImpl_.isIpcAvailable(my_pe, pe, &local_pe)) {
+    uint64_t L_offset = reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[ipcImpl_.shm_rank];
+    ipcImpl_.ipcCopy_wg(ipcImpl_.ipc_bases[local_pe] + L_offset, const_cast<void *>(source), nelems);
+    return;
+  }
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
   if (is_thread_zero_in_block()) {
     qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
@@ -179,8 +234,14 @@ __device__ void GDAContext::putmem_nbi_wg(void *dest, const void *source,
 }
 
 __device__ void GDAContext::getmem_nbi_wg(void *dest, const void *source,
-                                         size_t nelems, int pe) {
+                                          size_t nelems, int pe) {
   const char *src_typed = reinterpret_cast<const char *>(source);
+  int local_pe{-1};
+  if (ipcImpl_.isIpcAvailable(my_pe, pe, &local_pe)) {
+    uint64_t L_offset = const_cast<char *>(src_typed) - ipcImpl_.ipc_bases[ipcImpl_.shm_rank];
+    ipcImpl_.ipcCopy_wg(dest, ipcImpl_.ipc_bases[local_pe] + L_offset, nelems);
+    return;
+  }
   uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
   if (is_thread_zero_in_block()) {
     qps[pe].get_nbi(dest, base_heap[pe] + L_offset, nelems, pe);
@@ -188,7 +249,13 @@ __device__ void GDAContext::getmem_nbi_wg(void *dest, const void *source,
 }
 
 __device__ void GDAContext::putmem_wave(void *dest, const void *source,
-                                       size_t nelems, int pe) {
+                                        size_t nelems, int pe) {
+  int local_pe{-1};
+  if (ipcImpl_.isIpcAvailable(my_pe, pe, &local_pe)) {
+    uint64_t L_offset = reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[ipcImpl_.shm_rank];
+    ipcImpl_.ipcCopy_wave(ipcImpl_.ipc_bases[local_pe] + L_offset, const_cast<void *>(source), nelems);
+    return;
+  }
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
   if (is_thread_zero_in_wave()) {
     qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
@@ -197,8 +264,14 @@ __device__ void GDAContext::putmem_wave(void *dest, const void *source,
 }
 
 __device__ void GDAContext::getmem_wave(void *dest, const void *source,
-                                       size_t nelems, int pe) {
+                                        size_t nelems, int pe) {
   const char *src_typed = reinterpret_cast<const char *>(source);
+  int local_pe{-1};
+  if (ipcImpl_.isIpcAvailable(my_pe, pe, &local_pe)) {
+    uint64_t L_offset = const_cast<char *>(src_typed) - ipcImpl_.ipc_bases[ipcImpl_.shm_rank];
+    ipcImpl_.ipcCopy_wave(dest, ipcImpl_.ipc_bases[local_pe] + L_offset, nelems);
+    return;
+  }
   uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
   if (is_thread_zero_in_wave()) {
     qps[pe].get_nbi(dest, base_heap[pe] + L_offset, nelems, pe);
@@ -207,7 +280,13 @@ __device__ void GDAContext::getmem_wave(void *dest, const void *source,
 }
 
 __device__ void GDAContext::putmem_nbi_wave(void *dest, const void *source,
-                                           size_t nelems, int pe) {
+                                            size_t nelems, int pe) {
+  int local_pe{-1};
+  if (ipcImpl_.isIpcAvailable(my_pe, pe, &local_pe)) {
+    uint64_t L_offset = reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[ipcImpl_.shm_rank];
+    ipcImpl_.ipcCopy_wave(ipcImpl_.ipc_bases[local_pe] + L_offset, const_cast<void *>(source), nelems);
+    return;
+  }
   uint64_t L_offset = reinterpret_cast<char*>(dest) - base_heap[my_pe];
   if (is_thread_zero_in_wave()) {
     qps[pe].put_nbi(base_heap[pe] + L_offset, source, nelems, pe);
@@ -215,8 +294,14 @@ __device__ void GDAContext::putmem_nbi_wave(void *dest, const void *source,
 }
 
 __device__ void GDAContext::getmem_nbi_wave(void *dest, const void *source,
-                                           size_t nelems, int pe) {
+                                            size_t nelems, int pe) {
   const char *src_typed = reinterpret_cast<const char *>(source);
+  int local_pe{-1};
+  if (ipcImpl_.isIpcAvailable(my_pe, pe, &local_pe)) {
+    uint64_t L_offset = const_cast<char *>(src_typed) - ipcImpl_.ipc_bases[ipcImpl_.shm_rank];
+    ipcImpl_.ipcCopy_wave(dest, ipcImpl_.ipc_bases[local_pe] + L_offset, nelems);
+    return;
+  }
   uint64_t L_offset = const_cast<char *>(src_typed) - base_heap[my_pe];
   if (is_thread_zero_in_wave()) {
     qps[pe].get_nbi(dest, base_heap[pe] + L_offset, nelems, pe);

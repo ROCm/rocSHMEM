@@ -25,7 +25,7 @@
 #ifndef LIBRARY_SRC_STATS_HPP_
 #define LIBRARY_SRC_STATS_HPP_
 
-#include <mpi.h>
+#include <time.h>
 
 #include <atomic>
 
@@ -179,10 +179,10 @@ class HostStats {
   AtomicStatType stats[I] = {};
 
  public:
-  __host__ uint64_t startTimer() const { return MPI_Wtime(); }
+  __host__ uint64_t startTimer() const { return wtime(); }
 
   __host__ void endTimer(uint64_t start, int index) {
-    incStat(index, MPI_Wtime() - start);
+    incStat(index, wtime() - start);
   }
 
   __host__ void incStat(int index, int value = 1) { stats[index] += value; }
@@ -197,6 +197,16 @@ class HostStats {
   }
 
   __host__ StatType getStat(int index) const { return stats[index].load(); }
+ private:
+  double wtime(void) {
+    double wt;
+    struct timespec tp;
+
+    (void) clock_gettime(CLOCK_MONOTONIC, &tp);
+    wt = (static_cast<double>(tp.tv_nsec))/1.0e+9;
+    wt += static_cast<double>(tp.tv_sec);
+    return wt;
+  }
 };
 
 // clang-format off

@@ -25,6 +25,8 @@
 #ifndef LIBRARY_SRC_GDA_BACKEND_HPP_
 #define LIBRARY_SRC_GDA_BACKEND_HPP_
 
+#include <dlfcn.h>
+
 #include "backend_bc.hpp"
 #include "containers/free_list_impl.hpp"
 #include "hdp_proxy.hpp" //TODO useless?
@@ -34,6 +36,35 @@
 #include "queue_pair.hpp"
 #include "bootstrap/bootstrap.hpp"
 #include "debug_gda.hpp"
+#include "gda/ionic/provider_gda_ionic.hpp"
+#include "gda/bnxt/provider_gda_bnxt.hpp"
+#include "gda/mlx5/provider_gda_mlx5.hpp"
+
+struct bnxtdv_funcs_t {
+  int (*init_obj)(struct bnxt_re_dv_obj *obj, uint64_t obj_type);
+  struct ibv_qp* (*create_qp)(struct ibv_pd *pd,
+                              struct bnxt_re_dv_qp_init_attr *qp_attr);
+  int (*destroy_qp)(struct ibv_qp *ibvqp);
+  int (*modify_qp)(struct ibv_qp *ibv_qp, struct ibv_qp_attr *attr,
+                   int attr_mask, uint32_t type, uint32_t value);
+  int (*qp_mem_alloc)(struct ibv_pd *ibvpd,
+                      struct ibv_qp_init_attr *attr,
+                      struct bnxt_re_dv_qp_mem_info *dv_qp_mem);
+  struct ibv_cq* (*create_cq)(struct ibv_context *ibvctx,
+                              struct bnxt_re_dv_cq_init_attr *cq_attr);
+  int (*destroy_cq)(struct ibv_cq *ibv_cq);
+  void* (*cq_mem_alloc)(struct ibv_context *ibvctx, int num_cqe,
+                        struct bnxt_re_dv_cq_attr *cq_attr);
+  void* (*umem_reg)(struct ibv_context *ibvctx,
+                    struct bnxt_re_dv_umem_reg_attr *in);
+  int (*umem_dereg)(void *umem_handle);
+  int (*get_default_db_region)(struct ibv_context *ibvctx,
+                               struct bnxt_re_dv_db_region_attr *out);
+};
+
+struct mlx5dv_funcs_t {
+  int (*init_obj)(struct mlx5dv_obj *obj, uint64_t obj_type);
+};
 
 namespace rocshmem {
 
@@ -41,6 +72,13 @@ class GDAContext;
 class GDAHostContext;
 class QueuePair;
 class HostInterface;
+
+enum GDAVendor {
+  NONE,
+  IONIC,
+  BNXT,
+  MLX5
+};
 
 class GDABackend : public Backend {
  private:
@@ -51,39 +89,43 @@ class GDABackend : public Backend {
     union ibv_gid gid;
   } dest_info_t;
 
-  char *requested_dev = nullptr;
+  const char *requested_dev = nullptr;
   struct ibv_context *context = nullptr;;
   struct ibv_pd *pd_orig = nullptr;
+  enum GDAVendor gda_vendor = GDAVendor::NONE;
 
   struct ibv_port_attr portinfo;
   union ibv_gid gid;
   int port = 1;
-  int gid_index;
+  int gid_index = 0;
 
   uint32_t *heap_rkey = nullptr;
   struct ibv_mr *heap_mr = nullptr;
 
-  uint32_t sq_size = 1024;
+  uint32_t inline_threshold = 8;
+  QueuePair *host_qps = nullptr;
   QueuePair *gpu_qps = nullptr;
   std::vector<ibv_qp*> qps;
   std::vector<ibv_cq*> cqs;
   std::vector<dest_info_t> dest_info;
 
-#ifdef GDA_BNXT
+  /* GDA_BNXT START */
   std::vector<struct bnxt_host_qp> bnxt_qps;
   std::vector<struct bnxt_host_cq> bnxt_cqs;
 
   struct bnxt_re_dv_db_region_attr db_region_attr;
-#else
-  struct ibv_pd *pd_parent = nullptr;
-#endif
+  /* GDA_BNXT END */
 
-#ifdef GDA_IONIC
+  /* GDA_IONIC & GDA_MLX5 START */
+  struct ibv_pd *pd_parent = nullptr;
+  /* GDA_IONIC & GDA_MLX5 END */
+
+  /* GDA_IONIC START */
   struct ibv_pd *pd_uxdma[2];
   void *gpu_db_page = nullptr;
   uint64_t *gpu_db_cq = nullptr;
   uint64_t *gpu_db_sq = nullptr;
-#endif
+  /* GDA_IONIC END */
 
  /**
    * @brief Common code invoked from the different constructors
@@ -104,6 +146,17 @@ class GDABackend : public Backend {
    */
   virtual ~GDABackend();
 
+  /**
+   * @brief Verify whether GDA Backend could run
+   *
+   * @return ROSCHMEM_SUCCESS if GDA Backend can most likely be used
+   *         ROCSHMEM_ERROR otherwise
+   */
+  static int backend_can_run(void);
+
+  /**
+   * @brief
+   */
   __device__ bool create_ctx(int64_t options, rocshmem_ctx_t *ctx);
 
   /**
@@ -245,6 +298,14 @@ class GDABackend : public Backend {
   void setup_host_ctx();
   void setup_default_ctx();
 
+
+  /**
+   * @brief Allocation and initialization of resources required to
+   * support IPC handover.
+   */
+  void setup_ipc();
+  void cleanup_ipc();
+
   /**
    * @brief Allocate and initialize barrier operation addresses on
    * symmetric heap.
@@ -263,6 +324,7 @@ class GDABackend : public Backend {
   void cleanup_heap_memory_rkey();
 
   void initialize_gpu_qp(QueuePair* qp, int conn_num);
+  void bnxt_initialize_gpu_qp(QueuePair* qp, int conn_num);
 
   /**
    * @brief Setup InfiniBand Resources
@@ -273,6 +335,11 @@ class GDABackend : public Backend {
    * @brief Cleanup InfiniBand Resources
    */
   void cleanup_ibv();
+
+  /**
+   * @brief Detect the available direct verbs libraries
+   */
+  void autodetect_dv_libs();
 
   /**
    * @brief Open InfiniBand Device and create common structures
@@ -293,11 +360,18 @@ class GDABackend : public Backend {
    * @brief Create all CQs with a of length ncqes
    */
   void create_cqs(int ncqes);
+  void bnxt_create_cqs(int ncqes);
 
   /**
    * @brief Create all QPs with a SQ of length sq_length
    */
   void create_qps(int sq_length);
+  void bnxt_create_qps(int sq_length);
+
+  /**
+   * @brief Reorders QPs to that we map rocSHMEM contexts to the correct QPs
+   */
+  void alternate_qp_ports();
 
   /**
    * @brief Exchange QP information for connection
@@ -324,13 +398,12 @@ class GDABackend : public Backend {
    */
   int ibv_mtu_to_int(enum ibv_mtu mtu);
 
-#ifndef GDA_BNXT
-  static void* pd_alloc(ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type);
+  static void* pd_alloc_host(ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type);
+  static void* pd_alloc_device_uncached(ibv_pd* pd, void* pd_context, size_t size, size_t alignment, uint64_t resource_type);
 
   static void pd_release(ibv_pd* pd, void* pd_context, void* ptr, uint64_t resource_type);
 
   void create_parent_domain();
-#endif
 
   void setup_gpu_qps();
   void cleanup_gpu_qps();
@@ -357,11 +430,6 @@ class GDABackend : public Backend {
    * @brief A free-list containing contexts.
    */
   FreeListProxy<HIPAllocator, GDAContext *> ctx_free_list{};
-
-  /**
-   * @brief Holds maximum number of contexts used in library
-   */
-  size_t maximum_num_contexts_{32};
 
   /**
    * @brief The bitmask representing the availability of teams in the pool
@@ -436,6 +504,38 @@ class GDABackend : public Backend {
    * @brief rte barrier for initialization
    */
   void rte_barrier();
+
+  /**
+   * @brief structures holding the function pointers to the direct verbs functionality
+   * of each network driver.
+   */
+  bnxtdv_funcs_t bnxtdv_ftable_;
+
+  /**
+   * @brief handle used for the dlopen of the BCOM library
+   */
+  void *bnxtdv_handle_{nullptr};
+
+  /**
+   * @brief initialize function table for BCOM direct verbs support
+   */
+  int bnxt_dv_dl_init();
+
+  /**
+   * @brief structures holding the function pointers to the direct verbs functionality
+   * of each network driver.
+   */
+  mlx5dv_funcs_t mlx5dv_ftable_;
+
+  /**
+   * @brief handle used for the dlopen of the MLX5 library
+   */
+  void *mlx5dv_handle_{nullptr};
+
+  /**
+   * @brief initialize function table for MLNX direct verbs support
+   */
+  int mlx5_dv_dl_init();
 };
 
 }  // namespace rocshmem

@@ -27,6 +27,7 @@
 #include "constants.hpp"
 #include "backend_type.hpp"
 #include "backend_gda.hpp"
+#include "rocshmem/rocshmem_mpi.hpp"
 
 namespace rocshmem {
 

@@ -24,8 +24,6 @@
 
 #include "context_ipc_host.hpp"
 
-#include <mpi.h>
-
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
 #include "backend_type.hpp"
 #include "context_incl.hpp"
@@ -90,9 +88,8 @@ __host__ void IPCHostContext::quiet() {
 __host__ void *IPCHostContext::shmem_ptr(const void *dest, int pe) {
   void *ret = nullptr;
   void *dst = const_cast<void *>(dest);
-    uint64_t L_offset =
-        reinterpret_cast<char *>(dst) - ipcImpl_.ipc_bases[my_pe];
-    ret = ipcImpl_.ipc_bases[pe] + L_offset;
+  uint64_t L_offset = reinterpret_cast<char *>(dst) - ipcImpl_.ipc_bases[my_pe];
+  ret = ipcImpl_.ipc_bases[pe] + L_offset;
   return ret;
 }
 

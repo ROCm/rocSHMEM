@@ -35,17 +35,18 @@
 
 #include "backend_bc.hpp"
 #include "context_incl.hpp"
+#include "envvar.hpp"
+#if defined(USE_GDA)
+#include "gda/backend_gda.hpp"
+#include "gda/context_gda_tmpl_host.hpp"
+#endif
 #if defined(USE_RO)
 #include "reverse_offload/backend_ro.hpp"
 #include "reverse_offload/context_ro_tmpl_host.hpp"
-#elif defined(USE_IPC)
+#endif
+#if defined(USE_IPC)
 #include "ipc/backend_ipc.hpp"
 #include "ipc/context_ipc_tmpl_host.hpp"
-#elif defined(USE_GDA)
-#include "gda/backend_gda.hpp"
-#include "gda/context_gda_tmpl_host.hpp"
-#else
-#error "Select one backend among USE_RO, USE_IPC, USE_GDA"
 #endif
 #include "mpi_instance.hpp"
 #include "team.hpp"
@@ -76,9 +77,42 @@ MPIInstance *mpi_instance = nullptr;
 TcpBootstrap *bootstr = nullptr;
 rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
-/**
+ /**
  * Begin Host Code
  **/
+
+#if defined(USE_GDA) && defined(USE_RO) && defined(USE_IPC)
+static BackendType select_backend_type() {
+  BackendType type;
+
+  /* Check whether the user explicitely requests a particular backend type */
+  std::string envstr = envvar::backend;
+  std::transform(envstr.begin(), envstr.end(), envstr.begin(), ::tolower);
+  if (!envstr.empty()) {
+    DPRINTF("Found environment variable ROCSHMEM_BACKEND, value is %s\n", envstr.c_str());
+    if (envstr.find("gda") != std::string::npos) {
+      return BackendType::GDA_BACKEND;
+    }
+    if (envstr.find("ro") != std::string::npos) {
+      return BackendType::RO_BACKEND;
+    }
+    if (envstr.find("ipc") != std::string::npos) {
+      return BackendType::IPC_BACKEND;
+    }
+  }
+
+  if (GDABackend::backend_can_run() == ROCSHMEM_SUCCESS) {
+    DPRINTF("GDABackend::backend_can_run returned success\n");
+    return BackendType::GDA_BACKEND;
+  }
+  if (MPIInstance::mpilib_dl_init() == ROCSHMEM_SUCCESS) {
+    DPRINTF("MPIInstance could dl_init MPI library\n");
+    return BackendType::RO_BACKEND;
+  }
+
+  return BackendType::IPC_BACKEND;
+}
+#endif
 
 [[maybe_unused]] __host__ void inline library_init(MPI_Comm comm) {
   assert(!backend);
@@ -92,17 +126,42 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
   rocm_init();
 
+  int ret;
+  ret = MPIInstance::mpilib_dl_init();
   mpi_instance = new MPIInstance(comm);
 
-#if defined(USE_RO)
+#if defined(USE_GDA) && defined(USE_RO) && defined(USE_IPC)
+  BackendType type = select_backend_type();
+  switch (type) {
+  case BackendType::GDA_BACKEND:
+    DPRINTF("Initializing GDA backend using MPI\n");
+    CHECK_HIP(hipHostMalloc(&backend, sizeof(GDABackend)));
+    backend = new (backend) GDABackend(comm);
+    break;
+  case BackendType::RO_BACKEND:
+    DPRINTF("Initializing RO backend using MPI\n");
+    CHECK_HIP(hipHostMalloc(&backend, sizeof(ROBackend)));
+    backend = new (backend) ROBackend(comm);
+    break;
+  case BackendType::IPC_BACKEND:
+    DPRINTF("Initializing IPC backend using MPI\n");
+    CHECK_HIP(hipHostMalloc(&backend, sizeof(IPCBackend)));
+    backend = new (backend) IPCBackend(comm);
+    break;
+  }
+#elif defined(USE_GDA)
+  CHECK_HIP(hipHostMalloc(&backend, sizeof(GDABackend)));
+  backend = new (backend) GDABackend(comm);
+#elif defined(USE_RO)
+  if (ret != ROCSHMEM_SUCCESS) {
+    printf("Could not initialize MPI library. RO conduit requires MPI library to be loaded at runtime. Aborting\n");
+    abort();
+  }
   CHECK_HIP(hipHostMalloc(&backend, sizeof(ROBackend)));
   backend = new (backend) ROBackend(comm);
 #elif defined(USE_IPC)
   CHECK_HIP(hipHostMalloc(&backend, sizeof(IPCBackend)));
   backend = new (backend) IPCBackend(comm);
-#elif defined(USE_GDA)
-  CHECK_HIP(hipHostMalloc(&backend, sizeof(GDABackend)));
-  backend = new (backend) GDABackend(comm);
 #endif
 
   if (!backend) {
@@ -113,7 +172,15 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 [[maybe_unused]] __host__ static void inline library_init_subcomm(TcpBootstrap *bootstrap, int nranks, int rank) {
   int initialized;
   int world_size = -1;
-  MPI_Initialized(&initialized);
+
+  int ret;
+  ret = MPIInstance::mpilib_dl_init();
+  if (ret == ROCSHMEM_SUCCESS) {
+    printf("Could not initialize MPI library. This initialization method of "
+           "rocSHMEM requires MPI library to be loaded at runtime. Aborting\n");
+    abort();
+  }
+  mpilib_ftable_.Initialized(&initialized);
 
   if (!initialized) {
     // This is an Open MPI specific solution to retrieve the number of
@@ -131,7 +198,7 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
       abort();
     }
   } else {
-    MPI_Comm_size (MPI_COMM_WORLD, &world_size);
+    mpilib_ftable_.Comm_size (MPI_COMM_WORLD, &world_size);
   }
 
   if (world_size == nranks) {
@@ -140,8 +207,8 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
     MPI_Group world_group;
     int world_rank;
 
-    MPI_Comm_rank (MPI_COMM_WORLD, &world_rank);
-    MPI_Comm_group (MPI_COMM_WORLD, &world_group);
+    mpilib_ftable_.Comm_rank (MPI_COMM_WORLD, &world_rank);
+    mpilib_ftable_.Comm_group (MPI_COMM_WORLD, &world_group);
 
     int *inc_ranks = new int[nranks];
     inc_ranks[rank] = world_rank;
@@ -150,14 +217,14 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
     MPI_Group sub_group;
     MPI_Comm sub_comm;
-    MPI_Group_incl (world_group, nranks, inc_ranks, &sub_group);
-    MPI_Comm_create_group (MPI_COMM_WORLD, sub_group, 1234, &sub_comm);
+    mpilib_ftable_.Group_incl (world_group, nranks, inc_ranks, &sub_group);
+    mpilib_ftable_.Comm_create_group (MPI_COMM_WORLD, sub_group, 1234, &sub_comm);
 
     library_init(sub_comm);
 
-    MPI_Group_free (&sub_group);
-    MPI_Group_free (&world_group);
-    MPI_Comm_free (&sub_comm);
+    mpilib_ftable_.Group_free (&sub_group);
+    mpilib_ftable_.Group_free (&world_group);
+    mpilib_ftable_.Comm_free (&sub_comm);
     delete[] inc_ranks;
   }
 }
@@ -174,15 +241,44 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
   rocm_init();
 
-#if defined(USE_RO)
-  printf("RO Backend requires MPI library to be initialized, even when using uniqueId initializations!\n");
-  abort();
-#elif defined(USE_IPC)
-  CHECK_HIP(hipHostMalloc(&backend, sizeof(IPCBackend)));
-  backend = new (backend) IPCBackend(bootstrap);
+#if defined(USE_GDA) && defined(USE_RO) && defined(USE_IPC)
+  BackendType type = select_backend_type();
+  switch (type) {
+  case BackendType::GDA_BACKEND:
+    DPRINTF("Initializing GDA backend with TCP bootstrapping\n");
+    CHECK_HIP(hipHostMalloc(&backend, sizeof(GDABackend)));
+    backend = new (backend) GDABackend(bootstrap);
+    break;
+  case BackendType::RO_BACKEND:
+    /* Not sure whether this is a valid configuration. Will leave it in for now */
+    DPRINTF("Initializing RO backend with TCP bootstrapping\n");
+    mpi_instance = new MPIInstance(MPI_COMM_WORLD);
+    CHECK_HIP(hipHostMalloc(&backend, sizeof(ROBackend)));
+    backend = new (backend) ROBackend(MPI_COMM_WORLD);
+    break;
+  case BackendType::IPC_BACKEND:
+    DPRINTF("Initializing IPC backend with TCP bootstrapping\n");
+    CHECK_HIP(hipHostMalloc(&backend, sizeof(IPCBackend)));
+    backend = new (backend) IPCBackend(bootstrap);
+    break;
+  }
 #elif defined(USE_GDA)
   CHECK_HIP(hipHostMalloc(&backend, sizeof(GDABackend)));
   backend = new (backend) GDABackend(bootstrap);
+#elif defined(USE_RO)
+  /* Not sure whether this is a valid configuration. Will leave it in for now */
+  int ret;
+  ret = MPIInstance::mpilib_dl_init();
+  if (ret != MPI_SUCCESS) {
+    printf("RO Backend requires MPI library to be initialized, even when using uniqueId initializations!\n");
+    abort();
+  }
+  mpi_instance = new MPIInstance(MPI_COMM_WORLD);
+  CHECK_HIP(hipHostMalloc(&backend, sizeof(ROBackend)));
+  backend = new (backend) ROBackend(MPI_COMM_WORLD);
+#elif defined(USE_IPC)
+  CHECK_HIP(hipHostMalloc(&backend, sizeof(IPCBackend)));
+  backend = new (backend) IPCBackend(bootstrap);
 #endif
 
   if (!backend) {
@@ -192,7 +288,7 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
 [[maybe_unused]] __host__ int rocshmem_init_attr(unsigned int flags,
                                                  rocshmem_init_attr_t *attr) {
-  MPI_Comm comm = MPI_COMM_NULL;
+  MPI_Comm comm;
 
   if ((attr == nullptr) ||
       ((flags != ROCSHMEM_INIT_WITH_UNIQUEID) &&
@@ -215,9 +311,9 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
     assert (attr->rank < attr->nranks);
 
     bootstr = new TcpBootstrap(attr->rank, attr->nranks);
-    bootstr->initialize(attr->uid, rocshmem_env_.get_bootstrap_timeout());
+    bootstr->initialize(attr->uid, envvar::bootstrap::timeout);
 
-    if (rocshmem_env_.get_uniqueid_with_mpi() ) {
+    if (envvar::uniqueid_with_mpi) {
       library_init_subcomm(bootstr, attr->nranks, attr->rank);
     } else {
       library_init (bootstr);
@@ -228,12 +324,12 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 }
 
 [[maybe_unused]] __host__ int rocshmem_set_attr_uniqueid_args(int rank, int nranks,
-							       rocshmem_uniqueid_t *uid,
-							       rocshmem_init_attr_t *attr) {
+                                                              rocshmem_uniqueid_t *uid,
+                                                              rocshmem_init_attr_t *attr) {
   if (uid == nullptr || attr == nullptr) {
       fprintf(stderr, "ROCSHMEM_ERROR: %s in file '%s' in line %d\n",
               "Call 'rocshmem_get_uniqueid: invalid input argument'",
-	      __FILE__, __LINE__);
+              __FILE__, __LINE__);
       return ROCSHMEM_ERROR;
   }
 
@@ -252,7 +348,7 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   if (uid == nullptr) {
       fprintf(stderr, "ROCSHMEM_ERROR: %s in file '%s' in line %d\n",
               "Call 'rocshmem_get_uniqueid: invalid input argument'",
-	      __FILE__, __LINE__);
+              __FILE__, __LINE__);
       return ROCSHMEM_ERROR;
   }
 
@@ -262,17 +358,29 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
   return ROCSHMEM_SUCCESS;
 }
 
+#if defined(HAVE_EXTERNAL_MPI)
 [[maybe_unused]] __host__ void rocshmem_init(MPI_Comm comm) {
   library_init(comm);
 }
+#endif
 
+[[maybe_unused]] __host__ void rocshmem_init() {
+  MPIInstance::mpilib_dl_init();
+  library_init(MPI_COMM_WORLD);
+}
+
+#if defined(HAVE_EXTERNAL_MPI)
 [[maybe_unused]] __host__ int rocshmem_init_thread(
     [[maybe_unused]] int required, int *provided, MPI_Comm comm) {
+  if (comm == static_cast<MPI_Comm>(0) || comm == MPI_COMM_NULL) {
+    comm = MPI_COMM_WORLD;
+  }
   library_init(comm);
   rocshmem_query_thread(provided);
 
   return ROCSHMEM_SUCCESS;
 }
+#endif
 
 [[maybe_unused]] __host__ int rocshmem_my_pe() {
   if (backend != nullptr) {
@@ -297,7 +405,6 @@ rocshmem_ctx_t ROCSHMEM_HOST_CTX_DEFAULT;
 
   void *ptr;
   backend->heap.malloc(&ptr, size);
-
   rocshmem_barrier_all();
 
   return ptr;
@@ -455,7 +562,8 @@ __host__ int rocshmem_team_split_strided(
       TeamInfo(team_world, pe_start_in_world, stride_in_world, size);
 
   MPI_Comm team_comm{MPI_COMM_NULL};
-  if (parent_team_obj->mpi_comm != MPI_COMM_NULL) {
+  if (parent_team_obj->mpi_comm != MPI_COMM_NULL &&
+      parent_team_obj->mpi_comm != static_cast<MPI_Comm>(0)) {
     /* Create a new MPI communicator for this team */
     int color;
     if (my_pe_in_new_team < 0) {
@@ -464,8 +572,8 @@ __host__ int rocshmem_team_split_strided(
       color = 1;
     }
 
-    MPI_Comm_split(parent_team_obj->mpi_comm, color, my_pe_in_world, &team_comm);
-  }
+    mpilib_ftable_.Comm_split(parent_team_obj->mpi_comm, color, my_pe_in_world, &team_comm);
+}
   /**
    * Allocate new team for GPU-inittiated communication with backend-specific
    * objects
@@ -484,8 +592,8 @@ __host__ int rocshmem_team_split_strided(
     backend->team_tracker.track(*new_team);
   }
 
-  if (team_comm != MPI_COMM_NULL) {
-    MPI_Comm_free (&team_comm);
+  if (team_comm != MPI_COMM_NULL && team_comm != static_cast<MPI_Comm>(0)) {
+    mpilib_ftable_.Comm_free (&team_comm);
   }
   return 0;
 }

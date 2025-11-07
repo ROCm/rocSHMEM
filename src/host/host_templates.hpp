@@ -74,7 +74,7 @@ __host__ T HostInterface::g(const T* source, int pe, WindowInfo* window_info) {
    */
   getmem_nbi(&ret, source, sizeof(T), pe, window_info);
 
-  MPI_Win_flush_local(pe, window_info_mpi->get_win());
+  mpilib_ftable_.Win_flush_local(pe, window_info_mpi->get_win());
 
   return ret;
 }
@@ -101,7 +101,7 @@ __host__ MPI_Comm HostInterface::get_mpi_comm(int pe_start, int log_pe_stride,
    * First, check to see if the active set is the same as COMM_WORLD
    */
   int comm_world_size{-1};
-  MPI_Comm_size(host_comm_world_, &comm_world_size);
+  mpilib_ftable_.Comm_size(host_comm_world_, &comm_world_size);
 
   if (pe_start == 0 && log_pe_stride == 0 && pe_size == comm_world_size) {
     /*
@@ -139,12 +139,12 @@ __host__ MPI_Comm HostInterface::get_mpi_comm(int pe_start, int log_pe_stride,
   MPI_Group comm_world_group{};
   MPI_Group active_set_group{};
 
-  MPI_Comm_group(host_comm_world_, &comm_world_group);
+  mpilib_ftable_.Comm_group(host_comm_world_, &comm_world_group);
 
-  MPI_Group_incl(comm_world_group, pe_size, active_set_ranks.data(),
-                 &active_set_group);
+  mpilib_ftable_.Group_incl(comm_world_group, pe_size, active_set_ranks.data(),
+                            &active_set_group);
 
-  MPI_Comm_create_group(host_comm_world_, active_set_group, 0,
+  mpilib_ftable_.Comm_create_group(host_comm_world_, active_set_group, 0,
                         &active_set_comm);
 
   /*
@@ -168,7 +168,7 @@ __host__ void HostInterface::broadcast_internal(MPI_Comm mpi_comm, T* dest,
    */
   int active_set_rank{-1};
   void* buffer{nullptr};
-  MPI_Comm_rank(mpi_comm, &active_set_rank);
+  mpilib_ftable_.Comm_rank(mpi_comm, &active_set_rank);
   if (pe_root == active_set_rank) {
     buffer = const_cast<T*>(source);
   } else {
@@ -183,7 +183,7 @@ __host__ void HostInterface::broadcast_internal(MPI_Comm mpi_comm, T* dest,
   /*
    * Offload the broadcast to MPI
    */
-  MPI_Bcast(buffer, nelems * sizeof(T), MPI_CHAR, pe_root, mpi_comm);
+  mpilib_ftable_.Bcast(buffer, nelems * sizeof(T), MPI_CHAR, pe_root, mpi_comm);
 
   return;
 }
@@ -312,9 +312,9 @@ __host__ T HostInterface::amo_fetch_add(void* dst, T value, int pe,
   T ret{};
   MPI_Win win{window_info_mpi->get_win()};
   MPI_Datatype mpi_type{get_mpi_type<T>()};
-  MPI_Fetch_and_op(&value, &ret, mpi_type, pe, offset, MPI_SUM, win);
+  mpilib_ftable_.Fetch_and_op(&value, &ret, mpi_type, pe, offset, MPI_SUM, win);
 
-  MPI_Win_flush_local(pe, win);
+  mpilib_ftable_.Win_flush_local(pe, win);
 
   return ret;
 }
@@ -341,9 +341,9 @@ __host__ T HostInterface::amo_fetch_cas(void* dst, T value, T cond, int pe,
   T ret{};
   MPI_Win win{window_info_mpi->get_win()};
   MPI_Datatype mpi_type{get_mpi_type<T>()};
-  MPI_Compare_and_swap(&value, &cond, &ret, mpi_type, pe, offset, win);
+  mpilib_ftable_.Compare_and_swap(&value, &cond, &ret, mpi_type, pe, offset, win);
 
-  MPI_Win_flush_local(pe, win);
+  mpilib_ftable_.Win_flush_local(pe, win);
 
   return ret;
 }
@@ -368,8 +368,8 @@ __host__ void HostInterface::to_all_internal(MPI_Comm mpi_comm, T* dest,
   /*
    * Offload the allreduce to MPI
    */
-  MPI_Allreduce((dest == source) ? MPI_IN_PLACE : send_buf, recv_buf, nreduce,
-                mpi_type, mpi_op, mpi_comm);
+  mpilib_ftable_.Allreduce((dest == source) ? MPI_IN_PLACE : send_buf, recv_buf, nreduce,
+                           mpi_type, mpi_op, mpi_comm);
 
   return;
 }
@@ -453,9 +453,9 @@ __host__ inline int HostInterface::test_and_compare(MPI_Aint offset,
    */
   hdp_policy_->hdp_flush();
 
-  MPI_Fetch_and_op(nullptr,  // because no operation happening here
-                   &fetched_val, mpi_type, my_pe_, offset, MPI_NO_OP, win);
-  MPI_Win_flush_local(my_pe_, win);
+  mpilib_ftable_.Fetch_and_op(nullptr,  // because no operation happening here
+                              &fetched_val, mpi_type, my_pe_, offset, MPI_NO_OP, win);
+  mpilib_ftable_.Win_flush_local(my_pe_, win);
 
   /*
    * Compare based on the operation

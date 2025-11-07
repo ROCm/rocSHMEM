@@ -33,6 +33,7 @@
 #include <string>
 #include <iostream>
 
+#include "envvar.hpp"
 #include "utils.hpp"
 #include "util.hpp"
 
@@ -101,8 +102,8 @@ uint64_t computeHostHash(void) {
   std::string hostName = getHostName(hashLen, '\0');
   strncpy(hostHash, hostName.c_str(), hostName.size());
 
-  std::string hostid = rocshmem_env_.get_bootstrap_hostid();
-  if (hostid != "") {
+  const std::string& hostid = envvar::bootstrap::hostid;
+  if (!hostid.empty()) {
     strncpy(hostHash, hostid.c_str(), hashLen);
   } else if (hostName.size() < hashLen) {
     std::ifstream file(HOSTID_FILE, std::ios::binary);

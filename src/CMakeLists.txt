@@ -30,6 +30,7 @@ target_sources(
   PRIVATE
     atomic_return.cpp
     backend_bc.cpp
+    envvar.cpp
     context_host.cpp
     context_device.cpp
     mpi_instance.cpp
@@ -63,12 +64,14 @@ target_compile_options(${PROJECT_NAME} PUBLIC ${ROCSHMEM_COMPILE_FLAGS})
 ###############################################################################
 # ROCSHMEM TARGET FOR BACKENDS
 ###############################################################################
+if (USE_GDA)
+add_subdirectory(gda)
+endif()
 if (USE_RO)
 add_subdirectory(reverse_offload)
-elseif (USE_IPC)
+endif()
+if (USE_IPC)
 add_subdirectory(ipc)
-elseif (USE_GDA)
-add_subdirectory(gda)
 endif()
 add_subdirectory(host)
 add_subdirectory(containers)

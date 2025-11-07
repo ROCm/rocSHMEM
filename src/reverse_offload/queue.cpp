@@ -23,30 +23,18 @@
  *****************************************************************************/
 
 #include "queue.hpp"
+#include "envvar.hpp"
 #include "mpi_transport.hpp"
 
 namespace rocshmem {
 
-Queue::Queue() {
-  gpu_queue = true;
-  char *value{nullptr};
-  if ((value = getenv("RO_NET_CPU_QUEUE")) != nullptr) {
-    gpu_queue = false;
-  }
-}
+Queue::Queue() { }
 
 Queue::Queue(size_t max_queues, size_t queue_size)
     : max_queues_{max_queues},
       queue_size_{queue_size},
       queue_proxy_{max_queues, queue_size},
-      queue_desc_proxy_{max_queues} {
-
-  gpu_queue = true;
-  char *value{nullptr};
-  if ((value = getenv("RO_NET_CPU_QUEUE")) != nullptr) {
-    gpu_queue = false;
-  }
-}
+      queue_desc_proxy_{max_queues} { }
 
 uint64_t Queue::get_read_index(uint64_t queue_index) {
   return descriptor(queue_index)->read_index % queue_size_;
@@ -70,7 +58,7 @@ bool Queue::process(uint64_t queue_index, MPITransport* transport) {
 
 queue_element* Queue::next_element(uint64_t queue_index) {
   queue_element *next_elem{nullptr};
-  if (gpu_queue) {
+  if (!envvar::ro::net_cpu_queue) {
     hdp_proxy_.get()->hdp_flush();
     copy_element_to_cache(queue_index);
     next_elem = queue_element_cache_proxy_.get();
@@ -90,13 +78,13 @@ void Queue::copy_element_to_cache(uint64_t queue_index) {
 }
 
 void Queue::flush_hdp() {
-  if (!gpu_queue) {
+  if (envvar::ro::net_cpu_queue) {
     hdp_proxy_.get()->hdp_flush();
   }
 }
 
 void Queue::sfence_flush_hdp() {
-  if (!gpu_queue) {
+  if (envvar::ro::net_cpu_queue) {
     asm volatile("sfence" ::: "memory");
     hdp_proxy_.get()->hdp_flush();
   }
