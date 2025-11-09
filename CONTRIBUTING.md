@@ -1,6 +1,6 @@
 ## How to fork from us
 
-To keep our development fast and conflict free, we recommend you to [fork](https://github.com/ROCm/rocSHMEM/fork) our repository and start your work from our `dev` branch in your private repository.
+To keep our development fast and conflict free, we recommend you to [fork](https://github.com/ROCm/rocSHMEM/fork) our repository and start your work from our `develop` branch in your private repository.
 
 Afterwards, git clone your repository to your local machine. But that is not it! To keep track of the original develop repository, add it as another remote.
 
