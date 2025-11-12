@@ -44,10 +44,11 @@ class GDADefaultContextProxy {
    * Placement new the memory which is allocated by proxy_
    */
   explicit GDADefaultContextProxy(GDABackend* backend, TeamInfo *tinfo,
+                                  int gda_provider,
                                   size_t num_elems = 1)
   : constructed_{true}, proxy_{num_elems} {
     auto ctx{proxy_.get()};
-    new (ctx) GDAContext(reinterpret_cast<Backend*>(backend), 0);
+    new (ctx) GDAContext(reinterpret_cast<Backend*>(backend), 0, gda_provider);
     ctx->tinfo = tinfo;
     rocshmem_ctx_t local{ctx, tinfo};
     set_internal_ctx(&local);

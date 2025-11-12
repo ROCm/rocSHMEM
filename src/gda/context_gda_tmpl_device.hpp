@@ -32,6 +32,7 @@
 #include "gda_team.hpp"
 #include "queue_pair.hpp"
 #include "rocshmem_calc.hpp"
+#include "backend_gda.hpp"
 
 #include <hip/hip_runtime.h>
 
@@ -604,7 +605,11 @@ __device__ void GDAContext::internal_broadcast(T *dst, const T *src, int nelems,
 template <typename T>
 __device__ void GDAContext::alltoall(rocshmem_team_t team, T *dst,
                                      const T *src, int nelems) {
-  alltoall_linear_thread_puts(team, dst, src, nelems);
+  if (gda_provider_ == GDAProvider::BNXT) {
+    alltoall_linear_thread_puts(team, dst, src, nelems);
+  } else {
+    alltoall_linear(team, dst, src, nelems);
+  }
 }
 
 template <typename T>

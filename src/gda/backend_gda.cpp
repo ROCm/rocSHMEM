@@ -156,7 +156,7 @@ void GDABackend::setup_host_ctx() {
 
 void GDABackend::setup_default_ctx() {
   TeamInfo *tinfo = team_tracker.get_team_world()->tinfo_wrt_world;
-  default_context_proxy_ = GDADefaultContextProxyT(this, tinfo);
+  default_context_proxy_ = GDADefaultContextProxyT(this, tinfo, gda_provider);
 }
 
 void GDABackend::setup_ctxs() {
@@ -166,7 +166,7 @@ void GDABackend::setup_ctxs() {
   CHECK_HIP(hipMalloc(&ctx_array, sizeof(GDAContext) * envvar::max_num_contexts));
   // 0th context is default context
   for (size_t i = 0; i < envvar::max_num_contexts; i++) {
-    new (&ctx_array[i]) GDAContext(this, i + 1);
+    new (&ctx_array[i]) GDAContext(this, i + 1, gda_provider);
     ctx_free_list.get()->push_back(ctx_array + i);
   }
 }
