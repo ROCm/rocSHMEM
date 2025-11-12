@@ -63,6 +63,8 @@ typedef struct ompi_status_public_t MPI_Status;
 #define MPI_IN_PLACE (void*)1
 #define MPI_MODE_NOCHECK 1
 #define MPI_COMM_TYPE_SHARED 0
+#define MPI_ANY_SOURCE -1
+#define MPI_STATUSES_IGNORE (static_cast<MPI_Status*>(0))
 
 #define MPI_Aint_diff(addr1, addr2) ((MPI_Aint) ((char *) (addr1) - (char *) (addr2)))
 

@@ -44,7 +44,7 @@ class ROTeamProxy {
               size_t num_elems = 1)
     : my_pe_(pe), team_size_(npes), proxy_{num_elems} {
 
-    MPI_Comm_dup(comm, &team_world_comm_);
+    mpilib_ftable_.Comm_dup(comm, &team_world_comm_);
 
     new (proxy_.get()) ROTeam(backend, wrt_parent_.get(), wrt_world_.get(),
                               team_size_, my_pe_, team_world_comm_);
@@ -65,7 +65,7 @@ class ROTeamProxy {
   ~ROTeamProxy() {
     proxy_.get()->~ROTeam();
 
-    MPI_Comm_free(&team_world_comm_);
+    mpilib_ftable_.Comm_free(&team_world_comm_);
   }
 
   /*
@@ -77,7 +77,7 @@ class ROTeamProxy {
   /**
    * @brief Holds duplicated mpi world communicator.
    */
-  MPI_Comm team_world_comm_{MPI_COMM_NULL};
+  MPI_Comm team_world_comm_;
 
   /**
    * @brief Used by TeamInfo members and the constructor to build ROTeam.
