@@ -121,6 +121,54 @@ __device__ void GDAContext::internal_direct_barrier_wg(int pe, int PE_start,
   }
 }
 
+__device__ void GDAContext::internal_direct_barrier_wg_thread_puts(int pe, int PE_start,
+                                                                   int stride, int n_pes,
+                                                                   int64_t *pSync) {
+  int64_t flag_val{1};
+
+  if (pe == PE_start) {
+    int tid = get_flat_block_id();
+
+    // Go through all PE offsets (except current offset = 0)
+    // and wait until they all reach
+    for (int j = tid + 1; j < n_pes; j+= WF_SIZE) {
+      wait_until(&pSync[j], ROCSHMEM_CMP_EQ, flag_val);
+      pSync[j] = ROCSHMEM_SYNC_VALUE;
+    }
+
+    __syncthreads();
+
+    // Announce to other PEs that all have reached
+    for (int i = tid + 1, j = PE_start + stride + tid;
+             i < n_pes;
+             i+= WF_SIZE, j += (WF_SIZE * stride)) {
+      uint64_t L_offset = reinterpret_cast<char*>(&pSync[0]) - base_heap[my_pe];
+      qps[j].put_nbi_single(base_heap[j] + L_offset, &flag_val, sizeof(long), j);
+    }
+
+    for (int i = tid + 1, j = PE_start + stride + tid;
+             i < n_pes;
+             i+= WF_SIZE, j += (WF_SIZE * stride)) {
+      pe_quiet_single(j);
+    }
+
+    __syncthreads();
+
+    if (is_thread_zero_in_block()) {
+      pSync[0] = ROCSHMEM_SYNC_VALUE;
+    }
+  } else {
+    if (is_thread_zero_in_block()) {
+      // Mark current PE offset as reached
+      size_t pe_offset = (pe - PE_start) / stride;
+      putmem(&pSync[pe_offset], &flag_val, sizeof(long), PE_start);
+      wait_until(&pSync[0], ROCSHMEM_CMP_EQ, flag_val);
+      pSync[0] = ROCSHMEM_SYNC_VALUE;
+      __threadfence_system();
+    }
+  }
+}
+
 __device__ void GDAContext::internal_atomic_barrier(int pe, int PE_start,
                                                     int stride, int n_pes,
                                                     int64_t *pSync) {

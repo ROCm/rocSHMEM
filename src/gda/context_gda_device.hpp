@@ -258,6 +258,10 @@ class GDAContext : public Context {
   __device__ void alltoall_linear(rocshmem_team_t team, T *dest,
                                   const T *source, int nelems);
 
+  template <typename T>
+  __device__ void alltoall_linear_thread_puts(rocshmem_team_t team, T *dest,
+                                              const T *source, int nelems);
+
   __device__ void internal_sync(int pe, int PE_start, int stride, int PE_size,
                                 int64_t *pSync);
 
@@ -272,6 +276,10 @@ class GDAContext : public Context {
 
   __device__ void internal_direct_barrier_wg(int pe, int PE_start, int stride,
                                              int n_pes, int64_t *pSync);
+
+  __device__ void internal_direct_barrier_wg_thread_puts(int pe, int PE_start,
+                                                         int stride, int n_pes,
+                                                         int64_t *pSync);
 
   __device__ void internal_atomic_barrier(int pe, int PE_start, int stride,
                                           int n_pes, int64_t *pSync);
