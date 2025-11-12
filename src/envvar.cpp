@@ -68,6 +68,8 @@ namespace envvar {
     const var<std::string> provider("PROVIDER", "");
     const var<bool> alternate_qp_ports("ALTERNATE_QP_PORTS", "", true);
     const var<uint8_t> traffic_class("TRAFFIC_CLASS", "", 0);
+    const var<size_t> num_qps_per_pe_default_ctx("NUM_QPS_PER_PE_DEFAULT_CTX", "", 2);
+    const var<size_t> num_qps_per_pe_usr_ctx("NUM_QPS_PER_PE_USR_CTX", "", 2);
   }  // namespace gda
 
   namespace _detail {
