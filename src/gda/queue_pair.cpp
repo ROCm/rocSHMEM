@@ -138,19 +138,19 @@ __device__ void QueuePair::post_wqe_rma_turn(int pe, int32_t size, uintptr_t *la
       uint8_t lane = __ffsll((unsigned long long)turns) - 1;
       int pe_turn = __shfl(pe, lane);
       if (pe_turn == pe) {
-        post_wqe_rma_single(pe, size, laddr, raddr, opcode);
+        post_wqe_rma_mt(pe, size, laddr, raddr, opcode);
         need_turn = false;
       }
       turns = __ballot(need_turn);
     }
   } else {
     if (is_thread_zero_in_wave()) {
-      post_wqe_rma_single(pe, size, laddr, raddr, opcode);
+      post_wqe_rma_mt(pe, size, laddr, raddr, opcode);
     }
   }
 }
 
-__device__ void QueuePair::post_wqe_rma_single(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
+__device__ void QueuePair::post_wqe_rma_mt(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
   switch (gda_provider_) {
 #if defined(GDA_MLX5)
   case GDAProvider::MLX5:
@@ -162,6 +162,19 @@ __device__ void QueuePair::post_wqe_rma_single(int pe, int32_t size, uintptr_t *
     bnxt_post_wqe_rma(pe, size, laddr, raddr, opcode);
     return;
 #endif
+  default:
+    assert(false /* invalid nic provider */);
+  }
+}
+
+__device__ void QueuePair::post_wqe_rma_single(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
+  switch (gda_provider_) {
+#if defined(GDA_BNXT)
+  case GDAProvider::BNXT:
+    return bnxt_post_wqe_rma_single(pe, size, laddr, raddr, opcode);
+#endif
+  case GDAProvider::IONIC:
+  case GDAProvider::MLX5:
   default:
     assert(false /* invalid nic provider */);
   }
@@ -214,6 +227,20 @@ __device__ void QueuePair::quiet(Collectivity cy) {
   }
 }
 
+__device__ void QueuePair::quiet_single() {
+  switch (gda_provider_) {
+#if defined(GDA_BNXT)
+  case GDAProvider::BNXT:
+    bnxt_quiet_single();
+    return;
+#endif
+  case GDAProvider::MLX5:
+  case GDAProvider::IONIC:
+  default:
+    assert(false /* invalid nic provider */);
+  }
+}
+
 /******************************************************************************
  ****************************** SHMEM INTERFACE *******************************
  *****************************************************************************/
@@ -221,6 +248,12 @@ __device__ void QueuePair::put_nbi(void *dest, const void *source, size_t nelems
   uintptr_t *src = reinterpret_cast<uintptr_t*>(const_cast<void*>(source));
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
   post_wqe_rma(pe, nelems, src, dst, gda_op_rdma_write, cy);
+}
+
+__device__ void QueuePair::put_nbi_single(void *dest, const void *source, size_t nelems, int pe) {
+  uintptr_t *src = reinterpret_cast<uintptr_t*>(const_cast<void*>(source));
+  uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
+  post_wqe_rma_single(pe, nelems, src, dst, gda_op_rdma_write);
 }
 
 __device__ void QueuePair::get_nbi(void *dest, const void *source, size_t nelems, int pe, Collectivity cy) {
