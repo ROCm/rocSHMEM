@@ -648,19 +648,21 @@ __device__ void GDAContext::alltoall_linear_thread_puts(rocshmem_team_t team, T 
   long *pSync = team_obj->alltoall_pSync;
   int my_pe_in_team = team_obj->my_pe;
 
+  int tid = get_flat_block_id();
   int wf_id = get_flat_block_id() / WF_SIZE;
   int wf_count = (int) ceil((double)get_flat_block_size() / (double)WF_SIZE);
   bool wf_leader = 0 == get_active_lane_num();
 
   // Have each PE put their designated data to the other PEs
-  for (int j = wf_id; j < pe_size; j+= wf_count) {
+  for (int j = tid; j < pe_size; j+= WF_SIZE) {
     int dest_pe = team_obj->get_pe_in_world(j);
-    put_nbi_wave(&dst[my_pe_in_team * nelems], &src[j * nelems], nelems, dest_pe);
+    uint64_t L_offset = reinterpret_cast<char*>(&dst[my_pe_in_team * nelems]) - base_heap[my_pe];
+    qps[dest_pe].put_nbi_single(base_heap[dest_pe] + L_offset, &src[j * nelems], nelems * sizeof(T), dest_pe);
   }
 
-  for (int j = wf_id; j < pe_size; j+= wf_count) {
+  for (int j = tid; j < pe_size; j+= WF_SIZE) {
     int dest_pe = team_obj->get_pe_in_world(j);
-    pe_quiet(dest_pe);
+    pe_quiet_single(dest_pe);
   }
 
   // wait until everyone has obtained their designated data
