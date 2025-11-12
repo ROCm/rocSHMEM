@@ -233,10 +233,12 @@ if (NOT BUILD_TESTS_ONLY)
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/rocshmem
   )
 
-  rocm_install(
-    PROGRAMS "${CMAKE_BINARY_DIR}/src/tools/rocshmem_info"
-    DESTINATION ${CMAKE_INSTALL_BINDIR}
-  )
+  if (BUILD_TOOLS)
+    rocm_install(
+      PROGRAMS "${CMAKE_BINARY_DIR}/src/tools/rocshmem_info"
+      DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+  endif()
 
   rocm_package_add_dependencies(
     DEPENDS
