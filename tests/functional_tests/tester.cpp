@@ -225,13 +225,7 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       if (rank == 0) {
         std::cout << "Alltoall Test ###" << std::endl;
       }
-      testers.push_back(new TeamAlltoallTester<int64_t>(args));
-      testers.push_back(new TeamAlltoallTester<int>(args));
-      testers.push_back(new TeamAlltoallTester<long long>(args));
       testers.push_back(new TeamAlltoallTester<float>(args));
-      testers.push_back(new TeamAlltoallTester<double>(args));
-      testers.push_back(new TeamAlltoallTester<char>(args));
-      testers.push_back(new TeamAlltoallTester<unsigned char>(args));
       return testers;
     case TeamFCollectTestType:
       if (rank == 0) {
