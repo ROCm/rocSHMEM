@@ -215,6 +215,9 @@ if (NOT BUILD_TESTS_ONLY)
       -fgpu-rdc
   )
 
+  # Enable warp sync builtins
+  target_compile_definitions(${PROJECT_NAME} PRIVATE HIP_ENABLE_WARP_SYNC_BUILTINS=1)
+
   #############################################################################
   # INSTALL
   #############################################################################
