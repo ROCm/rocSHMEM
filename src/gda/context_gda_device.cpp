@@ -42,11 +42,29 @@ __host__ GDAContext::GDAContext(Backend *b, unsigned int ctx_id)
   barrier_sync = backend->barrier_sync;
   wrk_sync_pool_bases_ = backend->get_wrk_sync_bases();
 
-  CHECK_HIP(hipMalloc(&qps, sizeof(QueuePair) * num_pes));
-  CHECK_HIP(hipMemset(qps, 0, sizeof(QueuePair) * num_pes));
-  for (int i = 0; i < num_pes; i++) {
-    int offset = num_pes * ctx_id + i;
-    CHECK_HIP(hipMemcpy(&qps[i], &backend->gpu_qps[offset], sizeof(QueuePair), hipMemcpyDefault));
+  ctx_id_ = ctx_id;
+  num_qps_per_pe = ctx_id_?
+      envvar::gda::num_qps_per_pe_usr_ctx.get_value() :
+      envvar::gda::num_qps_per_pe_default_ctx.get_value();
+
+  num_qps = num_qps_per_pe * num_pes;
+
+  // Calculate offset into the backend's GPU QP array
+  int offset = (ctx_id_ > 0) *
+    (envvar::gda::num_qps_per_pe_default_ctx.get_value() +
+     envvar::gda::num_qps_per_pe_usr_ctx.get_value() * (ctx_id_ - 1));
+  offset *= num_pes;
+
+  CHECK_HIP(hipMalloc(&qp_counter, sizeof(uint32_t) * num_pes));
+  CHECK_HIP(hipMemset(qp_counter, 0, sizeof(uint32_t) * num_pes));
+  CHECK_HIP(hipMalloc(&qps, sizeof(QueuePair) * num_qps));
+  CHECK_HIP(hipMemset(qps, 0, sizeof(QueuePair) * num_qps));
+
+  CHECK_HIP(hipMemcpy(qps, &backend->gpu_qps[offset],
+                      num_qps * sizeof(QueuePair),
+                      hipMemcpyDefault));
+
+  for (int i = 0; i < num_qps; i++) {
     qps[i].base_heap = base_heap;
   }
 
@@ -54,12 +72,43 @@ __host__ GDAContext::GDAContext(Backend *b, unsigned int ctx_id)
   ipcImpl_.shm_size = backend->ipcImpl.shm_size;
   ipcImpl_.shm_rank = backend->ipcImpl.shm_rank;
   ipcImpl_.pes_with_ipc_avail = backend->ipcImpl.pes_with_ipc_avail;
-
-  ctx_id_ = ctx_id;
 }
 
 __host__ GDAContext::~GDAContext() {
   CHECK_HIP(hipFree(qps));
+}
+
+/**
+ * @brief Get the Queue Pair index for a given PE based on a atomic counter
+ *        This ensures even distribution of requests across multiple QPs
+ *        allocated per PE.
+ * @param pe The target PE
+ * @return The Queue Pair index
+ *
+ * Explanation of QP indexing scheme:
+ *  num_qps_per_pe = 4
+ *  num_pes        = 3
+ *
+ *  Layout of QPs per PE:
+ *
+ *             PE0          PE1          PE2
+ *           ───────      ───────      ───────
+ *  QP0  ─> [ QP0,0 ]    [ QP0,1 ]    [ QP0,2 ]
+ *  QP1  ─> [ QP1,0 ]    [ QP1,1 ]    [ QP1,2 ]
+ *  QP2  ─> [ QP2,0 ]    [ QP2,1 ]  **[ QP2,2 ]** <-- highlighted (3rd QP of PE2)
+ *  QP3  ─> [ QP3,0 ]    [ QP3,1 ]    [ QP3,2 ]
+ *
+ *  Legend:
+ *    - num_qps_per_pe = 4  →  Four Queue Pairs per PE
+ *    - num_pes = 3         →  Three Processing Elements (PE0–PE2)
+ *    - QP[i,j]             →  i-th QP of PE j
+ *    - **[ QP2,2 ]**       →  The 3rd QP (QP index 2) of PE2
+ */
+__device__ uint32_t GDAContext::get_qp_index(int pe) {
+  uint32_t local_counter = __hip_atomic_fetch_add(&qp_counter[pe], 1,
+                           __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
+  uint32_t qp_index = (local_counter % num_qps_per_pe) * num_pes + pe;
+  return qp_index;
 }
 
 __device__ void GDAContext::ctx_create() {
