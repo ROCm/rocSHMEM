@@ -95,11 +95,12 @@ __device__ void GDAContext::amo_add(void *dst, T value, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
   bool need_turn {true};
   uint64_t turns = __ballot(need_turn);
+  int qp_index = get_qp_index(pe);
   while (turns) {
     uint8_t lane = __ffsll((unsigned long long)turns) - 1;
     int pe_turn = __shfl(pe, lane);
     if (pe_turn == pe) {
-      qps[pe].atomic_nofetch(base_heap[pe] + L_offset, value, 0, pe);
+      qps[qp_index].atomic_nofetch(base_heap[pe] + L_offset, value, 0, pe);
       need_turn = false;
     }
     turns = __ballot(need_turn);
@@ -119,6 +120,7 @@ __device__ T GDAContext::amo_swap(void *dst, T value, int pe) {
   uint64_t turns = __ballot(need_turn);
   T ret_val;
   T cond = 0;
+  int qp_index = get_qp_index(pe);
   while (turns) {
     uint8_t lane = __ffsll((unsigned long long)turns) - 1;
     int pe_turn = __shfl(pe, lane);
@@ -128,7 +130,7 @@ __device__ T GDAContext::amo_swap(void *dst, T value, int pe) {
        * The compare-and-swap loop will execute at least twice if wrong.
        * It may run additional times if contention on memory location.
        */
-      while ((ret_val = qps[pe].atomic_cas(base_heap[pe] + L_offset, value,
+      while ((ret_val = qps[qp_index].atomic_cas(base_heap[pe] + L_offset, value,
                          cond, pe)) != cond) {
         cond = ret_val;
       }
@@ -148,11 +150,12 @@ __device__ T GDAContext::amo_fetch_and(void *dst, T value, int pe) {
   T ret_val;
   T cond = 0;
   T desired_val = cond & value;
+  int qp_index = get_qp_index(pe);
   while (turns) {
     uint8_t lane = __ffsll((unsigned long long)turns) - 1;
     int pe_turn = __shfl(pe, lane);
     if (pe_turn == pe) {
-      while ((ret_val = qps[pe].atomic_cas(base_heap[pe] + L_offset,
+      while ((ret_val = qps[qp_index].atomic_cas(base_heap[pe] + L_offset,
                          desired_val, cond, pe)) != cond) {
         cond = ret_val;
         desired_val = ret_val & value;
@@ -178,11 +181,12 @@ __device__ T GDAContext::amo_fetch_or(void *dst, T value, int pe) {
   T ret_val;
   T cond = 0;
   T desired_val = cond | value;
+  int qp_index = get_qp_index(pe);
   while (turns) {
     uint8_t lane = __ffsll((unsigned long long)turns) - 1;
     int pe_turn = __shfl(pe, lane);
     if (pe_turn == pe) {
-      while ((ret_val = qps[pe].atomic_cas(base_heap[pe] + L_offset,
+      while ((ret_val = qps[qp_index].atomic_cas(base_heap[pe] + L_offset,
                          desired_val, cond, pe)) != cond) {
         cond = ret_val;
         desired_val = ret_val | value;
@@ -208,11 +212,12 @@ __device__ T GDAContext::amo_fetch_xor(void *dst, T value, int pe) {
   T ret_val;
   T cond = 0;
   T desired_val = cond ^ value;
+  int qp_index = get_qp_index(pe);
   while (turns) {
     uint8_t lane = __ffsll((unsigned long long)turns) - 1;
     int pe_turn = __shfl(pe, lane);
     if (pe_turn == pe) {
-      while ((ret_val = qps[pe].atomic_cas(base_heap[pe] + L_offset,
+      while ((ret_val = qps[qp_index].atomic_cas(base_heap[pe] + L_offset,
                          desired_val, cond, pe)) != cond) {
         cond = ret_val;
         desired_val = ret_val ^ value;
@@ -235,11 +240,12 @@ __device__ void GDAContext::amo_cas(void *dst, T value, T cond, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dst) - base_heap[my_pe];
   bool need_turn {true};
   uint64_t turns = __ballot(need_turn);
+  int qp_index = get_qp_index(pe);
   while (turns) {
     uint8_t lane = __ffsll((unsigned long long)turns) - 1;
     int pe_turn = __shfl(pe, lane);
     if (pe_turn == pe) {
-      qps[pe].atomic_cas_nofetch(base_heap[pe] + L_offset, value, cond, pe);
+      qps[qp_index].atomic_cas_nofetch(base_heap[pe] + L_offset, value, cond, pe);
       need_turn = false;
     }
     turns = __ballot(need_turn);
@@ -253,11 +259,12 @@ __device__ T GDAContext::amo_fetch_add(void *dst, T value, int pe) {
   T ret_val = 0;
   bool need_turn {true};
   uint64_t turns = __ballot(need_turn);
+  int qp_index = get_qp_index(pe);
   while (turns) {
     uint8_t lane = __ffsll((unsigned long long)turns) - 1;
     int pe_turn = __shfl(pe, lane);
     if (pe_turn == pe) {
-      ret_val =  qps[pe].atomic_fetch(base_heap[pe] + L_offset, value, 0, pe);
+      ret_val =  qps[qp_index].atomic_fetch(base_heap[pe] + L_offset, value, 0, pe);
       need_turn = false;
     }
     turns = __ballot(need_turn);
@@ -272,11 +279,12 @@ __device__ T GDAContext::amo_fetch_cas(void *dst, T value, T cond, int pe) {
   bool need_turn {true};
   uint64_t turns = __ballot(need_turn);
   T ret_val;
+  int qp_index = get_qp_index(pe);
   while (turns) {
     uint8_t lane = __ffsll((unsigned long long)turns) - 1;
     int pe_turn = __shfl(pe, lane);
     if (pe_turn == pe) {
-      ret_val = qps[pe].atomic_cas(base_heap[pe] + L_offset, value, cond, pe);
+      ret_val = qps[qp_index].atomic_cas(base_heap[pe] + L_offset, value, cond, pe);
       need_turn = false;
     }
     turns = __ballot(need_turn);
