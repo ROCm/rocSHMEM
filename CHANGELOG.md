@@ -2,15 +2,19 @@
 
 ## Unreleased - rocSHMEM 3.x.x for ROCm 7.x.x
 ### Added
+* Added the GDA conduit for AMD Pensando IONIC
+* Added new APIs:
+   * `rocshmem_ctx_pe_quiet`
+   * `rocshmem_pe_quiet`
+
+## rocSHMEM 3.1.0 for ROCm 7.1.1
+### Added
 * Allow for IPC, RO, GDA backends to be selected at runtime
 * Added the GDA conduit for different NIC vendors
-   * AMD Pensando IONIC
    * Broadcom BNXT\_RE (Thor 2)
    * Mellanox MLX5 (IB and RoCE ConnectX-7)
 * Added new APIs:
    * `rocshmem_get_device_ctx`
-   * `rocshmem_ctx_pe_quiet`
-   * `rocshmem_pe_quiet`
 
 ### Changed
 * The following APIs have been deprecated:
