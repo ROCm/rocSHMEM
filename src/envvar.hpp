@@ -451,6 +451,7 @@ namespace envvar {
     extern const var<std::string> provider;
     extern const var<bool> alternate_qp_ports;
     extern const var<uint8_t> traffic_class;
+    extern const var<bool> pcie_relaxed_ordering;
   }  // namespace gda
 }  // namespace envvar
 }  // namespace rocshmem

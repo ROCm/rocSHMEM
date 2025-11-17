@@ -38,6 +38,9 @@ QueuePair::QueuePair(struct ibv_pd* pd, int gda_provider) {
              | IBV_ACCESS_REMOTE_READ
              | IBV_ACCESS_REMOTE_ATOMIC;
 
+  if (envvar::gda::pcie_relaxed_ordering) {
+    access |= IBV_ACCESS_RELAXED_ORDERING;
+  }
   allocator.allocate((void**)&nonfetching_atomic, 8);
   allocator.allocate((void**)&fetching_atomic, 8 * FETCHING_ATOMIC_CNT);
   allocator.allocate((void**)&fetching_atomic_freelist, sizeof(FreeListT*));
