@@ -128,10 +128,11 @@ __device__ void GDAContext::internal_direct_barrier_wg_thread_puts(int pe, int P
 
   if (pe == PE_start) {
     int tid = get_flat_block_id();
+    int step_size = min(get_flat_block_size(), WF_SIZE);
 
     // Go through all PE offsets (except current offset = 0)
     // and wait until they all reach
-    for (int j = tid + 1; j < n_pes; j+= WF_SIZE) {
+    for (int j = tid + 1; j < n_pes; j+= step_size) {
       wait_until(&pSync[j], ROCSHMEM_CMP_EQ, flag_val);
       pSync[j] = ROCSHMEM_SYNC_VALUE;
     }
@@ -141,14 +142,14 @@ __device__ void GDAContext::internal_direct_barrier_wg_thread_puts(int pe, int P
     // Announce to other PEs that all have reached
     for (int i = tid + 1, j = PE_start + stride + tid;
              i < n_pes;
-             i+= WF_SIZE, j += (WF_SIZE * stride)) {
+             i+= step_size, j += (step_size * stride)) {
       uint64_t L_offset = reinterpret_cast<char*>(&pSync[0]) - base_heap[my_pe];
       qps[j].put_nbi_single(base_heap[j] + L_offset, &flag_val, sizeof(long), j);
     }
 
     for (int i = tid + 1, j = PE_start + stride + tid;
              i < n_pes;
-             i+= WF_SIZE, j += (WF_SIZE * stride)) {
+             i+= step_size, j += (step_size * stride)) {
       pe_quiet_single(j);
     }
 
