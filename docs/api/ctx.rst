@@ -46,7 +46,7 @@ ROCSHMEM_GET_DEVICE_CTX
 
   :param:    None.
 
-  :returns: Returns ``ROCSHMEM_CTX_DEFAULT`` device pointer that users.
+  :returns: Returns ``ROCSHMEM_CTX_DEFAULT`` device pointer that users
             can query from one instance of rocSHMEM host library and
             use later for dynamic module initialization in
             kernel bitcode device library in the same application.
