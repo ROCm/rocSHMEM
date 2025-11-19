@@ -205,7 +205,7 @@ However, it is not guaranteed to work and perform optimally on all platforms.
 Configuration options are platform dependent.
 
 ```
-BUILD_DIR=/path/to/not_rocshmem_src_or_build/dependencies /path/to/rocshmem_src/sripts/install_dependencies.sh
+BUILD_DIR=/path/to/not_rocshmem_src_or_build/dependencies /path/to/rocshmem_src/scripts/install_dependencies.sh
 ```
 
 After compiling and installing UCX and Open MPI, please update your `PATH` and `LD_LIBRARY_PATH`
