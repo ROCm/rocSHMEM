@@ -34,7 +34,7 @@
 
 namespace rocshmem {
 
-__host__ GDAContext::GDAContext(Backend *b, unsigned int ctx_id)
+__host__ GDAContext::GDAContext(Backend *b, unsigned int ctx_id, int gda_provider)
     : Context(b, false) {
   GDABackend *backend{static_cast<GDABackend *>(b)};
   base_heap = backend->heap.get_heap_bases().data();
@@ -56,6 +56,7 @@ __host__ GDAContext::GDAContext(Backend *b, unsigned int ctx_id)
   ipcImpl_.pes_with_ipc_avail = backend->ipcImpl.pes_with_ipc_avail;
 
   ctx_id_ = ctx_id;
+  gda_provider_ = gda_provider;
 }
 
 __host__ GDAContext::~GDAContext() {
@@ -145,6 +146,10 @@ __device__ void GDAContext::quiet_wave() {
 
 __device__ void GDAContext::pe_quiet(size_t pe) {
   qps[pe].quiet();
+}
+
+__device__ void GDAContext::pe_quiet_single(size_t pe) {
+  qps[pe].quiet_single();
 }
 
 __device__ void *GDAContext::shmem_ptr(const void *dest, int pe) {

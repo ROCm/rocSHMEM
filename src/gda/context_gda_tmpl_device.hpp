@@ -32,6 +32,7 @@
 #include "gda_team.hpp"
 #include "queue_pair.hpp"
 #include "rocshmem_calc.hpp"
+#include "backend_gda.hpp"
 
 #include <hip/hip_runtime.h>
 
@@ -604,7 +605,11 @@ __device__ void GDAContext::internal_broadcast(T *dst, const T *src, int nelems,
 template <typename T>
 __device__ void GDAContext::alltoall(rocshmem_team_t team, T *dst,
                                      const T *src, int nelems) {
-  alltoall_linear(team, dst, src, nelems);
+  if (gda_provider_ == GDAProvider::BNXT) {
+    alltoall_linear_thread_puts(team, dst, src, nelems);
+  } else {
+    alltoall_linear(team, dst, src, nelems);
+  }
 }
 
 template <typename T>
@@ -620,7 +625,6 @@ __device__ void GDAContext::alltoall_linear(rocshmem_team_t team, T *dst,
 
   int wf_id = get_flat_block_id() / WF_SIZE;
   int wf_count = (int) ceil((double)get_flat_block_size() / (double)WF_SIZE);
-  bool wf_leader = 0 == get_active_lane_num();
 
   // Have each PE put their designated data to the other PEs
   for (int j = wf_id; j < pe_size; j+= wf_count) {
@@ -635,6 +639,36 @@ __device__ void GDAContext::alltoall_linear(rocshmem_team_t team, T *dst,
 
   // wait until everyone has obtained their designated data
   internal_sync_wg(my_pe, pe_start, stride, pe_size, pSync);
+}
+
+template <typename T>
+__device__ void GDAContext::alltoall_linear_thread_puts(rocshmem_team_t team, T *dst,
+                                                        const T *src, int nelems) {
+  GDATeam *team_obj = reinterpret_cast<GDATeam *>(team);
+
+  int pe_start = team_obj->tinfo_wrt_world->pe_start;
+  int pe_size = team_obj->num_pes;
+  int stride = team_obj->tinfo_wrt_world->stride;
+  long *pSync = team_obj->alltoall_pSync;
+  int my_pe_in_team = team_obj->my_pe;
+
+  int tid = get_flat_block_id();
+  int step_size = min(get_flat_block_size(), WF_SIZE);
+
+  // Have each PE put their designated data to the other PEs
+  for (int j = tid; j < pe_size; j+= step_size) {
+    int dest_pe = team_obj->get_pe_in_world(j);
+    uint64_t L_offset = reinterpret_cast<char*>(&dst[my_pe_in_team * nelems]) - base_heap[my_pe];
+    qps[dest_pe].put_nbi_single(base_heap[dest_pe] + L_offset, &src[j * nelems], nelems * sizeof(T), dest_pe);
+  }
+
+  for (int j = tid; j < pe_size; j+= step_size) {
+    int dest_pe = team_obj->get_pe_in_world(j);
+    pe_quiet_single(dest_pe);
+  }
+
+  // wait until everyone has obtained their designated data
+  internal_direct_barrier_wg_thread_puts(my_pe, pe_start, stride, pe_size, pSync);
 }
 
 template <typename T>

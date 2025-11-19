@@ -77,6 +77,7 @@ class QueuePair {
    * @param[in] pe Destination processing element of data transmission.
    */
   __device__ void put_nbi(void *dest, const void *source, size_t nelems, int pe, Collectivity cy = THREAD);
+  __device__ void put_nbi_single(void *dest, const void *source, size_t nelems, int pe);
 
   /**
    * @brief Create and enqueue a non-blocking get work queue entry (wqe).
@@ -92,6 +93,7 @@ class QueuePair {
    * @brief Empty all completions from the completion queue.
    */
   __device__ void quiet(Collectivity cy = THREAD);
+  __device__ void quiet_single();
 
   /**
    * @brief Create and enqueue an atomic fetch work queue entry (wqe).
@@ -165,6 +167,7 @@ class QueuePair {
   __device__ __attribute__((noinline)) void post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, Collectivity cy);
   __device__ __attribute__((noinline)) void post_wqe_rma_turn(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, Collectivity cy);
   __device__ __attribute__((noinline)) void post_wqe_rma_single(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
+  __device__ __attribute__((noinline)) void post_wqe_rma_mt(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
 
 #if defined(GDA_MLX5)
   __device__ uint64_t mlx5_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
@@ -174,7 +177,9 @@ class QueuePair {
 #if defined(GDA_BNXT)
   __device__ uint64_t bnxt_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
   __device__ void bnxt_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
+  __device__ void bnxt_post_wqe_rma_single(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
   __device__ void bnxt_quiet();
+  __device__ void bnxt_quiet_single();
 #endif
 #if defined(GDA_IONIC)
   __device__ uint64_t ionic_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
