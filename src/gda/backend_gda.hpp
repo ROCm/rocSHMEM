@@ -132,6 +132,16 @@ class GDABackend : public Backend {
   virtual ~GDABackend();
 
   /**
+   * @brief Check if there are active InfiniBand/RDMA interfaces available.
+   *        For BNXT, also verifies the device vendor matches.
+   *
+   * @param provider The GDA provider to check for
+   * @return true if at least one active port on a suitable device is found,
+   *         false otherwise
+   */
+  static bool has_active_ib_interface(GDAProvider provider);
+
+  /**
    * @brief Verify whether GDA Backend could run
    *
    * @return ROSCHMEM_SUCCESS if GDA Backend can most likely be used
