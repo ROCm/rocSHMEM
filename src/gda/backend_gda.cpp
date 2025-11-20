@@ -756,6 +756,9 @@ void GDABackend::setup_heap_memory_rkey() {
   auto *base_heap = heap.get_local_heap_base();
   int access = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC;
 
+  if (envvar::gda::pcie_relaxed_ordering) {
+    access |= IBV_ACCESS_RELAXED_ORDERING;
+  }
   heap_mr = ibv.reg_mr(pd_orig, base_heap, heap.get_size(), access);
   CHECK_NNULL(heap_mr, "ibv_reg_mr");
 

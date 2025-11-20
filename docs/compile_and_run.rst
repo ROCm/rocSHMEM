@@ -90,3 +90,6 @@ You can control the behavior of rocSHMEM by using the following environment vari
     * - ROCSHMEM_GDA_ALTERNATE_QP_PORTS
       - 1
       - Enables/Disables having QPs alternate their mappings across rocSHMEM contexts. This helps saturate bandwidth on multiport bonded interfaces.
+    * - ROCSHMEM_GDA_PCIE_RELAXED_ORDERING
+      - 0
+      - Enables PCIe Relaxed Ordering when registering the symemtric heap with the RDMA NICs.
