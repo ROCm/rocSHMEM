@@ -669,6 +669,7 @@ __device__ void GDAContext::alltoall_linear_thread_puts(rocshmem_team_t team, T 
 
   // wait until everyone has obtained their designated data
   internal_direct_barrier_wg_thread_puts(my_pe, pe_start, stride, pe_size, pSync);
+  __syncthreads();
 }
 
 template <typename T>
