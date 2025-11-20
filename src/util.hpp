@@ -422,20 +422,20 @@ __device__ __forceinline__ void memcpy_wg(void* dst, void* src, size_t size) {
 
   dst_def = reinterpret_cast<uint8_t*>(dst);
   src_def = reinterpret_cast<uint8_t*>(src);
+  dst_bytes = dst_def;
+  src_bytes = src_def;
+
+  
   uint32_t* dst_bytes32{nullptr};
   uint32_t* src_bytes32{nullptr};
-
   dst_bytes32 = reinterpret_cast<uint32_t*>(dst_def) + thread_id* 4;
   src_bytes32 = reinterpret_cast<uint32_t*>(src_def) + thread_id* 4;
 
   int32_t val[UNROLL];
-  //int32_t val32{__builtin_nontemporal_load((int32_t *)val)};
-  //__builtin_nontemporal_store(val32, (int32_t *)dst);
 
 
   cpy_size = size / 16;
   for (int i{thread_id}; i < cpy_size; i += block_size) {
-
     #pragma unroll
     for (int u = 0; u < UNROLL; u++)
         val[u] = __builtin_nontemporal_load((src_bytes32 + u));
@@ -443,18 +443,13 @@ __device__ __forceinline__ void memcpy_wg(void* dst, void* src, size_t size) {
     for (int u = 0; u < UNROLL; u++)
         __builtin_nontemporal_store(val[u], (dst_bytes32 + u));
 
-    // store_asm(src_bytes32, dst_bytes32, 8);
-    // store_asm((src_bytes32 + 1), (dst_bytes32 + 1), 8);
-    // store_asm((src_bytes32 + 2), (dst_bytes32 + 2), 8);
-    // store_asm((src_bytes32 + 3), (dst_bytes32 + 3), 8);
-
     src_bytes32 += block_size * 4;
     dst_bytes32 += block_size * 4;
   }
   size -= cpy_size * 16;
   dst_def += cpy_size * 16;
   src_def += cpy_size * 16;
-
+  
   for (int j{8}; j > 1; j >>= 1) {
     cpy_size = size / j;
     for (int i{thread_id}; i < cpy_size; i += block_size) {
