@@ -409,7 +409,7 @@ __device__ __forceinline__ void memcpy_lane(void* dst, void* src, size_t size) {
     *dst_bytes = *src_bytes;
   }
 }
-#define UNROLL 4
+#define UNROLL 2
 __device__ __forceinline__ void memcpy_wg(void* dst, void* src, size_t size) {
   int thread_id{get_flat_block_id()};
   int block_size{get_flat_block_size()};
@@ -434,7 +434,7 @@ __device__ __forceinline__ void memcpy_wg(void* dst, void* src, size_t size) {
   int32_t val[UNROLL];
 
 
-  cpy_size = size / 16;
+  cpy_size = size / (UNROLL*4);
   for (int i{thread_id}; i < cpy_size; i += block_size) {
     #pragma unroll
     for (int u = 0; u < UNROLL; u++)
@@ -443,12 +443,12 @@ __device__ __forceinline__ void memcpy_wg(void* dst, void* src, size_t size) {
     for (int u = 0; u < UNROLL; u++)
         __builtin_nontemporal_store(val[u], (dst_bytes32 + u));
 
-    src_bytes32 += block_size * 4;
-    dst_bytes32 += block_size * 4;
+    src_bytes32 += block_size * UNROLL;
+    dst_bytes32 += block_size * UNROLL;
   }
-  size -= cpy_size * 16;
-  dst_def += cpy_size * 16;
-  src_def += cpy_size * 16;
+  size -= cpy_size * (UNROLL*4);
+  dst_def += cpy_size * (UNROLL*4);
+  src_def += cpy_size * (UNROLL*4);
   
   for (int j{8}; j > 1; j >>= 1) {
     cpy_size = size / j;
