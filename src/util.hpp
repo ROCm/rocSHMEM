@@ -428,8 +428,8 @@ __device__ __forceinline__ void memcpy_wg(void* dst, void* src, size_t size) {
   
   uint32_t* dst_bytes32{nullptr};
   uint32_t* src_bytes32{nullptr};
-  dst_bytes32 = reinterpret_cast<uint32_t*>(dst_def) + thread_id* 4;
-  src_bytes32 = reinterpret_cast<uint32_t*>(src_def) + thread_id* 4;
+  dst_bytes32 = reinterpret_cast<uint32_t*>(dst_def) + thread_id* UNROLL;
+  src_bytes32 = reinterpret_cast<uint32_t*>(src_def) + thread_id* UNROLL;
 
   int32_t val[UNROLL];
 
@@ -450,7 +450,7 @@ __device__ __forceinline__ void memcpy_wg(void* dst, void* src, size_t size) {
   dst_def += cpy_size * (UNROLL*4);
   src_def += cpy_size * (UNROLL*4);
   
-  for (int j{8}; j > 1; j >>= 1) {
+  for (int j{2}; j > 1; j >>= 1) {
     cpy_size = size / j;
     for (int i{thread_id}; i < cpy_size; i += block_size) {
       dst_bytes = dst_def;
