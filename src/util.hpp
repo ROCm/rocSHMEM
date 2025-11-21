@@ -392,6 +392,9 @@ __device__ void gpu_dprintf(const char* fmt, const Args&... args) {
 #define LOAD(VAR) __atomic_load_n((VAR), __ATOMIC_SEQ_CST)
 #define STORE(DST, SRC) __atomic_store_n((DST), (SRC), __ATOMIC_SEQ_CST)
 
+
+#define UNROLL 2
+
 __device__ __forceinline__ void memcpy_lane(void* dst, void* src, size_t size) {
   uint8_t* dst_bytes{static_cast<uint8_t*>(dst)};
   uint8_t* src_bytes{static_cast<uint8_t*>(src)};
@@ -411,7 +414,6 @@ __device__ __forceinline__ void memcpy_lane(void* dst, void* src, size_t size) {
 }
 
 
-#define UNROLL 4
 __device__ __forceinline__ void memcpy_wg(void* dst, void* src, size_t size) {
   int thread_id{get_flat_block_id()};
   int block_size{get_flat_block_size()};
@@ -479,7 +481,6 @@ __device__ __forceinline__ void memcpy_wg(void* dst, void* src, size_t size) {
 }
 
 
-
 __device__ __forceinline__ void memcpy_wave(void* dst, void* src, size_t size) {
   int wave_tid = get_flat_block_id() % WF_SIZE;
   int wave_size{wave_SZ()};
@@ -494,6 +495,34 @@ __device__ __forceinline__ void memcpy_wave(void* dst, void* src, size_t size) {
   src_def = reinterpret_cast<uint8_t*>(src);
   dst_bytes = dst_def;
   src_bytes = src_def;
+
+  uint32_t* dst_bytes32{nullptr};
+  uint32_t* src_bytes32{nullptr};
+
+  cpy_size = size / (UNROLL*4);
+
+  if((cpy_size%wave_size==0) && cpy_size > 0) {
+    dst_bytes32 = reinterpret_cast<uint32_t*>(dst_def) + wave_tid;
+    src_bytes32 = reinterpret_cast<uint32_t*>(src_def) + wave_tid;
+    int32_t val[UNROLL];
+
+    cpy_size = size / (UNROLL*4);
+    for (int i{wave_tid}; i < cpy_size; i += wave_size) {
+      #pragma unroll
+      for (int u = 0; u < UNROLL; u++)
+          val[u] = __builtin_nontemporal_load((src_bytes32 + u*wave_size));
+      #pragma unroll
+      for (int u = 0; u < UNROLL; u++)
+          __builtin_nontemporal_store(val[u], (dst_bytes32 + u*wave_size));
+
+      src_bytes32 += wave_size * UNROLL;
+      dst_bytes32 += wave_size * UNROLL;
+    }
+    size -= cpy_size * (UNROLL*4);
+    dst_def += cpy_size * (UNROLL*4);
+    src_def += cpy_size * (UNROLL*4);
+  }
+
 
   for (int j{8}; j > 1; j >>= 1) {
     cpy_size = size / j;
