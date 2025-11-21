@@ -192,7 +192,7 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
 #endif
 #if defined(GDA_BNXT)
   case GDAProvider::BNXT:
-    return bnxt_post_wqe_amo(pe, size, raddr, opcode, atomic_data, atomic_cmp, fetching);
+    return bnxt_post_wqe_amo(raddr, opcode, atomic_data, atomic_cmp, fetching);
 #endif
 #if defined(GDA_IONIC)
   case GDAProvider::IONIC:

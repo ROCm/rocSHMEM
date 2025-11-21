@@ -175,7 +175,11 @@ class QueuePair {
   __device__ void mlx5_quiet();
 #endif
 #if defined(GDA_BNXT)
-  __device__ uint64_t bnxt_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
+
+  __device__ void bnxt_write_rma_wqe(uintptr_t *raddr, uintptr_t *laddr, int32_t length, uint8_t opcode);
+  __device__ uint32_t bnxt_write_amo_wqe(uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetching);
+
+  __device__ uint64_t bnxt_post_wqe_amo(uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetching);
   __device__ void bnxt_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
   __device__ void bnxt_post_wqe_rma_single(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
   __device__ void bnxt_quiet();
