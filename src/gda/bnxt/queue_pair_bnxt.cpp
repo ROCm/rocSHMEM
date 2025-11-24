@@ -436,4 +436,39 @@ __device__ uint64_t QueuePair::bnxt_post_wqe_amo(uintptr_t *raddr, uint8_t opcod
   return 0;
 }
 
+template<bool fetching>
+__device__ uint64_t QueuePair::bnxt_post_wqe_amo_single(uintptr_t *raddr, uint8_t opcode,
+                                                        int64_t atomic_data, int64_t atomic_cmp) {
+  uint64_t active_lane_mask;
+  uint8_t active_lane_count;
+  uint8_t active_lane_id;
+  uint32_t atomic_idx = 0;
+
+  active_lane_mask  = get_active_lane_mask();
+  active_lane_count = get_active_lane_count(active_lane_mask);
+  active_lane_id    = get_active_lane_num(active_lane_mask);
+
+  aquire_lock(&sq.lock);
+
+  /* Write WQE to SQ */
+  atomic_idx = bnxt_write_amo_wqe(raddr, opcode, atomic_data, atomic_cmp, fetching);
+
+  /* Ring Doorbell
+   * Doorbell ring must be serialized as we cannot have all threads write to the same address */
+  for (int i = 0; i < active_lane_count; i++) {
+    if (i == active_lane_id) {
+      bnxt_ring_doorbell(sq.tail);
+    }
+  }
+
+  if constexpr (fetching) {
+    quiet();
+    return fetching_atomic[atomic_idx];
+  }
+
+  release_lock(&sq.lock);
+
+  return 0;
+}
+
 }  // namespace rocshmem

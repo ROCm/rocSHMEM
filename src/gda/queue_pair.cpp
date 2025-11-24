@@ -204,6 +204,22 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   }
 }
 
+template<bool fetching>
+__device__ uint64_t QueuePair::post_wqe_amo_single(uintptr_t *raddr, uint8_t opcode,
+                                                   int64_t atomic_data, int64_t atomic_cmp) {
+  switch (gda_provider_) {
+#if defined(GDA_BNXT)
+  case GDAProvider::BNXT:
+    return bnxt_post_wqe_amo_single<fetching>(raddr, opcode, atomic_data, atomic_cmp);
+#endif
+  case GDAProvider::MLX5:
+  case GDAProvider::IONIC:
+  default:
+    assert(false /* invalid nic provider */);
+    return 0;
+  }
+}
+
 __device__ void QueuePair::quiet(Collectivity cy) {
   switch (gda_provider_) {
 #if defined(GDA_MLX5)
@@ -283,6 +299,12 @@ __device__ int64_t QueuePair::atomic_fetch(void *dest, int64_t atomic_data, int6
 __device__ void QueuePair::atomic_nofetch(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe) {
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
   post_wqe_amo(pe, sizeof(int64_t), dst, gda_op_atomic_fa, atomic_data, atomic_cmp, false);
+}
+
+__device__ void QueuePair::atomic_nofetch_single(void *dest, int64_t value) {
+  const bool fetching = false;
+  uintptr_t *dst = static_cast<uintptr_t*>(dest);
+  post_wqe_amo_single<fetching>(dst, gda_op_atomic_fa, value, 0);
 }
 
 }  // namespace rocshmem
