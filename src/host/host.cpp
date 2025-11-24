@@ -333,6 +333,36 @@ __host__ void HostInterface::barrier_all_on_stream(hipStream_t stream) {
   rocshmem_barrier_all_kernel<<<1, 1, 0,  stream>>>();
 }
 
+__host__ void HostInterface::alltoallmem_on_stream(rocshmem_team_t team,
+                                                   void *dest,
+                                                   const void *source,
+                                                   size_t size,
+                                                   hipStream_t stream) {
+  // launch kernel to do alltoall with given stream, if none, use default stream
+  if (stream == nullptr) {
+    stream = hipStreamDefault;
+  }
+
+  // Use dynamic block size determination:
+  // - Query optimal block size using occupancy API
+  // - Limit block size to size (number of bytes) to avoid over-subscription
+  // - Always use 1 block (single workgroup collective)
+  int optimal_block_size = 0;
+  int grid_size = 0;
+  CHECK_HIP(hipOccupancyMaxPotentialBlockSize(&grid_size, &optimal_block_size,
+                                              rocshmem_alltoallmem_kernel, 0,
+                                              0));
+
+  // Limit block size to size (bytes) to avoid over-subscription
+  int num_threads_per_block = (optimal_block_size > static_cast<int>(size))
+                                  ? static_cast<int>(size)
+                                  : optimal_block_size;
+                                  
+  dim3 gridSize(1);
+  dim3 blockSize(num_threads_per_block);
+  rocshmem_alltoallmem_kernel<<<gridSize, blockSize, 0, stream>>>(team, dest,
+                                                                  source, size);
+}
 
 __host__ void HostInterface::barrier_for_sync() {
   if (host_comm_world_ != MPI_COMM_NULL) {

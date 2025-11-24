@@ -113,4 +113,12 @@ __host__ void GDAHostContext::barrier_all() {
   host_interface->barrier_all(context_window_info);
 }
 
+__host__ void GDAHostContext::alltoallmem_on_stream(rocshmem_team_t team,
+                                                    void *dest,
+                                                    const void *source,
+                                                    size_t size,
+                                                    hipStream_t stream) {
+  host_interface->alltoallmem_on_stream(team, dest, source, size, stream);
+}
+
 }  // namespace rocshmem
