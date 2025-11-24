@@ -204,13 +204,13 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
   }
 }
 
-template<bool fetching>
 __device__ uint64_t QueuePair::post_wqe_amo_single(uintptr_t *raddr, uint8_t opcode,
-                                                   int64_t atomic_data, int64_t atomic_cmp) {
+                                                   int64_t atomic_data, int64_t atomic_cmp,
+                                                   bool fetching) {
   switch (gda_provider_) {
 #if defined(GDA_BNXT)
   case GDAProvider::BNXT:
-    return bnxt_post_wqe_amo_single<fetching>(raddr, opcode, atomic_data, atomic_cmp);
+    return bnxt_post_wqe_amo_single(raddr, opcode, atomic_data, atomic_cmp, fetching);
 #endif
   case GDAProvider::MLX5:
   case GDAProvider::IONIC:
@@ -304,7 +304,7 @@ __device__ void QueuePair::atomic_nofetch(void *dest, int64_t atomic_data, int64
 __device__ void QueuePair::atomic_nofetch_single(void *dest, int64_t value) {
   const bool fetching = false;
   uintptr_t *dst = static_cast<uintptr_t*>(dest);
-  post_wqe_amo_single<fetching>(dst, gda_op_atomic_fa, value, 0);
+  post_wqe_amo_single(dst, gda_op_atomic_fa, value, 0, false);
 }
 
 }  // namespace rocshmem

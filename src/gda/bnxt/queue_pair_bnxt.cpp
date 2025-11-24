@@ -436,9 +436,9 @@ __device__ uint64_t QueuePair::bnxt_post_wqe_amo(uintptr_t *raddr, uint8_t opcod
   return 0;
 }
 
-template<bool fetching>
 __device__ uint64_t QueuePair::bnxt_post_wqe_amo_single(uintptr_t *raddr, uint8_t opcode,
-                                                        int64_t atomic_data, int64_t atomic_cmp) {
+                                                        int64_t atomic_data, int64_t atomic_cmp,
+                                                        bool fetching) {
   uint64_t active_lane_mask;
   uint8_t active_lane_count;
   uint8_t active_lane_id;
@@ -461,7 +461,7 @@ __device__ uint64_t QueuePair::bnxt_post_wqe_amo_single(uintptr_t *raddr, uint8_
     }
   }
 
-  if constexpr (fetching) {
+  if (fetching) {
     quiet();
     return fetching_atomic[atomic_idx];
   }
