@@ -182,7 +182,8 @@ void TesterArguments::get_arguments() {
       (type != TeamBroadcastTestType) && (type != PingAllTestType) &&
       (type != TeamBarrierTestType) && (type != TeamWAVEBarrierTestType) &&
       (type != TeamWGBarrierTestType) && (type != TeamCtxInfraTestBlockType) &&
-      (type != TeamCtxInfraTestOddEvenType)) {
+      (type != TeamCtxInfraTestOddEvenType) &&
+      (type != TeamAlltoallmemOnStreamTestType)) {
     if (numprocs != 2) {
       if (myid == 0) {
         std::cerr << "This test requires exactly two processes, we have "
