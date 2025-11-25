@@ -77,7 +77,8 @@ class QueuePair {
    * @param[in] pe Destination processing element of data transmission.
    */
   __device__ void put_nbi(void *dest, const void *source, size_t nelems, int pe, Collectivity cy = THREAD);
-  __device__ void put_nbi_single(void *dest, const void *source, size_t nelems, int pe);
+
+  __device__ void put_nbi_single(void *dest, const void *source, size_t nelems, bool ring_db);
 
   /**
    * @brief Create and enqueue a non-blocking get work queue entry (wqe).
@@ -174,7 +175,8 @@ class QueuePair {
    */
   __device__ __attribute__((noinline)) void post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, Collectivity cy);
   __device__ __attribute__((noinline)) void post_wqe_rma_turn(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, Collectivity cy);
-  __device__ __attribute__((noinline)) void post_wqe_rma_single(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
+
+  __device__ __attribute__((noinline)) void post_wqe_rma_single(int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, bool ring_db);
   __device__ __attribute__((noinline)) void post_wqe_rma_mt(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
 
 #if defined(GDA_MLX5)
@@ -191,7 +193,8 @@ class QueuePair {
   __device__ uint64_t bnxt_post_wqe_amo(uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetching);
 
   __device__ void bnxt_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
-  __device__ void bnxt_post_wqe_rma_single(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
+
+  __device__ void bnxt_post_wqe_rma_single(int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, bool ring_db);
   __device__ void bnxt_quiet();
   __device__ void bnxt_quiet_single();
 #endif

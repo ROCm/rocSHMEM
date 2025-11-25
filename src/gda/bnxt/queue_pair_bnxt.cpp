@@ -310,26 +310,30 @@ __device__ void QueuePair::bnxt_post_wqe_rma(int pe, int32_t length, uintptr_t *
   }
 }
 
-__device__ void QueuePair::bnxt_post_wqe_rma_single(int pe, int32_t length, uintptr_t *laddr,
-                                                    uintptr_t *raddr, uint8_t opcode) {
-  uint64_t active_lane_mask;
-  uint8_t active_lane_count;
-  uint8_t active_lane_id;
-
-  active_lane_mask  = get_active_lane_mask();
-  active_lane_count = get_active_lane_count(active_lane_mask);
-  active_lane_id    = get_active_lane_num(active_lane_mask);
+__device__ void QueuePair::bnxt_post_wqe_rma_single(int32_t length, uintptr_t *laddr,
+                                                    uintptr_t *raddr, uint8_t opcode,
+                                                    bool ring_db) {
 
   aquire_lock(&sq.lock);
 
   /* Write WQE to SQ */
   bnxt_write_rma_wqe(raddr, laddr, length, opcode);
 
-  /* Ring Doorbell
-   * Doorbell ring must be serialized as we cannot have all threads write to the same address */
-  for (int i = 0; i < active_lane_count; i++) {
-    if (i == active_lane_id) {
-      bnxt_ring_doorbell(sq.tail);
+  if (ring_db) {
+    uint64_t active_lane_mask;
+    uint8_t active_lane_count;
+    uint8_t active_lane_id;
+
+    active_lane_mask  = get_active_lane_mask();
+    active_lane_count = get_active_lane_count(active_lane_mask);
+    active_lane_id    = get_active_lane_num(active_lane_mask);
+
+    /* Ring Doorbell
+     * Doorbell ring must be serialized as we cannot have all threads write to the same address */
+    for (int i = 0; i < active_lane_count; i++) {
+      if (i == active_lane_id) {
+        bnxt_ring_doorbell(sq.tail);
+      }
     }
   }
 

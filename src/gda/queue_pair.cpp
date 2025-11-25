@@ -170,11 +170,11 @@ __device__ void QueuePair::post_wqe_rma_mt(int pe, int32_t size, uintptr_t *ladd
   }
 }
 
-__device__ void QueuePair::post_wqe_rma_single(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
+__device__ void QueuePair::post_wqe_rma_single(int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, bool ring_db) {
   switch (gda_provider_) {
 #if defined(GDA_BNXT)
   case GDAProvider::BNXT:
-    return bnxt_post_wqe_rma_single(pe, size, laddr, raddr, opcode);
+    return bnxt_post_wqe_rma_single(size, laddr, raddr, opcode, ring_db);
 #endif
   case GDAProvider::IONIC:
   case GDAProvider::MLX5:
@@ -269,10 +269,10 @@ __device__ void QueuePair::put_nbi(void *dest, const void *source, size_t nelems
   post_wqe_rma(pe, nelems, src, dst, gda_op_rdma_write, cy);
 }
 
-__device__ void QueuePair::put_nbi_single(void *dest, const void *source, size_t nelems, int pe) {
+__device__ void QueuePair::put_nbi_single(void *dest, const void *source, size_t nelems, bool ring_db) {
   uintptr_t *src = reinterpret_cast<uintptr_t*>(const_cast<void*>(source));
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
-  post_wqe_rma_single(pe, nelems, src, dst, gda_op_rdma_write);
+  post_wqe_rma_single(nelems, src, dst, gda_op_rdma_write, ring_db);
 }
 
 __device__ void QueuePair::get_nbi(void *dest, const void *source, size_t nelems, int pe, Collectivity cy) {
