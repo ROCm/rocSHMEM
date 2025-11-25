@@ -73,11 +73,6 @@ __global__ void WorkGroupPrimitiveTest(int loop, int skip,
       default:
         break;
     }
-  	if (is_thread_zero_in_block()) {
-    	__threadfence();
-		//rocshmem_ctx_quiet(ctx);
-    //end_time[wg_id] = wall_clock64();
-  }
 
   }
 
