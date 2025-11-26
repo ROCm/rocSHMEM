@@ -547,10 +547,48 @@ GDAProvider GDABackend::requested_provider() {
   return GDAProvider::UNSET;
 }
 
+/* Check if a device's vendor ID matches the expected vendor for a given provider.
+ * Returns true if the device matches, false otherwise.
+ */
+bool GDABackend::device_matches_provider_vendor(GDAProvider provider,
+                                                 const struct ibv_device_attr &device_attr,
+                                                 const char *device_name) {
+  uint32_t expected_vendor_id = 0;
+  const char *vendor_name = nullptr;
+
+  switch (provider) {
+    case GDAProvider::BNXT:
+      expected_vendor_id = GDA_BNXT_VENDOR_ID;
+      vendor_name = "BNXT/Broadcom";
+      break;
+    case GDAProvider::IONIC:
+      expected_vendor_id = GDA_IONIC_VENDOR_ID;
+      vendor_name = "IONIC/Pensando";
+      break;
+    case GDAProvider::MLX5:
+      expected_vendor_id = GDA_MLX5_VENDOR_ID;
+      vendor_name = "MLX5/Mellanox";
+      break;
+    case GDAProvider::UNSET:
+      // UNSET accepts any vendor
+      return true;
+    default:
+      return true;
+  }
+
+  if (device_attr.vendor_id != expected_vendor_id) {
+    DPRINTF("Skipping device %s with vendor_id=0x%04x (not %s)\n",
+            device_name, device_attr.vendor_id, vendor_name);
+    return false;
+  }
+
+  return true;
+}
+
 /* Check whether there are active InfiniBand/RDMA interfaces available.
- * For BNXT, also verifies the device vendor matches to avoid selecting
+ * Verifies the device vendor matches the requested provider to avoid selecting
  * the wrong NIC when multiple vendors are present.
- * Returns true if at least one active port is found on a suitable device.
+ * Returns true if at least one active port is found on a matching device.
  */
 bool GDABackend::has_active_ib_interface(GDAProvider provider) {
   struct ibv_device **device_list = nullptr;
@@ -571,14 +609,11 @@ bool GDABackend::has_active_ib_interface(GDAProvider provider) {
 
     struct ibv_device_attr device_attr;
     if (ibv.query_device(context, &device_attr) == 0) {
-      if (provider == GDAProvider::BNXT) {
-        const uint32_t BNXT_VENDOR_ID = 0x14E4;
-        if (device_attr.vendor_id != BNXT_VENDOR_ID) {
-          DPRINTF("Skipping device %s with vendor_id=0x%04x (not BNXT/Broadcom)\n",
-                  ibv.get_device_name(device_list[i]), device_attr.vendor_id);
-          ibv.close_device(context);
-          continue;
-        }
+      // Check if device vendor matches the provider
+      if (!device_matches_provider_vendor(provider, device_attr,
+                                          ibv.get_device_name(device_list[i]))) {
+        ibv.close_device(context);
+        continue;
       }
 
       for (int port = 1; port <= device_attr.phys_port_cnt; ++port) {
@@ -958,11 +993,10 @@ void GDABackend::validate_ib_device() {
   CHECK_ZERO(err, "ibv_query_device");
 
   if (gda_provider == GDAProvider::BNXT) {
-    const uint32_t bnxt_vendor_id =  0x14E4;
     const std::set<uint32_t> supported_bnxt_part_ids = { 0x1760 /* BCM57608 */};
     const char min_supported_bnxt_fw_ver[12] = "233.2.104.0";
 
-    if (bnxt_vendor_id != device_attr.vendor_id) {
+    if (device_attr.vendor_id != GDA_BNXT_VENDOR_ID) {
       printf("%s GDAProvider::BNXT requested but an invalid device is selected\n", debug_str.c_str());
       exit(1);
     }
