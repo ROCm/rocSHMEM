@@ -559,7 +559,7 @@ bool GDABackend::has_active_ib_interface(GDAProvider provider) {
 
   device_list = ibv.get_device_list(&num_devices);
   if (!device_list || num_devices == 0) {
-    DPRINTF("No InfiniBand devices found\n");
+    DPRINTF("No RDMA NIC devices found\n");
     return false;
   }
 
@@ -585,7 +585,7 @@ bool GDABackend::has_active_ib_interface(GDAProvider provider) {
         struct ibv_port_attr port_attr;
         if (ibv.query_port(context, port, &port_attr) == 0) {
           if (port_attr.state == IBV_PORT_ACTIVE) {
-            DPRINTF("Found active InfiniBand port %d on device %s (vendor_id=0x%04x, state=%d, phys_state=%d)\n",
+            DPRINTF("Found active RDMA NIC port %d on device %s (vendor_id=0x%04x, state=%d, phys_state=%d)\n",
                     port, ibv.get_device_name(device_list[i]),
                     device_attr.vendor_id, port_attr.state, port_attr.phys_state);
             has_active = true;
