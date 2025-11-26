@@ -218,7 +218,7 @@ The following table lists the supported RMA data types:
       - No
     * - int64_t
       - int64
-      - No
+      - Yes
     * - uint8_t
       - uint8
       - No
