@@ -112,6 +112,7 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
     case TeamBarrierTestType:
     case TeamWAVEBarrierTestType:
     case TeamWGBarrierTestType:
+    case BarrierAllOnStreamTestType:
     case SyncAllTestType:
     case WAVESyncAllTestType:
     case WGSyncAllTestType:
@@ -183,7 +184,8 @@ void TesterArguments::get_arguments() {
       (type != TeamBarrierTestType) && (type != TeamWAVEBarrierTestType) &&
       (type != TeamWGBarrierTestType) && (type != TeamCtxInfraTestBlockType) &&
       (type != TeamCtxInfraTestOddEvenType) &&
-      (type != TeamAlltoallmemOnStreamTestType)) {
+      (type != TeamAlltoallmemOnStreamTestType) &&
+      (type != BarrierAllOnStreamTestType)) {
     if (numprocs != 2) {
       if (myid == 0) {
         std::cerr << "This test requires exactly two processes, we have "
