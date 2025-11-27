@@ -164,12 +164,29 @@ ExecTest() {
     TEST_LOG_NAME+=_"$MAX_MSG_SIZE"B
   fi
 
-  CMD+=" >> $LOG_DIR/$TEST_LOG_NAME.log 2>&1"
+
+  if [[ "" != "$CSVPRINT" ]]
+  then
+    CMD+=" -f $CSVPRINT"
+  fi
+
+  if [[ "" != "$CSVPRINT" ]]
+  then
+    CMD+=" >> $LOG_DIR/onelogTest.log 2>&1"
+  else
+    CMD+=" >> $LOG_DIR/$TEST_LOG_NAME.log 2>&1"
+  fi
 
   # Run Test
   if [ $NUM_GPUS -ge $NUM_RANKS ] || [[ "" != "$HOSTFILE" ]]; then
     echo $TEST_LOG_NAME
-    echo "# $CMD" >"$LOG_DIR/$TEST_LOG_NAME.log"
+    if [[ "" != "$CSVPRINT" ]]
+    then
+      echo "# $TEST_LOG_NAME" >>"$LOG_DIR/onelogTest.log"
+    else
+      echo "# $CMD" >"$LOG_DIR/$TEST_LOG_NAME.log"
+    fi
+    
     eval $CMD
   else
     echo "Skipping test $TEST_LOG_NAME ($NUM_RANKS greater than $NUM_GPUS)"
@@ -660,7 +677,8 @@ ValidateLogDir() {
 APP=$1
 TEST=$2
 LOG_DIR=$3
-HOSTFILE=$4
+CSVPRINT=$4
+HOSTFILE=$5
 
 DRIVER_RETURN_STATUS=0
 

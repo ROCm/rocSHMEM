@@ -62,6 +62,9 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
     } else if (arg == "-x") {
       i++;
       shmem_context = atoi(argv[i]);
+    } else if (arg == "-f") {
+      i++;
+      if (atoi(argv[i]) > 0) file_format = true;
     } else if (arg == "-m") {
       int atomics_addr_mode = atoi(argv[i]);
       if(atomics_addr_mode >= static_cast<int>(AddrMode::PerGrid) &&

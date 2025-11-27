@@ -66,6 +66,7 @@ Tester::Tester(TesterArguments args) : args(args) {
   CHECK_HIP(hipGetDeviceProperties(&deviceProps, device_id));
   wf_size = deviceProps.warpSize;
   num_warps = (args.wg_size - 1) / wf_size + 1;
+  _print_results_in_csv = args.file_format;
   CHECK_HIP(hipStreamCreate(&stream));
   CHECK_HIP(hipEventCreate(&start_event));
   CHECK_HIP(hipEventCreate(&stop_event));
@@ -560,6 +561,10 @@ void Tester::execute() {
       print(size);
     }
   }
+  if(_print_results_in_csv) { 
+    printf("\n");
+    fflush(stdout);
+  }
 }
 
 bool Tester::peLaunchesKernel() {
@@ -618,23 +623,27 @@ void Tester::print(uint64_t size) {
   int field_width = 20;
   int float_precision = 2;
 
-  if (_print_header) {
-    printf("%-*s%-*s%*s%*s%*s",
-           15, "# Size (B)",
-           15, "# of timed Msgs",
-           field_width, "Latency (us)",
-           field_width, "Bandwidth (GB/s)",
-           field_width + 1, "Msg Rate (Msg/s)\n");
-    _print_header = 0;
+  if(_print_results_in_csv) {
+    printf(",%f",bandwidth_avg_gbs);
   }
+  else {
+    if (_print_header) {
+      printf("%-*s%-*s%*s%*s%*s",
+             15, "# Size (B)",
+             15, "# of timed Msgs",
+             field_width, "Latency (us)",
+             field_width, "Bandwidth (GB/s)",
+             field_width + 1, "Msg Rate (Msg/s)\n");
+      _print_header = 0;
+    }
 
-  printf("%-*lu%-*d%*.*f%*.*f%*.*f\n",
-         15, size,
-         15, num_timed_msgs,
-         field_width, float_precision, latency_avg,
-         field_width, float_precision, bandwidth_avg_gbs,
-         field_width, float_precision, avg_msg_rate);
-
+    printf("%-*lu%-*d%*.*f%*.*f%*.*f\n",
+           15, size,
+           15, num_timed_msgs,
+           field_width, float_precision, latency_avg,
+           field_width, float_precision, bandwidth_avg_gbs,
+           field_width, float_precision, avg_msg_rate);
+  }
   fflush(stdout);
 }
 

@@ -170,6 +170,7 @@ class Tester {
 
  protected:
   bool _print_results = true;
+  bool _print_results_in_csv = false;
 
  private:
   bool _print_header = true;

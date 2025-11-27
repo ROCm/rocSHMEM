@@ -76,6 +76,7 @@ public:
   unsigned thread_access = 64;
   unsigned coal_coef = 64;
   unsigned op_type = 0;
+  bool file_format = false;
   unsigned shmem_context = rocshmem::ROCSHMEM_CTX_WG_PRIVATE;
   AddrMode addr_mode = AddrMode::PerBlock;
 
