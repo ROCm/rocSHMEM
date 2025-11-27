@@ -113,4 +113,13 @@ __host__ void IPCHostContext::alltoallmem_on_stream(rocshmem_team_t team,
   host_interface->alltoallmem_on_stream(team, dest, source, size, stream);
 }
 
+__host__ void IPCHostContext::broadcastmem_on_stream(rocshmem_team_t team,
+                                                     void *dest,
+                                                     const void *source,
+                                                     size_t nelems, int pe_root,
+                                                     hipStream_t stream) {
+  host_interface->broadcastmem_on_stream(team, dest, source, nelems, pe_root,
+                                         stream);
+}
+
 }  // namespace rocshmem

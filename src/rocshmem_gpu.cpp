@@ -675,6 +675,30 @@ __global__ ATTR_NO_INLINE void rocshmem_alltoallmem_kernel(rocshmem_team_t team,
   }
 }
 
+__global__ ATTR_NO_INLINE void rocshmem_broadcastmem_kernel(
+    rocshmem_team_t team, void *dest, const void *source, size_t nelems,
+    int pe_root) {
+  __shared__ rocshmem_ctx_t ctx;
+  __shared__ int ctx_result;
+
+  ctx_result = rocshmem_wg_team_create_ctx(team, 0, &ctx);
+
+  // If context creation failed, fall back to default context
+  if (ctx_result != 0) {
+    ctx = ROCSHMEM_CTX_DEFAULT;
+    __syncthreads();
+  }
+
+  // Call device broadcast function with created context and provided team
+  // Using char type since nelems is in bytes (1 byte per element)
+  rocshmem_broadcast_wg<char>(ctx, team, (char *) dest, (const char *) source,
+                              (int) nelems, pe_root);
+
+  if (ctx_result == 0) {
+    rocshmem_wg_ctx_destroy(&ctx);
+  }
+}
+
 __device__ void rocshmem_barrier_all() {
   GPU_DPRINTF("Function: rocshmem_barrier_all (ctx=%zd)\n",
     get_internal_ctx(ROCSHMEM_CTX_DEFAULT));

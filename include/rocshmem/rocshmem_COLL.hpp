@@ -625,6 +625,23 @@ __global__ ATTR_NO_INLINE void rocshmem_alltoallmem_kernel(rocshmem_team_t team,
                                                            size_t size);
 
 /**
+ * @brief kernel for performing a broadcast collective operation.
+ * Caller enqueues the kernel on given stream
+ *
+ * @param[in] team    The team participating in the collective.
+ * @param[in] dest    Destination address. Must be an address on the symmetric
+ *                    heap.
+ * @param[in] source  Source address. Must be an address on the symmetric heap.
+ * @param[in] nelems  Number of bytes to broadcast.
+ * @param[in] pe_root Root PE (relative to team) from which to broadcast.
+ *
+ * @return void
+ */
+__global__ ATTR_NO_INLINE void rocshmem_broadcastmem_kernel(
+    rocshmem_team_t team, void *dest, const void *source, size_t nelems,
+    int pe_root);
+
+/**
  * @brief perform a collective barrier between all PEs in the system.
  * The caller is blocked until the barrier is resolved.
  *
