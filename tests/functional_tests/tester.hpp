@@ -114,6 +114,7 @@ enum TestType {
   TeamCtxInfraTestBlockType = 74,
   TeamCtxInfraTestOddEvenType = 75,
   TeamAlltoallmemOnStreamTestType = 76,
+  BarrierAllOnStreamTestType = 77,
 };
 
 enum OpType { PutType = 0, GetType = 1 };

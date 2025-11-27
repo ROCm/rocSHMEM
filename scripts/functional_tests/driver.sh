@@ -110,6 +110,7 @@ declare -A TEST_NUMBERS=(
   ["teamctxblockinfra"]="74"
   ["teamctxoddeveninfra"]="75"
   ["alltoallmem_on_stream"]="76"
+  ["barrier_all_on_stream"]="77"
 )
 
 ExecTest() {
@@ -431,6 +432,7 @@ TestColl() {
   ExecTest  "teamreduction"    2       1            1         32768
 
   ExecTest  "alltoallmem_on_stream" 2  1            1         32768
+  ExecTest  "barrier_all_on_stream" 2  1            1
 }
 
 TestOther() {

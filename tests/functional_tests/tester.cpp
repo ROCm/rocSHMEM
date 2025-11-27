@@ -36,6 +36,7 @@
 #include "amo_standard_tester.hpp"
 #include "default_ctx_primitive_tester.hpp"
 #include "barrier_all_tester.hpp"
+#include "barrier_all_on_stream_tester.hpp"
 #include "empty_tester.hpp"
 #include "ping_all_tester.hpp"
 #include "ping_pong_tester.hpp"
@@ -232,6 +233,11 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       if (rank == 0)
         std::cout << "Alltoallmem_On_Stream ###" << std::endl;
       testers.push_back(new TeamAlltoallmemOnStreamTester(args));
+      return testers;
+    case BarrierAllOnStreamTestType:
+      if (rank == 0)
+        std::cout << "Barrier_All_On_Stream ###" << std::endl;
+      testers.push_back(new BarrierAllOnStreamTester(args));
       return testers;
     case TeamFCollectTestType:
       if (rank == 0) {
@@ -592,7 +598,8 @@ bool Tester::peLaunchesKernel() {
                 (_type == RandomAccessTestType) || (_type == PingAllTestType) ||
                 (_type == TeamBarrierTestType) || (_type == TeamWAVEBarrierTestType) ||
                 (_type == TeamWGBarrierTestType) || 
-                (_type == TeamAlltoallmemOnStreamTestType);
+                (_type == TeamAlltoallmemOnStreamTestType) ||
+                (_type == BarrierAllOnStreamTestType);
 
   return is_launcher;
 }
