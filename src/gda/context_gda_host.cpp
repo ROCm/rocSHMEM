@@ -135,9 +135,15 @@ __host__ void GDAHostContext::broadcastmem_on_stream(rocshmem_team_t team,
 }
 
 __host__ void GDAHostContext::getmem_on_stream(void *dest, const void *source,
-                                               size_t nelems, int pe,
+                                               size_t bytes, int pe,
                                                hipStream_t stream) {
-  host_interface->getmem_on_stream(dest, source, nelems, pe, stream);
+  host_interface->getmem_on_stream(dest, source, bytes, pe, stream);
+}
+
+__host__ void GDAHostContext::putmem_on_stream(void *dest, const void *source,
+                                               size_t bytes, int pe,
+                                               hipStream_t stream) {
+  host_interface->putmem_on_stream(dest, source, bytes, pe, stream);
 }
 
 }  // namespace rocshmem

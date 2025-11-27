@@ -123,9 +123,15 @@ __host__ void IPCHostContext::broadcastmem_on_stream(rocshmem_team_t team,
 }
 
 __host__ void IPCHostContext::getmem_on_stream(void *dest, const void *source,
-                                               size_t nelems, int pe,
+                                               size_t bytes, int pe,
                                                hipStream_t stream) {
-  host_interface->getmem_on_stream(dest, source, nelems, pe, stream);
+  host_interface->getmem_on_stream(dest, source, bytes, pe, stream);
+}
+
+__host__ void IPCHostContext::putmem_on_stream(void *dest, const void *source,
+                                               size_t bytes, int pe,
+                                               hipStream_t stream) {
+  host_interface->putmem_on_stream(dest, source, bytes, pe, stream);
 }
 
 }  // namespace rocshmem
