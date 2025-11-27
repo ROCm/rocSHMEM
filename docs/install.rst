@@ -34,11 +34,11 @@ Requirements
 Available network backends
 --------------------------
 
-rocSHMEM supports two network backends:
+rocSHMEM supports the following network backends:
 
 * The **IPC (Inter-Process Communication)** backend enables fast communication between GPUs on the same host using ROCm inter-process mechanisms. It does not support inter-node communication.
 * The **RO (Reverse Offload)** backend enables communication between GPUs on different nodes through a NIC, using a host-based proxy to forward communication orders to and from the GPU. RO is built on an MPI-RMA compatibility layer.
-* The **GDA (GPU Direct Async)** backend enables communication between GPUs on different nodes through a NIC. In this backend the GPU directly interacts with the NIC with no host involvement.
+* The **GDA (GPU Direct Async)** backend enables communication between GPUs on different nodes through a NIC. In this backend the GPU directly interacts with the NIC with no host (CPU) involvement in the critical path of communication.
 
 You can activate IPC, RO, and GDA backends in the same rocSHMEM build.
 
