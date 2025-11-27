@@ -114,6 +114,7 @@ declare -A TEST_NUMBERS=(
   ["broadcastmem_on_stream"]="78"
   ["getmem_on_stream"]="79"
   ["putmem_on_stream"]="80"
+  ["putmem_signal_on_stream"]="81"
 )
 
 ExecTest() {
@@ -381,6 +382,8 @@ TestSigOps() {
   ExecTest  "wgsignalfetch"    2       2            32
   ExecTest  "wavesignalfetch"  2       1            32
   ExecTest  "wavesignalfetch"  2       1            64
+
+  ExecTest  "putmem_signal_on_stream" 2  1          1         1048576
 }
 
 TestColl() {
