@@ -1035,6 +1035,17 @@ __host__ void rocshmem_putmem_on_stream(void *dest, const void *source,
       ->putmem_on_stream(dest, source, bytes, pe, stream);
 }
 
+__host__ void rocshmem_putmem_signal_on_stream(void *dest, const void *source,
+                                               size_t bytes, uint64_t *sig_addr,
+                                               uint64_t signal, int sig_op,
+                                               int pe, hipStream_t stream) {
+  DPRINTF("Host function: rocshmem_putmem_signal_on_stream\n");
+
+  get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)
+      ->putmem_signal_on_stream(dest, source, bytes, sig_addr, signal, sig_op,
+                                pe, stream);
+}
+
 __host__ void rocshmem_sync_all() {
   DPRINTF("Host function: rocshmem_sync_all\n");
 

@@ -415,6 +415,31 @@ __host__ void rocshmem_putmem_on_stream(void *dest, const void *source,
                                         hipStream_t stream);
 
 /**
+ * @brief Perform a put operation with signal on a HIP stream.
+ *
+ * This routine initiates a remote memory transfer on a specified HIP stream.
+ * The source data is copied from the local PE to the remote PE's destination
+ * address. After the put operation completes, a signal operation is performed
+ * on a remote symmetric signal variable.
+ *
+ * @param[in] dest      Destination address on the remote PE
+ * @param[in] source    Source address on the local PE
+ * @param[in] bytes     Number of bytes to transfer
+ * @param[in] sig_addr  Address of signal variable on the remote PE
+ * @param[in] signal    Signal value to be written
+ * @param[in] sig_op    Signal operation (ROCSHMEM_SIGNAL_SET or
+ * ROCSHMEM_SIGNAL_ADD)
+ * @param[in] pe        PE number of the remote PE
+ * @param[in] stream    HIP stream on which to enqueue the operation
+ *
+ * @return void
+ */
+__host__ void rocshmem_putmem_signal_on_stream(void *dest, const void *source,
+                                               size_t bytes, uint64_t *sig_addr,
+                                               uint64_t signal, int sig_op,
+                                               int pe, hipStream_t stream);
+
+/**
  * @brief registers the arrival of a PE at a barrier.
  * The caller is blocked until the synchronization is resolved.
  *

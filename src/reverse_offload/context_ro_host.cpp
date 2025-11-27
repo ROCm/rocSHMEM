@@ -176,4 +176,13 @@ __host__ void ROHostContext::putmem_on_stream(void *dest, const void *source,
   host_interface->putmem_on_stream(dest, source, bytes, pe, stream);
 }
 
+__host__ void ROHostContext::putmem_signal_on_stream(
+    void *dest, const void *source, size_t bytes, uint64_t *sig_addr,
+    uint64_t signal, int sig_op, int pe, hipStream_t stream) {
+  DPRINTF("Function: ro_net_host_putmem_signal_on_stream\n");
+
+  host_interface->putmem_signal_on_stream(dest, source, bytes, sig_addr, signal,
+                                          sig_op, pe, stream);
+}
+
 }  // namespace rocshmem

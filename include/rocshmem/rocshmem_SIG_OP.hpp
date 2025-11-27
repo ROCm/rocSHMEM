@@ -619,6 +619,23 @@ __device__ ATTR_NO_INLINE uint64_t rocshmem_signal_fetch(const uint64_t *sig_add
 __device__ ATTR_NO_INLINE uint64_t rocshmem_signal_fetch_wg(const uint64_t *sig_addr);
 __device__ ATTR_NO_INLINE uint64_t rocshmem_signal_fetch_wave(const uint64_t *sig_addr);
 
+/**
+ * @brief Kernel wrapper for putmem_signal operation on stream
+ *
+ * @param[in] dest      Destination address on remote PE
+ * @param[in] source    Source address on local PE
+ * @param[in] bytes     Number of bytes to transfer
+ * @param[in] sig_addr  Address of signal variable on remote PE
+ * @param[in] signal    Signal value to write
+ * @param[in] sig_op    Signal operation (ROCSHMEM_SIGNAL_SET or
+ * ROCSHMEM_SIGNAL_ADD)
+ * @param[in] pe        PE of the remote process
+ *
+ * @return void
+ */
+__global__ ATTR_NO_INLINE void rocshmem_putmem_signal_kernel(
+    void *dest, const void *source, size_t bytes, uint64_t *sig_addr,
+    uint64_t signal, int sig_op, int pe);
 
 }  // namespace rocshmem
 
