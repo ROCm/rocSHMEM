@@ -401,6 +401,30 @@ __host__ void HostInterface::broadcastmem_on_stream(rocshmem_team_t team,
                                                                    pe_root);
 }
 
+__host__ void HostInterface::getmem_on_stream(void *dest, const void *source,
+                                              size_t nelems, int pe,
+                                              hipStream_t stream) {
+  // launch kernel to do getmem with given stream, if none, use default stream
+  if (stream == nullptr) {
+    stream = hipStreamDefault;
+  }
+
+  int optimal_block_size = 0;
+  int grid_size = 0;
+  CHECK_HIP(hipOccupancyMaxPotentialBlockSize(&grid_size, &optimal_block_size,
+                                              rocshmem_getmem_kernel, 0, 0));
+
+  // Limit block size to nelems (bytes) to avoid over-subscription
+  int num_threads_per_block = (optimal_block_size > static_cast<int>(nelems))
+                                  ? static_cast<int>(nelems)
+                                  : optimal_block_size;
+
+  dim3 gridSize(1);
+  dim3 blockSize(num_threads_per_block);
+  rocshmem_getmem_kernel<<<gridSize, blockSize, 0, stream>>>(dest, source,
+                                                             nelems, pe);
+}
+
 __host__ void HostInterface::barrier_for_sync() {
   if (host_comm_world_ != MPI_COMM_NULL) {
     mpilib_ftable_.Barrier(host_comm_world_);

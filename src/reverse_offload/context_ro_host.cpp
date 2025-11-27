@@ -160,4 +160,12 @@ __host__ void ROHostContext::broadcastmem_on_stream(rocshmem_team_t team,
                                          stream);
 }
 
+__host__ void ROHostContext::getmem_on_stream(void *dest, const void *source,
+                                              size_t nelems, int pe,
+                                              hipStream_t stream) {
+  DPRINTF("Function: ro_net_host_getmem_on_stream\n");
+
+  host_interface->getmem_on_stream(dest, source, nelems, pe, stream);
+}
+
 }  // namespace rocshmem
