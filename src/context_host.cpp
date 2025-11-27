@@ -139,4 +139,12 @@ __host__ void Context::broadcastmem_on_stream(rocshmem_team_t team, void *dest,
       broadcastmem_on_stream(team, dest, source, nelems, pe_root, stream));
 }
 
+__host__ void Context::getmem_on_stream(void *dest, const void *source,
+                                        size_t nelems, int pe,
+                                        hipStream_t stream) {
+  ctxHostStats.incStat(NUM_HOST_GET);
+
+  HOST_DISPATCH(getmem_on_stream(dest, source, nelems, pe, stream));
+}
+
 }  // namespace rocshmem

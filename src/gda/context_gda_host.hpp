@@ -92,6 +92,9 @@ class GDAHostContext : public Context {
                                        const void *source, size_t nelems,
                                        int pe_root, hipStream_t stream);
 
+  __host__ void getmem_on_stream(void *dest, const void *source, size_t nelems,
+                                 int pe, hipStream_t stream);
+
   __host__ void sync_all();
 
   template <typename T>

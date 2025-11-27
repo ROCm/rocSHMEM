@@ -699,6 +699,13 @@ __global__ ATTR_NO_INLINE void rocshmem_broadcastmem_kernel(
   }
 }
 
+__global__ ATTR_NO_INLINE void rocshmem_getmem_kernel(void *dest,
+                                                      const void *source,
+                                                      size_t nelems, int pe) {
+  // Use work-group collective getmem with default context
+  rocshmem_getmem_wg(dest, source, nelems, pe);
+}
+
 __device__ void rocshmem_barrier_all() {
   GPU_DPRINTF("Function: rocshmem_barrier_all (ctx=%zd)\n",
     get_internal_ctx(ROCSHMEM_CTX_DEFAULT));
