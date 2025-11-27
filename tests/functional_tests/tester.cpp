@@ -41,6 +41,7 @@
 #include "getmem_on_stream_tester.hpp"
 #include "putmem_on_stream_tester.hpp"
 #include "putmem_signal_on_stream_tester.hpp"
+#include "signal_wait_until_on_stream_tester.hpp"
 #include "ping_all_tester.hpp"
 #include "ping_pong_tester.hpp"
 #include "primitive_mr_tester.hpp"
@@ -262,6 +263,11 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       if (rank == 0)
         std::cout << "Putmem_Signal_On_Stream ###" << std::endl;
       testers.push_back(new PutmemSignalOnStreamTester(args));
+      return testers;
+    case SignalWaitUntilOnStreamTestType:
+      if (rank == 0)
+        std::cout << "Signal_Wait_Until_On_Stream ###" << std::endl;
+      testers.push_back(new SignalWaitUntilOnStreamTester(args));
       return testers;
     case TeamFCollectTestType:
       if (rank == 0) {
@@ -637,6 +643,7 @@ bool Tester::peLaunchesKernel() {
     case GetmemOnStreamTestType:
     case PutmemOnStreamTestType:
     case PutmemSignalOnStreamTestType:
+    case SignalWaitUntilOnStreamTestType:
       is_launcher = true;
       break;
     default:
