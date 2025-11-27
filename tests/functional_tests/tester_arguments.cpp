@@ -126,6 +126,8 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
       max_msg_size = 4;
       break;
     case RandomAccessTestType:
+    case TeamAlltoallmemOnStreamTestType:
+    case TeamBroadcastmemOnStreamTestType:
       min_msg_size = 4;
       break;
     case TeamFCollectTestType:
@@ -185,7 +187,8 @@ void TesterArguments::get_arguments() {
       (type != TeamWGBarrierTestType) && (type != TeamCtxInfraTestBlockType) &&
       (type != TeamCtxInfraTestOddEvenType) &&
       (type != TeamAlltoallmemOnStreamTestType) &&
-      (type != BarrierAllOnStreamTestType)) {
+      (type != BarrierAllOnStreamTestType) &&
+      (type != TeamBroadcastmemOnStreamTestType)) {
     if (numprocs != 2) {
       if (myid == 0) {
         std::cerr << "This test requires exactly two processes, we have "
