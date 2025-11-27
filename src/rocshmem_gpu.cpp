@@ -713,6 +713,13 @@ __global__ ATTR_NO_INLINE void rocshmem_putmem_kernel(void *dest,
   rocshmem_putmem_wg(dest, source, bytes, pe);
 }
 
+__global__ ATTR_NO_INLINE void rocshmem_putmem_signal_kernel(
+    void *dest, const void *source, size_t bytes, uint64_t *sig_addr,
+    uint64_t signal, int sig_op, int pe) {
+  // Use work-group collective putmem_signal with default context
+  rocshmem_putmem_signal_wg(dest, source, bytes, sig_addr, signal, sig_op, pe);
+}
+
 __device__ void rocshmem_barrier_all() {
   GPU_DPRINTF("Function: rocshmem_barrier_all (ctx=%zd)\n",
     get_internal_ctx(ROCSHMEM_CTX_DEFAULT));
