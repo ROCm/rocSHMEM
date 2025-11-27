@@ -576,6 +576,47 @@ __host__ size_t rocshmem_ulonglong_wait_until_some_vector(
     unsigned long long *ivars, size_t nelems, size_t* indices, const int* status,
     int cmp, unsigned long long val);
 
+__device__ void rocshmem_uint64_wait_until(
+    uint64_t *ivars, int cmp, uint64_t val);
+__device__ size_t rocshmem_uint64_wait_until_any(
+    uint64_t *ivars, size_t nelems, const int* status,
+    int cmp, uint64_t val);
+__device__ void rocshmem_uint64_wait_until_all(
+    uint64_t *ivars, size_t nelems, const int* status,
+    int cmp, uint64_t val);
+__device__ size_t rocshmem_uint64_wait_until_some(
+    uint64_t *ivars, size_t nelems, size_t* indices, const int* status,
+    int cmp, uint64_t val);
+__device__ size_t rocshmem_uint64_wait_until_any_vector(
+    uint64_t *ivars, size_t nelems, const int* status,
+    int cmp, uint64_t val);
+__device__ void rocshmem_uint64_wait_until_all_vector(
+    uint64_t *ivars, size_t nelems, const int* status,
+    int cmp, uint64_t val);
+__device__ size_t rocshmem_uint64_wait_until_some_vector(
+    uint64_t *ivars, size_t nelems, size_t* indices, const int* status,
+    int cmp, uint64_t val);
+__host__ void rocshmem_uint64_wait_until(
+    uint64_t *ivars, int cmp, uint64_t val);
+__host__ size_t rocshmem_uint64_wait_until_any(
+    uint64_t *ivars, size_t nelems, const int* status,
+    int cmp, uint64_t val);
+__host__ void rocshmem_uint64_wait_until_all(
+    uint64_t *ivars, size_t nelems, const int* status,
+    int cmp, uint64_t val);
+__host__ size_t rocshmem_uint64_wait_until_some(
+    uint64_t *ivars, size_t nelems, size_t* indices, const int* status,
+    int cmp, uint64_t val);
+__host__ size_t rocshmem_uint64_wait_until_any_vector(
+    uint64_t *ivars, size_t nelems, const int* status,
+    int cmp, uint64_t val);
+__host__ void rocshmem_uint64_wait_until_all_vector(
+    uint64_t *ivars, size_t nelems, const int* status,
+    int cmp, uint64_t val);
+__host__ size_t rocshmem_uint64_wait_until_some_vector(
+    uint64_t *ivars, size_t nelems, size_t* indices, const int* status,
+    int cmp, uint64_t val);
+
 
 /**
  * @name SHMEM_TEST
@@ -657,6 +698,11 @@ __device__ int rocshmem_ulonglong_test(
     unsigned long long *ivars, int cmp, unsigned long long val);
 __host__ int rocshmem_ulonglong_test(
     unsigned long long *ivars, int cmp, unsigned long long val);
+
+__device__ int rocshmem_uint64_test(
+    uint64_t *ivars, int cmp, uint64_t val);
+__host__ int rocshmem_uint64_test(
+    uint64_t *ivars, int cmp, uint64_t val);
 
 
 }  // namespace rocshmem

@@ -440,6 +440,27 @@ __host__ void rocshmem_putmem_signal_on_stream(void *dest, const void *source,
                                                int pe, hipStream_t stream);
 
 /**
+ * @brief Wait on a signal variable until it satisfies the specified condition,
+ * with the operation enqueued on a HIP stream.
+ *
+ * This function blocks the calling thread until the signal variable at
+ * \p sig_addr satisfies the comparison condition (* \p sig_addr \p cmp
+ * \p cmp_value). The wait operation is executed asynchronously on the
+ * specified HIP stream.
+ *
+ * @param[in] sig_addr  Address of the signal variable on the symmetric heap
+ * @param[in] cmp       Comparison operator (e.g., ROCSHMEM_CMP_EQ,
+ * ROCSHMEM_CMP_GE, ROCSHMEM_CMP_NE, etc.)
+ * @param[in] cmp_value Value to compare against
+ * @param[in] stream    HIP stream on which to enqueue the operation
+ *
+ * @return void
+ */
+__host__ void rocshmem_signal_wait_until_on_stream(uint64_t *sig_addr, int cmp,
+                                                   uint64_t cmp_value,
+                                                   hipStream_t stream);
+
+/**
  * @brief registers the arrival of a PE at a barrier.
  * The caller is blocked until the synchronization is resolved.
  *

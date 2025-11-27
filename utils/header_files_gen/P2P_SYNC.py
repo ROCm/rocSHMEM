@@ -38,6 +38,7 @@ types = [
     ("unsigned int", "uint"),
     ("unsigned long", "ulong"),
     ("unsigned long long", "ulonglong"),
+    ("uint64_t", "uint64"),
 ]
 
 

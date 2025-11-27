@@ -165,4 +165,10 @@ __host__ void Context::putmem_signal_on_stream(void *dest, const void *source,
                                         sig_op, pe, stream));
 }
 
+__host__ void Context::signal_wait_until_on_stream(uint64_t *sig_addr, int cmp,
+                                                   uint64_t cmp_value,
+                                                   hipStream_t stream) {
+  HOST_DISPATCH(signal_wait_until_on_stream(sig_addr, cmp, cmp_value, stream));
+}
+
 }  // namespace rocshmem

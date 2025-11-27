@@ -637,6 +637,18 @@ __global__ ATTR_NO_INLINE void rocshmem_putmem_signal_kernel(
     void *dest, const void *source, size_t bytes, uint64_t *sig_addr,
     uint64_t signal, int sig_op, int pe);
 
+/**
+ * @brief Kernel wrapper for signal_wait_until operation on stream
+ *
+ * @param[in] sig_addr  Address of signal variable on the symmetric heap
+ * @param[in] cmp       Comparison operator
+ * @param[in] cmp_value Value to compare against
+ *
+ * @return void
+ */
+__global__ ATTR_NO_INLINE void rocshmem_signal_wait_until_kernel(
+    uint64_t *sig_addr, int cmp, uint64_t cmp_value);
+
 }  // namespace rocshmem
 
 #endif  // LIBRARY_INCLUDE_ROCSHMEM_SIG_OP_HPP
