@@ -388,14 +388,30 @@ __host__ void rocshmem_broadcastmem_on_stream(rocshmem_team_t team, void *dest,
  * @param[in] dest    Destination address. Must be an address on the symmetric
  *                    heap.
  * @param[in] source  Source address. Must be an address on the symmetric heap.
- * @param[in] nelems  Number of bytes to transfer.
+ * @param[in] bytes   Number of bytes to transfer.
  * @param[in] pe      PE of the remote process.
  * @param[in] stream  HIP stream on which to enqueue the operation.
  *
  * @return void
  */
 __host__ void rocshmem_getmem_on_stream(void *dest, const void *source,
-                                        size_t nelems, int pe,
+                                        size_t bytes, int pe,
+                                        hipStream_t stream);
+
+/**
+ * @brief enqueues a putmem RMA operation on given stream.
+ *
+ * @param[in] dest    Destination address. Must be an address on the symmetric
+ *                    heap.
+ * @param[in] source  Source address. Must be an address on the symmetric heap.
+ * @param[in] bytes   Number of bytes to transfer.
+ * @param[in] pe      PE of the remote process.
+ * @param[in] stream  HIP stream on which to enqueue the operation.
+ *
+ * @return void
+ */
+__host__ void rocshmem_putmem_on_stream(void *dest, const void *source,
+                                        size_t bytes, int pe,
                                         hipStream_t stream);
 
 /**

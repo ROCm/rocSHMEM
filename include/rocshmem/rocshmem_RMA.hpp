@@ -1216,14 +1216,30 @@ __host__ void rocshmem_getmem_nbi(void *dest, const void *source,
  * @param[in] dest    Destination address. Must be an address on the symmetric
  *                    heap.
  * @param[in] source  Source address. Must be an address on the symmetric heap.
- * @param[in] nelems  Number of bytes to transfer.
+ * @param[in] bytes   Number of bytes to transfer.
  * @param[in] pe      PE of the remote process.
  *
  * @return void
  */
 __global__ ATTR_NO_INLINE void rocshmem_getmem_kernel(void *dest,
                                                       const void *source,
-                                                      size_t nelems, int pe);
+                                                      size_t bytes, int pe);
+
+/**
+ * @brief kernel for performing a putmem RMA operation.
+ * Caller enqueues the kernel on given stream
+ *
+ * @param[in] dest    Destination address. Must be an address on the symmetric
+ *                    heap.
+ * @param[in] source  Source address. Must be an address on the symmetric heap.
+ * @param[in] bytes   Number of bytes to transfer.
+ * @param[in] pe      PE of the remote process.
+ *
+ * @return void
+ */
+__global__ ATTR_NO_INLINE void rocshmem_putmem_kernel(void *dest,
+                                                      const void *source,
+                                                      size_t bytes, int pe);
 
 }  // namespace rocshmem
 

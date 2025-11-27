@@ -402,7 +402,7 @@ __host__ void HostInterface::broadcastmem_on_stream(rocshmem_team_t team,
 }
 
 __host__ void HostInterface::getmem_on_stream(void *dest, const void *source,
-                                              size_t nelems, int pe,
+                                              size_t bytes, int pe,
                                               hipStream_t stream) {
   // launch kernel to do getmem with given stream, if none, use default stream
   if (stream == nullptr) {
@@ -414,15 +414,39 @@ __host__ void HostInterface::getmem_on_stream(void *dest, const void *source,
   CHECK_HIP(hipOccupancyMaxPotentialBlockSize(&grid_size, &optimal_block_size,
                                               rocshmem_getmem_kernel, 0, 0));
 
-  // Limit block size to nelems (bytes) to avoid over-subscription
-  int num_threads_per_block = (optimal_block_size > static_cast<int>(nelems))
-                                  ? static_cast<int>(nelems)
+  // Limit block size to bytes to avoid over-subscription
+  int num_threads_per_block = (optimal_block_size > static_cast<int>(bytes))
+                                  ? static_cast<int>(bytes)
                                   : optimal_block_size;
 
   dim3 gridSize(1);
   dim3 blockSize(num_threads_per_block);
   rocshmem_getmem_kernel<<<gridSize, blockSize, 0, stream>>>(dest, source,
-                                                             nelems, pe);
+                                                             bytes, pe);
+}
+
+__host__ void HostInterface::putmem_on_stream(void *dest, const void *source,
+                                              size_t bytes, int pe,
+                                              hipStream_t stream) {
+  // launch kernel to do putmem with given stream, if none, use default stream
+  if (stream == nullptr) {
+    stream = hipStreamDefault;
+  }
+
+  int optimal_block_size = 0;
+  int grid_size = 0;
+  CHECK_HIP(hipOccupancyMaxPotentialBlockSize(&grid_size, &optimal_block_size,
+                                              rocshmem_putmem_kernel, 0, 0));
+
+  // Limit block size to bytes to avoid over-subscription
+  int num_threads_per_block = (optimal_block_size > static_cast<int>(bytes))
+                                  ? static_cast<int>(bytes)
+                                  : optimal_block_size;
+
+  dim3 gridSize(1);
+  dim3 blockSize(num_threads_per_block);
+  rocshmem_putmem_kernel<<<gridSize, blockSize, 0, stream>>>(dest, source,
+                                                             bytes, pe);
 }
 
 __host__ void HostInterface::barrier_for_sync() {

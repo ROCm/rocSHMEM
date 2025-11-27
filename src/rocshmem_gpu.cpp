@@ -701,9 +701,16 @@ __global__ ATTR_NO_INLINE void rocshmem_broadcastmem_kernel(
 
 __global__ ATTR_NO_INLINE void rocshmem_getmem_kernel(void *dest,
                                                       const void *source,
-                                                      size_t nelems, int pe) {
+                                                      size_t bytes, int pe) {
   // Use work-group collective getmem with default context
-  rocshmem_getmem_wg(dest, source, nelems, pe);
+  rocshmem_getmem_wg(dest, source, bytes, pe);
+}
+
+__global__ ATTR_NO_INLINE void rocshmem_putmem_kernel(void *dest,
+                                                      const void *source,
+                                                      size_t bytes, int pe) {
+  // Use work-group collective putmem with default context
+  rocshmem_putmem_wg(dest, source, bytes, pe);
 }
 
 __device__ void rocshmem_barrier_all() {
