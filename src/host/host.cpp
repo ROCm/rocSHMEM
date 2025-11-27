@@ -364,6 +364,43 @@ __host__ void HostInterface::alltoallmem_on_stream(rocshmem_team_t team,
                                                                   source, size);
 }
 
+__host__ void HostInterface::broadcastmem_on_stream(rocshmem_team_t team,
+                                                    void *dest,
+                                                    const void *source,
+                                                    size_t nelems, int pe_root,
+                                                    hipStream_t stream) {
+  // launch kernel to do broadcast with given stream, if none, use default
+  // stream
+  if (stream == nullptr) {
+    stream = hipStreamDefault;
+  }
+
+  // Use dynamic block size determination:
+  // - Query optimal block size using occupancy API
+  // - Limit block size to nelems (number of bytes) to avoid over-subscription
+  // - Always use 1 block (single workgroup collective)
+  int optimal_block_size = 0;
+  int grid_size = 0;
+  CHECK_HIP(hipOccupancyMaxPotentialBlockSize(&grid_size,
+                                              &optimal_block_size,
+                                              rocshmem_broadcastmem_kernel,
+                                              0,
+                                              0));
+
+  // Limit block size to nelems (bytes) to avoid over-subscription
+  int num_threads_per_block = (optimal_block_size > static_cast<int>(nelems))
+                                  ? static_cast<int>(nelems)
+                                  : optimal_block_size;
+
+  dim3 gridSize(1);
+  dim3 blockSize(num_threads_per_block);
+  rocshmem_broadcastmem_kernel<<<gridSize, blockSize, 0, stream>>>(team,
+                                                                   dest,
+                                                                   source,
+                                                                   nelems,
+                                                                   pe_root);
+}
+
 __host__ void HostInterface::barrier_for_sync() {
   if (host_comm_world_ != MPI_COMM_NULL) {
     mpilib_ftable_.Barrier(host_comm_world_);

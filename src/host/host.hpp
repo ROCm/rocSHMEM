@@ -200,6 +200,10 @@ class HostInterface {
                                       const void *source, size_t size,
                                       hipStream_t stream);
 
+  __host__ void broadcastmem_on_stream(rocshmem_team_t team, void *dest,
+                                       const void *source, size_t nelems,
+                                       int pe_root, hipStream_t stream);
+
   __host__ void barrier_for_sync();
 
   __host__ void sync_all(WindowInfo* window_info);

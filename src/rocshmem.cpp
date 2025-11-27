@@ -1008,6 +1008,15 @@ __host__ void rocshmem_alltoallmem_on_stream(rocshmem_team_t team, void *dest,
       ->alltoallmem_on_stream(team, dest, source, size, stream);
 }
 
+__host__ void rocshmem_broadcastmem_on_stream(rocshmem_team_t team, void *dest,
+                                              const void *source, size_t nelems,
+                                              int pe_root, hipStream_t stream) {
+  DPRINTF("Host function: rocshmem_broadcastmem_on_stream\n");
+
+  get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)
+      ->broadcastmem_on_stream(team, dest, source, nelems, pe_root, stream);
+}
+
 __host__ void rocshmem_sync_all() {
   DPRINTF("Host function: rocshmem_sync_all\n");
 

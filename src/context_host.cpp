@@ -130,4 +130,13 @@ __host__ void Context::alltoallmem_on_stream(rocshmem_team_t team, void *dest,
   HOST_DISPATCH(alltoallmem_on_stream(team, dest, source, size, stream));
 }
 
+__host__ void Context::broadcastmem_on_stream(rocshmem_team_t team, void *dest,
+                                              const void *source, size_t nelems,
+                                              int pe_root, hipStream_t stream) {
+  ctxHostStats.incStat(NUM_HOST_BROADCAST);
+
+  HOST_DISPATCH(
+      broadcastmem_on_stream(team, dest, source, nelems, pe_root, stream));
+}
+
 }  // namespace rocshmem
