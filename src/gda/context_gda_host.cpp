@@ -153,4 +153,11 @@ __host__ void GDAHostContext::putmem_signal_on_stream(
                                           sig_op, pe, stream);
 }
 
+__host__ void GDAHostContext::signal_wait_until_on_stream(uint64_t *sig_addr,
+                                                          int cmp,
+                                                          uint64_t cmp_value,
+                                                          hipStream_t stream) {
+  host_interface->signal_wait_until_on_stream(sig_addr, cmp, cmp_value, stream);
+}
+
 }  // namespace rocshmem

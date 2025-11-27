@@ -215,6 +215,10 @@ class HostInterface {
                                         uint64_t signal, int sig_op, int pe,
                                         hipStream_t stream);
 
+  __host__ void signal_wait_until_on_stream(uint64_t *sig_addr, int cmp,
+                                            uint64_t cmp_value,
+                                            hipStream_t stream);
+
   __host__ void barrier_for_sync();
 
   __host__ void sync_all(WindowInfo* window_info);

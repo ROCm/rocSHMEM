@@ -1046,6 +1046,15 @@ __host__ void rocshmem_putmem_signal_on_stream(void *dest, const void *source,
                                 pe, stream);
 }
 
+__host__ void rocshmem_signal_wait_until_on_stream(uint64_t *sig_addr, int cmp,
+                                                   uint64_t cmp_value,
+                                                   hipStream_t stream) {
+  DPRINTF("Host function: rocshmem_signal_wait_until_on_stream\n");
+
+  get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)
+      ->signal_wait_until_on_stream(sig_addr, cmp, cmp_value, stream);
+}
+
 __host__ void rocshmem_sync_all() {
   DPRINTF("Host function: rocshmem_sync_all\n");
 
@@ -1720,6 +1729,7 @@ WAIT_DEF_GEN(unsigned short, ushort)
 WAIT_DEF_GEN(unsigned int, uint)
 WAIT_DEF_GEN(unsigned long, ulong)
 WAIT_DEF_GEN(unsigned long long, ulonglong)
+WAIT_DEF_GEN(uint64_t, uint64)
 // clang-format on
 
 }  // namespace rocshmem

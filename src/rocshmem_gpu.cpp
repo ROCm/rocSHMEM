@@ -720,6 +720,12 @@ __global__ ATTR_NO_INLINE void rocshmem_putmem_signal_kernel(
   rocshmem_putmem_signal_wg(dest, source, bytes, sig_addr, signal, sig_op, pe);
 }
 
+__global__ ATTR_NO_INLINE void rocshmem_signal_wait_until_kernel(
+    uint64_t *sig_addr, int cmp, uint64_t cmp_value) {
+  // Use default context to wait on signal
+  rocshmem_uint64_wait_until(sig_addr, cmp, cmp_value);
+}
+
 __device__ void rocshmem_barrier_all() {
   GPU_DPRINTF("Function: rocshmem_barrier_all (ctx=%zd)\n",
     get_internal_ctx(ROCSHMEM_CTX_DEFAULT));
@@ -1913,6 +1919,7 @@ WAIT_DEF_GEN(unsigned short, ushort)
 WAIT_DEF_GEN(unsigned int, uint)
 WAIT_DEF_GEN(unsigned long, ulong)
 WAIT_DEF_GEN(unsigned long long, ulonglong)
+WAIT_DEF_GEN(uint64_t, uint64)
 // clang-format on
 
 }  // namespace rocshmem

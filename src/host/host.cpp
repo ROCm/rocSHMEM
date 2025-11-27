@@ -25,6 +25,7 @@
 #include "host.hpp"
 
 #include "rocshmem/rocshmem_config.h"  // NOLINT(build/include_subdir)
+#include "rocshmem/rocshmem_SIG_OP.hpp"
 #include "envvar.hpp"
 #include "host_helpers.hpp"
 #include "memory/window_info.hpp"
@@ -472,6 +473,23 @@ __host__ void HostInterface::putmem_signal_on_stream(
   dim3 blockSize(num_threads_per_block);
   rocshmem_putmem_signal_kernel<<<gridSize, blockSize, 0, stream>>>(
       dest, source, bytes, sig_addr, signal, sig_op, pe);
+}
+
+__host__ void HostInterface::signal_wait_until_on_stream(uint64_t *sig_addr,
+                                                         int cmp,
+                                                         uint64_t cmp_value,
+                                                         hipStream_t stream) {
+  // launch kernel to wait on signal with given stream, if none, use default
+  // stream
+  if (stream == nullptr) {
+    stream = hipStreamDefault;
+  }
+
+  // Use a single thread to wait on the signal
+  dim3 gridSize(1);
+  dim3 blockSize(1);
+  rocshmem_signal_wait_until_kernel<<<gridSize, blockSize, 0, stream>>>(
+      sig_addr, cmp, cmp_value);
 }
 
 __host__ void HostInterface::barrier_for_sync() {
