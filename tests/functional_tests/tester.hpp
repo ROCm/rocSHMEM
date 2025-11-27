@@ -117,6 +117,7 @@ enum TestType {
   BarrierAllOnStreamTestType = 77,
   TeamBroadcastmemOnStreamTestType = 78,
   GetmemOnStreamTestType = 79,
+  PutmemOnStreamTestType = 80,
 };
 
 enum OpType { PutType = 0, GetType = 1 };

@@ -113,6 +113,7 @@ declare -A TEST_NUMBERS=(
   ["barrier_all_on_stream"]="77"
   ["broadcastmem_on_stream"]="78"
   ["getmem_on_stream"]="79"
+  ["putmem_on_stream"]="80"
 )
 
 ExecTest() {
@@ -224,6 +225,8 @@ TestRMAPut() {
   ExecTest  "shmemptr"         2       1            1024      8
   ExecTest  "shmemptr"         2       8            1         8
   ExecTest  "shmemptr"         2       16           128       8
+
+  ExecTest  "putmem_on_stream" 2       1            1         1048576
 
   ################################ Non-Blocking ################################
 
