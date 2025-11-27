@@ -38,6 +38,7 @@
 #include "barrier_all_tester.hpp"
 #include "barrier_all_on_stream_tester.hpp"
 #include "empty_tester.hpp"
+#include "getmem_on_stream_tester.hpp"
 #include "ping_all_tester.hpp"
 #include "ping_pong_tester.hpp"
 #include "primitive_mr_tester.hpp"
@@ -244,6 +245,11 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       if (rank == 0)
         std::cout << "Broadcastmem_On_Stream ###" << std::endl;
       testers.push_back(new TeamBroadcastmemOnStreamTester(args));
+      return testers;
+    case GetmemOnStreamTestType:
+      if (rank == 0)
+        std::cout << "Getmem_On_Stream ###" << std::endl;
+      testers.push_back(new GetmemOnStreamTester(args));
       return testers;
     case TeamFCollectTestType:
       if (rank == 0) {
@@ -606,7 +612,8 @@ bool Tester::peLaunchesKernel() {
                 (_type == TeamWGBarrierTestType) || 
                 (_type == TeamAlltoallmemOnStreamTestType) ||
                 (_type == BarrierAllOnStreamTestType) ||
-                (_type == TeamBroadcastmemOnStreamTestType);
+                (_type == TeamBroadcastmemOnStreamTestType) ||
+                (_type == GetmemOnStreamTestType);
 
   return is_launcher;
 }
