@@ -118,6 +118,7 @@ enum TestType {
   TeamBroadcastmemOnStreamTestType = 78,
   GetmemOnStreamTestType = 79,
   PutmemOnStreamTestType = 80,
+  PutmemSignalOnStreamTestType = 81,
 };
 
 enum OpType { PutType = 0, GetType = 1 };
