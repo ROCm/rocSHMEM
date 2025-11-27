@@ -49,6 +49,7 @@
 #include "team_sync_tester.hpp"
 #include "team_alltoall_tester.hpp"
 #include "team_alltoallmem_on_stream_tester.hpp"
+#include "team_broadcastmem_on_stream_tester.hpp"
 #include "team_barrier_tester.hpp"
 #include "team_broadcast_tester.hpp"
 #include "team_ctx_infra_tester.hpp"
@@ -238,6 +239,11 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       if (rank == 0)
         std::cout << "Barrier_All_On_Stream ###" << std::endl;
       testers.push_back(new BarrierAllOnStreamTester(args));
+      return testers;
+    case TeamBroadcastmemOnStreamTestType:
+      if (rank == 0)
+        std::cout << "Broadcastmem_On_Stream ###" << std::endl;
+      testers.push_back(new TeamBroadcastmemOnStreamTester(args));
       return testers;
     case TeamFCollectTestType:
       if (rank == 0) {
@@ -599,7 +605,8 @@ bool Tester::peLaunchesKernel() {
                 (_type == TeamBarrierTestType) || (_type == TeamWAVEBarrierTestType) ||
                 (_type == TeamWGBarrierTestType) || 
                 (_type == TeamAlltoallmemOnStreamTestType) ||
-                (_type == BarrierAllOnStreamTestType);
+                (_type == BarrierAllOnStreamTestType) ||
+                (_type == TeamBroadcastmemOnStreamTestType);
 
   return is_launcher;
 }
