@@ -27,7 +27,8 @@ Requirements
 
     Other AMD GPUs might function with unknown limitations. For the complete list of supported hardware, see `ROCm System Requirements <https://rocm.docs.amd.com/projects/install-on-linux-internal/en/latest/reference/system-requirements.html>`_.
 
-* ROCm-aware Open MPI and UCX. For more information, see :ref:`install-dependencies`.
+* The RO backend requires ROCm-aware Open MPI and UCX. When using the IPC or GDA backends, MPI is optional.
+  For more information on installing ROCm-aware Open MPI and UCX please see :ref:`install-dependencies`.
 
 * Inter-node communication requires AMD Pollara IONIC, Broadcom Thor 2, or CX7 Infiniband NICs.
 
@@ -72,11 +73,12 @@ GDA NIC Dependencies
 - GDA on Broadcom Thor requires driver version 233.2.108.0 and firmware version 233.2.104.0 or later.
 
 
-Building rocSHMEM with MPI
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+Building rocSHMEM with MPI (Optional)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-rocSHMEM requires ROCm-Aware Open MPI and UCX for the RO backend or if you want to run rocSHMEM
-within an MPI application. Other MPI implementations, such as MPICH, have not been fully tested.
+rocSHMEM requires ROCm-Aware Open MPI and UCX for the RO backend or if you want to run rocSHMEM.
+MPI is optional with the IPC and GDA backends.
+Other MPI implementations, such as MPICH, have not been fully tested.
 
 To build and configure ROCm-Aware UCX 1.17.0 or later, run:
 
@@ -119,6 +121,11 @@ Installing from source
 
 You can select between three communication backends at build time for rocSHMEM: IPC, RO, and GDA.
 Backend can be combined during build time.
+
+MPI is not required to build rocSHMEM, if you want to disable MPI you can pass
+the following flag to the build configs scripts `-DUSE_EXTERNAL_MPI=OFF`.
+However, it is important to note that this will disable the functional and unit
+tests as they required MPI to run.
 
 All Backends build
 ^^^^^^^^^^^^^^^^^^^^
