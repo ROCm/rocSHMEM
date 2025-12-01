@@ -58,38 +58,3 @@ See the `Open MPI documentation <https://docs.open-mpi.org/en/main/>`_ for more 
   have GPU support enabled. You must use the ``mpiexec`` from the expected
   MPI library, especially when using the MPI built by yourself
   as part of :ref:`install-dependencies`.
-
-Environment variables
----------------------
-
-You can control the behavior of rocSHMEM by using the following environment variables:
-
-.. list-table:: Environment Variables
-    :widths: 30 10 20
-    :header-rows: 1
-
-    * - Name
-      - Default Value
-      - Description
-    * - ROCSHMEM_HEAP_SIZE
-      - 1
-      - Defines the size of the rocSHMEM symmetric heap in GB.
-        Note the heap is on the GPU memory.
-    * - ROCSHMEM_MAX_NUM_CONTEXTS
-      - 1024
-      - Defines the number of contexts an application can use.
-    * - ROCSHMEM_MAX_NUM_TEAMS
-      - 40
-      - Defines the number of teams an application can use.
-    * - ROCSHMEM_UNIQUEID_WITH_MPI
-      - 0
-      - Defines whether rocSHMEM is expected to use MPI when using the uniqueId based initialization.
-    * - ROCSHMEM_DISABLE_MIXED_IPC
-      - 0
-      - Defines whether to force using the network conduit even when IPC is available.
-    * - ROCSHMEM_GDA_ALTERNATE_QP_PORTS
-      - 1
-      - Enables/Disables having QPs alternate their mappings across rocSHMEM contexts. This helps saturate bandwidth on multiport bonded interfaces.
-    * - ROCSHMEM_GDA_PCIE_RELAXED_ORDERING
-      - 0
-      - Enables PCIe Relaxed Ordering when registering the symemtric heap with the RDMA NICs.

@@ -27,6 +27,7 @@ The rocSHMEM public repository is located at `<https://github.com/ROCm/rocSHMEM>
       * :doc:`Memory management routines <./api/memory_management>`
       * :doc:`Team management routines <./api/teams>`
       * :doc:`Context management routines <./api/ctx>`
+      * :doc:`Environment variables <./api/env_variables>`
       * :doc:`Remote memory access routines <./api/rma>`
       * :doc:`Atomic memory operations <./api/amo>`
       * :doc:`Signaling operations <./api/sigops>`
