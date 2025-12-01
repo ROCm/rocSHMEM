@@ -55,6 +55,10 @@ enum GDAProvider {
   MLX5
 };
 
+inline constexpr uint32_t GDA_IONIC_VENDOR_ID = 0x1DD8;
+inline constexpr uint32_t GDA_MLX5_VENDOR_ID  = 0x15B3;
+inline constexpr uint32_t GDA_BNXT_VENDOR_ID  = 0x14E4;
+
 class GDABackend : public Backend {
  private:
   typedef struct dest_info {
@@ -130,6 +134,28 @@ class GDABackend : public Backend {
    * @copydoc Backend::~Backend()
    */
   virtual ~GDABackend();
+
+  /**
+   * @brief Check if a device's vendor ID matches the expected vendor for a provider
+   *
+   * @param provider The GDA provider to check against
+   * @param device_attr The device attributes containing the vendor ID
+   * @param device_name The device name (for debug messages)
+   * @return true if the device vendor matches the provider, false otherwise
+   */
+  static bool device_matches_provider_vendor(GDAProvider provider,
+                                             const struct ibv_device_attr &device_attr,
+                                             const char *device_name);
+
+  /**
+   * @brief Check if there are active InfiniBand/RDMA interfaces available
+   *        that match the specified provider's vendor ID.
+   *
+   * @param provider The GDA provider to check for (BNXT, IONIC, or MLX5)
+   * @return true if at least one active port on a matching vendor device is found,
+   *         false otherwise
+   */
+  static bool has_active_ib_interface(GDAProvider provider);
 
   /**
    * @brief Verify whether GDA Backend could run
