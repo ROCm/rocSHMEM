@@ -107,7 +107,7 @@ static BackendType select_backend_type() {
     DPRINTF("GDABackend::backend_can_run returned success\n");
     return BackendType::GDA_BACKEND;
   }
-  if (MPIInstance::mpilib_dl_init() == ROCSHMEM_SUCCESS) {
+  if (ROBackend::backend_can_run() == ROCSHMEM_SUCCESS) {
     DPRINTF("MPIInstance could dl_init MPI library\n");
     return BackendType::RO_BACKEND;
   }
@@ -156,7 +156,7 @@ static BackendType select_backend_type() {
   backend = new (backend) GDABackend(comm);
 #elif defined(USE_RO)
   if (ret != ROCSHMEM_SUCCESS) {
-    printf("Could not initialize MPI library. RO conduit requires MPI library to be loaded at runtime. Aborting\n");
+    printf("Could not initialize MPI library. RO conduit requires MPI library to be loaded at runtime. Aborting.\n");
     abort();
   }
   CHECK_HIP(hipHostMalloc(&backend, sizeof(ROBackend)));
@@ -167,7 +167,8 @@ static BackendType select_backend_type() {
 #endif
 
   if (!backend) {
-    abort();
+    printf("No Backend could be initialized! Aborting.\n");
+    exit(1);
   }
 }
 
@@ -177,10 +178,10 @@ static BackendType select_backend_type() {
 
   int ret;
   ret = MPIInstance::mpilib_dl_init();
-  if (ret == ROCSHMEM_SUCCESS) {
-    printf("Could not initialize MPI library. This initialization method of "
-           "rocSHMEM requires MPI library to be loaded at runtime. Aborting\n");
-    abort();
+  if (ret != ROCSHMEM_SUCCESS) {
+    fprintf(stderr, "Could not initialize MPI library. This initialization method of "
+            "rocSHMEM requires MPI library to be loaded at runtime. Aborting.\n");
+    exit(1);
   }
   mpilib_ftable_.Initialized(&initialized);
 
@@ -194,10 +195,10 @@ static BackendType select_backend_type() {
     if (world_size != nranks) {
       // This solution will require MPI_Sessions. This is planned for the
       // future, but is not supported in the current version.
-      fprintf (stderr, "Unsupported configuration to initialize rocSHMEM. Please "
-               "initialize the MPI library using MPI_Init first, if you want to "
-               "initialize rocSHMEM with a subset of the processes\n");
-      abort();
+      fprintf(stderr, "Unsupported configuration to initialize rocSHMEM. Please "
+              "initialize the MPI library using MPI_Init first, if you want to "
+              "initialize rocSHMEM with a subset of the processes\n");
+      exit(1);
     }
   } else {
     mpilib_ftable_.Comm_size (MPI_COMM_WORLD, &world_size);
@@ -254,9 +255,7 @@ static BackendType select_backend_type() {
   case BackendType::RO_BACKEND:
     /* Not sure whether this is a valid configuration. Will leave it in for now */
     DPRINTF("Initializing RO backend with TCP bootstrapping\n");
-    mpi_instance = new MPIInstance(MPI_COMM_WORLD);
-    CHECK_HIP(hipHostMalloc(&backend, sizeof(ROBackend)));
-    backend = new (backend) ROBackend(MPI_COMM_WORLD);
+    library_init_subcomm(bootstr, bootstr->getNranks(), bootstr->getRank());
     break;
   case BackendType::IPC_BACKEND:
     DPRINTF("Initializing IPC backend with TCP bootstrapping\n");
@@ -269,22 +268,15 @@ static BackendType select_backend_type() {
   backend = new (backend) GDABackend(bootstrap);
 #elif defined(USE_RO)
   /* Not sure whether this is a valid configuration. Will leave it in for now */
-  int ret;
-  ret = MPIInstance::mpilib_dl_init();
-  if (ret != MPI_SUCCESS) {
-    printf("RO Backend requires MPI library to be initialized, even when using uniqueId initializations!\n");
-    abort();
-  }
-  mpi_instance = new MPIInstance(MPI_COMM_WORLD);
-  CHECK_HIP(hipHostMalloc(&backend, sizeof(ROBackend)));
-  backend = new (backend) ROBackend(MPI_COMM_WORLD);
+  library_init_subcomm(bootstr, bootstr->getNranks(), bootstr->getRank());
 #elif defined(USE_IPC)
   CHECK_HIP(hipHostMalloc(&backend, sizeof(IPCBackend)));
   backend = new (backend) IPCBackend(bootstrap);
 #endif
 
   if (!backend) {
-    abort();
+    printf("No Backend could be initialized! Aborting.\n");
+    exit(1);
   }
 }
 

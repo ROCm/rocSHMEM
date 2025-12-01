@@ -131,6 +131,12 @@ ROBackend::ROBackend(MPI_Comm comm)
   *done_init = 1;
 }
 
+/* Currently we only check whether we can dlopen an MPI library.
+ */
+int ROBackend::backend_can_run() {
+  return MPIInstance::mpilib_dl_init();
+}
+
 void ROBackend::setup_ctxs() {
   CHECK_HIP(hipMalloc(&ctx_array, sizeof(ROContext) * envvar::max_num_contexts));
   for (size_t i = 0; i < envvar::max_num_contexts; i++) {
