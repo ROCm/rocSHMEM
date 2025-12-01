@@ -15,7 +15,7 @@ Requirements
 
 * ROCm 6.4.0 or later, including the :doc:`HIP runtime <hip:index>`. For more information, see `ROCm installation for Linux <https://rocm.docs.amd.com/projects/install-on-linux/en/latest/>`_.
 
-* The following AMD GPUs have been fully tested for compatibility with rocSHMEM: 
+* The following AMD GPUs have been fully tested for compatibility with rocSHMEM:
 
   * MI250X
 
@@ -27,24 +27,26 @@ Requirements
 
     Other AMD GPUs might function with unknown limitations. For the complete list of supported hardware, see `ROCm System Requirements <https://rocm.docs.amd.com/projects/install-on-linux-internal/en/latest/reference/system-requirements.html>`_.
 
-* ROCm-aware Open MPI and UCX. For more information, see :ref:`install-dependencies`.
+* The RO backend requires ROCm-aware Open MPI and UCX. When using the IPC or GDA backends, MPI is optional.
+  For more information on installing ROCm-aware Open MPI and UCX please see :ref:`install-dependencies`.
 
-* Inter-node communication requires MPI, and is tested with Open MPI and CX7 Infiniband NICs.
+* Inter-node communication requires AMD Pollara IONIC, Broadcom Thor 2, or CX7 Infiniband NICs.
 
 Available network backends
 --------------------------
 
-rocSHMEM supports two network backends:
+rocSHMEM supports the following network backends:
 
 * The **IPC (Inter-Process Communication)** backend enables fast communication between GPUs on the same host using ROCm inter-process mechanisms. It does not support inter-node communication.
-* The **RO (Reverse Offload)** backend enables communication between GPUs on different nodes through a NIC, using a host-based proxy to forward communication orders to and from the GPU. In this release, RO is the only inter-node communication backend and is built on an MPI-RMA compatibility layer.
+* The **RO (Reverse Offload)** backend enables communication between GPUs on different nodes through a NIC, using a host-based proxy to forward communication orders to and from the GPU. RO is built on an MPI-RMA compatibility layer.
+* The **GDA (GPU Direct Async)** backend enables communication between GPUs on different nodes through a NIC. In this backend the GPU directly interacts with the NIC with no host (CPU) involvement in the critical path of communication.
 
-
-You can activate IPC and RO backends in the same rocSHMEM build. In this case, IPC handles intra-node communication, while RO handles inter-node communication.
+You can activate IPC, RO, and GDA backends in the same rocSHMEM build.
 
 .. note::
 
-  When RO is active, all atomic operations use the RO backend, even for intra-node communication.
+  When RO + IPC is active, all atomic operations use the RO backend, even for intra-node communication.
+  When GDA + IPC is active, all atomic operations use the GDA backend, even for intra-node communication.
 
 Installing from a package manager
 ---------------------------------
@@ -64,7 +66,19 @@ On Ubuntu, you can install rocSHMEM by running:
 Building dependencies
 ---------------------------
 
-rocSHMEM requires ROCm-Aware Open MPI and UCX. Other MPI implementations, such as MPICH, have not been fully tested.
+GDA NIC Dependencies
+^^^^^^^^^^^^^^^^
+
+- GDA on Mellanox NICs should work on any recent version of rdma-core.
+- GDA on Broadcom Thor requires driver version 233.2.108.0 and firmware version 233.2.104.0 or later.
+
+
+Building rocSHMEM with MPI (Optional)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+rocSHMEM requires ROCm-Aware Open MPI and UCX for the RO backend or if you want to run rocSHMEM.
+MPI is optional with the IPC and GDA backends.
+Other MPI implementations, such as MPICH, have not been fully tested.
 
 To build and configure ROCm-Aware UCX 1.17.0 or later, run:
 
@@ -105,11 +119,53 @@ For more information about OpenMPI-UCX support, see
 Installing from source
 --------------------------------
 
-You can select between two communication backends at build time for rocSHMEM: RO and IPC.
-The default configuration enables both backends, using IPC for intra-node communication
-RO for inter-node communication at runtime. In this configuration, rocSHMEM atomic operations always use the RO backend.
+You can select between three communication backends at build time for rocSHMEM: IPC, RO, and GDA.
+Backend can be combined during build time.
 
-rocSHMEM also supports the IPC-only configuration, which allows atomic operations to use the IPC backend only.
+MPI is not required to build rocSHMEM, if you want to disable MPI you can pass
+the following flag to the build configs scripts `-DUSE_EXTERNAL_MPI=OFF`.
+However, it is important to note that this will disable the functional and unit
+tests as they required MPI to run.
+
+All Backends build
+^^^^^^^^^^^^^^^^^^^^
+
+To build and install rocSHMEM with all three backends, run:
+
+.. code-block:: bash
+
+  git clone git@github.com:ROCm/rocSHMEM.git
+  cd rocSHMEM
+  mkdir build
+  cd build
+  ../scripts/build_configs/all_backends
+
+The build script passes configuration options to CMake to set up a canonical build.
+
+.. note::
+
+ This will build rocSHMEM with all backends, you can select the IPC, RO, GDA, or a combination at runtime. However there is a small performance penality for this portability. The other build scripts are recommended if you are trying to achive maximum performance.
+
+GDA backend build
+^^^^^^^^^^^^^^^^^^^^
+
+To build and install rocSHMEM with the GDA backends, run:
+
+
+.. code-block:: bash
+
+  git clone git@github.com:ROCm/rocSHMEM.git
+  cd rocSHMEM
+  mkdir build
+  cd build
+
+  # Choose one of the following scripts for your NIC vendor:
+  ../scripts/build_configs/gda_bnxt  # Broadcom
+  ../scripts/build_configs/gda_ionic # AMD Pollara
+  ../scripts/build_configs/gda_mlx5  # Mellanox
+
+
+The build script passes configuration options to CMake to set up a canonical build.
 
 RO and IPC backend build
 ^^^^^^^^^^^^^^^^^^^^
@@ -130,7 +186,6 @@ The build script passes configuration options to CMake to set up a canonical bui
 .. note::
 
   The only officially supported configuration for the RO backend uses Open MPI and UCX with a CX7 InfiniBand adapter. For more information, see :ref:`install-dependencies`. Other configurations, such as MPI implementations that are thread-safe and support GPU buffers, might work but are considered experimental.
-
 
 
 IPC only backend build
