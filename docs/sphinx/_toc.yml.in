@@ -28,6 +28,8 @@ subtrees:
     title: Team management routines
   - file: api/ctx.rst
     title: Context management routines
+  - file: api/env_variables.rst
+    title: Environment Variables
   - file: api/rma.rst
     title: Remote memory access routines
   - file: api/amo.rst
