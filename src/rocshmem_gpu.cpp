@@ -498,7 +498,7 @@ __device__ void rocshmem_ctx_quiet(rocshmem_ctx_t ctx) {
 }
 
 __device__ void rocshmem_ctx_pe_quiet(rocshmem_ctx_t ctx, const int *target_pes, size_t npes) {
-  GPU_DPRINTF("Function: %s (ctx=%zd)\n", __FUNC__, ctx.ctx_opaque);
+  GPU_DPRINTF("Function: %s (ctx=%zd)\n", __func__, ctx.ctx_opaque);
 
   ContextTy *internal_ctx = get_internal_ctx(ctx);
 
