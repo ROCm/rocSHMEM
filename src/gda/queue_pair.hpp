@@ -203,15 +203,14 @@ class QueuePair {
       bool is_leader, uint64_t leader_phys_lane_id);
 
   __device__ __forceinline__ void
-  mlx5_ring_wave_doorbell(uint64_t wave_sq_counter, uint8_t num_wqes);
+  mlx5_ring_doorbell(uint64_t wave_sq_counter, uint8_t num_wqes);
 
   __device__ uint64_t
-  mlx5_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr,
-      uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp,
-      bool fetch);
+  mlx5_post_wqe_amo(int32_t size, uintptr_t *raddr, uint8_t opcode,
+      int64_t atomic_data, int64_t atomic_cmp, bool fetch);
 
   __device__ void
-  mlx5_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr,
+  mlx5_post_wqe_rma(int32_t size, uintptr_t *laddr,
       uintptr_t *raddr, uint8_t opcode);
 
   __device__ void
