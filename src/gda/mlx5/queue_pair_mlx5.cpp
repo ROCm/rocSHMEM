@@ -257,7 +257,7 @@ QueuePair::mlx5_allocate_wave_fetching_atomic_buffer(
 __device__ __forceinline__ void QueuePair::mlx5_build_amo_wqe(
     uint64_t my_sq_counter, uint64_t my_sq_index, uintptr_t *raddr,
     uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetching,
-    uint64_t *wave_fetch_atomic, uint8_t my_logical_lane_id) {
+    uint64_t *wave_fetch_atomic) {
   outstanding_wqes[my_sq_counter % OUTSTANDING_TABLE_SIZE] = my_sq_counter;
 
   SegmentBuilder seg_build(my_sq_index, sq_buf);
@@ -267,8 +267,7 @@ __device__ __forceinline__ void QueuePair::mlx5_build_amo_wqe(
   seg_build.update_atomic_seg(atomic_data, atomic_cmp);
 
   if (fetching) {
-    seg_build.update_data_seg(wave_fetch_atomic + my_logical_lane_id, 8,
-                              fetching_atomic_lkey);
+    seg_build.update_data_seg(wave_fetch_atomic, 8, fetching_atomic_lkey);
   } else {
     seg_build.update_data_seg(nonfetching_atomic, 8, nonfetching_atomic_lkey);
   }
@@ -311,7 +310,7 @@ __device__ uint64_t QueuePair::mlx5_post_wqe_amo(int32_t size,
   // 3. Build the WQE for this lane
   mlx5_build_amo_wqe(my_sq_counter, my_sq_index, raddr, opcode,
                      atomic_data, atomic_cmp, fetching,
-                     wave_fetch_atomic, my_logical_lane_id);
+                     wave_fetch_atomic + my_logical_lane_id);
 
   __atomic_signal_fence(__ATOMIC_SEQ_CST);
 

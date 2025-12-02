@@ -195,8 +195,7 @@ class QueuePair {
   __device__ __forceinline__ void
   mlx5_build_amo_wqe(uint64_t my_sq_counter, uint64_t my_sq_index,
       uintptr_t *raddr, uint8_t opcode, int64_t atomic_data,
-      int64_t atomic_cmp, bool fetching, uint64_t *wave_fetch_atomic,
-      uint8_t my_logical_lane_id);
+      int64_t atomic_cmp, bool fetching, uint64_t *wave_fetch_atomic);
 
   __device__ __forceinline__ uint64_t*
   mlx5_allocate_wave_fetching_atomic_buffer(uint64_t wave_sq_counter,
