@@ -254,7 +254,6 @@ static BackendType select_backend_type() {
     backend = new (backend) GDABackend(bootstrap);
     break;
   case BackendType::RO_BACKEND:
-    /* Not sure whether this is a valid configuration. Will leave it in for now */
     DPRINTF("Initializing RO backend with TCP bootstrapping\n");
     library_init_subcomm(bootstr, bootstr->getNranks(), bootstr->getRank());
     break;
@@ -268,7 +267,6 @@ static BackendType select_backend_type() {
   CHECK_HIP(hipHostMalloc(&backend, sizeof(GDABackend)));
   backend = new (backend) GDABackend(bootstrap);
 #elif defined(USE_RO)
-  /* Not sure whether this is a valid configuration. Will leave it in for now */
   library_init_subcomm(bootstr, bootstr->getNranks(), bootstr->getRank());
 #elif defined(USE_IPC)
   CHECK_HIP(hipHostMalloc(&backend, sizeof(IPCBackend)));
@@ -462,7 +460,8 @@ __host__ void * rocshmem_ptr(const void * dest, int pe){
   if (bootstr != nullptr)
     delete bootstr;
 
-  MPIInstance::mpilib_dl_close();
+  //TODO This crashes
+  //MPIInstance::mpilib_dl_close();
 }
 
 __host__ void rocshmem_query_thread(int *provided) {
