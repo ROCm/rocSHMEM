@@ -38,6 +38,9 @@ struct ionicdv_funcs_t {
   int (*pd_set_sqcmb)(struct ibv_pd *ibpd, bool enable, bool expdb, bool require);
   int (*pd_set_rqcmb)(struct ibv_pd *ibpd, bool enable, bool expdb, bool require);
   int (*pd_set_udma_mask)(struct ibv_pd *ibpd, uint8_t udma_mask);
+  struct ibv_cq_ex *(*create_cq_ex)(struct ibv_context *ibctx,
+                                    struct ibv_cq_init_attr_ex *ex,
+                                    struct ionic_cq_init_attr_ex *ionic_ex);
 };
 
 #endif  //LIBRARY_SRC_GDA_IONIC_GDA_PROVIDER_HPP_

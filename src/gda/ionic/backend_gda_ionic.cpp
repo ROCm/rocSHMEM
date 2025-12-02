@@ -27,6 +27,46 @@
 
 namespace rocshmem {
 
+void GDABackend::ionic_create_cqs(int ncqes) {
+  struct ibv_cq_init_attr_ex cq_attr;
+  struct ionic_cq_init_attr_ex ionic_cq_attr;
+
+  memset(&cq_attr, 0, sizeof(cq_attr));
+  cq_attr.cqe           = ncqes;
+  cq_attr.cq_context    = nullptr;
+  cq_attr.channel       = nullptr;
+  cq_attr.comp_vector   = 0;
+  cq_attr.flags         = 0;
+  cq_attr.comp_mask     = IBV_CQ_INIT_ATTR_MASK_PD;
+  cq_attr.parent_domain = pd_parent;
+
+  memset(&ionic_cq_attr, 0, sizeof(ionic_cq_attr));
+  if (ionic_dv.create_cq_ex) {
+    ionic_cq_attr.comp_mask = IONIC_CQ_INIT_ATTR_MASK_FLAGS;
+    ionic_cq_attr.flags = IONIC_CQ_INIT_ATTR_CCQE;
+  }
+
+  for (int i = 0; i < qps.size(); i++) {
+    struct ibv_cq_ex *cq_ex = nullptr;
+
+    cq_attr.parent_domain = pd_uxdma[i & 1];
+
+    if (ionic_dv.create_cq_ex) {
+      cq_ex = ionic_dv.create_cq_ex(context, &cq_attr, &ionic_cq_attr);
+      // If cq_ex is nullptr, fallback to ibv_create_cq_ex below.
+      //CHECK_NNULL(cq_ex, "ionic_dv_create_cq_ex");
+    }
+
+    if (!cq_ex) {
+      cq_ex = ibv_create_cq_ex(context, &cq_attr);
+      CHECK_NNULL(cq_ex, "ibv_create_cq_ex");
+    }
+
+    cqs[i] = ibv.cq_ex_to_cq(cq_ex);
+    CHECK_NNULL(cqs[i], "ibv_cq_ex_to_cq");
+  }
+}
+
 void GDABackend::ionic_initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   ionic_dv_ctx dvctx;
   ionic_dv.get_ctx(&dvctx, context);
@@ -115,6 +155,7 @@ int GDABackend::ionic_dv_dl_init() {
   DLSYM_HELPER(ionic_dv, ionic_dv_, ionicdv_handle_, pd_set_sqcmb);
   DLSYM_HELPER(ionic_dv, ionic_dv_, ionicdv_handle_, pd_set_rqcmb);
   DLSYM_HELPER(ionic_dv, ionic_dv_, ionicdv_handle_, pd_set_udma_mask);
+  DLSYM_OPT_HELPER(ionic_dv, ionic_dv_, ionicdv_handle_, create_cq_ex);
 
   return ROCSHMEM_SUCCESS;
 }

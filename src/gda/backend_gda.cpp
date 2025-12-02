@@ -1052,6 +1052,9 @@ void GDABackend::create_queues() {
   if (gda_provider == GDAProvider::BNXT) {
     bnxt_create_cqs(ncqes);
     bnxt_create_qps(envvar::sq_size);
+  } else if (gda_provider == GDAProvider::IONIC) {
+    ionic_create_cqs(ncqes);
+    create_qps(envvar::sq_size);
   } else {
     create_cqs(ncqes);
     create_qps(envvar::sq_size);
@@ -1157,6 +1160,9 @@ void GDABackend::create_cqs(int cqe) {
   struct ibv_cq_init_attr_ex cq_attr;
   struct ibv_cq_ex *cq_ex;
 
+  assert(gda_provider != GDAProvider::BNXT);
+  assert(gda_provider != GDAProvider::IONIC);
+
   memset(&cq_attr, 0, sizeof(struct ibv_cq_init_attr_ex));
   cq_attr.cqe           = cqe;
   cq_attr.cq_context    = nullptr;
@@ -1167,10 +1173,6 @@ void GDABackend::create_cqs(int cqe) {
   cq_attr.parent_domain = pd_parent;
 
   for (int i = 0; i < qps.size(); i++) {
-    if (gda_provider == GDAProvider::IONIC) {
-      cq_attr.parent_domain = pd_uxdma[i & 1];
-    }
-
     cq_ex = ibv.create_cq_ex(context, &cq_attr);
     CHECK_NNULL(cq_ex, "ibv_create_cq_ex");
 
