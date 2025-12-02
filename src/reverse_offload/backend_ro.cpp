@@ -33,6 +33,7 @@
 #include <cstdlib>
 #include <memory>
 #include <thread>  // NOLINT
+#include <dlfcn.h>
 
 #include "rocshmem/rocshmem.hpp"
 #include "atomic_return.hpp"
@@ -134,7 +135,13 @@ ROBackend::ROBackend(MPI_Comm comm)
 /* Currently we only check whether we can dlopen an MPI library.
  */
 int ROBackend::backend_can_run() {
-  return MPIInstance::mpilib_dl_init();
+  auto handle = dlopen("libmpi.so", RTLD_NOW);
+  if (!handle) {
+    printf("Could not open libmpi.so. Returning\n");
+    return ROCSHMEM_ERROR;
+  }
+  dlclose(handle);
+  return ROCSHMEM_SUCCESS;
 }
 
 void ROBackend::setup_ctxs() {

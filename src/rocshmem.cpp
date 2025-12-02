@@ -130,6 +130,11 @@ static BackendType select_backend_type() {
 
   int ret;
   ret = MPIInstance::mpilib_dl_init();
+  if (ret != ROCSHMEM_SUCCESS) {
+    fprintf(stderr, "Could not initialize MPI library. This initialization method of "
+            "rocSHMEM requires MPI library to be loaded at runtime. Aborting.\n");
+    exit(1);
+  }
   mpi_instance = new MPIInstance(comm);
 
 #if defined(USE_GDA) && defined(USE_RO) && defined(USE_IPC)
@@ -155,10 +160,6 @@ static BackendType select_backend_type() {
   CHECK_HIP(hipHostMalloc(&backend, sizeof(GDABackend)));
   backend = new (backend) GDABackend(comm);
 #elif defined(USE_RO)
-  if (ret != ROCSHMEM_SUCCESS) {
-    printf("Could not initialize MPI library. RO conduit requires MPI library to be loaded at runtime. Aborting.\n");
-    abort();
-  }
   CHECK_HIP(hipHostMalloc(&backend, sizeof(ROBackend)));
   backend = new (backend) ROBackend(comm);
 #elif defined(USE_IPC)
@@ -185,7 +186,9 @@ static BackendType select_backend_type() {
   }
   mpilib_ftable_.Initialized(&initialized);
 
-  if (!initialized) {
+  if (initialized) {
+    mpilib_ftable_.Comm_size (MPI_COMM_WORLD, &world_size);
+  } else {
     // This is an Open MPI specific solution to retrieve the number of
     // processes that have been started, value can be checked before MPI_Init
     char *value = getenv("OMPI_COMM_WORLD_SIZE");
@@ -200,8 +203,6 @@ static BackendType select_backend_type() {
               "initialize rocSHMEM with a subset of the processes\n");
       exit(1);
     }
-  } else {
-    mpilib_ftable_.Comm_size (MPI_COMM_WORLD, &world_size);
   }
 
   if (world_size == nranks) {
@@ -310,7 +311,7 @@ static BackendType select_backend_type() {
     if (envvar::uniqueid_with_mpi) {
       library_init_subcomm(bootstr, attr->nranks, attr->rank);
     } else {
-      library_init (bootstr);
+      library_init(bootstr);
     }
   }
 
@@ -359,7 +360,12 @@ static BackendType select_backend_type() {
 #endif
 
 [[maybe_unused]] __host__ void rocshmem_init() {
-  MPIInstance::mpilib_dl_init();
+  auto ret = MPIInstance::mpilib_dl_init();
+  if (ret != ROCSHMEM_SUCCESS) {
+    fprintf(stderr, "Could not initialize MPI library. This initialization method of "
+            "rocSHMEM requires MPI library to be loaded at runtime. Aborting.\n");
+    exit(1);
+  }
   library_init(MPI_COMM_WORLD);
 }
 
@@ -450,11 +456,13 @@ __host__ void * rocshmem_ptr(const void * dest, int pe){
   backend->~Backend();
   CHECK_HIP(hipHostFree(backend));
 
-  if (bootstr == nullptr)
+  if (mpi_instance != nullptr)
     delete mpi_instance;
 
   if (bootstr != nullptr)
     delete bootstr;
+
+  MPIInstance::mpilib_dl_close();
 }
 
 __host__ void rocshmem_query_thread(int *provided) {
