@@ -133,4 +133,14 @@ __host__ void ROHostContext::barrier_all() {
   host_interface->barrier_for_sync();
 }
 
+__host__ void ROHostContext::alltoallmem_on_stream(rocshmem_team_t team,
+                                                    void *dest,
+                                                    const void *source,
+                                                    size_t size,
+                                                    hipStream_t stream) {
+  DPRINTF("Function: ro_net_host_alltoallmem_on_stream\n");
+
+  host_interface->alltoallmem_on_stream(team, dest, source, size, stream);
+}
+
 }  // namespace rocshmem

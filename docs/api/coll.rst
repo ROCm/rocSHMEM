@@ -88,6 +88,29 @@ This function must be called as a work-group collective.
 
 Valid ``TYPENAME`` and ``TYPE`` values are listed in :ref:`RMA_TYPES`.
 
+ROCSHMEM_ALLTOALLMEM_ON_STREAM
+-------------------------------
+
+.. cpp:function:: __host__ void rocshmem_alltoallmem_on_stream(rocshmem_team_t team, void *dest, const void *source, size_t size, hipStream_t stream)
+
+  :param team:   The team participating in the collective.
+  :param dest:   Destination address. Must be an address on the symmetric heap.
+  :param source: Source address. Must be an address on the symmetric heap.
+  :param size:   Number of bytes to transfer per pair of PEs.
+  :param stream: HIP stream on which to enqueue the operation.
+  :returns:      None.
+
+**Description:**
+This routine enqueues an alltoall collective operation on a HIP stream. The function
+exchanges a fixed amount of contiguous data blocks between all pairs of PEs participating
+in the collective routine. The operation is enqueued on the specified stream and will
+execute asynchronously. The caller must synchronize the stream (e.g., using
+``hipStreamSynchronize``) to ensure completion.
+
+This function creates a separate context for each workgroup to avoid contention on the
+default context, allowing parallel execution across multiple streams.
+If ``stream`` is ``nullptr``, the operation will use ``hipStreamDefault``.
+
 ROCSHMEM_BROADCAST
 ------------------
 

@@ -648,6 +648,32 @@ __global__ ATTR_NO_INLINE void rocshmem_barrier_all_kernel(){
   rocshmem_barrier_all();
 }
 
+__global__ ATTR_NO_INLINE void rocshmem_alltoallmem_kernel(rocshmem_team_t team,
+                                                           void *dest,
+                                                           const void *source,
+                                                           size_t size) {
+  // Create a context for this workgroup to avoid contention on default context
+  // This allows parallel execution across multiple streams without serialization
+  __shared__ rocshmem_ctx_t ctx;
+  __shared__ int ctx_result;
+  
+  ctx_result = rocshmem_wg_team_create_ctx(team, 0, &ctx);
+  
+  // If context creation failed, fall back to default context
+  if (ctx_result != 0) {
+    ctx = ROCSHMEM_CTX_DEFAULT;
+    __syncthreads();
+  }
+
+  // Call device alltoall function with created context and provided team
+  // Using char type since size is in bytes (1 byte per element)
+  rocshmem_alltoall_wg<char>(ctx, team, (char *) dest,
+                             (const char *) source, (int) size);
+
+  if (ctx_result == 0) {
+    rocshmem_wg_ctx_destroy(&ctx);
+  }
+}
 
 __device__ void rocshmem_barrier_all() {
   GPU_DPRINTF("Function: rocshmem_barrier_all (ctx=%zd)\n",

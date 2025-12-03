@@ -482,8 +482,8 @@ void IPCBackend::teams_init() {
                             * max_num_teams;
 
   alltoall_pSync_pool = reinterpret_cast<long *>(wrk_sync_pool_top_);
-  wrk_sync_pool_top_ += sizeof(long) * ROCSHMEM_BCAST_SYNC_SIZE
-                            * max_num_teams;
+  wrk_sync_pool_top_ += sizeof(long) * ROCSHMEM_ALLTOALL_SYNC_SIZE *
+                        max_num_teams;
 
   /* Accommodating for largest possible data type for pWrk */
   pWrk_pool = reinterpret_cast<void *>(wrk_sync_pool_top_);

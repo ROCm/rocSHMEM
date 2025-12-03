@@ -122,4 +122,12 @@ __host__ void Context::barrier_all_on_stream(hipStream_t stream) {
   HOST_DISPATCH(barrier_all_on_stream(stream));
 }
 
+__host__ void Context::alltoallmem_on_stream(rocshmem_team_t team, void *dest,
+                                             const void *source, size_t size,
+                                             hipStream_t stream) {
+  ctxHostStats.incStat(NUM_HOST_ALLTOALL);
+
+  HOST_DISPATCH(alltoallmem_on_stream(team, dest, source, size, stream));
+}
+
 }  // namespace rocshmem
