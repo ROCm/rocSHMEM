@@ -44,9 +44,9 @@ __device__ __forceinline__ int uncached_load_ubyte(uint8_t* src) {
   int ret;
 #if defined(__gfx906__)
 #endif
-#if defined(__gfx908__) || defined(__gfx1100__)
+#if defined(__gfx908__)
 #endif
-#if defined(__gfx90a__)
+#if defined(__gfx90a__) || defined(__gfx1100__)
   asm volatile(
       "global_load_ubyte %0 %1 off glc slc \n"
       "s_waitcnt vmcnt(0)"
@@ -74,9 +74,9 @@ __device__ __forceinline__ void refresh_volatile_sbyte(volatile int *assigned_va
                                                        volatile char *read_value) {
 #if defined(__gfx906__)
 #endif
-#if defined(__gfx908__) || defined(__gfx1100__)
+#if defined(__gfx908__)
 #endif
-#if defined(__gfx90a__)
+#if defined(__gfx90a__) || defined(__gfx1100__)
   asm volatile(
     "global_load_sbyte %0 %1 off glc slc\n "
     "s_waitcnt vmcnt(0)"
@@ -103,9 +103,9 @@ __device__ __forceinline__ void refresh_volatile_dwordx2(volatile uint64_t *assi
                                                          volatile uint64_t *read_value) {
 #if defined(__gfx906__)
 #endif
-#if defined(__gfx908__) || defined(__gfx1100__)
+#if defined(__gfx908__)
 #endif
-#if defined(__gfx90a__)
+#if defined(__gfx90a__) || defined(__gfx1100__)
   asm volatile(
     "global_load_dwordx2 %0 %1 off glc slc\n "
     "s_waitcnt vmcnt(0)"
@@ -141,9 +141,9 @@ NOWARN(-Wdeprecated-volatile,
       case 4:
 #if defined(__gfx906__)
 #endif
-#if defined(__gfx908__) || defined(__gfx1100__)
+#if defined(__gfx908__)
 #endif
-#if defined(__gfx90a__)
+#if defined(__gfx90a__) || defined(__gfx1100__)
         asm volatile(
             "global_load_dword %0 %1 off glc slc \n"
             "s_waitcnt vmcnt(0)"
@@ -168,9 +168,9 @@ NOWARN(-Wdeprecated-volatile,
       case 8:
 #if defined(__gfx906__)
 #endif
-#if defined(__gfx908__) || defined(__gfx1100__)
+#if defined(__gfx908__)
 #endif
-#if defined(__gfx90a__)
+#if defined(__gfx90a__) || defined(__gfx1100__)
         asm volatile(
             "global_load_dwordx2 %0 %1 off glc slc \n"
             "s_waitcnt vmcnt(0)"
@@ -221,19 +221,25 @@ __device__ __forceinline__ void store_asm(uint8_t* val, uint8_t* dst,
                                           int size) {
   switch (size) {
     case 2: {
-      int16_t val16{*(reinterpret_cast<int16_t*>(val))};
 #if defined(__gfx906__)
 #endif
-#if defined(__gfx908__) || defined(__gfx1100__)
+#if defined(__gfx908__)
 #endif
 #if defined(__gfx90a__)
+      int16_t val16{*(reinterpret_cast<int16_t*>(val))};
       asm volatile("flat_store_short %0 %1 glc slc" : : "v"(dst), "v"(val16));
 #endif
 #if defined(__gfx942__) || defined(__gfx950__)
+      int16_t val16{*(reinterpret_cast<int16_t*>(val))};
       asm volatile("flat_store_short %0 %1 sc0 sc1" : : "v"(dst), "v"(val16));
 #endif
+#if defined(__gfx1100__)
+      int32_t val32{*(reinterpret_cast<int32_t*>(val))};
+      asm volatile("flat_store_short %0 %1 glc slc" : : "v"(dst), "v"(val32));
+#endif
 #if defined(__gfx1201__)
-      asm volatile("flat_store_b16 %0 %1 scope:SCOPE_SYS" : : "v"(dst), "v"(val16));
+      int32_t val32{*(reinterpret_cast<int32_t*>(val))};
+      asm volatile("flat_store_b16 %0 %1 scope:SCOPE_SYS" : : "v"(dst), "v"(val32));
 #endif
       break;
     }
@@ -241,9 +247,9 @@ __device__ __forceinline__ void store_asm(uint8_t* val, uint8_t* dst,
       int32_t val32{*(reinterpret_cast<int32_t*>(val))};
 #if defined(__gfx906__)
 #endif
-#if defined(__gfx908__) || defined(__gfx1100__)
+#if defined(__gfx908__)
 #endif
-#if defined(__gfx90a__)
+#if defined(__gfx90a__) || defined(__gfx1100__)
       asm volatile("flat_store_dword %0 %1 glc slc" : : "v"(dst), "v"(val32));
 #endif
 #if defined(__gfx942__) || defined(__gfx950__)
@@ -258,9 +264,9 @@ __device__ __forceinline__ void store_asm(uint8_t* val, uint8_t* dst,
       int64_t val64{*(reinterpret_cast<int64_t*>(val))};
 #if defined(__gfx906__)
 #endif
-#if defined(__gfx908__) || defined(__gfx1100__)
+#if defined(__gfx908__)
 #endif
-#if defined(__gfx90a__)
+#if defined(__gfx90a__) || defined(__gfx1100__)
       asm volatile("flat_store_dwordx2 %0 %1 glc slc" : : "v"(dst), "v"(val64));
 #endif
 #if defined(__gfx942__) || defined(__gfx950__)
