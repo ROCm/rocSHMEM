@@ -95,6 +95,9 @@ __device__ ATTR_NO_INLINE void rocshmem_ctx_ulonglong_alltoall_wg(
     rocshmem_ctx_t ctx, rocshmem_team_t team, unsigned long long *dest,
     const unsigned long long *source, int nelems);
 
+__device__ ATTR_NO_INLINE void rocshmem_char_alltoall_wg(
+    rocshmem_team_t team, char *dest,
+    const char *source, int nelems);
 
 /**
  * @name SHMEM_BROADCAST

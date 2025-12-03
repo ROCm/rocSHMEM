@@ -534,13 +534,22 @@ __device__ void rocshmem_broadcast_wg(rocshmem_ctx_t ctx,
 }
 
 template <typename T>
-__device__ void rocshmem_alltoall_wg(rocshmem_ctx_t ctx,
+__device__ void rocshmem_ctx_alltoall_wg(rocshmem_ctx_t ctx,
                                       rocshmem_team_t team, T *dest,
+                                      const T *source, int nelem) {
+  GPU_DPRINTF("Function: rocshmem_ctx_alltoall_wg (ctx=%zd, team=%zd, dest=%p, source=%p, nelem=%d\n",
+    ctx.ctx_opaque, team, dest, source, nelem);
+
+  get_internal_ctx(ctx)->alltoall<T>(team, dest, source, nelem);
+}
+
+template <typename T>
+__device__ void rocshmem_alltoall_wg(rocshmem_team_t team, T *dest,
                                       const T *source, int nelem) {
   GPU_DPRINTF("Function: rocshmem_alltoall_wg (ctx=%zd, team=%zd, dest=%p, source=%p, nelem=%d\n",
     ctx.ctx_opaque, team, dest, source, nelem);
 
-  get_internal_ctx(ctx)->alltoall<T>(team, dest, source, nelem);
+  get_internal_ctx(ROCSHMEM_CTX_DEFAULT)->alltoall<T>(team, dest, source, nelem);
 }
 
 template <typename T>
@@ -1219,8 +1228,11 @@ __device__ int rocshmem_team_translate_pe(rocshmem_team_t src_team,
   template __device__ void rocshmem_broadcast_wg<T>(                           \
       rocshmem_ctx_t ctx, rocshmem_team_t team, T * dest, const T *source,     \
       int nelem, int pe_root);                                                 \
-  template __device__ void rocshmem_alltoall_wg<T>(                            \
+  template __device__ void rocshmem_ctx_alltoall_wg<T>(                        \
       rocshmem_ctx_t ctx, rocshmem_team_t team, T * dest, const T *source,     \
+      int nelem);                                                              \
+  template __device__ void rocshmem_alltoall_wg<T>(                        \
+      rocshmem_team_t team, T * dest, const T *source,     \
       int nelem);                                                              \
   template __device__ void rocshmem_fcollect_wg<T>(                            \
       rocshmem_ctx_t ctx, rocshmem_team_t team, T * dest, const T *source,     \
@@ -1536,7 +1548,12 @@ __device__ int rocshmem_team_translate_pe(rocshmem_team_t src_team,
   __device__ void rocshmem_ctx_##TNAME##_alltoall_wg(                         \
       rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source,     \
       int nelem) {                                                            \
-    rocshmem_alltoall_wg<T>(ctx, team, dest, source, nelem);                  \
+    rocshmem_ctx_alltoall_wg<T>(ctx, team, dest, source, nelem);                  \
+  }                                                                           \
+  __device__ void rocshmem_##TNAME##_ctx_alltoall_wg(                         \
+      rocshmem_team_t team, T *dest, const T *source,     \
+      int nelem) {                                                            \
+    rocshmem_alltoall_wg<T>(team, dest, source, nelem);                  \
   }                                                                           \
   __device__ void rocshmem_ctx_##TNAME##_fcollect_wg(                         \
       rocshmem_ctx_t ctx, rocshmem_team_t team, T *dest, const T *source,     \
