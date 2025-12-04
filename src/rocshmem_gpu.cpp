@@ -53,7 +53,7 @@
 
 #if defined(USE_GDA)
 #if defined (ENABLE_IBGDA_BITCODE)
-  #include "gda/backend_gda.hpp"
+#  include "gda/backend_gda.hpp"
 #endif
 #include "gda/context_gda_tmpl_device.hpp"
 #endif
