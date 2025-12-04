@@ -701,23 +701,23 @@ __global__ ATTR_NO_INLINE void rocshmem_broadcastmem_kernel(
 
 __global__ ATTR_NO_INLINE void rocshmem_getmem_kernel(void *dest,
                                                       const void *source,
-                                                      size_t bytes, int pe) {
+                                                      size_t nelems, int pe) {
   // Use work-group collective getmem with default context
-  rocshmem_getmem_wg(dest, source, bytes, pe);
+  rocshmem_getmem_wg(dest, source, nelems, pe);
 }
 
 __global__ ATTR_NO_INLINE void rocshmem_putmem_kernel(void *dest,
                                                       const void *source,
-                                                      size_t bytes, int pe) {
+                                                      size_t nelems, int pe) {
   // Use work-group collective putmem with default context
-  rocshmem_putmem_wg(dest, source, bytes, pe);
+  rocshmem_putmem_wg(dest, source, nelems, pe);
 }
 
 __global__ ATTR_NO_INLINE void rocshmem_putmem_signal_kernel(
-    void *dest, const void *source, size_t bytes, uint64_t *sig_addr,
+    void *dest, const void *source, size_t nelems, uint64_t *sig_addr,
     uint64_t signal, int sig_op, int pe) {
   // Use work-group collective putmem_signal with default context
-  rocshmem_putmem_signal_wg(dest, source, bytes, sig_addr, signal, sig_op, pe);
+  rocshmem_putmem_signal_wg(dest, source, nelems, sig_addr, signal, sig_op, pe);
 }
 
 __global__ ATTR_NO_INLINE void rocshmem_signal_wait_until_kernel(

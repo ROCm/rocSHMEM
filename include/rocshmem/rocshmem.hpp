@@ -388,14 +388,14 @@ __host__ void rocshmem_broadcastmem_on_stream(rocshmem_team_t team, void *dest,
  * @param[in] dest    Destination address. Must be an address on the symmetric
  *                    heap.
  * @param[in] source  Source address. Must be an address on the symmetric heap.
- * @param[in] bytes   Number of bytes to transfer.
+ * @param[in] nelems  Size of the transfer in bytes.
  * @param[in] pe      PE of the remote process.
  * @param[in] stream  HIP stream on which to enqueue the operation.
  *
  * @return void
  */
 __host__ void rocshmem_getmem_on_stream(void *dest, const void *source,
-                                        size_t bytes, int pe,
+                                        size_t nelems, int pe,
                                         hipStream_t stream);
 
 /**
@@ -404,14 +404,14 @@ __host__ void rocshmem_getmem_on_stream(void *dest, const void *source,
  * @param[in] dest    Destination address. Must be an address on the symmetric
  *                    heap.
  * @param[in] source  Source address. Must be an address on the symmetric heap.
- * @param[in] bytes   Number of bytes to transfer.
+ * @param[in] nelems  Size of the transfer in bytes.
  * @param[in] pe      PE of the remote process.
  * @param[in] stream  HIP stream on which to enqueue the operation.
  *
  * @return void
  */
 __host__ void rocshmem_putmem_on_stream(void *dest, const void *source,
-                                        size_t bytes, int pe,
+                                        size_t nelems, int pe,
                                         hipStream_t stream);
 
 /**
@@ -424,7 +424,7 @@ __host__ void rocshmem_putmem_on_stream(void *dest, const void *source,
  *
  * @param[in] dest      Destination address on the remote PE
  * @param[in] source    Source address on the local PE
- * @param[in] bytes     Number of bytes to transfer
+ * @param[in] nelems    Size of the transfer in bytes
  * @param[in] sig_addr  Address of signal variable on the remote PE
  * @param[in] signal    Signal value to be written
  * @param[in] sig_op    Signal operation (ROCSHMEM_SIGNAL_SET or
@@ -435,7 +435,8 @@ __host__ void rocshmem_putmem_on_stream(void *dest, const void *source,
  * @return void
  */
 __host__ void rocshmem_putmem_signal_on_stream(void *dest, const void *source,
-                                               size_t bytes, uint64_t *sig_addr,
+                                               size_t nelems,
+                                               uint64_t *sig_addr,
                                                uint64_t signal, int sig_op,
                                                int pe, hipStream_t stream);
 

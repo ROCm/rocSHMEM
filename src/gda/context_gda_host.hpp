@@ -92,14 +92,14 @@ class GDAHostContext : public Context {
                                        const void *source, size_t nelems,
                                        int pe_root, hipStream_t stream);
 
-  __host__ void getmem_on_stream(void *dest, const void *source, size_t bytes,
+  __host__ void getmem_on_stream(void *dest, const void *source, size_t nelems,
                                  int pe, hipStream_t stream);
 
-  __host__ void putmem_on_stream(void *dest, const void *source, size_t bytes,
+  __host__ void putmem_on_stream(void *dest, const void *source, size_t nelems,
                                  int pe, hipStream_t stream);
 
   __host__ void putmem_signal_on_stream(void *dest, const void *source,
-                                        size_t bytes, uint64_t *sig_addr,
+                                        size_t nelems, uint64_t *sig_addr,
                                         uint64_t signal, int sig_op, int pe,
                                         hipStream_t stream);
 

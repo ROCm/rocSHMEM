@@ -140,28 +140,29 @@ __host__ void Context::broadcastmem_on_stream(rocshmem_team_t team, void *dest,
 }
 
 __host__ void Context::getmem_on_stream(void *dest, const void *source,
-                                        size_t bytes, int pe,
+                                        size_t nelems, int pe,
                                         hipStream_t stream) {
   ctxHostStats.incStat(NUM_HOST_GET);
 
-  HOST_DISPATCH(getmem_on_stream(dest, source, bytes, pe, stream));
+  HOST_DISPATCH(getmem_on_stream(dest, source, nelems, pe, stream));
 }
 
 __host__ void Context::putmem_on_stream(void *dest, const void *source,
-                                        size_t bytes, int pe,
+                                        size_t nelems, int pe,
                                         hipStream_t stream) {
   ctxHostStats.incStat(NUM_HOST_PUT);
 
-  HOST_DISPATCH(putmem_on_stream(dest, source, bytes, pe, stream));
+  HOST_DISPATCH(putmem_on_stream(dest, source, nelems, pe, stream));
 }
 
 __host__ void Context::putmem_signal_on_stream(void *dest, const void *source,
-                                               size_t bytes, uint64_t *sig_addr,
+                                               size_t nelems,
+                                               uint64_t *sig_addr,
                                                uint64_t signal, int sig_op,
                                                int pe, hipStream_t stream) {
   ctxHostStats.incStat(NUM_HOST_PUT);
 
-  HOST_DISPATCH(putmem_signal_on_stream(dest, source, bytes, sig_addr, signal,
+  HOST_DISPATCH(putmem_signal_on_stream(dest, source, nelems, sig_addr, signal,
                                         sig_op, pe, stream));
 }
 

@@ -1018,31 +1018,32 @@ __host__ void rocshmem_broadcastmem_on_stream(rocshmem_team_t team, void *dest,
 }
 
 __host__ void rocshmem_getmem_on_stream(void *dest, const void *source,
-                                        size_t bytes, int pe,
+                                        size_t nelems, int pe,
                                         hipStream_t stream) {
   DPRINTF("Host function: rocshmem_getmem_on_stream\n");
 
   get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)
-      ->getmem_on_stream(dest, source, bytes, pe, stream);
+      ->getmem_on_stream(dest, source, nelems, pe, stream);
 }
 
 __host__ void rocshmem_putmem_on_stream(void *dest, const void *source,
-                                        size_t bytes, int pe,
+                                        size_t nelems, int pe,
                                         hipStream_t stream) {
   DPRINTF("Host function: rocshmem_putmem_on_stream\n");
 
   get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)
-      ->putmem_on_stream(dest, source, bytes, pe, stream);
+      ->putmem_on_stream(dest, source, nelems, pe, stream);
 }
 
 __host__ void rocshmem_putmem_signal_on_stream(void *dest, const void *source,
-                                               size_t bytes, uint64_t *sig_addr,
+                                               size_t nelems,
+                                               uint64_t *sig_addr,
                                                uint64_t signal, int sig_op,
                                                int pe, hipStream_t stream) {
   DPRINTF("Host function: rocshmem_putmem_signal_on_stream\n");
 
   get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)
-      ->putmem_signal_on_stream(dest, source, bytes, sig_addr, signal, sig_op,
+      ->putmem_signal_on_stream(dest, source, nelems, sig_addr, signal, sig_op,
                                 pe, stream);
 }
 
