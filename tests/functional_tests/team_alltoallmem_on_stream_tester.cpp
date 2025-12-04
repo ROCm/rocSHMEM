@@ -39,7 +39,7 @@ TeamAlltoallmemOnStreamTester::TeamAlltoallmemOnStreamTester(TesterArguments arg
   n_pes = rocshmem_team_n_pes(ROCSHMEM_TEAM_WORLD);
 
   char* value{nullptr};
-  if ((value = getenv("ROCSHMEM_MAX_NUM_TEAMS"))) {
+  if ((value = getenv("ROCSHMEM_TEST_MAX_NUM_TEAMS"))) {
     num_teams = atoi(value);
   } else {
     // Default to number of work groups

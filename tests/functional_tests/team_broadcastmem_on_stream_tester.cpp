@@ -39,7 +39,7 @@ TeamBroadcastmemOnStreamTester::TeamBroadcastmemOnStreamTester(TesterArguments a
   n_pes = rocshmem_team_n_pes(ROCSHMEM_TEAM_WORLD);
 
   char* value{nullptr};
-  if ((value = getenv("ROCSHMEM_MAX_NUM_TEAMS"))) {
+  if ((value = getenv("ROCSHMEM_TEST_MAX_NUM_TEAMS"))) {
     num_teams = atoi(value);
   } else {
     // Default to number of work groups
@@ -47,10 +47,11 @@ TeamBroadcastmemOnStreamTester::TeamBroadcastmemOnStreamTester(TesterArguments a
   }
 
   // Set root PE to 0 by default, can be modified via environment variable
-  if ((value = getenv("ROCSHMEM_BROADCAST_ROOT"))) {
+  if ((value = getenv("ROCSHMEM_TEST_BROADCAST_ROOT"))) {
     pe_root = atoi(value);
     if (pe_root < 0 || pe_root >= n_pes) {
-      std::cerr << "Invalid ROCSHMEM_BROADCAST_ROOT value. Using PE 0." << std::endl;
+      std::cerr << "Invalid ROCSHMEM_TEST_BROADCAST_ROOT value. Using PE 0."
+                << std::endl;
       pe_root = 0;
     }
   }

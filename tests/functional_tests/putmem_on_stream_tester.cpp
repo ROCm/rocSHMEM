@@ -39,7 +39,7 @@ PutmemOnStreamTester::PutmemOnStreamTester(TesterArguments args)
   n_pes = rocshmem_n_pes();
 
   char *value{nullptr};
-  if ((value = getenv("ROCSHMEM_NUM_STREAMS"))) {
+  if ((value = getenv("ROCSHMEM_TEST_NUM_STREAMS"))) {
     num_streams = atoi(value);
   } else {
     // Default to 1 stream
@@ -48,10 +48,11 @@ PutmemOnStreamTester::PutmemOnStreamTester(TesterArguments args)
 
   // Set target PE to put to (default: next PE in ring)
   pe_target = (my_pe + 1) % n_pes;
-  if ((value = getenv("ROCSHMEM_PUTMEM_TARGET"))) {
+  if ((value = getenv("ROCSHMEM_TEST_PUTMEM_TARGET"))) {
     pe_target = atoi(value);
     if (pe_target < 0 || pe_target >= n_pes) {
-      std::cerr << "Invalid ROCSHMEM_PUTMEM_TARGET value. Using next PE." << std::endl;
+      std::cerr << "Invalid ROCSHMEM_TEST_PUTMEM_TARGET value. Using next PE."
+                << std::endl;
       pe_target = (my_pe + 1) % n_pes;
     }
   }

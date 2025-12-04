@@ -38,7 +38,7 @@ SignalWaitUntilOnStreamTester::SignalWaitUntilOnStreamTester(
   n_pes = rocshmem_n_pes();
 
   char *value{nullptr};
-  if ((value = getenv("ROCSHMEM_NUM_STREAMS"))) {
+  if ((value = getenv("ROCSHMEM_TEST_NUM_STREAMS"))) {
     num_streams = atoi(value);
   } else {
     // Default to 1 stream
