@@ -28,7 +28,6 @@
 #include <hip/hip_runtime.h>
 
 #include "backend_type.hpp"
-#include "fence_policy.hpp"
 #include "host/host.hpp"
 #include "ipc_policy.hpp"
 #include "stats.hpp"
@@ -55,9 +54,9 @@ class Backend;
  */
 class Context {
  public:
-  __host__ Context(Backend* handle, bool shareable);
+  __host__ Context(Backend* handle);
 
-  __device__ Context(Backend* handle, bool shareable);
+  __device__ Context(Backend* handle);
 
   __host__ virtual ~Context();
 
@@ -459,13 +458,6 @@ class Context {
   __host__ int test(T *ivars, int cmp, T val);
 
  public:
-  /**
-   * @brief Set the fence policy using a runtime option
-   *
-   * @param[in] options interpreted as a bitfield using bitwise operations
-   */
-  __device__ void setFence(long options) { fence_ = Fence(options); }
-
   /**************************************************************************
    ***************************** PUBLIC MEMBERS *****************************
    *************************************************************************/
@@ -503,11 +495,6 @@ class Context {
    * @brief Coalesce policy for 'multi' configuration builds
    */
   WavefrontCoalescer wf_coal_{};
-
-  /**
-   * @brief Controls fence behavior in device code
-   */
-  Fence fence_{};
 
  public:
   /**

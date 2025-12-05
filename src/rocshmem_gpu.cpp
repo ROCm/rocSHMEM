@@ -323,10 +323,7 @@ __device__ int rocshmem_wg_ctx_create(long options, rocshmem_ctx_t *ctx) {
   if (get_flat_block_id() == 0) {
     ctx->team_opaque = reinterpret_cast<TeamInfo *>(ROCSHMEM_CTX_DEFAULT.team_opaque);
     result = device_backend_proxy->create_ctx(options, ctx);
-    if(result) {
-      reinterpret_cast<Context *>(ctx->ctx_opaque)->setFence(options);
-    }
-    else {
+    if (!result) {
       *ctx = ROCSHMEM_CTX_INVALID;
     }
   }
@@ -348,10 +345,7 @@ __device__ int rocshmem_wg_team_create_ctx(rocshmem_team_t team, long options,
     TeamInfo *info_wrt_world = team_obj->tinfo_wrt_world;
     ctx->team_opaque = info_wrt_world;
     result = device_backend_proxy->create_ctx(options, ctx);
-    if(result) {
-      reinterpret_cast<Context *>(ctx->ctx_opaque)->setFence(options);
-    }
-    else {
+    if (!result) {
       *ctx = ROCSHMEM_CTX_INVALID;
     }
   }
@@ -656,9 +650,9 @@ __global__ ATTR_NO_INLINE void rocshmem_alltoallmem_kernel(rocshmem_team_t team,
   // This allows parallel execution across multiple streams without serialization
   __shared__ rocshmem_ctx_t ctx;
   __shared__ int ctx_result;
-  
+
   ctx_result = rocshmem_wg_team_create_ctx(team, 0, &ctx);
-  
+
   // If context creation failed, fall back to default context
   if (ctx_result != 0) {
     ctx = ROCSHMEM_CTX_DEFAULT;

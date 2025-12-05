@@ -34,7 +34,7 @@ namespace rocshmem {
 
 __host__ GDAHostContext::GDAHostContext(Backend *backend,
                                         [[maybe_unused]] int64_t options)
-    : Context(backend, true) {
+    : Context(backend) {
   GDABackend *b{static_cast<GDABackend *>(backend)};
 
   host_interface = b->host_interface;
