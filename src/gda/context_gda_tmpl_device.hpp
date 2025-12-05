@@ -651,6 +651,7 @@ __device__ void GDAContext::alltoall_linear_thread_puts(rocshmem_team_t team, T 
   int stride = team_obj->tinfo_wrt_world->stride;
   long *pSync = team_obj->alltoall_pSync;
   int my_pe_in_team = team_obj->my_pe;
+  uint64_t alltoall_pSync_offset = (team_obj->alltoall_sequence_number % 2) * pe_size;
 
   int tid = get_flat_block_id();
   int step_size = min(get_flat_block_size(), WF_SIZE);
@@ -658,17 +659,29 @@ __device__ void GDAContext::alltoall_linear_thread_puts(rocshmem_team_t team, T 
   // Have each PE put their designated data to the other PEs
   for (int j = tid; j < pe_size; j+= step_size) {
     int dest_pe = team_obj->get_pe_in_world(j);
-    uint64_t L_offset = reinterpret_cast<char*>(&dst[my_pe_in_team * nelems]) - base_heap[my_pe];
-    qps[dest_pe].put_nbi_single(base_heap[dest_pe] + L_offset, &src[j * nelems], nelems * sizeof(T), dest_pe);
-  }
-
-  for (int j = tid; j < pe_size; j+= step_size) {
-    int dest_pe = team_obj->get_pe_in_world(j);
-    pe_quiet_single(dest_pe);
+    uint64_t base_heap_offset = base_heap[dest_pe] - base_heap[my_pe];
+    qps[dest_pe].put_nbi_single(reinterpret_cast<char*>(&dst[my_pe_in_team * nelems]) + base_heap_offset,
+                                &src[j * nelems], nelems * sizeof(T), false);
+    qps[dest_pe].atomic_nofetch_single(reinterpret_cast<char *>(&pSync[alltoall_pSync_offset + my_pe_in_team]) + base_heap_offset,
+                                       1);
   }
 
   // wait until everyone has obtained their designated data
-  internal_direct_barrier_wg_thread_puts(my_pe, pe_start, stride, pe_size, pSync);
+  for (int j = tid; j < pe_size; j+= step_size) {
+    int dest_pe = team_obj->get_pe_in_world(j);
+
+    volatile long *vol_ivars = &pSync[alltoall_pSync_offset + dest_pe];
+    while (uncached_load(vol_ivars) != 1) { }
+
+    pe_quiet_single(dest_pe);
+
+    pSync[alltoall_pSync_offset + dest_pe] = ROCSHMEM_SYNC_VALUE;
+  }
+
+  if (is_thread_zero_in_block()) {
+    team_obj->alltoall_sequence_number++;
+  }
+
   __syncthreads();
 }
 

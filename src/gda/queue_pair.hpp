@@ -77,7 +77,8 @@ class QueuePair {
    * @param[in] pe Destination processing element of data transmission.
    */
   __device__ void put_nbi(void *dest, const void *source, size_t nelems, int pe, Collectivity cy = THREAD);
-  __device__ void put_nbi_single(void *dest, const void *source, size_t nelems, int pe);
+
+  __device__ void put_nbi_single(void *dest, const void *source, size_t nelems, bool ring_db);
 
   /**
    * @brief Create and enqueue a non-blocking get work queue entry (wqe).
@@ -117,6 +118,8 @@ class QueuePair {
    */
   __device__ void atomic_nofetch(void *dest, int64_t value, int64_t cond, int pe);
 
+  __device__ void atomic_nofetch_single(void *dest, int64_t value);
+
   /**
    * @brief Create and enqueue an atomic cas work queue entry (wqe).
    *
@@ -155,6 +158,12 @@ class QueuePair {
    */
   __device__ __attribute__((noinline)) uint64_t post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
 
+  __device__ __attribute__((noinline)) uint64_t post_wqe_amo_single(uintptr_t *raddr,
+                                                                    uint8_t opcode,
+                                                                    int64_t atomic_data,
+                                                                    int64_t atomic_cmp,
+                                                                    bool fetching);
+
   /**
    * @brief Helper method to build work requests for the send queue.
    *
@@ -166,7 +175,8 @@ class QueuePair {
    */
   __device__ __attribute__((noinline)) void post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, Collectivity cy);
   __device__ __attribute__((noinline)) void post_wqe_rma_turn(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, Collectivity cy);
-  __device__ __attribute__((noinline)) void post_wqe_rma_single(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
+
+  __device__ __attribute__((noinline)) void post_wqe_rma_single(int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, bool ring_db);
   __device__ __attribute__((noinline)) void post_wqe_rma_mt(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
 
 #if defined(GDA_MLX5)
@@ -175,9 +185,16 @@ class QueuePair {
   __device__ void mlx5_quiet();
 #endif
 #if defined(GDA_BNXT)
-  __device__ uint64_t bnxt_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
+
+  __device__ void bnxt_write_rma_wqe(uintptr_t *raddr, uintptr_t *laddr, int32_t length, uint8_t opcode);
+  __device__ uint32_t bnxt_write_amo_wqe(uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetching);
+
+  __device__ uint64_t bnxt_post_wqe_amo_single(uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetching);
+  __device__ uint64_t bnxt_post_wqe_amo(uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetching);
+
   __device__ void bnxt_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
-  __device__ void bnxt_post_wqe_rma_single(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
+
+  __device__ void bnxt_post_wqe_rma_single(int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, bool ring_db);
   __device__ void bnxt_quiet();
   __device__ void bnxt_quiet_single();
 #endif
