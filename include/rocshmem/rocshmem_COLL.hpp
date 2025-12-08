@@ -608,6 +608,23 @@ __host__ int rocshmem_ctx_double_prod_reduce(
 __global__ ATTR_NO_INLINE void rocshmem_barrier_all_kernel();
 
 /**
+ * @brief kernel for performing an alltoall collective operation.
+ * Caller enqueues the kernel on given stream
+ *
+ * @param[in] team    The team participating in the collective.
+ * @param[in] dest    Destination address. Must be an address on the symmetric
+ *                    heap.
+ * @param[in] source  Source address. Must be an address on the symmetric heap.
+ * @param[in] size    Number of bytes to transfer per pair of PEs.
+ *
+ * @return void
+ */
+__global__ ATTR_NO_INLINE void rocshmem_alltoallmem_kernel(rocshmem_team_t team,
+                                                           void *dest,
+                                                           const void *source,
+                                                           size_t size);
+
+/**
  * @brief perform a collective barrier between all PEs in the system.
  * The caller is blocked until the barrier is resolved.
  *

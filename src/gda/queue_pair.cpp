@@ -170,11 +170,11 @@ __device__ void QueuePair::post_wqe_rma_mt(int pe, int32_t size, uintptr_t *ladd
   }
 }
 
-__device__ void QueuePair::post_wqe_rma_single(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
+__device__ void QueuePair::post_wqe_rma_single(int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, bool ring_db) {
   switch (gda_provider_) {
 #if defined(GDA_BNXT)
   case GDAProvider::BNXT:
-    return bnxt_post_wqe_rma_single(pe, size, laddr, raddr, opcode);
+    return bnxt_post_wqe_rma_single(size, laddr, raddr, opcode, ring_db);
 #endif
   case GDAProvider::IONIC:
   case GDAProvider::MLX5:
@@ -192,12 +192,28 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t *rad
 #endif
 #if defined(GDA_BNXT)
   case GDAProvider::BNXT:
-    return bnxt_post_wqe_amo(pe, size, raddr, opcode, atomic_data, atomic_cmp, fetching);
+    return bnxt_post_wqe_amo(raddr, opcode, atomic_data, atomic_cmp, fetching);
 #endif
 #if defined(GDA_IONIC)
   case GDAProvider::IONIC:
     return ionic_post_wqe_amo(pe, size, raddr, opcode, atomic_data, atomic_cmp, fetching);
 #endif
+  default:
+    assert(false /* invalid nic provider */);
+    return 0;
+  }
+}
+
+__device__ uint64_t QueuePair::post_wqe_amo_single(uintptr_t *raddr, uint8_t opcode,
+                                                   int64_t atomic_data, int64_t atomic_cmp,
+                                                   bool fetching) {
+  switch (gda_provider_) {
+#if defined(GDA_BNXT)
+  case GDAProvider::BNXT:
+    return bnxt_post_wqe_amo_single(raddr, opcode, atomic_data, atomic_cmp, fetching);
+#endif
+  case GDAProvider::MLX5:
+  case GDAProvider::IONIC:
   default:
     assert(false /* invalid nic provider */);
     return 0;
@@ -253,10 +269,10 @@ __device__ void QueuePair::put_nbi(void *dest, const void *source, size_t nelems
   post_wqe_rma(pe, nelems, src, dst, gda_op_rdma_write, cy);
 }
 
-__device__ void QueuePair::put_nbi_single(void *dest, const void *source, size_t nelems, int pe) {
+__device__ void QueuePair::put_nbi_single(void *dest, const void *source, size_t nelems, bool ring_db) {
   uintptr_t *src = reinterpret_cast<uintptr_t*>(const_cast<void*>(source));
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
-  post_wqe_rma_single(pe, nelems, src, dst, gda_op_rdma_write);
+  post_wqe_rma_single(nelems, src, dst, gda_op_rdma_write, ring_db);
 }
 
 __device__ void QueuePair::get_nbi(void *dest, const void *source, size_t nelems, int pe, Collectivity cy) {
@@ -283,6 +299,12 @@ __device__ int64_t QueuePair::atomic_fetch(void *dest, int64_t atomic_data, int6
 __device__ void QueuePair::atomic_nofetch(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe) {
   uintptr_t *dst = reinterpret_cast<uintptr_t*>(dest);
   post_wqe_amo(pe, sizeof(int64_t), dst, gda_op_atomic_fa, atomic_data, atomic_cmp, false);
+}
+
+__device__ void QueuePair::atomic_nofetch_single(void *dest, int64_t value) {
+  const bool fetching = false;
+  uintptr_t *dst = static_cast<uintptr_t*>(dest);
+  post_wqe_amo_single(dst, gda_op_atomic_fa, value, 0, false);
 }
 
 }  // namespace rocshmem

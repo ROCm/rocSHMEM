@@ -142,6 +142,7 @@ enum rocshmem_host_stats {
   NUM_HOST_SHMEM_PTR,
   NUM_HOST_SYNC_ALL,
   NUM_HOST_BROADCAST,
+  NUM_HOST_ALLTOALL,
   NUM_HOST_STATS
 };
 

@@ -73,6 +73,14 @@ class ROBackend : public Backend {
   virtual ~ROBackend();
 
   /**
+   * @brief Verify whether RO Backend could run
+   *
+   * @return ROSCHMEM_SUCCESS if RO backend can most likely be used
+   *         ROCSHMEM_ERROR otherwise
+   */
+  static int backend_can_run(void);
+
+  /**
    * @brief Abort the application.
    *
    * @param[in] status Exit code.

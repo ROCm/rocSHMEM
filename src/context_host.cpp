@@ -28,10 +28,9 @@
 
 namespace rocshmem {
 
-__host__ Context::Context(Backend* handle, bool shareable)
+__host__ Context::Context(Backend* handle)
     : num_pes(handle->getNumPEs()),
       my_pe(handle->getMyPE()),
-      fence_(shareable),
       btype(handle->type) {
 }
 
@@ -120,6 +119,14 @@ __host__ void Context::barrier_all_on_stream(hipStream_t stream) {
   ctxHostStats.incStat(NUM_HOST_BARRIER_ALL);
 
   HOST_DISPATCH(barrier_all_on_stream(stream));
+}
+
+__host__ void Context::alltoallmem_on_stream(rocshmem_team_t team, void *dest,
+                                             const void *source, size_t size,
+                                             hipStream_t stream) {
+  ctxHostStats.incStat(NUM_HOST_ALLTOALL);
+
+  HOST_DISPATCH(alltoallmem_on_stream(team, dest, source, size, stream));
 }
 
 }  // namespace rocshmem

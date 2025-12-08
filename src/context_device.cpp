@@ -29,10 +29,9 @@
 
 namespace rocshmem {
 
-__device__ Context::Context(Backend* handle, bool shareable)
+__device__ Context::Context(Backend* handle)
     : num_pes(handle->getNumPEs()),
       my_pe(handle->getMyPE()),
-      fence_(shareable),
       btype(handle->type) {
   /*
    * Device-side context constructor is a work-group collective, so make

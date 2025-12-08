@@ -138,6 +138,9 @@ void MPIInstance::mpilib_dl_close() {
 
 MPIInstance::MPIInstance(MPI_Comm comm) {
   int is_init{0};
+
+  assert (nullptr != mpilib_handle_);
+
   mpilib_ftable_.Initialized(&is_init);
 
   if (!is_init) {

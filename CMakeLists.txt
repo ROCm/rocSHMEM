@@ -108,6 +108,7 @@ include(cmake/rocm_local_targets.cmake)
 set(DEFAULT_GPUS
     gfx90a:xnack-;
     gfx90a:xnack+;
+    gfx1100;
     gfx1201;
     gfx942)
 
@@ -164,7 +165,6 @@ if (NOT BUILD_TESTS_ONLY)
     set(HAVE_EXTERNAL_MPI ON)
   else()
     set(HAVE_EXTERNAL_MPI OFF)
-    set(BUILD_FUNCTIONAL_TESTS OFF)
     set(BUILD_UNIT_TESTS OFF)
   endif()
 

@@ -34,7 +34,7 @@ namespace rocshmem {
 
 __host__ GDAHostContext::GDAHostContext(Backend *backend,
                                         [[maybe_unused]] int64_t options)
-    : Context(backend, true) {
+    : Context(backend) {
   GDABackend *b{static_cast<GDABackend *>(backend)};
 
   host_interface = b->host_interface;
@@ -111,6 +111,14 @@ __host__ void GDAHostContext::sync_all() {
 
 __host__ void GDAHostContext::barrier_all() {
   host_interface->barrier_all(context_window_info);
+}
+
+__host__ void GDAHostContext::alltoallmem_on_stream(rocshmem_team_t team,
+                                                    void *dest,
+                                                    const void *source,
+                                                    size_t size,
+                                                    hipStream_t stream) {
+  host_interface->alltoallmem_on_stream(team, dest, source, size, stream);
 }
 
 }  // namespace rocshmem

@@ -217,99 +217,7 @@ __device__ void QueuePair::bnxt_quiet_single() {
   poll_cq_until(sq.depth);
 }
 
-__device__ void QueuePair::bnxt_post_wqe_rma(int pe, int32_t length, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
-  uint64_t active_lane_mask;
-  uint8_t active_lane_count;
-  uint8_t active_lane_id;
-
-  active_lane_mask  = get_active_lane_mask();
-  active_lane_count = get_active_lane_count(active_lane_mask);
-  active_lane_id    = get_active_lane_num(active_lane_mask);
-
-  if (0 == active_lane_id) {
-    aquire_lock(&sq.lock);
-  }
-
-  for (int i = 0; i < active_lane_count; i++) {
-    if (i == active_lane_id) {
-      struct bnxt_re_bsqe hdr;
-      struct bnxt_re_rdma rdma;
-      struct bnxt_re_sge sge;
-      struct bnxt_re_bsqe *hdr_ptr;
-      struct bnxt_re_rdma *rdma_ptr;
-      struct bnxt_re_sge *sge_ptr;
-      uint32_t wqe_size;
-      uint32_t wqe_type;
-      uint32_t hdr_flags;
-      uint32_t inline_msg;
-
-      inline_msg = length <= inline_threshold &&
-                   opcode == gda_op_rdma_write;
-
-      poll_cq_until(GDA_BNXT_WQE_SLOT_COUNT);
-
-      hdr_ptr  = (struct bnxt_re_bsqe*) bnxt_re_get_hwqe(&sq, 0);
-      rdma_ptr = (struct bnxt_re_rdma*) bnxt_re_get_hwqe(&sq, 1);
-      sge_ptr  = (struct bnxt_re_sge*)  bnxt_re_get_hwqe(&sq, 2);
-
-      /* Populate Header Segment */
-      wqe_type  = BNXT_RE_HDR_WT_MASK & opcode;
-      wqe_size  = BNXT_RE_HDR_WS_MASK & GDA_BNXT_WQE_SLOT_COUNT;
-      hdr_flags = ((uint32_t) BNXT_RE_HDR_FLAGS_MASK)
-                & ((uint32_t) BNXT_RE_WR_FLAGS_SIGNALED);
-
-      if (inline_msg) {
-        hdr_flags |= ((uint32_t) BNXT_RE_WR_FLAGS_INLINE);
-      }
-
-      hdr.rsv_ws_fl_wt  = (wqe_size  << BNXT_RE_HDR_WS_SHIFT)
-                        | (hdr_flags << BNXT_RE_HDR_FLAGS_SHIFT)
-                        | wqe_type;
-      hdr.key_immd      = 0;
-      hdr.lhdr.qkey_len = length;
-
-      /* Populate RDMA Segment */
-      rdma.rva  = (uint64_t) raddr;
-      rdma.rkey = rkey;
-
-      if (!inline_msg) {
-        /* Populate SG Segment */
-        sge.pa     = (uint64_t) laddr;
-        sge.lkey   = lkey;
-        sge.length = length;
-      }
-
-      /* Write WQE to SQ */
-      memcpy(hdr_ptr,  &hdr,  sizeof(struct bnxt_re_bsqe));
-      memcpy(rdma_ptr, &rdma, sizeof(struct bnxt_re_rdma));
-
-      if (inline_msg) {
-        memcpy(sge_ptr,  laddr,  length);
-      } else {
-        memcpy(sge_ptr,  &sge,  sizeof(struct bnxt_re_sge));
-      }
-
-      /* Populate MSN Table */
-      bnxt_re_fill_psns_for_msntbl(&sq, length);
-
-      /* Update SQ Pointer */
-      bnxt_re_incr_tail(&sq, GDA_BNXT_WQE_SLOT_COUNT);
-
-      /* Ring Doorbell */
-      bnxt_ring_doorbell(sq.tail);
-    }
-  }
-
-  if (0 == active_lane_id) {
-    release_lock(&sq.lock);
-  }
-}
-
-__device__ void QueuePair::bnxt_post_wqe_rma_single(int pe, int32_t length, uintptr_t *laddr,
-                                                    uintptr_t *raddr, uint8_t opcode) {
-  uint64_t active_lane_mask;
-  uint8_t active_lane_count;
-  uint8_t active_lane_id;
+__device__ void QueuePair::bnxt_write_rma_wqe(uintptr_t *raddr, uintptr_t *laddr, int32_t length, uint8_t opcode) {
   struct bnxt_re_bsqe hdr;
   struct bnxt_re_rdma rdma;
   struct bnxt_re_sge sge;
@@ -320,8 +228,6 @@ __device__ void QueuePair::bnxt_post_wqe_rma_single(int pe, int32_t length, uint
   uint32_t wqe_type;
   uint32_t hdr_flags;
   uint32_t inline_msg;
-
-  aquire_lock(&sq.lock);
 
   inline_msg = length <= inline_threshold &&
                opcode == gda_op_rdma_write;
@@ -374,23 +280,132 @@ __device__ void QueuePair::bnxt_post_wqe_rma_single(int pe, int32_t length, uint
 
   /* Update SQ Pointer */
   bnxt_re_incr_tail(&sq, GDA_BNXT_WQE_SLOT_COUNT);
+}
 
-  /* Ring Doorbell
-   * Doorbell ring must be serialized as we cannot have all threads write to the same address */
+__device__ void QueuePair::bnxt_post_wqe_rma(int pe, int32_t length, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
+  uint64_t active_lane_mask;
+  uint8_t active_lane_count;
+  uint8_t active_lane_id;
+
   active_lane_mask  = get_active_lane_mask();
   active_lane_count = get_active_lane_count(active_lane_mask);
   active_lane_id    = get_active_lane_num(active_lane_mask);
 
+  if (0 == active_lane_id) {
+    aquire_lock(&sq.lock);
+  }
+
   for (int i = 0; i < active_lane_count; i++) {
     if (i == active_lane_id) {
+      /* Write WQE to SQ */
+      bnxt_write_rma_wqe(raddr, laddr, length, opcode);
+
+      /* Ring Doorbell */
       bnxt_ring_doorbell(sq.tail);
-      release_lock(&sq.lock);
     }
+  }
+
+  if (0 == active_lane_id) {
+    release_lock(&sq.lock);
   }
 }
 
-__device__ uint64_t QueuePair::bnxt_post_wqe_amo(int pe, int32_t length, uintptr_t *raddr, uint8_t opcode,
-                                                 int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
+__device__ void QueuePair::bnxt_post_wqe_rma_single(int32_t length, uintptr_t *laddr,
+                                                    uintptr_t *raddr, uint8_t opcode,
+                                                    bool ring_db) {
+
+  aquire_lock(&sq.lock);
+
+  /* Write WQE to SQ */
+  bnxt_write_rma_wqe(raddr, laddr, length, opcode);
+
+  if (ring_db) {
+    uint64_t active_lane_mask;
+    uint8_t active_lane_count;
+    uint8_t active_lane_id;
+
+    active_lane_mask  = get_active_lane_mask();
+    active_lane_count = get_active_lane_count(active_lane_mask);
+    active_lane_id    = get_active_lane_num(active_lane_mask);
+
+    /* Ring Doorbell
+     * Doorbell ring must be serialized as we cannot have all threads write to the same address */
+    for (int i = 0; i < active_lane_count; i++) {
+      if (i == active_lane_id) {
+        bnxt_ring_doorbell(sq.tail);
+      }
+    }
+  }
+
+  release_lock(&sq.lock);
+}
+
+__device__ uint32_t QueuePair::bnxt_write_amo_wqe(uintptr_t *raddr, uint8_t opcode,
+                                                  int64_t atomic_data, int64_t atomic_cmp,
+                                                  bool fetching) {
+  struct bnxt_re_bsqe hdr;
+  struct bnxt_re_atomic amo;
+  struct bnxt_re_sge sge;
+  struct bnxt_re_bsqe *hdr_ptr;
+  struct bnxt_re_atomic *amo_ptr;
+  struct bnxt_re_sge *sge_ptr;
+  uint32_t wqe_size;
+  uint32_t wqe_type;
+  uint32_t hdr_flags;
+
+  uint32_t atomic_idx = 0;
+  uint32_t length = sizeof(uint64_t);
+
+  poll_cq_until(GDA_BNXT_WQE_SLOT_COUNT);
+
+  hdr_ptr = (struct bnxt_re_bsqe*)   bnxt_re_get_hwqe(&sq, 0);
+  amo_ptr = (struct bnxt_re_atomic*) bnxt_re_get_hwqe(&sq, 1);
+  sge_ptr = (struct bnxt_re_sge*)    bnxt_re_get_hwqe(&sq, 2);
+
+  /* Populate Header Segment */
+  wqe_size  = BNXT_RE_HDR_WS_MASK & GDA_BNXT_WQE_SLOT_COUNT;
+  hdr_flags = ((uint32_t) BNXT_RE_HDR_FLAGS_MASK)
+            & ((uint32_t) BNXT_RE_WR_FLAGS_SIGNALED);
+  wqe_type  = BNXT_RE_HDR_WT_MASK & opcode;
+
+  hdr.rsv_ws_fl_wt  = (wqe_size  << BNXT_RE_HDR_WS_SHIFT)
+                    | (hdr_flags << BNXT_RE_HDR_FLAGS_SHIFT)
+                    | wqe_type;
+  hdr.key_immd = rkey;
+  hdr.lhdr.rva = (uint64_t) raddr;
+
+  /* Populate AMO Segment */
+  amo.swp_dt = atomic_data;
+  amo.cmp_dt = atomic_cmp;
+
+  /* Populate SG Segment - (Return address of atomic) */
+  if (fetching) {
+    atomic_idx = fetching_atomic_idx++ % FETCHING_ATOMIC_CNT;
+    sge.pa     = (uint64_t) &fetching_atomic[atomic_idx];
+    sge.lkey   = fetching_atomic_lkey;
+  } else {
+    sge.pa     = (uint64_t) nonfetching_atomic;
+    sge.lkey   = nonfetching_atomic_lkey;
+  }
+  sge.length = length;
+
+  /* Write WQE to SQ */
+  memcpy(hdr_ptr, &hdr, sizeof(struct bnxt_re_bsqe));
+  memcpy(amo_ptr, &amo, sizeof(struct bnxt_re_atomic));
+  memcpy(sge_ptr, &sge, sizeof(struct bnxt_re_sge));
+
+  /* Populate MSN Table */
+  bnxt_re_fill_psns_for_msntbl(&sq, length);
+
+  /* Update SQ Pointer */
+  bnxt_re_incr_tail(&sq, GDA_BNXT_WQE_SLOT_COUNT);
+
+  return atomic_idx;
+}
+
+__device__ uint64_t QueuePair::bnxt_post_wqe_amo(uintptr_t *raddr, uint8_t opcode,
+                                                 int64_t atomic_data, int64_t atomic_cmp,
+                                                 bool fetching) {
   uint64_t active_lane_mask;
   uint8_t active_lane_count;
   uint8_t active_lane_id;
@@ -406,59 +421,7 @@ __device__ uint64_t QueuePair::bnxt_post_wqe_amo(int pe, int32_t length, uintptr
 
   for (int i = 0; i < active_lane_count; i++) {
     if (i == active_lane_id) {
-      struct bnxt_re_bsqe hdr;
-      struct bnxt_re_atomic amo;
-      struct bnxt_re_sge sge;
-      struct bnxt_re_bsqe *hdr_ptr;
-      struct bnxt_re_atomic *amo_ptr;
-      struct bnxt_re_sge *sge_ptr;
-      uint32_t wqe_size;
-      uint32_t wqe_type;
-      uint32_t hdr_flags;
-
-      poll_cq_until(GDA_BNXT_WQE_SLOT_COUNT);
-
-      hdr_ptr = (struct bnxt_re_bsqe*)   bnxt_re_get_hwqe(&sq, 0);
-      amo_ptr = (struct bnxt_re_atomic*) bnxt_re_get_hwqe(&sq, 1);
-      sge_ptr = (struct bnxt_re_sge*)    bnxt_re_get_hwqe(&sq, 2);
-
-      /* Populate Header Segment */
-      wqe_size  = BNXT_RE_HDR_WS_MASK & GDA_BNXT_WQE_SLOT_COUNT;
-      hdr_flags = ((uint32_t) BNXT_RE_HDR_FLAGS_MASK)
-                & ((uint32_t) BNXT_RE_WR_FLAGS_SIGNALED);
-      wqe_type  = BNXT_RE_HDR_WT_MASK & opcode;
-
-      hdr.rsv_ws_fl_wt  = (wqe_size  << BNXT_RE_HDR_WS_SHIFT)
-                        | (hdr_flags << BNXT_RE_HDR_FLAGS_SHIFT)
-                        | wqe_type;
-      hdr.key_immd = rkey;
-      hdr.lhdr.rva = (uint64_t) raddr;
-
-      /* Populate AMO Segment */
-      amo.swp_dt = atomic_data;
-      amo.cmp_dt = atomic_cmp;
-
-      /* Populate SG Segment - (Return address of atomic) */
-      if (fetching) {
-        atomic_idx = fetching_atomic_idx++ % FETCHING_ATOMIC_CNT;
-        sge.pa     = (uint64_t) &fetching_atomic[atomic_idx];
-        sge.lkey   = fetching_atomic_lkey;
-      } else {
-        sge.pa     = (uint64_t) nonfetching_atomic;
-        sge.lkey   = nonfetching_atomic_lkey;
-      }
-      sge.length = length;
-
-      /* Write WQE to SQ */
-      memcpy(hdr_ptr, &hdr, sizeof(struct bnxt_re_bsqe));
-      memcpy(amo_ptr, &amo, sizeof(struct bnxt_re_atomic));
-      memcpy(sge_ptr, &sge, sizeof(struct bnxt_re_sge));
-
-      /* Populate MSN Table */
-      bnxt_re_fill_psns_for_msntbl(&sq, length);
-
-      /* Update SQ Pointer */
-      bnxt_re_incr_tail(&sq, GDA_BNXT_WQE_SLOT_COUNT);
+      atomic_idx = bnxt_write_amo_wqe(raddr, opcode, atomic_data, atomic_cmp, fetching);
 
       /* Ring Doorbell */
       bnxt_ring_doorbell(sq.tail);
@@ -473,6 +436,41 @@ __device__ uint64_t QueuePair::bnxt_post_wqe_amo(int pe, int32_t length, uintptr
     quiet();
     return fetching_atomic[atomic_idx];
   }
+
+  return 0;
+}
+
+__device__ uint64_t QueuePair::bnxt_post_wqe_amo_single(uintptr_t *raddr, uint8_t opcode,
+                                                        int64_t atomic_data, int64_t atomic_cmp,
+                                                        bool fetching) {
+  uint64_t active_lane_mask;
+  uint8_t active_lane_count;
+  uint8_t active_lane_id;
+  uint32_t atomic_idx = 0;
+
+  active_lane_mask  = get_active_lane_mask();
+  active_lane_count = get_active_lane_count(active_lane_mask);
+  active_lane_id    = get_active_lane_num(active_lane_mask);
+
+  aquire_lock(&sq.lock);
+
+  /* Write WQE to SQ */
+  atomic_idx = bnxt_write_amo_wqe(raddr, opcode, atomic_data, atomic_cmp, fetching);
+
+  /* Ring Doorbell
+   * Doorbell ring must be serialized as we cannot have all threads write to the same address */
+  for (int i = 0; i < active_lane_count; i++) {
+    if (i == active_lane_id) {
+      bnxt_ring_doorbell(sq.tail);
+    }
+  }
+
+  if (fetching) {
+    quiet();
+    return fetching_atomic[atomic_idx];
+  }
+
+  release_lock(&sq.lock);
 
   return 0;
 }

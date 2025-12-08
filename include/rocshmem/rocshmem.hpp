@@ -350,6 +350,22 @@ __host__ void rocshmem_barrier_all();
 __host__ void rocshmem_barrier_all_on_stream(hipStream_t stream);
 
 /**
+ * @brief enqueues an alltoall collective operation on given stream.
+ *
+ * @param[in] team    The team participating in the collective.
+ * @param[in] dest    Destination address. Must be an address on the symmetric
+ *                    heap.
+ * @param[in] source  Source address. Must be an address on the symmetric heap.
+ * @param[in] size    Number of bytes to transfer per pair of PEs.
+ * @param[in] stream  HIP stream on which to enqueue the operation.
+ *
+ * @return void
+ */
+__host__ void rocshmem_alltoallmem_on_stream(rocshmem_team_t team, void *dest,
+                                             const void *source, size_t size,
+                                             hipStream_t stream);
+
+/**
  * @brief registers the arrival of a PE at a barrier.
  * The caller is blocked until the synchronization is resolved.
  *

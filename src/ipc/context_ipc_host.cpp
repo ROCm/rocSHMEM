@@ -34,7 +34,7 @@ namespace rocshmem {
 
 __host__ IPCHostContext::IPCHostContext(Backend *backend,
                                         [[maybe_unused]] int64_t options)
-    : Context(backend, true) {
+    : Context(backend) {
   IPCBackend *b{static_cast<IPCBackend *>(backend)};
 
   host_interface = b->host_interface;
@@ -103,6 +103,14 @@ __host__ void IPCHostContext::barrier_all() {
 
 __host__ void IPCHostContext::barrier_all_on_stream(hipStream_t stream) {
   host_interface->barrier_all_on_stream(stream);
+}
+
+__host__ void IPCHostContext::alltoallmem_on_stream(rocshmem_team_t team,
+                                                    void *dest,
+                                                    const void *source,
+                                                    size_t size,
+                                                    hipStream_t stream) {
+  host_interface->alltoallmem_on_stream(team, dest, source, size, stream);
 }
 
 }  // namespace rocshmem

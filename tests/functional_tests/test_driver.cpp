@@ -172,6 +172,9 @@ int main(int argc, char *argv[]) {
     char key[] = "rocshmem-uuid";
     pmix_bcast(&uid, sizeof(rocshmem_uniqueid_t), key, 0);
 
+    // Close PMIx before potentially doing MPI_Init inside rocshmem_init
+    PMIx_Finalize(NULL, 0);
+
     ret = rocshmem_set_attr_uniqueid_args(rank, nranks, &uid, &attr);
     if (ret != ROCSHMEM_SUCCESS) {
       std::cout << rank << ": Error in rocshmem_set_attr_uniqueid_args. Aborting.\n";
@@ -223,12 +226,6 @@ int main(int argc, char *argv[]) {
    * with the init function above.
    */
   rocshmem_finalize();
-
-#ifdef HAVE_PMIX
-  if (test_uuid) {
-    PMIx_Finalize(NULL, 0);
-  }
-#endif
 
   return 0;
 }

@@ -34,7 +34,7 @@
 namespace rocshmem {
 
 __host__ IPCContext::IPCContext(Backend *b, unsigned int ctx_id)
-    : Context(b, false) {
+    : Context(b) {
   IPCBackend *backend{static_cast<IPCBackend *>(b)};
   ipcImpl_.ipc_bases = b->ipcImpl.ipc_bases;
   ipcImpl_.shm_size = b->ipcImpl.shm_size;
@@ -113,6 +113,7 @@ __device__ void IPCContext::putmem_wg(void *dest, const void *source,
   uint64_t L_offset = reinterpret_cast<char *>(dest) - ipcImpl_.ipc_bases[my_pe];
   ipcImpl_.ipcCopy_wg(ipcImpl_.ipc_bases[pe] + L_offset, const_cast<void *>(source), nelems);
   __syncthreads();
+  ipcImpl_.ipcFence();
 }
 
 __device__ void IPCContext::getmem_wg(void *dest, const void *source,
@@ -121,6 +122,7 @@ __device__ void IPCContext::getmem_wg(void *dest, const void *source,
   uint64_t L_offset = const_cast<char *>(src_typed) - ipcImpl_.ipc_bases[my_pe];
   ipcImpl_.ipcCopy_wg(dest, ipcImpl_.ipc_bases[pe] + L_offset, nelems);
   __syncthreads();
+  ipcImpl_.ipcFence();
 }
 
 __device__ void IPCContext::putmem_nbi_wg(void *dest, const void *source,

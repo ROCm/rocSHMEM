@@ -22,57 +22,49 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef LIBRARY_SRC_FENCE_POLICY_HPP_
-#define LIBRARY_SRC_FENCE_POLICY_HPP_
+#ifndef _TEAM_ALLTOALLMEM_ON_STREAM_TESTER_HPP_
+#define _TEAM_ALLTOALLMEM_ON_STREAM_TESTER_HPP_
 
-#include "rocshmem/rocshmem.hpp"
+#include "tester.hpp"
+#include <vector>
+#include <hip/hip_runtime.h>
 
-namespace rocshmem {
+using namespace rocshmem;
 
-/**
- * @brief Controls the behavior of device code which may need to stall
- */
-class Fence {
+/******************************************************************************
+ * HOST TESTER CLASS
+ *****************************************************************************/
+class TeamAlltoallmemOnStreamTester : public Tester {
  public:
-  /**
-   * Secondary constructor
-   */
-  __host__ __device__ Fence() = default;
+  explicit TeamAlltoallmemOnStreamTester(TesterArguments args);
+  virtual ~TeamAlltoallmemOnStreamTester();
 
-  /**
-   * Primary constructor
-   *
-   * @param[in] options interpreted as a bitfield using bitwise operations
-   */
-  __host__ __device__ Fence(long option) {
-    if (option & ROCSHMEM_CTX_NOSTORE) {
-      flush_ = false;
-    }
-  }
+ protected:
+  virtual void resetBuffers(size_t size) override;
 
-  /**
-   * @brief Wait for outstanding memory operations to complete
-   *
-   * This can be useful when code needs guarantees about visibility
-   * before moving past the flush.
-   *
-   * @return void
-   */
-  __device__ void flush() {
-    if (flush_) {
-      __threadfence();
-    }
-  }
+  virtual void preLaunchKernel() override;
+
+  virtual void launchKernel(dim3 gridSize, dim3 blockSize, int loop,
+                            size_t size) override;
+
+  virtual void postLaunchKernel() override;
+
+  virtual void verifyResults(size_t size) override;
 
  private:
-  /**
-   * @brief Used to toggle flushes behavior on and off
-   *
-   * @note By default, flushing is enabled.
-   */
-  bool flush_{true};
+  char *source_buf;
+  char *dest_buf;
+  int my_pe;
+  int n_pes;
+  size_t buf_size;
+  int num_teams = 1;
+  std::vector<rocshmem_team_t> team_world_dup;
+  std::vector<hipStream_t> streams;
+  std::vector<hipEvent_t> start_events_timed;
+  std::vector<hipEvent_t> stop_events_timed;
 };
 
-}  // namespace rocshmem
+#include "team_alltoallmem_on_stream_tester.cpp"
 
-#endif  // LIBRARY_SRC_FENCE_POLICY_HPP_
+#endif
+

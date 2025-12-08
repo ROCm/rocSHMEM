@@ -40,8 +40,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#define true                        1
-#define false                        0
 
 #define BNXT_RE_SLOT_SIZE_BB            16
 #define BNXT_RE_STATIC_WQE_SIZE_SLOTS   4
