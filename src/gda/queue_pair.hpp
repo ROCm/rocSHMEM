@@ -180,9 +180,40 @@ class QueuePair {
   __device__ __attribute__((noinline)) void post_wqe_rma_mt(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
 
 #if defined(GDA_MLX5)
-  __device__ uint64_t mlx5_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
-  __device__ void mlx5_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
-  __device__ void mlx5_quiet();
+  __device__ __forceinline__ void
+  mlx5_wait_for_free_sq_slots(uint64_t wave_sq_counter,
+      uint8_t num_active_lanes);
+
+  __device__ __forceinline__ void
+  mlx5_wait_for_db_touched_eq(uint64_t target_sq_counter);
+
+  __device__ __forceinline__ void
+  mlx5_build_rma_wqe(uint64_t my_sq_counter, uint64_t my_sq_index,
+      uintptr_t *laddr, uintptr_t *raddr, int32_t size, uint8_t opcode);
+
+  __device__ __forceinline__ void
+  mlx5_build_amo_wqe(uint64_t my_sq_counter, uint64_t my_sq_index,
+      uintptr_t *raddr, uint8_t opcode, int64_t atomic_data,
+      int64_t atomic_cmp, bool fetching, uint64_t *wave_fetch_atomic);
+
+  __device__ __forceinline__ uint64_t*
+  mlx5_allocate_wave_fetching_atomic_buffer(uint64_t wave_sq_counter,
+      bool is_leader, uint64_t leader_phys_lane_id);
+
+  __device__ __forceinline__ void
+  mlx5_ring_doorbell(uint64_t wave_sq_counter, uint8_t num_wqes);
+
+  __device__ uint64_t
+  mlx5_post_wqe_amo(int32_t size, uintptr_t *raddr, uint8_t opcode,
+      int64_t atomic_data, int64_t atomic_cmp, bool fetch);
+
+  __device__ void
+  mlx5_post_wqe_rma(int32_t size, uintptr_t *laddr,
+      uintptr_t *raddr, uint8_t opcode);
+
+  __device__ void
+  mlx5_quiet();
+
 #endif
 #if defined(GDA_BNXT)
 
