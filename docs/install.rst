@@ -11,7 +11,7 @@ Installing rocSHMEM
 This topic describes how to install rocSHMEM.
 
 Requirements
----------------------------
+------------
 
 * ROCm 6.4.0 or later, including the :doc:`HIP runtime <hip:index>`. For more information, see `ROCm installation for Linux <https://rocm.docs.amd.com/projects/install-on-linux/en/latest/>`_.
 
@@ -64,10 +64,10 @@ On Ubuntu, you can install rocSHMEM by running:
 .. _install-dependencies:
 
 Building dependencies
----------------------------
+---------------------
 
 GDA NIC Dependencies
-^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
 - GDA on Mellanox NICs should work on any recent version of rdma-core.
 - GDA on Broadcom Thor requires driver version 233.2.108.0 and firmware version 233.2.104.0 or later.
@@ -128,7 +128,7 @@ However, it is important to note that this will disable the functional and unit
 tests as they required MPI to run.
 
 All Backends build
-^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 To build and install rocSHMEM with all three backends, run:
 
@@ -147,7 +147,7 @@ The build script passes configuration options to CMake to set up a canonical bui
  This will build rocSHMEM with all backends, you can select the IPC, RO, GDA, or a combination at runtime. However there is a small performance penality for this portability. The other build scripts are recommended if you are trying to achive maximum performance.
 
 GDA backend build
-^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
 
 To build and install rocSHMEM with the GDA backends, run:
 
@@ -168,7 +168,7 @@ To build and install rocSHMEM with the GDA backends, run:
 The build script passes configuration options to CMake to set up a canonical build.
 
 RO and IPC backend build
-^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 To build and install rocSHMEM with the hybrid RO (off-node) and IPC (on-node) backends, run:
 
