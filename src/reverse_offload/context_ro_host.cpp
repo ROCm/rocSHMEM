@@ -34,7 +34,7 @@
 namespace rocshmem {
 
 __host__ ROHostContext::ROHostContext(Backend *backend, long options)
-    : Context(backend, true) {
+    : Context(backend) {
   ROBackend *b{static_cast<ROBackend *>(backend)};
 
   host_interface = b->host_interface;

@@ -46,7 +46,7 @@ namespace rocshmem {
 __host__ ROContext::ROContext(Backend *b,
                               size_t block_id,
                               bool default_ctx)
-    : Context(b, false),
+    : Context(b),
       is_default_ctx{default_ctx} {
 
   ROBackend *backend{static_cast<ROBackend *>(b)};

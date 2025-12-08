@@ -34,7 +34,7 @@
 namespace rocshmem {
 
 __host__ IPCContext::IPCContext(Backend *b, unsigned int ctx_id)
-    : Context(b, false) {
+    : Context(b) {
   IPCBackend *backend{static_cast<IPCBackend *>(b)};
   ipcImpl_.ipc_bases = b->ipcImpl.ipc_bases;
   ipcImpl_.shm_size = b->ipcImpl.shm_size;

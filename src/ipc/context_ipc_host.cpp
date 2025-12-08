@@ -34,7 +34,7 @@ namespace rocshmem {
 
 __host__ IPCHostContext::IPCHostContext(Backend *backend,
                                         [[maybe_unused]] int64_t options)
-    : Context(backend, true) {
+    : Context(backend) {
   IPCBackend *b{static_cast<IPCBackend *>(backend)};
 
   host_interface = b->host_interface;
