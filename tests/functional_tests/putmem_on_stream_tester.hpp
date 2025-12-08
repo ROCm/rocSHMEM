@@ -58,6 +58,7 @@ class PutmemOnStreamTester : public Tester {
   int n_pes;
   size_t buf_size;
   int num_streams = 1;
+  bool use_default_stream = false;
   int pe_target;  // Target PE to put to
   std::vector<hipStream_t> streams;
   std::vector<hipEvent_t> start_events_timed;

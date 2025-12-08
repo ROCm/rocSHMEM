@@ -326,12 +326,8 @@ __host__ void HostInterface::barrier_all(WindowInfo* window_info) {
 }
 
 __host__ void HostInterface::barrier_all_on_stream(hipStream_t stream) {
-  // launch kernel to do barrier with given stream, if non, use default stream
-  if (stream == nullptr) {
-    stream = hipStreamDefault;
-  }
-
-  rocshmem_barrier_all_kernel<<<1, 1, 0,  stream>>>();
+  // Launch kernel to do barrier with given stream
+  rocshmem_barrier_all_kernel<<<1, 1, 0, stream>>>();
 }
 
 __host__ void HostInterface::alltoallmem_on_stream(rocshmem_team_t team,
@@ -339,11 +335,6 @@ __host__ void HostInterface::alltoallmem_on_stream(rocshmem_team_t team,
                                                    const void *source,
                                                    size_t size,
                                                    hipStream_t stream) {
-  // launch kernel to do alltoall with given stream, if none, use default stream
-  if (stream == nullptr) {
-    stream = hipStreamDefault;
-  }
-
   // Use dynamic block size determination:
   // - Query optimal block size using occupancy API
   // - Limit block size to size (number of bytes) to avoid over-subscription
@@ -358,7 +349,8 @@ __host__ void HostInterface::alltoallmem_on_stream(rocshmem_team_t team,
   int num_threads_per_block = (optimal_block_size > static_cast<int>(size))
                                   ? static_cast<int>(size)
                                   : optimal_block_size;
-                                  
+
+  // Launch kernel to do alltoall with given stream                                  
   dim3 gridSize(1);
   dim3 blockSize(num_threads_per_block);
   rocshmem_alltoallmem_kernel<<<gridSize, blockSize, 0, stream>>>(team, dest,
@@ -370,12 +362,6 @@ __host__ void HostInterface::broadcastmem_on_stream(rocshmem_team_t team,
                                                     const void *source,
                                                     size_t nelems, int pe_root,
                                                     hipStream_t stream) {
-  // launch kernel to do broadcast with given stream, if none, use default
-  // stream
-  if (stream == nullptr) {
-    stream = hipStreamDefault;
-  }
-
   // Use dynamic block size determination:
   // - Query optimal block size using occupancy API
   // - Limit block size to nelems (number of bytes) to avoid over-subscription
@@ -393,6 +379,7 @@ __host__ void HostInterface::broadcastmem_on_stream(rocshmem_team_t team,
                                   ? static_cast<int>(nelems)
                                   : optimal_block_size;
 
+  // Launch kernel to do broadcast with given stream
   dim3 gridSize(1);
   dim3 blockSize(num_threads_per_block);
   rocshmem_broadcastmem_kernel<<<gridSize, blockSize, 0, stream>>>(team,
@@ -405,11 +392,6 @@ __host__ void HostInterface::broadcastmem_on_stream(rocshmem_team_t team,
 __host__ void HostInterface::getmem_on_stream(void *dest, const void *source,
                                               size_t nelems, int pe,
                                               hipStream_t stream) {
-  // launch kernel to do getmem with given stream, if none, use default stream
-  if (stream == nullptr) {
-    stream = hipStreamDefault;
-  }
-
   int optimal_block_size = 0;
   int grid_size = 0;
   CHECK_HIP(hipOccupancyMaxPotentialBlockSize(&grid_size, &optimal_block_size,
@@ -420,6 +402,7 @@ __host__ void HostInterface::getmem_on_stream(void *dest, const void *source,
                                   ? static_cast<int>(nelems)
                                   : optimal_block_size;
 
+  // Launch kernel to do getmem with given stream
   dim3 gridSize(1);
   dim3 blockSize(num_threads_per_block);
   rocshmem_getmem_kernel<<<gridSize, blockSize, 0, stream>>>(dest, source,
@@ -429,11 +412,6 @@ __host__ void HostInterface::getmem_on_stream(void *dest, const void *source,
 __host__ void HostInterface::putmem_on_stream(void *dest, const void *source,
                                               size_t nelems, int pe,
                                               hipStream_t stream) {
-  // launch kernel to do putmem with given stream, if none, use default stream
-  if (stream == nullptr) {
-    stream = hipStreamDefault;
-  }
-
   int optimal_block_size = 0;
   int grid_size = 0;
   CHECK_HIP(hipOccupancyMaxPotentialBlockSize(&grid_size, &optimal_block_size,
@@ -444,6 +422,7 @@ __host__ void HostInterface::putmem_on_stream(void *dest, const void *source,
                                   ? static_cast<int>(nelems)
                                   : optimal_block_size;
 
+  // Launch kernel to do putmem with given stream
   dim3 gridSize(1);
   dim3 blockSize(num_threads_per_block);
   rocshmem_putmem_kernel<<<gridSize, blockSize, 0, stream>>>(dest, source,
@@ -453,12 +432,6 @@ __host__ void HostInterface::putmem_on_stream(void *dest, const void *source,
 __host__ void HostInterface::putmem_signal_on_stream(
     void *dest, const void *source, size_t nelems, uint64_t *sig_addr,
     uint64_t signal, int sig_op, int pe, hipStream_t stream) {
-  // launch kernel to do putmem_signal with given stream, if none, use default
-  // stream
-  if (stream == nullptr) {
-    stream = hipStreamDefault;
-  }
-
   int optimal_block_size = 0;
   int grid_size = 0;
   CHECK_HIP(hipOccupancyMaxPotentialBlockSize(
@@ -469,6 +442,7 @@ __host__ void HostInterface::putmem_signal_on_stream(
                                   ? static_cast<int>(nelems)
                                   : optimal_block_size;
 
+  // Launch kernel to do putmem_signal with given stream
   dim3 gridSize(1);
   dim3 blockSize(num_threads_per_block);
   rocshmem_putmem_signal_kernel<<<gridSize, blockSize, 0, stream>>>(
@@ -479,12 +453,6 @@ __host__ void HostInterface::signal_wait_until_on_stream(uint64_t *sig_addr,
                                                          int cmp,
                                                          uint64_t cmp_value,
                                                          hipStream_t stream) {
-  // launch kernel to wait on signal with given stream, if none, use default
-  // stream
-  if (stream == nullptr) {
-    stream = hipStreamDefault;
-  }
-
   // Use a single thread to wait on the signal
   dim3 gridSize(1);
   dim3 blockSize(1);

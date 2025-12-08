@@ -156,6 +156,11 @@ ExecTest() {
   OPTIONS+=" -x UCX_ROCM_IPC_SIGPOOL_MAX_ELEMS=16384"
   OPTIONS+=" --map-by numa --timeout $TIMEOUT"
 
+  if [[ "" != "$ROCSHMEM_TEST_USE_DEFAULT_STREAM" ]]
+  then
+    OPTIONS+=" -x ROCSHMEM_TEST_USE_DEFAULT_STREAM=$ROCSHMEM_TEST_USE_DEFAULT_STREAM"
+  fi
+
   if [[ "" != "$HOSTFILE" ]]
   then
     OPTIONS+=" --hostfile $HOSTFILE"
@@ -229,6 +234,10 @@ TestRMAPut() {
   ExecTest  "shmemptr"         2       16           128       8
 
   ExecTest  "putmem_on_stream" 2       1            1         1048576
+
+  export ROCSHMEM_TEST_USE_DEFAULT_STREAM=1
+  ExecTest  "putmem_on_stream" 2       1            1         1048576
+  unset ROCSHMEM_TEST_USE_DEFAULT_STREAM
 
   ################################ Non-Blocking ################################
 

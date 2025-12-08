@@ -86,8 +86,6 @@ data of ``nelems`` bytes from source on the calling PE to ``dest`` at ``pe``. Th
 is enqueued on the specified stream and will execute asynchronously. The caller must
 synchronize the stream (e.g., using ``hipStreamSynchronize``) to ensure completion.
 
-If ``stream`` is ``nullptr``, the operation will use ``hipStreamDefault``.
-
 ROCSHMEM_P
 ----------
 
@@ -176,8 +174,6 @@ This routine enqueues a getmem RMA operation on a HIP stream. The function reads
 data of ``nelems`` bytes from source on ``pe`` to ``dest`` on the calling PE. The operation
 is enqueued on the specified stream and will execute asynchronously. The caller must
 synchronize the stream (e.g., using ``hipStreamSynchronize``) to ensure completion.
-
-If ``stream`` is ``nullptr``, the operation will use ``hipStreamDefault``.
 
 ROCSHMEM_G
 ----------

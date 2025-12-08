@@ -46,11 +46,24 @@ BarrierAllOnStreamTester::BarrierAllOnStreamTester(TesterArguments args)
     num_streams = 1;
   }
 
+  // Check if we should test with nullptr (default stream)
+  use_default_stream = false;
+  if ((value = getenv("ROCSHMEM_TEST_USE_DEFAULT_STREAM"))) {
+    use_default_stream = (atoi(value) != 0);
+    if (use_default_stream) {
+      num_streams = 1;  // Only test with one nullptr stream
+    }
+  }
+
   streams.resize(num_streams);
   start_events_timed.resize(num_streams);
   stop_events_timed.resize(num_streams);
   for (int i = 0; i < num_streams; i++) {
-    CHECK_HIP(hipStreamCreate(&streams[i]));
+    if (use_default_stream) {
+      streams[i] = nullptr;  // Use default stream (0)
+    } else {
+      CHECK_HIP(hipStreamCreate(&streams[i]));
+    }
     CHECK_HIP(hipEventCreate(&start_events_timed[i]));
     CHECK_HIP(hipEventCreate(&stop_events_timed[i]));
   }
@@ -60,7 +73,10 @@ BarrierAllOnStreamTester::~BarrierAllOnStreamTester() {
   for (int i = 0; i < num_streams; i++) {
     CHECK_HIP(hipEventDestroy(stop_events_timed[i]));
     CHECK_HIP(hipEventDestroy(start_events_timed[i]));
-    CHECK_HIP(hipStreamDestroy(streams[i]));
+    // Don't destroy default stream (nullptr)
+    if (!use_default_stream) {
+      CHECK_HIP(hipStreamDestroy(streams[i]));
+    }
   }
 }
 

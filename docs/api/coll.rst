@@ -36,8 +36,6 @@ across all PEs in the system. The operation is enqueued on the specified stream 
 asynchronously. The caller must synchronize the stream (e.g., using ``hipStreamSynchronize``)
 to ensure completion.
 
-If ``stream`` is ``nullptr``, the operation will use ``hipStreamDefault``.
-
 ROCSHMEM_BARRIER
 ----------------
 
@@ -125,7 +123,6 @@ execute asynchronously. The caller must synchronize the stream (e.g., using
 
 This function creates a separate context for each workgroup to avoid contention on the
 default context, allowing parallel execution across multiple streams.
-If ``stream`` is ``nullptr``, the operation will use ``hipStreamDefault``.
 
 ROCSHMEM_BROADCAST
 ------------------
@@ -168,7 +165,6 @@ the stream (e.g., using ``hipStreamSynchronize``) to ensure completion.
 
 This function creates a separate context for each workgroup to avoid contention on the
 default context, allowing parallel execution across multiple streams.
-If ``stream`` is ``nullptr``, the operation will use ``hipStreamDefault``.
 
 ROCSHMEM_FCOLLECT
 -----------------

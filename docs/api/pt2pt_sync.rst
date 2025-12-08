@@ -113,8 +113,6 @@ until the signal variable at ``sig_addr`` satisfies the comparison condition ``(
 The wait operation is executed asynchronously on the specified stream. The caller must synchronize
 the stream (e.g., using ``hipStreamSynchronize``) to ensure the wait condition has been satisfied.
 
-If ``stream`` is ``nullptr``, the operation will use ``hipStreamDefault``.
-
 Valid ``cmp`` values are listed in :ref:`CMP_VALUES`.
 
 .. _CMP_VALUES:

@@ -93,8 +93,6 @@ at ``sig_addr`` with the signal value. The operation is enqueued on the specifie
 execute asynchronously. The caller must synchronize the stream (e.g., using ``hipStreamSynchronize``)
 to ensure completion.
 
-If ``stream`` is ``nullptr``, the operation will use ``hipStreamDefault``.
-
 Valid ``sig_op`` values are listed in SIGNAL_OPERATORS_.
 
 ROCSHMEM_SIGNAL_FETCH

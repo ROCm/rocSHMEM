@@ -55,6 +55,7 @@ class BarrierAllOnStreamTester : public Tester {
   int my_pe;
   int n_pes;
   int num_streams = 1;
+  bool use_default_stream = false;
   std::vector<hipStream_t> streams;
   std::vector<hipEvent_t> start_events_timed;
   std::vector<hipEvent_t> stop_events_timed;
