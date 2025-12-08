@@ -40,7 +40,7 @@ If your project uses CMake, see
 `Using CMake with AMD ROCm <https://rocmdocs.amd.com/en/latest/conceptual/cmake-packages.html>`_.
 
 Running a rocSHMEM application
---------------------------
+------------------------------
 
 Applications using rocSHMEM typically deploy multiple processes, usually one per GPU.
 The MPI launcher, for example, ``mpiexec`` with Open MPI, is used to start the required number
