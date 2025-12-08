@@ -38,7 +38,7 @@ control the behavior of rocSHMEM.
     * - | ``ROCSHMEM_BACKEND``
         | When rocSHMEM is compiled for all backends, this enviroment variable
         | selects which backend to execute. Default is auto-selection
-      - ````
+      - `` ``
       - | ipc: IPC Backend
         | ro: Reverse Offload Backend
         | gda: GPU Direct Async Backend
@@ -57,22 +57,22 @@ control the behavior of rocSHMEM.
 
     * - | ``ROCSHMEM_USE_IB_HCA``
         | Defines which NIC that this PE should be bound to
-      - ``0``
+      - `` ``
       - | Example value: `bnxt_re0`
 
     * - | ``ROCSHMEM_BOOTSTRAP_SOCKET_IFNAME``
         | Chooses the interface to bootstrap rocSHMEM with.
         | Only valid when not using MPI.
         | The default value is an empty string and rocSHMEM auto-detects the most appropriate interface.
-      - ````
+      - `` ``
       - | Example value: `eno8303`
 
     * - | ``ROCSHMEM_GDA_PROVIDER``
         | When rocSHMEM is compiled with support for multiple NIC vendors,
         | the enviroment variable selects the desired provider.
         | The default value is an empty string and rocSHMEM auto-detects the most appropriate NIC.
-      - ````
-        | bnxt: Broadcom Thor 2
+      - `` ``
+      - | bnxt: Broadcom Thor 2
         | pensando: AMD Pensando Pollara
         | ionic: AMD Pensando Pollara (alias)
         | mlx5: Mellanox ConnectX-7
