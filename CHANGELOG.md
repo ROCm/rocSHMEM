@@ -1,4 +1,8 @@
 # Changelog for rocSHMEM
+## Unreleased - rocSHMEM 3.x.x for ROCm 7.x.x
+### Added
+* Added new APIs:
+   * `rocshmem_TYPENAME_alltoall_wg`
 
 ## rocSHMEM 3.2.0 for ROCm 7.2.0
 ### Added
