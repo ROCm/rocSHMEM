@@ -33,6 +33,7 @@
 #include <cstdlib>
 #include <memory>
 #include <thread>  // NOLINT
+#include <dlfcn.h>
 
 #include "rocshmem/rocshmem.hpp"
 #include "atomic_return.hpp"
@@ -129,6 +130,19 @@ ROBackend::ROBackend(MPI_Comm comm)
   worker_thread = std::thread(&ROBackend::ro_net_poll, this);
 
   *done_init = 1;
+}
+
+/* Currently we only check whether we can dlopen an MPI library.
+ */
+int ROBackend::backend_can_run() {
+  auto handle = dlopen("libmpi.so", RTLD_LAZY);
+  if (!handle) {
+    printf("Could not open libmpi.so. Returning\n");
+    return ROCSHMEM_ERROR;
+  }
+  //TODO dlsym MPI_Get_library_version and verify compat when HAVE_EXTERNAL_MPI is undef
+  dlclose(handle);
+  return ROCSHMEM_SUCCESS;
 }
 
 void ROBackend::setup_ctxs() {

@@ -42,19 +42,21 @@ IBVWrapper::IBVWrapper() {
     ibv_handle = dlopen("/usr/lib/x86_64-linux-gnu/libibverbs.so", RTLD_NOW);
 
     if (!ibv_handle) {
-      DPRINTF("Could not open libibverbs. Returning\n");
-      exit(1);
+      DPRINTF("Could not open libibverbs. Disabled.\n");
+      return;
     }
   }
 
   err = init_function_table();
   if (err != ROCSHMEM_SUCCESS) {
-    DPRINTF("Could not construct InfiniBand Verbs function table \n");
-    exit(1);
+    DPRINTF("Could not construct InfiniBand Verbs function table. Disabled.\n");
+    return;
   }
+  is_initialized = true;
 }
 
 IBVWrapper::~IBVWrapper() {
+  is_initialized = false;
   if (ibv_handle != nullptr) {
     dlclose(ibv_handle);
   }

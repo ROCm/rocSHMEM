@@ -165,7 +165,6 @@ if (NOT BUILD_TESTS_ONLY)
     set(HAVE_EXTERNAL_MPI ON)
   else()
     set(HAVE_EXTERNAL_MPI OFF)
-    set(BUILD_FUNCTIONAL_TESTS OFF)
     set(BUILD_UNIT_TESTS OFF)
   endif()
 

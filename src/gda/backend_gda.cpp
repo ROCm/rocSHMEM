@@ -29,6 +29,7 @@
 #include <cassert>
 
 #include "backend_gda.hpp"
+#include "ibv_wrapper.hpp"
 #include "envvar.hpp"
 #include "gda_team.hpp"
 #include "mpi_instance.hpp"
@@ -649,15 +650,17 @@ int GDABackend::backend_can_run() {
   void *handle{nullptr};
   GDAProvider requested = requested_provider();
 
+  /* Basic verbs? */
+  if (!ibv.is_initialized) return ROCSHMEM_ERROR;
+
   /* Try opening bnxt DV libraries */
 #if defined(GDA_BNXT)
   if (requested == GDAProvider::UNSET || requested == GDAProvider::BNXT) {
     handle = bnxt_dv_dlopen();
     if (handle) {
+      auto ret = has_active_ib_interface(GDAProvider::BNXT);
       dlclose(handle);
-      if (has_active_ib_interface(GDAProvider::BNXT)) {
-        return ROCSHMEM_SUCCESS;
-      }
+      if (ret) return ROCSHMEM_SUCCESS;
       DPRINTF("BNXT DV library found but no active InfiniBand interface available\n");
     }
   }
@@ -668,10 +671,9 @@ int GDABackend::backend_can_run() {
   if (requested == GDAProvider::UNSET || requested == GDAProvider::IONIC) {
     handle = ionic_dv_dlopen();
     if (handle) {
+      auto ret = has_active_ib_interface(GDAProvider::IONIC);
       dlclose(handle);
-      if (has_active_ib_interface(GDAProvider::IONIC)) {
-        return ROCSHMEM_SUCCESS;
-      }
+      if (ret) return ROCSHMEM_SUCCESS;
       DPRINTF("IONIC DV library found but no active InfiniBand interface available\n");
     }
   }
@@ -682,10 +684,9 @@ int GDABackend::backend_can_run() {
   if (requested == GDAProvider::UNSET || requested == GDAProvider::MLX5) {
     handle = mlx5_dv_dlopen();
     if (handle) {
+      auto ret = has_active_ib_interface(GDAProvider::MLX5);
       dlclose(handle);
-      if (has_active_ib_interface(GDAProvider::MLX5)) {
-        return ROCSHMEM_SUCCESS;
-      }
+      if (ret) return ROCSHMEM_SUCCESS;
       DPRINTF("MLX5 DV library found but no active InfiniBand interface available\n");
     }
   }

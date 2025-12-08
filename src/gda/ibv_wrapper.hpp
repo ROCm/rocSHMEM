@@ -38,6 +38,8 @@ class IBVWrapper {
     explicit IBVWrapper();
     virtual ~IBVWrapper();
 
+    bool is_initialized{false};
+
     struct ibv_device** get_device_list(int *num_devices);
     void free_device_list(struct ibv_device **list);
 
