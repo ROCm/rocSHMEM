@@ -1,11 +1,23 @@
 # Changelog for rocSHMEM
 
-## Unreleased - rocSHMEM 3.x.x for ROCm 7.x.x
+## rocSHMEM 3.2.0 for ROCm 7.2.0
 ### Added
 * Added the GDA conduit for AMD Pensando IONIC
 * Added new APIs:
    * `rocshmem_ctx_pe_quiet`
    * `rocshmem_pe_quiet`
+### Changed
+* Dependency libraries are loaded dynamically
+   * MPI dependency can be optional (when building with USE_EXTERNAL_MPI=OFF)
+* The following APIs now have an implementation for the GDA conduit
+   * `rocshmem_p`
+   * fetching atomics `rochsmem_<TYPE>_fetch_<op>`
+   * collective APIs
+* The following APIs now have an implementation for the IPC conduit
+   * `rocshmem_<TYPE>_atomic_{and,or,xor,swap}`
+   * `rocshmem_<TYPE>_atomic_fetch_{and,or,xor,swap}`
+### Known issues
+* Only 64bit rocSHMEM atomic APIs are implemented for the GDA conduit
 
 ## rocSHMEM 3.1.0 for ROCm 7.1.1
 ### Added
