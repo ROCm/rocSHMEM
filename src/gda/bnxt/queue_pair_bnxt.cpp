@@ -177,8 +177,6 @@ __device__ void QueuePair::poll_cq_until(uint32_t requested_available_slots) {
 
   sq_depth = sq.depth;
 
-  aquire_lock(&cq.lock);
-
   do {
     cqe = (struct bnxt_re_req_cqe *) cq.buf;
 
@@ -197,8 +195,6 @@ __device__ void QueuePair::poll_cq_until(uint32_t requested_available_slots) {
     consumed_slots  = (sq_tail - sq_head + sq_depth) % sq_depth;
     available_slots = sq_depth - consumed_slots;
   } while (available_slots < requested_available_slots);
-
-  release_lock(&cq.lock);
 }
 
 __device__ void QueuePair::bnxt_quiet() {
