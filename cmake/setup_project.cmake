@@ -29,7 +29,7 @@ set(CMAKE_BUILD_TYPE "Release" CACHE STRING
       "build type: Release, Debug, RelWithDebInfo, MinSizeRel")
 
 ###############################################################################
-# GLOBAL COMPILE FLAGS
+# DEPENDENCIES
 ###############################################################################
 
 # Try to establish ROCM_PATH (for find_package)
@@ -70,6 +70,10 @@ endforeach()
 if (NOT DEFINED CMAKE_CXX_COMPILER)
   find_program(CMAKE_CXX_COMPILER hipcc PATHS /opt/rocm)
 endif()
+
+###############################################################################
+# GLOBAL COMPILE FLAGS
+###############################################################################
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

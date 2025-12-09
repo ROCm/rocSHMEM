@@ -29,6 +29,7 @@ cmake_minimum_required(VERSION 3.16.3 FATAL_ERROR)
 include(${CMAKE_SOURCE_DIR}/cmake/setup_project.cmake)
 project(rocshmem_examples VERSION 1.0.0 LANGUAGES CXX)
 
+find_package(MPI)
 find_package(hip REQUIRED PATHS /opt/rocm)
 if (NOT TARGET roc::rocshmem)
   find_package(rocshmem REQUIRED PATHS /opt/rocm)
@@ -45,7 +46,7 @@ set(EXAMPLE_SOURCES
   rocshmem_put_signal_test.cc
 )
 
-if (HAVE_EXTERNAL_MPI)
+if (MPI_CXX_FOUND)
   list(APPEND EXAMPLE_SOURCES
     rocshmem_init_attr_test.cc)
 endif()
@@ -58,7 +59,7 @@ foreach(SOURCE_FILE IN LISTS EXAMPLE_SOURCES)
   target_link_libraries(
     ${EXECUTABLE_NAME}
     PRIVATE
-      $<TARGET_NAME_IF_EXISTS:MPI::MPI_CXX>
       roc::rocshmem
+      $<TARGET_NAME_IF_EXISTS:MPI::MPI_CXX>
   )
 endforeach()

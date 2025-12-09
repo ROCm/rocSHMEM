@@ -72,14 +72,17 @@ target_sources(
 # ROCSHMEM
 ###############################################################################
 if (BUILD_TESTS_ONLY)
-  #TODO check that build_test_only still works with external-mpi
+  #TODO these find_packages should be performed as-needed in rocshmem-config.cmake
+  find_package(hip REQUIRED PATHS /opt/rocm)
+  find_package(MPI)
+  find_package(Threads REQUIRED)
   find_package(rocshmem REQUIRED PATHS /opt/rocm)
 
   target_include_directories(
     ${PROJECT_NAME}
     PRIVATE
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
       $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../src>
   )
 endif()
 
@@ -88,12 +91,13 @@ find_package(PMIx)
 target_compile_definitions(
   ${PROJECT_NAME}
   PRIVATE
-    $<$<BOOL:${PMIx_FOUND}>:HAVE_PMIX=1>
+    $<$<TARGET_EXISTS:PMIx::pmix>:HAVE_PMIX=1>
 )
 
 target_link_libraries(
   ${PROJECT_NAME}
   PRIVATE
     roc::rocshmem
-    $<$<BOOL:${PMIx_FOUND}>:PMIx::pmix>
+    $<TARGET_NAME_IF_EXISTS:MPI::MPI_CXX>
+    $<TARGET_NAME_IF_EXISTS:PMIx::pmix>
 )
