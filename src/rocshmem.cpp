@@ -93,6 +93,12 @@ static BackendType select_backend_type() {
   if (!envstr.empty()) {
     DPRINTF("Found environment variable ROCSHMEM_BACKEND, value is %s\n", envstr.c_str());
     if (envstr.find("gda") != std::string::npos) {
+      if (GDABackend::backend_can_run() != ROCSHMEM_SUCCESS) {
+        fprintf(stderr, "Error: ROCSHMEM_BACKEND=gda requested but GDA backend cannot run.\n"
+                        "No active RDMA interface found for the requested provider.\n"
+                        "Check that the correct NIC hardware is present and the link is active.\n");
+        exit(1);
+      }
       return BackendType::GDA_BACKEND;
     }
     if (envstr.find("ro") != std::string::npos) {
