@@ -52,6 +52,9 @@
 #include "util.hpp"
 
 #if defined(USE_GDA)
+#if defined (ENABLE_IBGDA_BITCODE)
+#  include "gda/backend_gda.hpp"
+#endif
 #include "gda/context_gda_tmpl_device.hpp"
 #endif
 #if defined(USE_RO)
@@ -78,6 +81,8 @@ __constant__ rocshmem_ctx_t ROCSHMEM_CTX_INVALID = {nullptr, nullptr};
 
 #if defined(ENABLE_IPC_BITCODE)
   typedef IPCContext ContextTy;
+#elif defined(ENABLE_IBGDA_BITCODE)
+  typedef GDAContext ContextTy;
 #else
   typedef Context ContextTy;
 #endif
