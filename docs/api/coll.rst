@@ -22,6 +22,20 @@ This routine performs a collective barrier across all PEs in the system.
 The caller is blocked until the barrier is resolved and all updates local and remote are completed.
 These APIs should be called from only one thread/wavefront/workgroup within the grid to avoid undefined behavior.
 
+ROCSHMEM_BARRIER_ALL_ON_STREAM
+-------------------------------
+
+.. cpp:function:: __host__ void rocshmem_barrier_all_on_stream(hipStream_t stream)
+
+  :param stream: HIP stream on which to enqueue the operation.
+  :returns:      None.
+
+**Description:**
+This routine enqueues a collective barrier operation on a HIP stream. The barrier is performed
+across all PEs in the system. The operation is enqueued on the specified stream and will execute
+asynchronously. The caller must synchronize the stream (e.g., using ``hipStreamSynchronize``)
+to ensure completion.
+
 ROCSHMEM_BARRIER
 ----------------
 
@@ -109,7 +123,6 @@ execute asynchronously. The caller must synchronize the stream (e.g., using
 
 This function creates a separate context for each workgroup to avoid contention on the
 default context, allowing parallel execution across multiple streams.
-If ``stream`` is ``nullptr``, the operation will use ``hipStreamDefault``.
 
 ROCSHMEM_BROADCAST
 ------------------
@@ -130,6 +143,28 @@ This routine performs a broadcast across PEs in the team.
 The caller is blocked until the broadcast completes.
 
 Valid ``TYPENAME`` and ``TYPE`` values are listed in :ref:`RMA_TYPES`.
+
+ROCSHMEM_BROADCASTMEM_ON_STREAM
+--------------------------------
+
+.. cpp:function:: __host__ void rocshmem_broadcastmem_on_stream(rocshmem_team_t team, void *dest, const void *source, size_t nelems, int pe_root, hipStream_t stream)
+
+  :param team:    The team participating in the collective.
+  :param dest:    Destination address. Must be an address on the symmetric heap.
+  :param source:  Source address. Must be an address on the symmetric heap.
+  :param nelems:  Number of bytes to broadcast.
+  :param pe_root: Root PE (relative to team) from which to broadcast.
+  :param stream:  HIP stream on which to enqueue the operation.
+  :returns:       None.
+
+**Description:**
+This routine enqueues a broadcast collective operation on a HIP stream. The function broadcasts
+data from the root PE to all other PEs participating in the collective routine. The operation
+is enqueued on the specified stream and will execute asynchronously. The caller must synchronize
+the stream (e.g., using ``hipStreamSynchronize``) to ensure completion.
+
+This function creates a separate context for each workgroup to avoid contention on the
+default context, allowing parallel execution across multiple streams.
 
 ROCSHMEM_FCOLLECT
 -----------------

@@ -71,6 +71,30 @@ then applies ``sig_op`` at ``sig_addr`` with the signal value.
 Valid ``sig_op values`` are listed in SIGNAL_OPERATORS_.
 Valid ``TYPENAME`` and ``TYPE`` values are listed in :ref:`RMA_TYPES`.
 
+ROCSHMEM_PUTMEM_SIGNAL_ON_STREAM
+---------------------------------
+
+.. cpp:function:: __host__ void rocshmem_putmem_signal_on_stream(void *dest, const void *source, size_t nelems, uint64_t *sig_addr, uint64_t signal, int sig_op, int pe, hipStream_t stream)
+
+  :param dest:     Destination address on the remote PE. Must be an address on the symmetric heap.
+  :param source:   Source address on the local PE. Must be an address on the symmetric heap.
+  :param nelems:   Size of the transfer in bytes.
+  :param sig_addr: Address of signal variable on the remote PE. Must be an address on the symmetric heap.
+  :param signal:   Signal value to be written.
+  :param sig_op:   Signal operation (ROCSHMEM_SIGNAL_SET or ROCSHMEM_SIGNAL_ADD).
+  :param pe:       PE number of the remote PE.
+  :param stream:   HIP stream on which to enqueue the operation.
+  :returns:        None.
+
+**Description:**
+This routine enqueues a put-with-signal operation on a HIP stream. The function writes contiguous
+data of ``nelems`` bytes from source on the calling PE to ``dest`` at ``pe``, then applies ``sig_op``
+at ``sig_addr`` with the signal value. The operation is enqueued on the specified stream and will
+execute asynchronously. The caller must synchronize the stream (e.g., using ``hipStreamSynchronize``)
+to ensure completion.
+
+Valid ``sig_op`` values are listed in SIGNAL_OPERATORS_.
+
 ROCSHMEM_SIGNAL_FETCH
 ---------------------
 

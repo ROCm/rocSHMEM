@@ -22,7 +22,7 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "team_alltoallmem_on_stream_tester.hpp"
+#include "team_broadcastmem_on_stream_tester.hpp"
 
 #include <rocshmem/rocshmem.hpp>
 #include <hip/hip_runtime.h>
@@ -33,7 +33,7 @@
 /******************************************************************************
  * HOST TESTER CLASS METHODS
  *****************************************************************************/
-TeamAlltoallmemOnStreamTester::TeamAlltoallmemOnStreamTester(TesterArguments args)
+TeamBroadcastmemOnStreamTester::TeamBroadcastmemOnStreamTester(TesterArguments args)
     : Tester(args) {
   my_pe = rocshmem_team_my_pe(ROCSHMEM_TEAM_WORLD);
   n_pes = rocshmem_team_n_pes(ROCSHMEM_TEAM_WORLD);
@@ -46,7 +46,17 @@ TeamAlltoallmemOnStreamTester::TeamAlltoallmemOnStreamTester(TesterArguments arg
     num_teams = args.num_wgs;
   }
 
-  int num_bytes_wg = args.max_msg_size * n_pes;
+  // Set root PE to 0 by default, can be modified via environment variable
+  if ((value = getenv("ROCSHMEM_TEST_BROADCAST_ROOT"))) {
+    pe_root = atoi(value);
+    if (pe_root < 0 || pe_root >= n_pes) {
+      std::cerr << "Invalid ROCSHMEM_TEST_BROADCAST_ROOT value. Using PE 0."
+                << std::endl;
+      pe_root = 0;
+    }
+  }
+
+  int num_bytes_wg = args.max_msg_size;
   int total_bytes = num_bytes_wg * num_teams;
   buf_size = total_bytes;
 
@@ -72,7 +82,7 @@ TeamAlltoallmemOnStreamTester::TeamAlltoallmemOnStreamTester(TesterArguments arg
   }
 }
 
-TeamAlltoallmemOnStreamTester::~TeamAlltoallmemOnStreamTester() {
+TeamBroadcastmemOnStreamTester::~TeamBroadcastmemOnStreamTester() {
   for (int i = 0; i < num_teams; i++) {
     CHECK_HIP(hipEventDestroy(stop_events_timed[i]));
     CHECK_HIP(hipEventDestroy(start_events_timed[i]));
@@ -82,8 +92,8 @@ TeamAlltoallmemOnStreamTester::~TeamAlltoallmemOnStreamTester() {
   rocshmem_free(dest_buf);
 }
 
-void TeamAlltoallmemOnStreamTester::preLaunchKernel() {
-  bw_factor = n_pes;
+void TeamBroadcastmemOnStreamTester::preLaunchKernel() {
+  bw_factor = 1;  // Broadcast is one-to-all
 
   for (int team_i = 0; team_i < num_teams; team_i++) {
     team_world_dup[team_i] = ROCSHMEM_TEAM_INVALID;
@@ -96,7 +106,7 @@ void TeamAlltoallmemOnStreamTester::preLaunchKernel() {
   }
 }
 
-void TeamAlltoallmemOnStreamTester::postLaunchKernel() {
+void TeamBroadcastmemOnStreamTester::postLaunchKernel() {
   // Synchronize all streams to ensure events are recorded
   for (int i = 0; i < num_teams; i++) {
     CHECK_HIP(hipStreamSynchronize(streams[i]));
@@ -128,37 +138,47 @@ void TeamAlltoallmemOnStreamTester::postLaunchKernel() {
   }
 }
 
-void TeamAlltoallmemOnStreamTester::resetBuffers(size_t size) {
-  // Initialize source buffer: each PE fills its portion with its PE number
-  // For alltoall, PE i sends block j to PE j
-  // Support multiple work groups (teams)
-  int idx = 0;
-
+void TeamBroadcastmemOnStreamTester::resetBuffers(size_t size) {
+  // Initialize source buffer on all PEs
+  // Each work group has its own portion
   for (int wg_id = 0; wg_id < num_teams; wg_id++) {
-    for (int pe = 0; pe < n_pes; pe++) {
-      // Each block in source buffer is filled with (my_pe * n_pes + pe)
-      // This makes it easy to verify correctness
-      int value = my_pe * n_pes + pe;
-      idx = (wg_id * n_pes + pe) * size;
+    int idx = wg_id * size;
+    if (my_pe == pe_root) {
+      // Root PE fills its source buffer with broadcast value
+      int value = (pe_root + 1) * 100 + wg_id;
       std::memset(source_buf + idx, value, size);
+    } else {
+      // Non-root PEs source buffer (not used in broadcast)
+      std::memset(source_buf + idx, 0xFF, size);
     }
   }
 
-  // Clear destination buffer
-  std::memset(dest_buf, 0, buf_size);
+  // Initialize destination buffer on all PEs
+  // Root PE keeps its initial dest value (broadcast doesn't copy to root's
+  // dest) Non-root PEs set to 0 (will receive broadcast data)
+  for (int wg_id = 0; wg_id < num_teams; wg_id++) {
+    int idx = wg_id * size;
+    if (my_pe == pe_root) {
+      // Root PE's dest buffer stays with a different value
+      int root_dest_value = 0xAA;
+      std::memset(dest_buf + idx, root_dest_value, size);
+    } else {
+      std::memset(dest_buf + idx, 0, size);
+    }
+  }
 }
 
-void TeamAlltoallmemOnStreamTester::launchKernel(dim3 gridSize,
-                                                 dim3 blockSize,
-                                                 int loop,
-                                                 size_t size) {
+void TeamBroadcastmemOnStreamTester::launchKernel(dim3 gridSize,
+                                                  dim3 blockSize,
+                                                  int loop,
+                                                  size_t size) {
   // Execute warmup iterations (skip)
   for (int i = 0; i < args.skip; i++) {
     for (int wg_id = 0; wg_id < num_teams; wg_id++) {
-      char *wg_source = source_buf + wg_id * n_pes * size;
-      char *wg_dest = dest_buf + wg_id * n_pes * size;
-      rocshmem_alltoallmem_on_stream(team_world_dup[wg_id], wg_dest,
-                                     wg_source, size, streams[wg_id]);
+      char *wg_source = source_buf + wg_id * size;
+      char *wg_dest = dest_buf + wg_id * size;
+      rocshmem_broadcastmem_on_stream(team_world_dup[wg_id], wg_dest,
+                                      wg_source, size, pe_root, streams[wg_id]);
     }
   }
 
@@ -173,10 +193,10 @@ void TeamAlltoallmemOnStreamTester::launchKernel(dim3 gridSize,
         CHECK_HIP(hipEventRecord(start_events_timed[wg_id], streams[wg_id]));
       }
 
-      char *wg_source = source_buf + wg_id * n_pes * size;
-      char *wg_dest = dest_buf + wg_id * n_pes * size;
-      rocshmem_alltoallmem_on_stream(team_world_dup[wg_id], wg_dest,
-                                     wg_source, size, streams[wg_id]);
+      char *wg_source = source_buf + wg_id * size;
+      char *wg_dest = dest_buf + wg_id * size;
+      rocshmem_broadcastmem_on_stream(team_world_dup[wg_id], wg_dest,
+                                      wg_source, size, pe_root, streams[wg_id]);
 
       // Record stop event for this work group on last iteration
       if (i == loop - 1) {
@@ -189,29 +209,30 @@ void TeamAlltoallmemOnStreamTester::launchKernel(dim3 gridSize,
   num_timed_msgs = loop * num_teams;
 }
 
-void TeamAlltoallmemOnStreamTester::verifyResults(size_t size) {
-  // Verify correctness: after alltoall, PE i should receive from PE j
-  // the block that PE j sent to PE i
-  // PE j sends block i (containing value j * n_pes + i) to PE i
-  // Support multiple work groups (teams)
-  int idx = 0;
-
+void TeamBroadcastmemOnStreamTester::verifyResults(size_t size) {
+  // Verify correctness: after broadcast, non-root PEs receive the broadcast
+  // data Root PE's dest buffer is NOT modified (per OpenSHMEM/rocSHMEM spec)
   for (int wg_id = 0; wg_id < num_teams; wg_id++) {
-    for (int j = 0; j < n_pes; j++) {
-      int expected_value = j * n_pes + my_pe;
-      idx = (wg_id * n_pes + j) * size;
+    int idx = wg_id * size;
+    int expected_value;
 
-      for (size_t k = 0; k < size; k++) {
-        if (static_cast<unsigned char>(dest_buf[idx + k]) !=
-            static_cast<unsigned char>(expected_value)) {
-          std::cerr << "PE " << my_pe << ": Verification failed for WG "
-                    << wg_id << ", block from PE " << j << " at byte " << k
-                    << std::endl;
-          std::cerr << "Expected value: " << expected_value
-                    << ", Got: " << static_cast<int>(dest_buf[idx + k])
-                    << std::endl;
-          rocshmem_global_exit(1);
-        }
+    if (my_pe == pe_root) {
+      // Root PE's dest buffer should remain unchanged (0xAA)
+      expected_value = 0xAA;
+    } else {
+      // Non-root PEs should have received the broadcast value
+      expected_value = (pe_root + 1) * 100 + wg_id;
+    }
+
+    for (size_t k = 0; k < size; k++) {
+      if (static_cast<unsigned char>(dest_buf[idx + k]) !=
+          static_cast<unsigned char>(expected_value)) {
+        std::cerr << "PE " << my_pe << ": Verification failed for WG "
+                  << wg_id << " at byte " << k << std::endl;
+        std::cerr << "Expected value: " << expected_value
+                  << ", Got: " << static_cast<int>(dest_buf[idx + k])
+                  << std::endl;
+        rocshmem_global_exit(1);
       }
     }
   }

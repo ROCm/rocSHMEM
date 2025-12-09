@@ -1007,6 +1007,54 @@ __host__ void rocshmem_alltoallmem_on_stream(rocshmem_team_t team, void *dest,
       ->alltoallmem_on_stream(team, dest, source, size, stream);
 }
 
+__host__ void rocshmem_broadcastmem_on_stream(rocshmem_team_t team, void *dest,
+                                              const void *source, size_t nelems,
+                                              int pe_root, hipStream_t stream) {
+  DPRINTF("Host function: rocshmem_broadcastmem_on_stream\n");
+
+  get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)
+      ->broadcastmem_on_stream(team, dest, source, nelems, pe_root, stream);
+}
+
+__host__ void rocshmem_getmem_on_stream(void *dest, const void *source,
+                                        size_t nelems, int pe,
+                                        hipStream_t stream) {
+  DPRINTF("Host function: rocshmem_getmem_on_stream\n");
+
+  get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)
+      ->getmem_on_stream(dest, source, nelems, pe, stream);
+}
+
+__host__ void rocshmem_putmem_on_stream(void *dest, const void *source,
+                                        size_t nelems, int pe,
+                                        hipStream_t stream) {
+  DPRINTF("Host function: rocshmem_putmem_on_stream\n");
+
+  get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)
+      ->putmem_on_stream(dest, source, nelems, pe, stream);
+}
+
+__host__ void rocshmem_putmem_signal_on_stream(void *dest, const void *source,
+                                               size_t nelems,
+                                               uint64_t *sig_addr,
+                                               uint64_t signal, int sig_op,
+                                               int pe, hipStream_t stream) {
+  DPRINTF("Host function: rocshmem_putmem_signal_on_stream\n");
+
+  get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)
+      ->putmem_signal_on_stream(dest, source, nelems, sig_addr, signal, sig_op,
+                                pe, stream);
+}
+
+__host__ void rocshmem_signal_wait_until_on_stream(uint64_t *sig_addr, int cmp,
+                                                   uint64_t cmp_value,
+                                                   hipStream_t stream) {
+  DPRINTF("Host function: rocshmem_signal_wait_until_on_stream\n");
+
+  get_internal_ctx(ROCSHMEM_HOST_CTX_DEFAULT)
+      ->signal_wait_until_on_stream(sig_addr, cmp, cmp_value, stream);
+}
+
 __host__ void rocshmem_sync_all() {
   DPRINTF("Host function: rocshmem_sync_all\n");
 
@@ -1681,6 +1729,7 @@ WAIT_DEF_GEN(unsigned short, ushort)
 WAIT_DEF_GEN(unsigned int, uint)
 WAIT_DEF_GEN(unsigned long, ulong)
 WAIT_DEF_GEN(unsigned long long, ulonglong)
+WAIT_DEF_GEN(uint64_t, uint64)
 // clang-format on
 
 }  // namespace rocshmem

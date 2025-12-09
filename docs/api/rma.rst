@@ -67,6 +67,25 @@ ROCSHMEM_PUTMEM
 **Description:**
 This routine writes contiguous data of ``nelems`` bytes from source on the calling PE to ``dest`` at ``pe``.
 
+ROCSHMEM_PUTMEM_ON_STREAM
+--------------------------
+
+.. cpp:function:: __host__ void rocshmem_putmem_on_stream(void *dest, const void *source, size_t nelems, int pe, hipStream_t stream)
+
+    :param dest:    Destination address. Must be an address on the symmetric heap.
+    :param source:  Source address. Must be an address on the symmetric heap.
+    :param nelems:  Size of the transfer in bytes.
+    :param pe:      PE of the remote process.
+    :param stream:  HIP stream on which to enqueue the operation.
+
+    :returns:       None.
+
+**Description:**
+This routine enqueues a putmem RMA operation on a HIP stream. The function writes contiguous
+data of ``nelems`` bytes from source on the calling PE to ``dest`` at ``pe``. The operation
+is enqueued on the specified stream and will execute asynchronously. The caller must
+synchronize the stream (e.g., using ``hipStreamSynchronize``) to ensure completion.
+
 ROCSHMEM_P
 ----------
 
@@ -136,6 +155,25 @@ ROCSHMEM_GETMEM
 
 **Description:**
 This routine reads contiguous data of ``nelems`` bytes from source on ``pe`` to ``dest`` on the calling PE.
+
+ROCSHMEM_GETMEM_ON_STREAM
+--------------------------
+
+.. cpp:function:: __host__ void rocshmem_getmem_on_stream(void *dest, const void *source, size_t nelems, int pe, hipStream_t stream)
+
+    :param dest:    Destination address. Must be an address on the symmetric heap.
+    :param source:  Source address. Must be an address on the symmetric heap.
+    :param nelems:  Size of the transfer in bytes.
+    :param pe:      PE of the remote process.
+    :param stream:  HIP stream on which to enqueue the operation.
+
+    :returns:       None.
+
+**Description:**
+This routine enqueues a getmem RMA operation on a HIP stream. The function reads contiguous
+data of ``nelems`` bytes from source on ``pe`` to ``dest`` on the calling PE. The operation
+is enqueued on the specified stream and will execute asynchronously. The caller must
+synchronize the stream (e.g., using ``hipStreamSynchronize``) to ensure completion.
 
 ROCSHMEM_G
 ----------

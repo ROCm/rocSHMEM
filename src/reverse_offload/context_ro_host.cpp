@@ -133,6 +133,12 @@ __host__ void ROHostContext::barrier_all() {
   host_interface->barrier_for_sync();
 }
 
+__host__ void ROHostContext::barrier_all_on_stream(hipStream_t stream) {
+  DPRINTF("Function: ro_net_host_barrier_all_on_stream\n");
+
+  host_interface->barrier_all_on_stream(stream);
+}
+
 __host__ void ROHostContext::alltoallmem_on_stream(rocshmem_team_t team,
                                                     void *dest,
                                                     const void *source,
@@ -141,6 +147,51 @@ __host__ void ROHostContext::alltoallmem_on_stream(rocshmem_team_t team,
   DPRINTF("Function: ro_net_host_alltoallmem_on_stream\n");
 
   host_interface->alltoallmem_on_stream(team, dest, source, size, stream);
+}
+
+__host__ void ROHostContext::broadcastmem_on_stream(rocshmem_team_t team,
+                                                    void *dest,
+                                                    const void *source,
+                                                    size_t nelems, int pe_root,
+                                                    hipStream_t stream) {
+  DPRINTF("Function: ro_net_host_broadcastmem_on_stream\n");
+
+  host_interface->broadcastmem_on_stream(team, dest, source, nelems, pe_root,
+                                         stream);
+}
+
+__host__ void ROHostContext::getmem_on_stream(void *dest, const void *source,
+                                              size_t nelems, int pe,
+                                              hipStream_t stream) {
+  DPRINTF("Function: ro_net_host_getmem_on_stream\n");
+
+  host_interface->getmem_on_stream(dest, source, nelems, pe, stream);
+}
+
+__host__ void ROHostContext::putmem_on_stream(void *dest, const void *source,
+                                              size_t nelems, int pe,
+                                              hipStream_t stream) {
+  DPRINTF("Function: ro_net_host_putmem_on_stream\n");
+
+  host_interface->putmem_on_stream(dest, source, nelems, pe, stream);
+}
+
+__host__ void ROHostContext::putmem_signal_on_stream(
+    void *dest, const void *source, size_t nelems, uint64_t *sig_addr,
+    uint64_t signal, int sig_op, int pe, hipStream_t stream) {
+  DPRINTF("Function: ro_net_host_putmem_signal_on_stream\n");
+
+  host_interface->putmem_signal_on_stream(dest, source, nelems, sig_addr,
+                                          signal, sig_op, pe, stream);
+}
+
+__host__ void ROHostContext::signal_wait_until_on_stream(uint64_t *sig_addr,
+                                                         int cmp,
+                                                         uint64_t cmp_value,
+                                                         hipStream_t stream) {
+  DPRINTF("Function: ro_net_host_signal_wait_until_on_stream\n");
+
+  host_interface->signal_wait_until_on_stream(sig_addr, cmp, cmp_value, stream);
 }
 
 }  // namespace rocshmem

@@ -112,10 +112,12 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
     case TeamBarrierTestType:
     case TeamWAVEBarrierTestType:
     case TeamWGBarrierTestType:
+    case BarrierAllOnStreamTestType:
     case SyncAllTestType:
     case WAVESyncAllTestType:
     case WGSyncAllTestType:
     case TeamSyncTestType:
+    case SignalWaitUntilOnStreamTestType:
       min_msg_size = 8;
       max_msg_size = 8;
       break;
@@ -125,6 +127,8 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
       max_msg_size = 4;
       break;
     case RandomAccessTestType:
+    case TeamAlltoallmemOnStreamTestType:
+    case TeamBroadcastmemOnStreamTestType:
       min_msg_size = 4;
       break;
     case TeamFCollectTestType:
@@ -173,23 +177,49 @@ void TesterArguments::get_arguments() {
   myid = rocshmem_my_pe();
 
   TestType type = (TestType)algorithm;
-  if ((type != BarrierAllTestType) && (type != WAVEBarrierAllTestType) &&
-      (type != WGBarrierAllTestType) && (type != SyncAllTestType) &&
-      (type != WAVESyncAllTestType) && (type != WGSyncAllTestType) &&
-      (type != TeamSyncTestType) && (type != TeamWAVESyncTestType) &&
-      (type != TeamWGSyncTestType) && (type != TeamAllToAllTestType) &&
-      (type != TeamFCollectTestType) && (type != TeamReductionTestType) &&
-      (type != TeamBroadcastTestType) && (type != PingAllTestType) &&
-      (type != TeamBarrierTestType) && (type != TeamWAVEBarrierTestType) &&
-      (type != TeamWGBarrierTestType) && (type != TeamCtxInfraTestBlockType) &&
-      (type != TeamCtxInfraTestOddEvenType) &&
-      (type != TeamAlltoallmemOnStreamTestType)) {
-    if (numprocs != 2) {
-      if (myid == 0) {
-        std::cerr << "This test requires exactly two processes, we have "
-                  << numprocs << "\n";
-      }
-      exit(-1);
+  // Check if test requires exactly 2 PEs
+  // Tests that support arbitrary number of PEs are excluded
+  bool requires_two_pes = true;
+  switch (type) {
+    // Collective/barrier tests - support any number of PEs
+    case BarrierAllTestType:
+    case WAVEBarrierAllTestType:
+    case WGBarrierAllTestType:
+    case SyncAllTestType:
+    case WAVESyncAllTestType:
+    case WGSyncAllTestType:
+    case TeamSyncTestType:
+    case TeamWAVESyncTestType:
+    case TeamWGSyncTestType:
+    case TeamAllToAllTestType:
+    case TeamFCollectTestType:
+    case TeamReductionTestType:
+    case TeamBroadcastTestType:
+    case PingAllTestType:
+    case TeamBarrierTestType:
+    case TeamWAVEBarrierTestType:
+    case TeamWGBarrierTestType:
+    case TeamCtxInfraTestBlockType:
+    case TeamCtxInfraTestOddEvenType:
+    // On-stream tests - support any number of PEs
+    case TeamAlltoallmemOnStreamTestType:
+    case BarrierAllOnStreamTestType:
+    case TeamBroadcastmemOnStreamTestType:
+    case GetmemOnStreamTestType:
+    case PutmemOnStreamTestType:
+    case PutmemSignalOnStreamTestType:
+    case SignalWaitUntilOnStreamTestType:
+      requires_two_pes = false;
+      break;
+    default:
+      break;
+  }
+
+  if (requires_two_pes && numprocs != 2) {
+    if (myid == 0) {
+      std::cerr << "This test requires exactly two processes, we have "
+                << numprocs << "\n";
     }
+    exit(-1);
   }
 }

@@ -366,6 +366,102 @@ __host__ void rocshmem_alltoallmem_on_stream(rocshmem_team_t team, void *dest,
                                              hipStream_t stream);
 
 /**
+ * @brief enqueues a broadcast collective operation on given stream.
+ *
+ * @param[in] team    The team participating in the collective.
+ * @param[in] dest    Destination address. Must be an address on the symmetric
+ *                    heap.
+ * @param[in] source  Source address. Must be an address on the symmetric heap.
+ * @param[in] nelems  Number of bytes to broadcast.
+ * @param[in] pe_root Root PE (relative to team) from which to broadcast.
+ * @param[in] stream  HIP stream on which to enqueue the operation.
+ *
+ * @return void
+ */
+__host__ void rocshmem_broadcastmem_on_stream(rocshmem_team_t team, void *dest,
+                                              const void *source, size_t nelems,
+                                              int pe_root, hipStream_t stream);
+
+/**
+ * @brief enqueues a getmem RMA operation on given stream.
+ *
+ * @param[in] dest    Destination address. Must be an address on the symmetric
+ *                    heap.
+ * @param[in] source  Source address. Must be an address on the symmetric heap.
+ * @param[in] nelems  Size of the transfer in bytes.
+ * @param[in] pe      PE of the remote process.
+ * @param[in] stream  HIP stream on which to enqueue the operation.
+ *
+ * @return void
+ */
+__host__ void rocshmem_getmem_on_stream(void *dest, const void *source,
+                                        size_t nelems, int pe,
+                                        hipStream_t stream);
+
+/**
+ * @brief enqueues a putmem RMA operation on given stream.
+ *
+ * @param[in] dest    Destination address. Must be an address on the symmetric
+ *                    heap.
+ * @param[in] source  Source address. Must be an address on the symmetric heap.
+ * @param[in] nelems  Size of the transfer in bytes.
+ * @param[in] pe      PE of the remote process.
+ * @param[in] stream  HIP stream on which to enqueue the operation.
+ *
+ * @return void
+ */
+__host__ void rocshmem_putmem_on_stream(void *dest, const void *source,
+                                        size_t nelems, int pe,
+                                        hipStream_t stream);
+
+/**
+ * @brief Perform a put operation with signal on a HIP stream.
+ *
+ * This routine initiates a remote memory transfer on a specified HIP stream.
+ * The source data is copied from the local PE to the remote PE's destination
+ * address. After the put operation completes, a signal operation is performed
+ * on a remote symmetric signal variable.
+ *
+ * @param[in] dest      Destination address on the remote PE
+ * @param[in] source    Source address on the local PE
+ * @param[in] nelems    Size of the transfer in bytes
+ * @param[in] sig_addr  Address of signal variable on the remote PE
+ * @param[in] signal    Signal value to be written
+ * @param[in] sig_op    Signal operation (ROCSHMEM_SIGNAL_SET or
+ * ROCSHMEM_SIGNAL_ADD)
+ * @param[in] pe        PE number of the remote PE
+ * @param[in] stream    HIP stream on which to enqueue the operation
+ *
+ * @return void
+ */
+__host__ void rocshmem_putmem_signal_on_stream(void *dest, const void *source,
+                                               size_t nelems,
+                                               uint64_t *sig_addr,
+                                               uint64_t signal, int sig_op,
+                                               int pe, hipStream_t stream);
+
+/**
+ * @brief Wait on a signal variable until it satisfies the specified condition,
+ * with the operation enqueued on a HIP stream.
+ *
+ * This function blocks the calling thread until the signal variable at
+ * \p sig_addr satisfies the comparison condition (* \p sig_addr \p cmp
+ * \p cmp_value). The wait operation is executed asynchronously on the
+ * specified HIP stream.
+ *
+ * @param[in] sig_addr  Address of the signal variable on the symmetric heap
+ * @param[in] cmp       Comparison operator (e.g., ROCSHMEM_CMP_EQ,
+ * ROCSHMEM_CMP_GE, ROCSHMEM_CMP_NE, etc.)
+ * @param[in] cmp_value Value to compare against
+ * @param[in] stream    HIP stream on which to enqueue the operation
+ *
+ * @return void
+ */
+__host__ void rocshmem_signal_wait_until_on_stream(uint64_t *sig_addr, int cmp,
+                                                   uint64_t cmp_value,
+                                                   hipStream_t stream);
+
+/**
  * @brief registers the arrival of a PE at a barrier.
  * The caller is blocked until the synchronization is resolved.
  *

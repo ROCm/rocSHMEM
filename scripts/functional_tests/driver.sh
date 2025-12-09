@@ -110,6 +110,12 @@ declare -A TEST_NUMBERS=(
   ["teamctxblockinfra"]="74"
   ["teamctxoddeveninfra"]="75"
   ["alltoallmem_on_stream"]="76"
+  ["barrier_all_on_stream"]="77"
+  ["broadcastmem_on_stream"]="78"
+  ["getmem_on_stream"]="79"
+  ["putmem_on_stream"]="80"
+  ["putmem_signal_on_stream"]="81"
+  ["signal_wait_until_on_stream"]="82"
 )
 
 ExecTest() {
@@ -149,6 +155,11 @@ ExecTest() {
   OPTIONS+=" -x ROCSHMEM_MAX_NUM_CONTEXTS=$ROCSHMEM_MAX_NUM_CONTEXTS"
   OPTIONS+=" -x UCX_ROCM_IPC_SIGPOOL_MAX_ELEMS=16384"
   OPTIONS+=" --map-by numa --timeout $TIMEOUT"
+
+  if [[ "" != "$ROCSHMEM_TEST_USE_DEFAULT_STREAM" ]]
+  then
+    OPTIONS+=" -x ROCSHMEM_TEST_USE_DEFAULT_STREAM=$ROCSHMEM_TEST_USE_DEFAULT_STREAM"
+  fi
 
   if [[ "" != "$HOSTFILE" ]]
   then
@@ -222,6 +233,12 @@ TestRMAPut() {
   ExecTest  "shmemptr"         2       8            1         8
   ExecTest  "shmemptr"         2       16           128       8
 
+  ExecTest  "putmem_on_stream" 2       1            1         1048576
+
+  export ROCSHMEM_TEST_USE_DEFAULT_STREAM=1
+  ExecTest  "putmem_on_stream" 2       1            1         1048576
+  unset ROCSHMEM_TEST_USE_DEFAULT_STREAM
+
   ################################ Non-Blocking ################################
 
   ExecTest  "putnbi"           2       1            1         1048576
@@ -273,6 +290,8 @@ TestRMAGet() {
   ExecTest  "g"                2       1            1024      1
   ExecTest  "g"                2       8            1         32
   ExecTest  "g"                2       16           128       4
+
+  ExecTest  "getmem_on_stream" 2       1            1         1048576
 
   ################################ Non-Blocking ################################
 
@@ -373,6 +392,9 @@ TestSigOps() {
   ExecTest  "wgsignalfetch"    2       2            32
   ExecTest  "wavesignalfetch"  2       1            32
   ExecTest  "wavesignalfetch"  2       1            64
+
+  ExecTest  "putmem_signal_on_stream" 2  1          1         1048576
+  ExecTest  "signal_wait_until_on_stream" 2  1      1
 }
 
 TestColl() {
@@ -430,7 +452,9 @@ TestColl() {
 
   ExecTest  "teamreduction"    2       1            1         32768
 
-  ExecTest  "alltoallmem_on_stream" 2  1            1         32768
+  ExecTest  "alltoallmem_on_stream"  2  1           1         1048576
+  ExecTest  "broadcastmem_on_stream" 2  1           1         1048576
+  ExecTest  "barrier_all_on_stream"  2  1           1
 }
 
 TestOther() {

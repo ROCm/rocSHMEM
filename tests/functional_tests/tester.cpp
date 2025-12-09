@@ -36,7 +36,12 @@
 #include "amo_standard_tester.hpp"
 #include "default_ctx_primitive_tester.hpp"
 #include "barrier_all_tester.hpp"
+#include "barrier_all_on_stream_tester.hpp"
 #include "empty_tester.hpp"
+#include "getmem_on_stream_tester.hpp"
+#include "putmem_on_stream_tester.hpp"
+#include "putmem_signal_on_stream_tester.hpp"
+#include "signal_wait_until_on_stream_tester.hpp"
 #include "ping_all_tester.hpp"
 #include "ping_pong_tester.hpp"
 #include "primitive_mr_tester.hpp"
@@ -48,6 +53,7 @@
 #include "team_sync_tester.hpp"
 #include "team_alltoall_tester.hpp"
 #include "team_alltoallmem_on_stream_tester.hpp"
+#include "team_broadcastmem_on_stream_tester.hpp"
 #include "team_barrier_tester.hpp"
 #include "team_broadcast_tester.hpp"
 #include "team_ctx_infra_tester.hpp"
@@ -232,6 +238,36 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       if (rank == 0)
         std::cout << "Alltoallmem_On_Stream ###" << std::endl;
       testers.push_back(new TeamAlltoallmemOnStreamTester(args));
+      return testers;
+    case BarrierAllOnStreamTestType:
+      if (rank == 0)
+        std::cout << "Barrier_All_On_Stream ###" << std::endl;
+      testers.push_back(new BarrierAllOnStreamTester(args));
+      return testers;
+    case TeamBroadcastmemOnStreamTestType:
+      if (rank == 0)
+        std::cout << "Broadcastmem_On_Stream ###" << std::endl;
+      testers.push_back(new TeamBroadcastmemOnStreamTester(args));
+      return testers;
+    case GetmemOnStreamTestType:
+      if (rank == 0)
+        std::cout << "Getmem_On_Stream ###" << std::endl;
+      testers.push_back(new GetmemOnStreamTester(args));
+      return testers;
+    case PutmemOnStreamTestType:
+      if (rank == 0)
+        std::cout << "Putmem_On_Stream ###" << std::endl;
+      testers.push_back(new PutmemOnStreamTester(args));
+      return testers;
+    case PutmemSignalOnStreamTestType:
+      if (rank == 0)
+        std::cout << "Putmem_Signal_On_Stream ###" << std::endl;
+      testers.push_back(new PutmemSignalOnStreamTester(args));
+      return testers;
+    case SignalWaitUntilOnStreamTestType:
+      if (rank == 0)
+        std::cout << "Signal_Wait_Until_On_Stream ###" << std::endl;
+      testers.push_back(new SignalWaitUntilOnStreamTester(args));
       return testers;
     case TeamFCollectTestType:
       if (rank == 0) {
@@ -569,30 +605,50 @@ void Tester::execute() {
 }
 
 bool Tester::peLaunchesKernel() {
-  bool is_launcher;
-
   /**
    * The PE assigned 0 is always active in these tests.
    */
-  is_launcher = args.myid == 0;
+  bool is_launcher = (args.myid == 0);
 
   /**
    * Some test types are active on both sides.
    */
-  is_launcher = is_launcher || (_type == TeamReductionTestType) ||
-                (_type == TeamBroadcastTestType) || (_type == TeamCtxInfraTestType) ||
-                (_type == TeamCtxInfraTestSingleType) || (_type == TeamCtxInfraTestBlockType) ||
-                (_type == TeamCtxInfraTestOddEvenType) ||
-                (_type == TeamAllToAllTestType) || (_type == TeamFCollectTestType) ||
-                (_type == PingPongTestType) || (_type == BarrierAllTestType) ||
-                (_type == WAVEBarrierAllTestType) || (_type == WGBarrierAllTestType) ||
-                (_type == TeamSyncTestType) || (_type == TeamWAVESyncTestType) ||
-                (_type == TeamWGSyncTestType) || (_type == SyncAllTestType) ||
-                (_type == WAVESyncAllTestType) || (_type == WGSyncAllTestType) ||
-                (_type == RandomAccessTestType) || (_type == PingAllTestType) ||
-                (_type == TeamBarrierTestType) || (_type == TeamWAVEBarrierTestType) ||
-                (_type == TeamWGBarrierTestType) || 
-                (_type == TeamAlltoallmemOnStreamTestType);
+  switch (_type) {
+    case TeamReductionTestType:
+    case TeamBroadcastTestType:
+    case TeamCtxInfraTestType:
+    case TeamCtxInfraTestSingleType:
+    case TeamCtxInfraTestBlockType:
+    case TeamCtxInfraTestOddEvenType:
+    case TeamAllToAllTestType:
+    case TeamFCollectTestType:
+    case PingPongTestType:
+    case BarrierAllTestType:
+    case WAVEBarrierAllTestType:
+    case WGBarrierAllTestType:
+    case TeamSyncTestType:
+    case TeamWAVESyncTestType:
+    case TeamWGSyncTestType:
+    case SyncAllTestType:
+    case WAVESyncAllTestType:
+    case WGSyncAllTestType:
+    case RandomAccessTestType:
+    case PingAllTestType:
+    case TeamBarrierTestType:
+    case TeamWAVEBarrierTestType:
+    case TeamWGBarrierTestType:
+    case TeamAlltoallmemOnStreamTestType:
+    case BarrierAllOnStreamTestType:
+    case TeamBroadcastmemOnStreamTestType:
+    case GetmemOnStreamTestType:
+    case PutmemOnStreamTestType:
+    case PutmemSignalOnStreamTestType:
+    case SignalWaitUntilOnStreamTestType:
+      is_launcher = true;
+      break;
+    default:
+      break;
+  }
 
   return is_launcher;
 }

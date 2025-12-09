@@ -131,9 +131,30 @@ class ROHostContext : public Context {
 
   __host__ void barrier_all();
 
+  __host__ void barrier_all_on_stream(hipStream_t stream);
+
   __host__ void alltoallmem_on_stream(rocshmem_team_t team, void *dest,
                                       const void *source, size_t size,
                                       hipStream_t stream);
+
+  __host__ void broadcastmem_on_stream(rocshmem_team_t team, void *dest,
+                                       const void *source, size_t nelems,
+                                       int pe_root, hipStream_t stream);
+
+  __host__ void getmem_on_stream(void *dest, const void *source, size_t nelems,
+                                 int pe, hipStream_t stream);
+
+  __host__ void putmem_on_stream(void *dest, const void *source, size_t nelems,
+                                 int pe, hipStream_t stream);
+
+  __host__ void putmem_signal_on_stream(void *dest, const void *source,
+                                        size_t nelems, uint64_t *sig_addr,
+                                        uint64_t signal, int sig_op, int pe,
+                                        hipStream_t stream);
+
+  __host__ void signal_wait_until_on_stream(uint64_t *sig_addr, int cmp,
+                                            uint64_t cmp_value,
+                                            hipStream_t stream);
 
   __host__ void sync_all();
 

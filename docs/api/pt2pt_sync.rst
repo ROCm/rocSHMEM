@@ -96,6 +96,25 @@ ROCSHMEM_TEST
 **Description:**
 This routine tests if the condition ``(*ivars cmp val)`` is true.
 
+ROCSHMEM_SIGNAL_WAIT_UNTIL_ON_STREAM
+-------------------------------------
+
+.. cpp:function:: __host__ void rocshmem_signal_wait_until_on_stream(uint64_t *sig_addr, int cmp, uint64_t cmp_value, hipStream_t stream)
+
+  :param sig_addr:   Address of the signal variable on the symmetric heap.
+  :param cmp:        Comparison operator (e.g., ROCSHMEM_CMP_EQ, ROCSHMEM_CMP_GE, etc.).
+  :param cmp_value:  Value to compare against.
+  :param stream:     HIP stream on which to enqueue the operation.
+  :returns:          None.
+
+**Description:**
+This routine enqueues a wait operation on a HIP stream. The function blocks the calling thread
+until the signal variable at ``sig_addr`` satisfies the comparison condition ``(*sig_addr cmp cmp_value)``.
+The wait operation is executed asynchronously on the specified stream. The caller must synchronize
+the stream (e.g., using ``hipStreamSynchronize``) to ensure the wait condition has been satisfied.
+
+Valid ``cmp`` values are listed in :ref:`CMP_VALUES`.
+
 .. _CMP_VALUES:
 
 Supported comparisons

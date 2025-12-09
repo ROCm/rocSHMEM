@@ -674,6 +674,57 @@ __global__ ATTR_NO_INLINE void rocshmem_alltoallmem_kernel(rocshmem_team_t team,
   }
 }
 
+__global__ ATTR_NO_INLINE void rocshmem_broadcastmem_kernel(
+    rocshmem_team_t team, void *dest, const void *source, size_t nelems,
+    int pe_root) {
+  __shared__ rocshmem_ctx_t ctx;
+  __shared__ int ctx_result;
+
+  ctx_result = rocshmem_wg_team_create_ctx(team, 0, &ctx);
+
+  // If context creation failed, fall back to default context
+  if (ctx_result != 0) {
+    ctx = ROCSHMEM_CTX_DEFAULT;
+    __syncthreads();
+  }
+
+  // Call device broadcast function with created context and provided team
+  // Using char type since nelems is in bytes (1 byte per element)
+  rocshmem_broadcast_wg<char>(ctx, team, (char *) dest, (const char *) source,
+                              (int) nelems, pe_root);
+
+  if (ctx_result == 0) {
+    rocshmem_wg_ctx_destroy(&ctx);
+  }
+}
+
+__global__ ATTR_NO_INLINE void rocshmem_getmem_kernel(void *dest,
+                                                      const void *source,
+                                                      size_t nelems, int pe) {
+  // Use work-group collective getmem with default context
+  rocshmem_getmem_wg(dest, source, nelems, pe);
+}
+
+__global__ ATTR_NO_INLINE void rocshmem_putmem_kernel(void *dest,
+                                                      const void *source,
+                                                      size_t nelems, int pe) {
+  // Use work-group collective putmem with default context
+  rocshmem_putmem_wg(dest, source, nelems, pe);
+}
+
+__global__ ATTR_NO_INLINE void rocshmem_putmem_signal_kernel(
+    void *dest, const void *source, size_t nelems, uint64_t *sig_addr,
+    uint64_t signal, int sig_op, int pe) {
+  // Use work-group collective putmem_signal with default context
+  rocshmem_putmem_signal_wg(dest, source, nelems, sig_addr, signal, sig_op, pe);
+}
+
+__global__ ATTR_NO_INLINE void rocshmem_signal_wait_until_kernel(
+    uint64_t *sig_addr, int cmp, uint64_t cmp_value) {
+  // Use default context to wait on signal
+  rocshmem_uint64_wait_until(sig_addr, cmp, cmp_value);
+}
+
 __device__ void rocshmem_barrier_all() {
   GPU_DPRINTF("Function: rocshmem_barrier_all (ctx=%zd)\n",
     get_internal_ctx(ROCSHMEM_CTX_DEFAULT));
@@ -1867,6 +1918,7 @@ WAIT_DEF_GEN(unsigned short, ushort)
 WAIT_DEF_GEN(unsigned int, uint)
 WAIT_DEF_GEN(unsigned long, ulong)
 WAIT_DEF_GEN(unsigned long long, ulonglong)
+WAIT_DEF_GEN(uint64_t, uint64)
 // clang-format on
 
 }  // namespace rocshmem
