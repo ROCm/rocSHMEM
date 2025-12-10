@@ -25,8 +25,8 @@
 #ifndef LIBRARY_SRC_MPI_INSTANCE_HPP_
 #define LIBRARY_SRC_MPI_INSTANCE_HPP_
 
-#include <rocshmem/rocshmem_config.h>
-#include <rocshmem/rocshmem_mpi.hpp>
+#include "rocshmem/rocshmem_config.h"
+#include "rocshmem/rocshmem_mpi.hpp"
 #include <memory>
 
 /**
