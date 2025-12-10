@@ -102,6 +102,12 @@ static BackendType select_backend_type() {
       return BackendType::GDA_BACKEND;
     }
     if (envstr.find("ro") != std::string::npos) {
+      if (ROBackend::backend_can_run() != ROCSHMEM_SUCCESS) {
+        fprintf(stderr, "Error: ROCSHMEM_BACKEND=ro requested but RO backend cannot run.\n"
+                        "MPI library could not be loaded.\n"
+                        "Check that MPI is properly installed and accessible.\n");
+        exit(1);
+      }
       return BackendType::RO_BACKEND;
     }
     if (envstr.find("ipc") != std::string::npos) {
