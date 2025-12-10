@@ -450,7 +450,7 @@ TestColl() {
   ExecTest  "fcollect"         2       1            1         512
   ExecTest  "fcollect"         2       1            1         32768
 
-  ExecTest  "teamreduction"    2       1            1         32768
+  ExecTest  "teamreduction"    2       1            64        32768
 
   ExecTest  "alltoallmem_on_stream"  2  1           1         1048576
   ExecTest  "broadcastmem_on_stream" 2  1           1         1048576
