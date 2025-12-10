@@ -28,7 +28,7 @@ Requirements
     Other AMD GPUs might function with unknown limitations. For the complete list of supported hardware, see `ROCm System Requirements <https://rocm.docs.amd.com/projects/install-on-linux-internal/en/latest/reference/system-requirements.html>`_.
 
 * The RO backend requires ROCm-aware Open MPI and UCX. When using the IPC or GDA backends, MPI is optional.
-  For more information on installing ROCm-aware Open MPI and UCX please see :ref:`install-dependencies`.
+  For more information about installing ROCm-aware Open MPI and UCX, see :ref:`install-dependencies`.
 
 * Inter-node communication requires AMD Pollara IONIC, Broadcom Thor 2, or CX7 Infiniband NICs.
 
@@ -39,7 +39,7 @@ rocSHMEM supports the following network backends:
 
 * The **IPC (Inter-Process Communication)** backend enables fast communication between GPUs on the same host using ROCm inter-process mechanisms. It does not support inter-node communication.
 * The **RO (Reverse Offload)** backend enables communication between GPUs on different nodes through a NIC, using a host-based proxy to forward communication orders to and from the GPU. RO is built on an MPI-RMA compatibility layer.
-* The **GDA (GPU Direct Async)** backend enables communication between GPUs on different nodes through a NIC. In this backend the GPU directly interacts with the NIC with no host (CPU) involvement in the critical path of communication.
+* The **GDA (GPU Direct Async)** backend enables communication between GPUs on different nodes through a NIC. In this backend, the GPU directly interacts with the NIC with no host (CPU) involvement in the critical path of communication.
 
 You can activate IPC, RO, and GDA backends in the same rocSHMEM build.
 
