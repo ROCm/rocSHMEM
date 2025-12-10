@@ -85,6 +85,7 @@ These APIs should be called from only one thread/wavefront/workgroup within the 
 ROSHMEM_ALLTOALL
 ----------------
 
+.. cpp:function:: __device__ void rocshmem_TYPENAME_alltoall_wg(rocshmem_team_t team, TYPE *dest, const TYPE *source, int nelems)
 .. cpp:function:: __device__ void rocshmem_ctx_TYPENAME_alltoall_wg(rocshmem_ctx_t ctx, rocshmem_team_t team, TYPE *dest, const TYPE *source, int nelems)
 
   :param team:   The team participating in the collective.
