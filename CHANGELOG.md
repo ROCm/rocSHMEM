@@ -4,15 +4,18 @@
 * Added new APIs:
    * `rocshmem_TYPENAME_alltoall_wg`
 
+## Unreleased -- rocSHMEM 3.2.1 for ROCm x.x.x
+### Added
+### Changed
+### Removed
+### Resolved issues
+### Known issues
+
 ## rocSHMEM 3.2.0 for ROCm 7.2.0
 ### Added
 * Added the GDA conduit for AMD Pensando IONIC
-* Added new APIs:
-   * `rocshmem_ctx_pe_quiet`
-   * `rocshmem_pe_quiet`
 ### Changed
 * Dependency libraries are loaded dynamically
-   * MPI dependency can be optional (when building with USE_EXTERNAL_MPI=OFF)
 * The following APIs now have an implementation for the GDA conduit
    * `rocshmem_p`
    * fetching atomics `rochsmem_<TYPE>_fetch_<op>`
@@ -31,6 +34,8 @@
    * Mellanox MLX5 (IB and RoCE ConnectX-7)
 * Added new APIs:
    * `rocshmem_get_device_ctx`
+   * `rocshmem_ctx_pe_quiet`
+   * `rocshmem_pe_quiet`
 
 ### Changed
 * The following APIs have been deprecated:
