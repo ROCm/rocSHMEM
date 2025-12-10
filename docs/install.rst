@@ -28,7 +28,7 @@ Requirements
     Other AMD GPUs might function with unknown limitations. For the complete list of supported hardware, see `ROCm System Requirements <https://rocm.docs.amd.com/projects/install-on-linux-internal/en/latest/reference/system-requirements.html>`_.
 
 * The RO backend requires ROCm-aware Open MPI and UCX. When using the IPC or GDA backends, MPI is optional.
-  For more information on installing ROCm-aware Open MPI and UCX please see :ref:`install-dependencies`.
+  For more information about installing ROCm-aware Open MPI and UCX, see :ref:`install-dependencies`.
 
 * Inter-node communication requires AMD Pollara IONIC, Broadcom Thor 2, or CX7 Infiniband NICs.
 
@@ -39,7 +39,7 @@ rocSHMEM supports the following network backends:
 
 * The **IPC (Inter-Process Communication)** backend enables fast communication between GPUs on the same host using ROCm inter-process mechanisms. It does not support inter-node communication.
 * The **RO (Reverse Offload)** backend enables communication between GPUs on different nodes through a NIC, using a host-based proxy to forward communication orders to and from the GPU. RO is built on an MPI-RMA compatibility layer.
-* The **GDA (GPU Direct Async)** backend enables communication between GPUs on different nodes through a NIC. In this backend the GPU directly interacts with the NIC with no host (CPU) involvement in the critical path of communication.
+* The **GDA (GPU Direct Async)** backend enables communication between GPUs on different nodes through a NIC. In this backend, the GPU directly interacts with the NIC with no host (CPU) involvement in the critical path of communication.
 
 You can activate IPC, RO, and GDA backends in the same rocSHMEM build.
 
@@ -66,7 +66,7 @@ On Ubuntu, you can install rocSHMEM by running:
 Building dependencies
 ---------------------
 
-GDA NIC Dependencies
+GDA NIC dependencies
 ^^^^^^^^^^^^^^^^^^^^
 
 - GDA on Mellanox NICs should work on any recent version of rdma-core.
@@ -76,7 +76,7 @@ GDA NIC Dependencies
 Building rocSHMEM with MPI (Optional)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-rocSHMEM requires ROCm-Aware Open MPI and UCX for the RO backend or if you want to run rocSHMEM.
+rocSHMEM requires ROCm-Aware Open MPI and UCX for the RO backend.
 MPI is optional with the IPC and GDA backends.
 Other MPI implementations, such as MPICH, have not been fully tested.
 
@@ -119,15 +119,15 @@ For more information about OpenMPI-UCX support, see
 Installing from source
 --------------------------------
 
-You can select between three communication backends at build time for rocSHMEM: IPC, RO, and GDA.
+You can choose from three communication backends at build time for rocSHMEM: IPC, RO, and GDA.
 Backend can be combined during build time.
 
-MPI is not required to build rocSHMEM, if you want to disable MPI you can pass
-the following flag to the build configs scripts `-DUSE_EXTERNAL_MPI=OFF`.
-However, it is important to note that this will disable the functional and unit
-tests as they required MPI to run.
+MPI is not required to build rocSHMEM. To disable MPI, pass
+the following flag to the build configuration scripts ``-DUSE_EXTERNAL_MPI=OFF``.
+However, this will disable the functional and unit
+tests, as they required MPI to run.
 
-All Backends build
+All backends build
 ^^^^^^^^^^^^^^^^^^
 
 To build and install rocSHMEM with all three backends, run:
@@ -144,7 +144,7 @@ The build script passes configuration options to CMake to set up a canonical bui
 
 .. note::
 
- This will build rocSHMEM with all backends, you can select the IPC, RO, GDA, or a combination at runtime. However there is a small performance penality for this portability. The other build scripts are recommended if you are trying to achive maximum performance.
+ This builds rocSHMEM with all backends. You can select IPC, RO, GDA, or any combination at runtime. However, this portability can reduce performance, so the other build scripts are recommended if you need maximum performance.
 
 GDA backend build
 ^^^^^^^^^^^^^^^^^
