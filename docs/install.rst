@@ -127,7 +127,7 @@ the following flag to the build configuration scripts ``-DUSE_EXTERNAL_MPI=OFF``
 However, this will disable the functional and unit
 tests, as they required MPI to run.
 
-All Backends build
+All backends build
 ^^^^^^^^^^^^^^^^^^
 
 To build and install rocSHMEM with all three backends, run:
