@@ -66,7 +66,7 @@ On Ubuntu, you can install rocSHMEM by running:
 Building dependencies
 ---------------------
 
-GDA NIC Dependencies
+GDA NIC dependencies
 ^^^^^^^^^^^^^^^^^^^^
 
 - GDA on Mellanox NICs should work on any recent version of rdma-core.
