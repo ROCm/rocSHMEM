@@ -37,60 +37,60 @@ control the behavior of rocSHMEM.
 
     * - | ``ROCSHMEM_BACKEND``
         | When rocSHMEM is compiled for all backends, this enviroment variable
-        | selects which backend to execute. Default is auto-selection
+        | selects which backend to execute. The default value is an empty string and rocSHMEM auto-selects the most appropriate backend.
       - `` ``
-      - | ipc: IPC Backend
-        | ro: Reverse Offload Backend
-        | gda: GPU Direct Async Backend
+      - | ``ipc``: IPC Backend
+        | ``ro``: Reverse Offload Backend
+        | ``gda``: GPU Direct Async Backend
 
     * - | ``ROCSHMEM_UNIQUEID_WITH_MPI``
         | Defines whether rocSHMEM is expected to use MPI when using the uniqueId based initialization.
       - ``0``
-      - | 0: Do not use MPI.
-        | 1: Use MPI.
+      - | ``0``: Do not use MPI.
+        | ``1``: Use MPI.
 
     * - | ``ROCSHMEM_DISABLE_MIXED_IPC``
         | Defines whether to force using the network conduit even when IPC is available.
       - ``0``
-      - | 0: Use IPC when available.
-        | 1: Force network conduit.
+      - | ``0``: Use IPC when available.
+        | ``1``: Force network conduit.
 
     * - | ``ROCSHMEM_USE_IB_HCA``
-        | Defines which NIC that this PE should be bound to
+        | Defines which NIC that this PE should be bound to. The default value is an empty string and rocSHMEM auto-detects the most appropriate NIC.
       - `` ``
-      - | Example value: `bnxt_re0`
+      - | Example value: ``bnxt_re0``
 
     * - | ``ROCSHMEM_BOOTSTRAP_SOCKET_IFNAME``
         | Chooses the interface to bootstrap rocSHMEM with.
         | Only valid when not using MPI.
         | The default value is an empty string and rocSHMEM auto-detects the most appropriate interface.
       - `` ``
-      - | Example value: `eno8303`
+      - | Example value: ``eno8303``
 
     * - | ``ROCSHMEM_GDA_PROVIDER``
         | When rocSHMEM is compiled with support for multiple NIC vendors,
         | the enviroment variable selects the desired provider.
         | The default value is an empty string and rocSHMEM auto-detects the most appropriate NIC.
       - `` ``
-      - | bnxt: Broadcom Thor 2
-        | pensando: AMD Pensando Pollara
-        | ionic: AMD Pensando Pollara (alias)
-        | mlx5: Mellanox ConnectX-7
+      - | ``bnxt``: Broadcom Thor 2
+        | ``pensando``: AMD Pensando Pollara
+        | ``ionic``: AMD Pensando Pollara (alias)
+        | ``mlx5``: Mellanox ConnectX-7
 
     * - | ``ROCSHMEM_GDA_ALTERNATE_QP_PORTS``
-        | Enables/Disables having QPs alternate their mappings across rocSHMEM contexts.
+        | Enables or disables alternating QP mappings across rocSHMEM contexts.
       - ``1``
-      - | 0: Disabled.
-        | 1: Enabled (helps saturate bandwidth on multiport bonded interfaces).
+      - | ``0``: Disabled.
+        | ``1``: Enabled. This helps saturate bandwidth on multiport bonded interfaces.
 
     * - | ``ROCSHMEM_GDA_TRAFFIC_CLASS``
-        | When using an NIC with an Ethernet link layer, this assigns the traffic class for our QPs
+        | When using an NIC with an Ethernet link layer, this sets the traffic class for the QPs.
       - ``0``
       - The traffic class number.
 
     * - | ``ROCSHMEM_GDA_PCIE_RELAXED_ORDERING``
         | Enables PCIe Relaxed Ordering when registering the symmetric heap with the RDMA NICs.
       - ``0``
-      - | 0: Disabled.
-        | 1: Enabled.
+      - | ``0``: Disabled.
+        | ``1``: Enabled.
 
