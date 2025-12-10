@@ -122,7 +122,7 @@ Installing from source
 You can choose from three communication backends at build time for rocSHMEM: IPC, RO, and GDA.
 Backend can be combined during build time.
 
-MPI is not required to build rocSHMEM, if you want to disable MPI you can pass
+MPI is not required to build rocSHMEM. To disable MPI, pass
 the following flag to the build configs scripts `-DUSE_EXTERNAL_MPI=OFF`.
 However, it is important to note that this will disable the functional and unit
 tests as they required MPI to run.
