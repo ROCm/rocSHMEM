@@ -76,7 +76,7 @@ GDA NIC dependencies
 Building rocSHMEM with MPI (Optional)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-rocSHMEM requires ROCm-Aware Open MPI and UCX for the RO backend or if you want to run rocSHMEM.
+rocSHMEM requires ROCm-Aware Open MPI and UCX for the RO backend.
 MPI is optional with the IPC and GDA backends.
 Other MPI implementations, such as MPICH, have not been fully tested.
 
