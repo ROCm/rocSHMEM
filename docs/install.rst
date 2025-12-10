@@ -124,7 +124,7 @@ Backend can be combined during build time.
 
 MPI is not required to build rocSHMEM. To disable MPI, pass
 the following flag to the build configuration scripts ``-DUSE_EXTERNAL_MPI=OFF``.
-However, it is important to note that this will disable the functional and unit
+However, this will disable the functional and unit
 tests as they required MPI to run.
 
 All Backends build
