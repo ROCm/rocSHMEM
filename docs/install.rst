@@ -144,7 +144,7 @@ The build script passes configuration options to CMake to set up a canonical bui
 
 .. note::
 
- This will build rocSHMEM with all backends, you can select the IPC, RO, GDA, or a combination at runtime. However there is a small performance penality for this portability. The other build scripts are recommended if you are trying to achive maximum performance.
+ This builds rocSHMEM with all backends. You can select IPC, RO, GDA, or any combination at runtime. However, this portability can reduce performance, so the other build scripts are recommended if you need maximum performance.
 
 GDA backend build
 ^^^^^^^^^^^^^^^^^
