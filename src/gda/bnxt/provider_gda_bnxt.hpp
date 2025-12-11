@@ -70,6 +70,7 @@ struct bnxt_host_cq {
 struct bnxt_host_qp {
   struct bnxt_re_dv_qp_mem_info mem_info;
   struct bnxt_re_dv_qp_init_attr attr;
+  struct bnxt_re_dv_db_region_attr *db_region_attr;
   void *sq_buf;
   void *rq_buf;
   void *msntbl;
@@ -96,8 +97,8 @@ struct bnxtdv_funcs_t {
   void* (*umem_reg)(struct ibv_context *ibvctx,
                     struct bnxt_re_dv_umem_reg_attr *in);
   int (*umem_dereg)(void *umem_handle);
-  int (*get_default_db_region)(struct ibv_context *ibvctx,
-                               struct bnxt_re_dv_db_region_attr *out);
+  struct bnxt_re_dv_db_region_attr * (*alloc_db_region)(struct ibv_context *ctx);
+  int (*free_db_region)(struct ibv_context *ctx, struct bnxt_re_dv_db_region_attr *attr);
 };
 
 #endif  //LIBRARY_SRC_GDA_BNXT_GDA_PROVIDER_HPP_

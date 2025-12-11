@@ -715,11 +715,14 @@ void GDABackend::cleanup_ibv() {
   int err;
 
   if (gda_provider == GDAProvider::BNXT) {
-    CHECK_HIP(hipHostUnregister(db_region_attr.dbr));
-
     for (int i = 0; i < qps.size(); i++) {
       err = bnxt_re_dv.destroy_qp(qps[i]);
       CHECK_ZERO(err, "bnxt_re_dv_destroy_qp");
+
+      CHECK_HIP(hipHostUnregister(bnxt_qps[i].db_region_attr->dbr));
+
+      err = bnxt_re_dv.free_db_region(context, bnxt_qps[i].db_region_attr);
+      CHECK_ZERO(err, "bnxt_re_dv_free_db_region");
 
       err = bnxt_re_dv.umem_dereg(bnxt_qps[i].attr.rq_umem_handle);
       CHECK_ZERO(err, "bnxt_re_dv_umem_dereg (RQ)");
