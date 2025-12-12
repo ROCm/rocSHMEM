@@ -253,11 +253,11 @@ class QueuePair {
   int gda_provider_{0};
 
   /* GDAProvider::BNXT START */
-  uint64_t *dbr;
-  struct bnxt_device_cq cq;
-  struct bnxt_device_sq sq;
+  uint64_t *bnxt_dbr;
+  struct bnxt_device_cq bnxt_cq;
+  struct bnxt_device_sq bnxt_sq;
 
-  __device__ void poll_cq_until(uint32_t requested_available_slots);
+  __device__ void bnxt_poll_cq_until(uint32_t requested_available_slots);
   __device__ void bnxt_check_cqe_error(struct bnxt_re_req_cqe *cqe);
 
   /* GDAProvider::BNXT END */
@@ -393,7 +393,7 @@ class QueuePair {
   uint32_t fetching_atomic_idx{0};
   struct ibv_mr *mr_fetching_atomic;
 
-  static const uint32_t FETCHING_ATOMIC_CNT{1024};
+  static constexpr uint32_t FETCHING_ATOMIC_CNT{1024};
   static_assert(FETCHING_ATOMIC_CNT % WF_SIZE == 0);
   using FreeListT = FreeList<uint64_t*, HIPAllocator>;
   FreeListT* fetching_atomic_freelist{nullptr};
