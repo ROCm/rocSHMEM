@@ -72,8 +72,8 @@ __device__ SegmentBuilder::SegmentBuilder(uint64_t wqe_idx, void *base) {
  */
 __device__ void SegmentBuilder::update_ctrl_seg(uint16_t pi, uint8_t opcode, uint8_t opmod, uint32_t qp_num, uint8_t fm_ce_se, uint8_t ds, uint8_t signature, uint32_t imm) {
   segp->ctrl_seg = {0};
-  swap_endian_store(&segp->ctrl_seg.opmod_idx_opcode, ((uint32_t)opmod << 24) | ((uint32_t)pi << 8) | opcode);
-  swap_endian_store(&segp->ctrl_seg.qpn_ds, qp_num << 8 | ds);
+  segp->ctrl_seg.opmod_idx_opcode = byteswap<uint32_t>(((uint32_t)opmod << 24) | ((uint32_t)pi << 8) | opcode);
+  segp->ctrl_seg.qpn_ds = byteswap<uint32_t>(qp_num << 8 | ds);
   segp->ctrl_seg.fm_ce_se = fm_ce_se;
   segp->ctrl_seg.signature = signature;
   segp->ctrl_seg.imm = imm;
@@ -82,7 +82,7 @@ __device__ void SegmentBuilder::update_ctrl_seg(uint16_t pi, uint8_t opcode, uin
 
 __device__ void SegmentBuilder::update_raddr_seg(uint64_t raddr, uint32_t rkey) {
   segp->raddr_seg = {0};
-  swap_endian_store(reinterpret_cast<uint64_t*>(&segp->raddr_seg.raddr), raddr);
+  segp->raddr_seg.raddr = byteswap<uint64_t>(raddr);
   segp->raddr_seg.rkey = rkey;
   segp++;
 }
@@ -102,15 +102,15 @@ __device__ void SegmentBuilder::update_raddr_seg(uint64_t raddr, uint32_t rkey) 
  */
 __device__ void SegmentBuilder::update_data_seg(uint64_t laddr, uint32_t size, uint32_t lkey) {
   segp->data_seg = {0};
-  swap_endian_store(&segp->data_seg.byte_count, size);
+  segp->data_seg.byte_count = byteswap<uint32_t>(size);
   segp->data_seg.lkey = lkey;
-  swap_endian_store(reinterpret_cast<uint64_t*>(&segp->data_seg.addr), laddr);
+  segp->data_seg.addr = byteswap<uint64_t>(laddr);
   segp++;
 }
 
 __device__ void SegmentBuilder::update_inl_data_seg(const void* laddr, int32_t size) {
   // size is masked with 0x3FF because only the first 10 bits of byte_count are valid
-  swap_endian_store(&segp->inl_data_seg.byte_count, ((size & 0x3FF) | MLX5_INLINE_SEG));
+  segp->inl_data_seg.byte_count = byteswap<uint32_t>((size & 0x3FF) | MLX5_INLINE_SEG);
   // + 1 because we start packing the segment with data after the byte_count parameter
   memcpy(&segp->inl_data_seg + 1, laddr, size);
   segp++;
@@ -118,8 +118,8 @@ __device__ void SegmentBuilder::update_inl_data_seg(const void* laddr, int32_t s
 
 __device__ void SegmentBuilder::update_atomic_seg(uint64_t atomic_data, uint64_t atomic_cmp) {
   segp->atomic_seg = {0};
-  swap_endian_store(reinterpret_cast<uint64_t*>(&segp->atomic_seg.swap_add), atomic_data);
-  swap_endian_store(reinterpret_cast<uint64_t*>(&segp->atomic_seg.compare), atomic_cmp);
+  segp->atomic_seg.swap_add = byteswap<uint64_t>(atomic_data);
+  segp->atomic_seg.compare = byteswap<uint64_t>(atomic_cmp);
   segp++;
 }
 

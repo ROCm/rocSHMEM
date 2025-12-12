@@ -25,36 +25,73 @@
 #ifndef LIBRARY_SRC_GDA_ENDIAN_HPP_
 #define LIBRARY_SRC_GDA_ENDIAN_HPP_
 
+#include <type_traits>
 #include <hip/hip_runtime.h>
 
 namespace rocshmem {
 
-template <typename T>
-__device__ void swap_endian_store(T *dst, const T val);
+// this is essentially std::byteswap from C++23
+template <typename T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
+constexpr inline __host__ __device__ T byteswap(T val) {
+  if constexpr (sizeof(T) == 1) {
+    return val;
+  } else if constexpr (sizeof(T) == 2) {
+    return __builtin_bswap16(val);
+  } else if constexpr (sizeof(T) == 4) {
+    return __builtin_bswap32(val);
+  } else if constexpr (sizeof(T) == 8) {
+    return __builtin_bswap64(val);
+  } else {
+    // sizeof(T) to force this to be instantiation-dependent
+    static_assert(sizeof(T) == 0, "byteswap not implemented for this type");
+  }
+}
 
-template <>
-__device__ void swap_endian_store(uint64_t *dst, const uint64_t val);
+namespace endian {
+  enum class Order {
+    Big = __ORDER_BIG_ENDIAN__,
+    Little = __ORDER_LITTLE_ENDIAN__,
+    Native = __BYTE_ORDER__
+  };
 
-template <>
-__device__ void swap_endian_store(int64_t *dst, const int64_t val);
+  template <Order To, Order From, typename T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
+  __host__ __device__ constexpr inline T convert(T val) {
+    if constexpr (To == From) {
+      return val;
+    } else {
+      return byteswap(val);
+    }
+  }
 
-template <>
-__device__ void swap_endian_store(uint32_t *dst, const uint32_t val);
+  template <Order From, typename T>
+  __host__ __device__ constexpr inline T to_native(T val) {
+    return convert<Order::Native, From, T>(val);
+  }
 
-template <>
-__device__ void swap_endian_store(int32_t *dst, const int32_t val);
+  template <Order To, typename T>
+  __host__ __device__ constexpr inline T from_native(T val) {
+    return convert<To, Order::Native, T>(val);
+  }
 
-template <>
-__device__ void swap_endian_store(uint16_t *dst, const uint16_t val);
+  template <typename T>
+  __host__ __device__ constexpr inline T to_be(T val) {
+    return convert<Order::Big, Order::Native, T>(val);
+  }
 
-template <>
-__device__ void swap_endian_store(int16_t *dst, const int16_t val);
+  template <typename T>
+  __host__ __device__ constexpr inline T from_be(T val) {
+    return convert<Order::Native, Order::Big, T>(val);
+  }
 
-template <typename T>
-__device__ T swap_endian_val(const T val) {
-  T dst;
-  swap_endian_store(&dst, val);
-  return dst;
+  template <typename T>
+  __host__ __device__ constexpr inline T to_le(T val) {
+    return convert<Order::Little, Order::Native, T>(val);
+  }
+
+  template <typename T>
+  __host__ __device__ constexpr inline T from_le(T val) {
+    return convert<Order::Native, Order::Little, T>(val);
+  }
 }
 
 }  // namespace rocshmem
