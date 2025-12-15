@@ -75,11 +75,8 @@ void GDABackend::bnxt_initialize_gpu_qp(QueuePair* gpu_qp, int conn_num) {
   gpu_qp->sq.mtu         = ibv_mtu_to_int(portinfo.active_mtu);
 
   /* Export DB */
-  err = bnxt_re_dv.get_default_db_region(context, &db_region_attr);
-  CHECK_ZERO(err, "bnxt_re_dv_init_obj(QP)");
-
-  CHECK_HIP(hipHostRegister(db_region_attr.dbr, getpagesize(), hipHostRegisterDefault));
-  CHECK_HIP(hipHostGetDevicePointer((void**) &gpu_qp->dbr, db_region_attr.dbr, 0));
+  CHECK_HIP(hipHostRegister(bnxt_qps[conn_num].db_region_attr->dbr, getpagesize(), hipHostRegisterDefault));
+  CHECK_HIP(hipHostGetDevicePointer((void**) &gpu_qp->dbr, bnxt_qps[conn_num].db_region_attr->dbr, 0));
 
   /* Export Memory Keys */
   gpu_qp->lkey = heap_mr->lkey;
@@ -229,6 +226,10 @@ void GDABackend::bnxt_create_qps(int sq_length) {
     rq_umem_handle = bnxt_re_dv.umem_reg(context, &umem_attr);
     CHECK_NNULL(rq_umem_handle, "bnxt_re_dv_umem_reg(rq)");
 
+    /* Alloc DPI */
+    bnxt_qps[i].db_region_attr = bnxt_re_dv.alloc_db_region(context);
+    CHECK_NNULL(bnxt_qps[i].db_region_attr, "bnxt_re_dv_alloc_db_region");
+
     /* IB DV QP Init Attr */
     memset(&bnxt_qps[i].attr, 0, sizeof(struct bnxt_re_dv_qp_init_attr));
     bnxt_qps[i].attr.send_cq         = ib_qp_attr.send_cq;
@@ -240,19 +241,20 @@ void GDABackend::bnxt_create_qps(int sq_length) {
     bnxt_qps[i].attr.max_inline_data = ib_qp_attr.cap.max_inline_data;
     bnxt_qps[i].attr.qp_type         = ib_qp_attr.qp_type;
 
-    bnxt_qps[i].attr.qp_handle = bnxt_qps[i].mem_info.qp_handle;
+    bnxt_qps[i].attr.qp_handle      = bnxt_qps[i].mem_info.qp_handle;
+    bnxt_qps[i].attr.dbr_handle     = bnxt_qps[i].db_region_attr;
     bnxt_qps[i].attr.sq_umem_handle = sq_umem_handle;
-    bnxt_qps[i].attr.sq_len    = bnxt_qps[i].mem_info.sq_len;
-    bnxt_qps[i].attr.sq_slots  = bnxt_qps[i].mem_info.sq_slots;
-    bnxt_qps[i].attr.sq_wqe_sz = bnxt_qps[i].mem_info.sq_wqe_sz;
-    bnxt_qps[i].attr.sq_psn_sz = bnxt_qps[i].mem_info.sq_psn_sz;
-    bnxt_qps[i].attr.sq_npsn   = bnxt_qps[i].mem_info.sq_npsn;
+    bnxt_qps[i].attr.sq_len         = bnxt_qps[i].mem_info.sq_len;
+    bnxt_qps[i].attr.sq_slots       = bnxt_qps[i].mem_info.sq_slots;
+    bnxt_qps[i].attr.sq_wqe_sz      = bnxt_qps[i].mem_info.sq_wqe_sz;
+    bnxt_qps[i].attr.sq_psn_sz      = bnxt_qps[i].mem_info.sq_psn_sz;
+    bnxt_qps[i].attr.sq_npsn        = bnxt_qps[i].mem_info.sq_npsn;
 
     bnxt_qps[i].attr.rq_umem_handle = rq_umem_handle;
-    bnxt_qps[i].attr.rq_len    = bnxt_qps[i].mem_info.rq_len;
-    bnxt_qps[i].attr.rq_slots  = bnxt_qps[i].mem_info.rq_slots;
-    bnxt_qps[i].attr.rq_wqe_sz = bnxt_qps[i].mem_info.rq_wqe_sz;
-    bnxt_qps[i].attr.comp_mask = bnxt_qps[i].mem_info.comp_mask;
+    bnxt_qps[i].attr.rq_len         = bnxt_qps[i].mem_info.rq_len;
+    bnxt_qps[i].attr.rq_slots       = bnxt_qps[i].mem_info.rq_slots;
+    bnxt_qps[i].attr.rq_wqe_sz      = bnxt_qps[i].mem_info.rq_wqe_sz;
+    bnxt_qps[i].attr.comp_mask      = bnxt_qps[i].mem_info.comp_mask;
 
     /* Alloc QP */
     qps[i] = bnxt_re_dv.create_qp(pd_orig, &bnxt_qps[i].attr);
@@ -288,7 +290,8 @@ int GDABackend::bnxt_dv_dl_init() {
   DLSYM_HELPER(bnxt_re_dv, bnxt_re_dv_, bnxtdv_handle_, cq_mem_alloc);
   DLSYM_HELPER(bnxt_re_dv, bnxt_re_dv_, bnxtdv_handle_, umem_reg);
   DLSYM_HELPER(bnxt_re_dv, bnxt_re_dv_, bnxtdv_handle_, umem_dereg);
-  DLSYM_HELPER(bnxt_re_dv, bnxt_re_dv_, bnxtdv_handle_, get_default_db_region);
+  DLSYM_HELPER(bnxt_re_dv, bnxt_re_dv_, bnxtdv_handle_, alloc_db_region);
+  DLSYM_HELPER(bnxt_re_dv, bnxt_re_dv_, bnxtdv_handle_, free_db_region);
 
   return ROCSHMEM_SUCCESS;
 }
