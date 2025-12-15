@@ -605,7 +605,8 @@ __device__ void GDAContext::internal_broadcast(T *dst, const T *src, int nelems,
 template <typename T>
 __device__ void GDAContext::alltoall(rocshmem_team_t team, T *dst,
                                      const T *src, int nelems) {
-  if (gda_provider_ == GDAProvider::BNXT) {
+  if (gda_provider_ == GDAProvider::BNXT ||
+      gda_provider_ == GDAProvider::IONIC) {
     alltoall_linear_thread_puts(team, dst, src, nelems);
   } else {
     alltoall_linear(team, dst, src, nelems);
