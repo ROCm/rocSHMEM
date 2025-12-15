@@ -443,17 +443,17 @@ TestColl() {
 
   ExecTest  "wgsyncall"        2       1            1
 
-  ExecTest  "alltoall"         2       1            1         512
+  ExecTest  "alltoall"         2       1            64        512
 
-  ExecTest  "teambroadcast"    2       1            1         32768
+  ExecTest  "teambroadcast"    2       1            64        32768
 
-  ExecTest  "fcollect"         2       1            1         512
-  ExecTest  "fcollect"         2       1            1         32768
+  ExecTest  "fcollect"         2       1            64        512
+  ExecTest  "fcollect"         2       1            64        32768
 
-  ExecTest  "teamreduction"    2       1            1         32768
+  ExecTest  "teamreduction"    2       1            64        32768
 
-  ExecTest  "alltoallmem_on_stream"  2  1           1         1048576
-  ExecTest  "broadcastmem_on_stream" 2  1           1         1048576
+  ExecTest  "alltoallmem_on_stream"  2  1           64        1048576
+  ExecTest  "broadcastmem_on_stream" 2  1           64        1048576
   ExecTest  "barrier_all_on_stream"  2  1           1
 }
 
