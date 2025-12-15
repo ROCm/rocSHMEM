@@ -39,10 +39,6 @@ struct bnxt_device_wq {
   uint32_t tail;
   uint32_t flags;
   uint32_t id;
-
-  uint32_t lock;
-
-  uint32_t db_cnt {0};
 } __attribute__((packed));
 
 struct bnxt_device_cq : public bnxt_device_wq {
@@ -56,6 +52,7 @@ struct bnxt_device_sq : public bnxt_device_wq {
   uint32_t msn_tbl_sz;
   uint32_t psn_sz_log2;
   uint64_t mtu;
+  uint32_t lock;
 } __attribute__((packed));
 
 struct bnxt_host_cq {
