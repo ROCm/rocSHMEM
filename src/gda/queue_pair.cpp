@@ -217,7 +217,7 @@ __device__ uint64_t QueuePair::post_wqe_amo_single(uintptr_t *raddr, uint8_t opc
 #endif
 #if defined(GDA_IONIC)
   case GDAProvider::IONIC:
-    return ionic_post_wqe_amo(0 /*unused*/, 8 /*only 8 implemented */, raddr, opcode, atomic_data, atomic_cmp, fetching);
+    return ionic_post_wqe_amo(0 /*pe (unused)*/, 8 /*size_bytes (only 8-byte atomics implemented)*/, raddr, opcode, atomic_data, atomic_cmp, fetching);
 #endif
   case GDAProvider::MLX5:
   default:
