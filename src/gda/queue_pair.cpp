@@ -65,7 +65,7 @@ QueuePair::QueuePair(struct ibv_pd* pd, int gda_provider) {
 
   int deviceId;
   CHECK_HIP(hipGetDevice(&deviceId));
-  int wf_size = get_wf_size(deviceId);
+  wf_size = get_wf_size(deviceId);
   for(int i{0}; i < FETCHING_ATOMIC_CNT; i+=wf_size) {
     fetching_atomic_freelist->push_back(fetching_atomic + i);
   }

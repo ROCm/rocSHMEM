@@ -35,7 +35,7 @@ __device__ uint64_t QueuePair::get_same_qp_lane_mask() {
 
   // exclude threads operating on a different qp from this thread lane mask
   #pragma unroll
-  for (int i = 0; i < 64; ++i) {
+  for (int i = 0; i < wf_size; ++i) {
     uint64_t bit_i = 1ull << i;
     if ((lane_mask & bit_i) && __shfl(this_val, i) != this_val) {
       lane_mask &= ~bit_i;
@@ -173,7 +173,7 @@ __device__ void QueuePair::ionic_quiet_internal(uint64_t activemask, uint32_t co
 __device__ void QueuePair::ionic_ring_doorbell(uint32_t pos) {
   // When threads write at once to the same address, not all writes reach the bus.
   // Take turns and insert a thread fence between writes to the same address.
-  for (int i = 0; i < 64; ++i) {
+  for (int i = 0; i < wf_size; ++i) {
     if (__lane_id() == i) {
       __threadfence();
       __atomic_store_n(sq_dbreg, sq_dbval | (sq_mask & pos), __ATOMIC_SEQ_CST);
