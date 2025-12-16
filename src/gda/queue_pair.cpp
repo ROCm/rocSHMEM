@@ -178,7 +178,7 @@ __device__ void QueuePair::post_wqe_rma_single(int32_t size, uintptr_t *laddr, u
 #endif
 #if defined(GDA_IONIC)
   case GDAProvider::IONIC:
-    return ionic_post_wqe_rma(0 /*unused*/, size, laddr, raddr, opcode, Collectivity::THREAD);
+    return ionic_post_wqe_rma(0 /*pe (unused)*/, size, laddr, raddr, opcode, Collectivity::THREAD);
 #endif
   case GDAProvider::MLX5:
   default:
