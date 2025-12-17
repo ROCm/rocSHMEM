@@ -156,9 +156,9 @@ class QueuePair {
    * @param[in] atomic_cmp An atomic comparison operation to be performed.
    * @param[in] fetching True if the operation returns a value.
    */
-  __device__ __attribute__((noinline)) uint64_t post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
+  __device__ __attribute__((noinline)) uint64_t post_wqe_amo(int pe, int32_t size, uintptr_t raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
 
-  __device__ __attribute__((noinline)) uint64_t post_wqe_amo_single(uintptr_t *raddr,
+  __device__ __attribute__((noinline)) uint64_t post_wqe_amo_single(uintptr_t raddr,
                                                                     uint8_t opcode,
                                                                     int64_t atomic_data,
                                                                     int64_t atomic_cmp,
@@ -173,11 +173,11 @@ class QueuePair {
    * @param[in] raddr Remote address.
    * @param[in] opcode Operation to be performed.
    */
-  __device__ __attribute__((noinline)) void post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, Collectivity cy);
-  __device__ __attribute__((noinline)) void post_wqe_rma_turn(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, Collectivity cy);
+  __device__ __attribute__((noinline)) void post_wqe_rma(int pe, int32_t size, uintptr_t laddr, uintptr_t raddr, uint8_t opcode, Collectivity cy);
+  __device__ __attribute__((noinline)) void post_wqe_rma_turn(int pe, int32_t size, uintptr_t laddr, uintptr_t raddr, uint8_t opcode, Collectivity cy);
 
-  __device__ __attribute__((noinline)) void post_wqe_rma_single(int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, bool ring_db);
-  __device__ __attribute__((noinline)) void post_wqe_rma_mt(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
+  __device__ __attribute__((noinline)) void post_wqe_rma_single(int32_t size, uintptr_t laddr, uintptr_t raddr, uint8_t opcode, bool ring_db);
+  __device__ __attribute__((noinline)) void post_wqe_rma_mt(int pe, int32_t size, uintptr_t laddr, uintptr_t raddr, uint8_t opcode);
 
 #if defined(GDA_MLX5)
   __device__ __forceinline__ void
@@ -189,11 +189,11 @@ class QueuePair {
 
   __device__ __forceinline__ void
   mlx5_build_rma_wqe(uint64_t my_sq_counter, uint64_t my_sq_index,
-      uintptr_t *laddr, uintptr_t *raddr, int32_t size, uint8_t opcode);
+      uintptr_t laddr, uintptr_t raddr, int32_t size, uint8_t opcode);
 
   __device__ __forceinline__ void
   mlx5_build_amo_wqe(uint64_t my_sq_counter, uint64_t my_sq_index,
-      uintptr_t *raddr, uint8_t opcode, int64_t atomic_data,
+      uintptr_t raddr, uint8_t opcode, int64_t atomic_data,
       int64_t atomic_cmp, bool fetching, uint64_t *wave_fetch_atomic);
 
   __device__ __forceinline__ uint64_t*
@@ -204,12 +204,12 @@ class QueuePair {
   mlx5_ring_doorbell(uint64_t wave_sq_counter, uint8_t num_wqes);
 
   __device__ uint64_t
-  mlx5_post_wqe_amo(int32_t size, uintptr_t *raddr, uint8_t opcode,
+  mlx5_post_wqe_amo(int32_t size, uintptr_t raddr, uint8_t opcode,
       int64_t atomic_data, int64_t atomic_cmp, bool fetch);
 
   __device__ void
-  mlx5_post_wqe_rma(int32_t size, uintptr_t *laddr,
-      uintptr_t *raddr, uint8_t opcode);
+  mlx5_post_wqe_rma(int32_t size, uintptr_t laddr,
+      uintptr_t raddr, uint8_t opcode);
 
   __device__ void
   mlx5_quiet();
@@ -217,21 +217,21 @@ class QueuePair {
 #endif
 #if defined(GDA_BNXT)
 
-  __device__ void bnxt_write_rma_wqe(uintptr_t *raddr, uintptr_t *laddr, int32_t length, uint8_t opcode);
-  __device__ uint32_t bnxt_write_amo_wqe(uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetching);
+  __device__ void bnxt_write_rma_wqe(uintptr_t raddr, uintptr_t laddr, int32_t length, uint8_t opcode);
+  __device__ uint32_t bnxt_write_amo_wqe(uintptr_t raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetching);
 
-  __device__ uint64_t bnxt_post_wqe_amo_single(uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetching);
-  __device__ uint64_t bnxt_post_wqe_amo(uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetching);
+  __device__ uint64_t bnxt_post_wqe_amo_single(uintptr_t raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetching);
+  __device__ uint64_t bnxt_post_wqe_amo(uintptr_t raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetching);
 
-  __device__ void bnxt_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode);
+  __device__ void bnxt_post_wqe_rma(int pe, int32_t size, uintptr_t laddr, uintptr_t raddr, uint8_t opcode);
 
-  __device__ void bnxt_post_wqe_rma_single(int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, bool ring_db);
+  __device__ void bnxt_post_wqe_rma_single(int32_t size, uintptr_t laddr, uintptr_t raddr, uint8_t opcode, bool ring_db);
   __device__ void bnxt_quiet();
   __device__ void bnxt_quiet_single();
 #endif
 #if defined(GDA_IONIC)
-  __device__ uint64_t ionic_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
-  __device__ void ionic_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, Collectivity cy);
+  __device__ uint64_t ionic_post_wqe_amo(int pe, int32_t size, uintptr_t raddr, uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetch);
+  __device__ void ionic_post_wqe_rma(int pe, int32_t size, uintptr_t laddr, uintptr_t raddr, uint8_t opcode, Collectivity cy);
   __device__ void ionic_quiet();
 #endif
 

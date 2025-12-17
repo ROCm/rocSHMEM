@@ -80,9 +80,9 @@ __device__ void SegmentBuilder::update_ctrl_seg(uint16_t pi, uint8_t opcode, uin
   segp++;
 }
 
-__device__ void SegmentBuilder::update_raddr_seg(uintptr_t *raddr, uint32_t rkey) {
+__device__ void SegmentBuilder::update_raddr_seg(uint64_t raddr, uint32_t rkey) {
   segp->raddr_seg = {0};
-  swap_endian_store(reinterpret_cast<uint64_t*>(&segp->raddr_seg.raddr), reinterpret_cast<uint64_t>(raddr));
+  swap_endian_store(reinterpret_cast<uint64_t*>(&segp->raddr_seg.raddr), raddr);
   segp->raddr_seg.rkey = rkey;
   segp++;
 }
@@ -100,15 +100,15 @@ __device__ void SegmentBuilder::update_raddr_seg(uintptr_t *raddr, uint32_t rkey
  *   seg->addr       = htobe64(address);
  * }
  */
-__device__ void SegmentBuilder::update_data_seg(uintptr_t *address, uint32_t length, uint32_t lkey) {
+__device__ void SegmentBuilder::update_data_seg(uint64_t laddr, uint32_t size, uint32_t lkey) {
   segp->data_seg = {0};
-  swap_endian_store(&segp->data_seg.byte_count, length);
+  swap_endian_store(&segp->data_seg.byte_count, size);
   segp->data_seg.lkey = lkey;
-  swap_endian_store(reinterpret_cast<uint64_t*>(&segp->data_seg.addr), reinterpret_cast<uint64_t>(address));
+  swap_endian_store(reinterpret_cast<uint64_t*>(&segp->data_seg.addr), laddr);
   segp++;
 }
 
-__device__ void SegmentBuilder::update_inl_data_seg(uintptr_t *laddr, int32_t size) {
+__device__ void SegmentBuilder::update_inl_data_seg(const void* laddr, int32_t size) {
   // size is masked with 0x3FF because only the first 10 bits of byte_count are valid
   swap_endian_store(&segp->inl_data_seg.byte_count, ((size & 0x3FF) | MLX5_INLINE_SEG));
   // + 1 because we start packing the segment with data after the byte_count parameter
