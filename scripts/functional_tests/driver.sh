@@ -133,6 +133,7 @@ ExecTest() {
   then
     NUM_GPUS=${NUM_GPUS:-$(rocm-smi --showserial | grep GPU | wc -l)}
   fi
+  NUM_GPUS=${NUM_GPUS:-0}
   NUM_GPUS=$(($NUM_GPUS > 0? $NUM_GPUS: 8))
 
   TEST_NUM=${TEST_NUMBERS[$TEST_NAME]}
