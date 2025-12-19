@@ -119,11 +119,11 @@ __device__ void rocshmem_wg_finalize() {}
 ******************************************************************************/
 
 __host__ void * rocshmem_get_device_ctx() {
-  void *ctx = nullptr;
+  rocshmem_ctx_t ctx;
 
   CHECK_HIP(hipMemcpyFromSymbol(&ctx, HIP_SYMBOL(ROCSHMEM_CTX_DEFAULT),
                              sizeof(rocshmem_ctx_t)));
-  return ctx;
+  return ctx.ctx_opaque;
 
 }
 
