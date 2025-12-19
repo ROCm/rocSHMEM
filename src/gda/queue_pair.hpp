@@ -146,11 +146,6 @@ class QueuePair {
 
  private:
   /**
-   * @brief Holds wavefront size
-   */
-  int wf_size{};
-
-  /**
    * @brief Helper method to build work requests for the send queue.
    *
    * @param[in] pe Destination processing element of data transmission.
