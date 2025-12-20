@@ -434,12 +434,12 @@ __device__ uint64_t QueuePair::bnxt_post_wqe_amo_single(uintptr_t raddr, uint8_t
 
   bnxt_ring_doorbell(sq.tail);
 
+  release_lock(&sq.lock);
+
   if (fetching) {
     quiet();
     return fetching_atomic[atomic_idx];
   }
-
-  release_lock(&sq.lock);
 
   return 0;
 }
