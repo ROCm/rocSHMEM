@@ -38,11 +38,11 @@ class SegmentBuilder {
     __device__ void update_ctrl_seg(uint16_t pi, uint8_t opcode, uint8_t opmod, uint32_t qp_num,
                                     uint8_t fm_ce_se, uint8_t ds, uint8_t signature, uint32_t imm);
 
-    __device__ void update_raddr_seg(uint64_t *raddr, uint32_t rkey);
+    __device__ void update_raddr_seg(uint64_t raddr, uint32_t rkey);
 
-    __device__ void update_data_seg(uint64_t *laddr, uint32_t size, uint32_t lkey);
+    __device__ void update_data_seg(uint64_t laddr, uint32_t size, uint32_t lkey);
 
-    __device__ void update_inl_data_seg(uintptr_t *laddr, int32_t size);
+    __device__ void update_inl_data_seg(const void* laddr, int32_t size);
 
     __device__ void update_atomic_seg(uint64_t atomic_data, uint64_t atomic_cmp);
 

@@ -213,7 +213,7 @@ __device__ void QueuePair::bnxt_quiet_single() {
   poll_cq_until(sq.depth);
 }
 
-__device__ void QueuePair::bnxt_write_rma_wqe(uintptr_t *raddr, uintptr_t *laddr, int32_t length, uint8_t opcode) {
+__device__ void QueuePair::bnxt_write_rma_wqe(uintptr_t raddr, uintptr_t laddr, int32_t length, uint8_t opcode) {
   struct bnxt_re_bsqe hdr;
   struct bnxt_re_rdma rdma;
   struct bnxt_re_sge sge;
@@ -251,12 +251,12 @@ __device__ void QueuePair::bnxt_write_rma_wqe(uintptr_t *raddr, uintptr_t *laddr
   hdr.lhdr.qkey_len = length;
 
   /* Populate RDMA Segment */
-  rdma.rva  = (uint64_t) raddr;
+  rdma.rva  = raddr;
   rdma.rkey = rkey;
 
   if (!inline_msg) {
     /* Populate SG Segment */
-    sge.pa     = (uint64_t) laddr;
+    sge.pa     = laddr;
     sge.lkey   = lkey;
     sge.length = length;
   }
@@ -266,7 +266,7 @@ __device__ void QueuePair::bnxt_write_rma_wqe(uintptr_t *raddr, uintptr_t *laddr
   memcpy(rdma_ptr, &rdma, sizeof(struct bnxt_re_rdma));
 
   if (inline_msg) {
-    memcpy(sge_ptr,  laddr,  length);
+    memcpy(sge_ptr,  reinterpret_cast<const void*>(laddr),  length);
   } else {
     memcpy(sge_ptr,  &sge,  sizeof(struct bnxt_re_sge));
   }
@@ -278,7 +278,7 @@ __device__ void QueuePair::bnxt_write_rma_wqe(uintptr_t *raddr, uintptr_t *laddr
   bnxt_re_incr_tail(&sq, GDA_BNXT_WQE_SLOT_COUNT);
 }
 
-__device__ void QueuePair::bnxt_post_wqe_rma(int pe, int32_t length, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode) {
+__device__ void QueuePair::bnxt_post_wqe_rma(int pe, int32_t length, uintptr_t laddr, uintptr_t raddr, uint8_t opcode) {
   uint64_t active_lane_mask;
   uint8_t active_lane_count;
   uint8_t active_lane_id;
@@ -306,8 +306,8 @@ __device__ void QueuePair::bnxt_post_wqe_rma(int pe, int32_t length, uintptr_t *
   }
 }
 
-__device__ void QueuePair::bnxt_post_wqe_rma_single(int32_t length, uintptr_t *laddr,
-                                                    uintptr_t *raddr, uint8_t opcode,
+__device__ void QueuePair::bnxt_post_wqe_rma_single(int32_t length, uintptr_t laddr,
+                                                    uintptr_t raddr, uint8_t opcode,
                                                     bool ring_db) {
 
   aquire_lock(&sq.lock);
@@ -322,7 +322,7 @@ __device__ void QueuePair::bnxt_post_wqe_rma_single(int32_t length, uintptr_t *l
   release_lock(&sq.lock);
 }
 
-__device__ uint32_t QueuePair::bnxt_write_amo_wqe(uintptr_t *raddr, uint8_t opcode,
+__device__ uint32_t QueuePair::bnxt_write_amo_wqe(uintptr_t raddr, uint8_t opcode,
                                                   int64_t atomic_data, int64_t atomic_cmp,
                                                   bool fetching) {
   struct bnxt_re_bsqe hdr;
@@ -354,7 +354,7 @@ __device__ uint32_t QueuePair::bnxt_write_amo_wqe(uintptr_t *raddr, uint8_t opco
                     | (hdr_flags << BNXT_RE_HDR_FLAGS_SHIFT)
                     | wqe_type;
   hdr.key_immd = rkey;
-  hdr.lhdr.rva = (uint64_t) raddr;
+  hdr.lhdr.rva = raddr;
 
   /* Populate AMO Segment */
   amo.swp_dt = atomic_data;
@@ -385,7 +385,7 @@ __device__ uint32_t QueuePair::bnxt_write_amo_wqe(uintptr_t *raddr, uint8_t opco
   return atomic_idx;
 }
 
-__device__ uint64_t QueuePair::bnxt_post_wqe_amo(uintptr_t *raddr, uint8_t opcode,
+__device__ uint64_t QueuePair::bnxt_post_wqe_amo(uintptr_t raddr, uint8_t opcode,
                                                  int64_t atomic_data, int64_t atomic_cmp,
                                                  bool fetching) {
   uint64_t active_lane_mask;
@@ -422,7 +422,7 @@ __device__ uint64_t QueuePair::bnxt_post_wqe_amo(uintptr_t *raddr, uint8_t opcod
   return 0;
 }
 
-__device__ uint64_t QueuePair::bnxt_post_wqe_amo_single(uintptr_t *raddr, uint8_t opcode,
+__device__ uint64_t QueuePair::bnxt_post_wqe_amo_single(uintptr_t raddr, uint8_t opcode,
                                                         int64_t atomic_data, int64_t atomic_cmp,
                                                         bool fetching) {
   uint32_t atomic_idx = 0;

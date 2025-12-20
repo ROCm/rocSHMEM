@@ -155,8 +155,8 @@ __device__ __forceinline__ void QueuePair::mlx5_wait_for_free_sq_slots(
 }
 
 __device__ __forceinline__ void QueuePair::mlx5_build_rma_wqe(
-    uint64_t my_sq_counter, uint64_t my_sq_index, uintptr_t *laddr,
-    uintptr_t *raddr, int32_t size, uint8_t opcode) {
+    uint64_t my_sq_counter, uint64_t my_sq_index, uintptr_t laddr,
+    uintptr_t raddr, int32_t size, uint8_t opcode) {
   outstanding_wqes[my_sq_counter % OUTSTANDING_TABLE_SIZE] = my_sq_counter;
 
   SegmentBuilder seg_build(my_sq_index, sq_buf);
@@ -166,7 +166,7 @@ __device__ __forceinline__ void QueuePair::mlx5_build_rma_wqe(
   seg_build.update_raddr_seg(raddr, rkey);
 
   if (size <= inline_threshold && opcode == gda_op_rdma_write) {
-    seg_build.update_inl_data_seg(laddr, size);
+    seg_build.update_inl_data_seg(reinterpret_cast<const void*>(laddr), size);
   } else {
     seg_build.update_data_seg(laddr, size, lkey);
   }
@@ -199,8 +199,8 @@ __device__ __forceinline__ void QueuePair::mlx5_ring_doorbell(
     __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
 }
 
-__device__ void QueuePair::mlx5_post_wqe_rma(int32_t size, uintptr_t *laddr,
-    uintptr_t *raddr, uint8_t opcode) {
+__device__ void QueuePair::mlx5_post_wqe_rma(int32_t size, uintptr_t laddr,
+    uintptr_t raddr, uint8_t opcode) {
   uint64_t activemask          = get_active_lane_mask();
   uint8_t  num_active_lanes    = get_active_lane_count(activemask);
   uint8_t  my_logical_lane_id  = get_active_lane_num(activemask);
@@ -255,7 +255,7 @@ QueuePair::mlx5_allocate_wave_fetching_atomic_buffer(
 }
 
 __device__ __forceinline__ void QueuePair::mlx5_build_amo_wqe(
-    uint64_t my_sq_counter, uint64_t my_sq_index, uintptr_t *raddr,
+    uint64_t my_sq_counter, uint64_t my_sq_index, uintptr_t raddr,
     uint8_t opcode, int64_t atomic_data, int64_t atomic_cmp, bool fetching,
     uint64_t *wave_fetch_atomic) {
   outstanding_wqes[my_sq_counter % OUTSTANDING_TABLE_SIZE] = my_sq_counter;
@@ -267,14 +267,14 @@ __device__ __forceinline__ void QueuePair::mlx5_build_amo_wqe(
   seg_build.update_atomic_seg(atomic_data, atomic_cmp);
 
   if (fetching) {
-    seg_build.update_data_seg(wave_fetch_atomic, 8, fetching_atomic_lkey);
+    seg_build.update_data_seg(reinterpret_cast<uintptr_t>(wave_fetch_atomic), 8, fetching_atomic_lkey);
   } else {
-    seg_build.update_data_seg(nonfetching_atomic, 8, nonfetching_atomic_lkey);
+    seg_build.update_data_seg(reinterpret_cast<uintptr_t>(nonfetching_atomic), 8, nonfetching_atomic_lkey);
   }
 }
 
 __device__ uint64_t QueuePair::mlx5_post_wqe_amo(int32_t size,
-    uintptr_t *raddr, uint8_t opcode, int64_t atomic_data,
+    uintptr_t raddr, uint8_t opcode, int64_t atomic_data,
     int64_t atomic_cmp, bool fetching) {
   uint64_t activemask          = get_active_lane_mask();
   uint8_t  num_active_lanes    = get_active_lane_count(activemask);

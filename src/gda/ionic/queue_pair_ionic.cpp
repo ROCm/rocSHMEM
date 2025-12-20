@@ -186,7 +186,7 @@ __device__ void QueuePair::ionic_quiet() {
   ionic_quiet_internal(get_same_qp_lane_mask(), sq_prod);
 }
 
-__device__ void QueuePair::ionic_post_wqe_rma(int pe, int32_t size, uintptr_t *laddr, uintptr_t *raddr, uint8_t opcode, Collectivity cy) {
+__device__ void QueuePair::ionic_post_wqe_rma(int pe, int32_t size, uintptr_t laddr, uintptr_t raddr, uint8_t opcode, Collectivity cy) {
   uint64_t activemask = get_same_qp_lane_mask();
   uint32_t my_logical_lane_id = get_active_lane_num(activemask);
   uint32_t num_wqes = 1;
@@ -224,8 +224,8 @@ __device__ void QueuePair::ionic_post_wqe_rma(int pe, int32_t size, uintptr_t *l
   wqe->base.num_sge_key = size ? 1 : 0;
   wqe->base.imm_data_key = swap_endian_val<uint32_t>(0);
 
-  wqe->common.rdma.remote_va_high = swap_endian_val<uint32_t>(reinterpret_cast<uint64_t>(raddr) >> 32);
-  wqe->common.rdma.remote_va_low = swap_endian_val<uint32_t>(reinterpret_cast<uint64_t>(raddr));
+  wqe->common.rdma.remote_va_high = swap_endian_val<uint32_t>(raddr >> 32);
+  wqe->common.rdma.remote_va_low = swap_endian_val<uint32_t>(raddr);
   wqe->common.rdma.remote_rkey = swap_endian_val<uint32_t>(rkey);
   wqe->common.length = swap_endian_val<uint32_t>(size);
 
@@ -237,10 +237,10 @@ __device__ void QueuePair::ionic_post_wqe_rma(int pe, int32_t size, uintptr_t *l
         // TODO why is this needed?
         wqe->common.pld.data[0] = 1;
       } else {
-        memcpy(wqe->common.pld.data, laddr, size);
+        memcpy(wqe->common.pld.data, reinterpret_cast<const void*>(laddr), size);
       }
     } else {
-      wqe->common.pld.sgl[0].va = swap_endian_val<uint64_t>(reinterpret_cast<uint64_t>(laddr));
+      wqe->common.pld.sgl[0].va = swap_endian_val<uint64_t>(laddr);
       wqe->common.pld.sgl[0].len = swap_endian_val<uint32_t>(size);
       wqe->common.pld.sgl[0].lkey = swap_endian_val<uint32_t>(lkey);
     }
@@ -251,7 +251,7 @@ __device__ void QueuePair::ionic_post_wqe_rma(int pe, int32_t size, uintptr_t *l
   commit_sq(activemask, my_sq_prod, my_sq_pos, num_wqes);
 }
 
-__device__ uint64_t QueuePair::ionic_post_wqe_amo(int pe, int32_t size, uintptr_t *raddr, uint8_t opcode,
+__device__ uint64_t QueuePair::ionic_post_wqe_amo(int pe, int32_t size, uintptr_t raddr, uint8_t opcode,
                                                   int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
   uint64_t activemask = get_same_qp_lane_mask();
   uint32_t num_wqes = get_active_lane_count(activemask);
@@ -289,8 +289,8 @@ __device__ uint64_t QueuePair::ionic_post_wqe_amo(int pe, int32_t size, uintptr_
   wqe->base.num_sge_key = 1;
   wqe->base.imm_data_key = swap_endian_val<uint32_t>(0);
 
-  wqe->atomic_v2.remote_va_high = swap_endian_val<uint32_t>(reinterpret_cast<uint64_t>(raddr) >> 32);
-  wqe->atomic_v2.remote_va_low = swap_endian_val<uint32_t>(reinterpret_cast<uint64_t>(raddr));
+  wqe->atomic_v2.remote_va_high = swap_endian_val<uint32_t>(raddr >> 32);
+  wqe->atomic_v2.remote_va_low = swap_endian_val<uint32_t>(raddr);
   wqe->atomic_v2.remote_rkey = swap_endian_val<uint32_t>(rkey);
   wqe->atomic_v2.swap_add_high = swap_endian_val<uint32_t>(atomic_data >> 32);
   wqe->atomic_v2.swap_add_low = swap_endian_val<uint32_t>(atomic_data);
