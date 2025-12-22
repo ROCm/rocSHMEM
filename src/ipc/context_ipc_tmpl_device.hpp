@@ -195,7 +195,7 @@ __device__ void IPCContext::internal_direct_allreduce(
                     nelems * sizeof(T), i);
 
       if (is_thread_zero_in_block()) {
-        fence();
+        fence(i);
         internal_putmem(&pSync[pe], &flag_val, sizeof(*pSync), i);
       }
     }
@@ -311,7 +311,7 @@ __device__ void IPCContext::internal_ring_allreduce(
 
   for (int seg = 0; seg < n_seg; seg++) {
     off_seg = seg * seg_size;
-    // Loop 2 in the algorithm above
+    // Loop 1 in the algorithm above
     for (int iter = 0; iter < PE_size - 1; iter++) {
       off_send = (((my_pe_in_team + 1 - iter + 2 * PE_size) % PE_size) * chunk_size);
       off_recv = (((my_pe_in_team - iter + 2 * PE_size) % PE_size) * chunk_size);
@@ -321,13 +321,9 @@ __device__ void IPCContext::internal_ring_allreduce(
                     chunk_size * sizeof(T), send_pe);
 
       if (is_thread_zero_in_block()) {
-        fence();
-
+        fence(send_pe);
         wait_val = seg + 100;
         internal_putmem(&pSync[iter], &wait_val, sizeof(*pSync), send_pe);
-#if defined(__gfx90a__)
-        __threadfence_system();
-#endif /* __gfx90a__ */
         wait_until(&pSync[iter], ROCSHMEM_CMP_EQ, wait_val);
       }
       __syncthreads();
@@ -343,12 +339,9 @@ __device__ void IPCContext::internal_ring_allreduce(
                     chunk_size * sizeof(T), send_pe);
 
       if (is_thread_zero_in_block()) {
-        fence();
+        fence(send_pe);
         wait_val = seg + 100;
         internal_putmem(&pSync[iter], &wait_val, sizeof(*pSync), send_pe);
-#if defined(__gfx90a__)
-        __threadfence_system();
-#endif /* __gfx90a__ */
         wait_until(&pSync[iter], ROCSHMEM_CMP_EQ, wait_val);
       }
       __syncthreads();
@@ -400,7 +393,6 @@ __device__ int IPCContext::reduce(rocshmem_team_t team, T *dest,
         const T *p_src = (source + (n_seg * seg_size));
         int p_count = nreduce - (n_seg * seg_size);
         int p_chunk = p_count / PE_size;
-
         internal_ring_allreduce<T, Op>(p_dst, p_src, p_count, team_obj, 1,
                                       (p_chunk * PE_size), p_chunk);
 
