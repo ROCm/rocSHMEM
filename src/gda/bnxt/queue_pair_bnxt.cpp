@@ -96,7 +96,7 @@ __device__ static inline void* bnxt_re_get_hwqe(struct bnxt_device_sq *sq, uint3
   return (void *)((char*)sq->buf + (idx << 4));
 }
 
-__device__ static inline void aquire_lock(uint32_t *lock) {
+__device__ static inline void acquire_lock(uint32_t *lock) {
   uint32_t expected;
 
   do {
@@ -117,18 +117,18 @@ __device__ void QueuePair::bnxt_ring_doorbell(uint32_t slot_idx) {
   uint64_t key_lo;
   uint64_t key_hi;
 
-  epoch = (sq.flags & BNXT_RE_FLAG_EPOCH_TAIL_MASK) << BNXT_RE_DB_EPOCH_TAIL_SHIFT;
+  epoch = (bnxt_sq.flags & BNXT_RE_FLAG_EPOCH_TAIL_MASK) << BNXT_RE_DB_EPOCH_TAIL_SHIFT;
 
   key_lo = (slot_idx | epoch);
 
-  key_hi = (sq.id & BNXT_RE_DB_QID_MASK)
+  key_hi = (bnxt_sq.id & BNXT_RE_DB_QID_MASK)
          | (((uint64_t) BNXT_RE_QUE_TYPE_SQ & BNXT_RE_DB_TYP_MASK) << BNXT_RE_DB_TYP_SHIFT)
          | (0x1UL << BNXT_RE_DB_VALID_SHIFT);
 
   hdr.typ_qid_indx = (key_lo | (key_hi << 32));
 
   __threadfence_system();
-  __hip_atomic_store(dbr, hdr.typ_qid_indx, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+  __hip_atomic_store(bnxt_dbr, hdr.typ_qid_indx, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
 }
 
 __device__ void QueuePair::bnxt_check_cqe_error(struct bnxt_re_req_cqe *cqe) {
@@ -167,7 +167,7 @@ __device__ void QueuePair::bnxt_check_cqe_error(struct bnxt_re_req_cqe *cqe) {
   }
 }
 
-__device__ void QueuePair::poll_cq_until(uint32_t requested_available_slots) {
+__device__ void QueuePair::bnxt_poll_cq_until(uint32_t requested_available_slots) {
   struct bnxt_re_req_cqe *cqe;
   uint32_t sq_tail;
   uint32_t sq_head;
@@ -175,10 +175,10 @@ __device__ void QueuePair::poll_cq_until(uint32_t requested_available_slots) {
   uint32_t consumed_slots;
   uint32_t available_slots;
 
-  sq_depth = sq.depth;
+  sq_depth = bnxt_sq.depth;
 
   do {
-    cqe = (struct bnxt_re_req_cqe *) cq.buf;
+    cqe = (struct bnxt_re_req_cqe *) bnxt_cq.buf;
 
 #ifdef DEBUG
     bnxt_check_cqe_error(cqe);
@@ -188,9 +188,9 @@ __device__ void QueuePair::poll_cq_until(uint32_t requested_available_slots) {
      * This param provides us the wqe_idx but we need to convert to the slot idx.
      * We assume a static slots size of GDA_BNXT_WQE_SLOT_COUNT thus can multipy by this value */
     sq_head = (((cqe->con_indx & 0xFFFF) * GDA_BNXT_WQE_SLOT_COUNT) % sq_depth);
-    sq.head = sq_head;
+    bnxt_sq.head = sq_head;
 
-    sq_tail = __hip_atomic_load(&sq.tail, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
+    sq_tail = __hip_atomic_load(&bnxt_sq.tail, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_AGENT);
 
     consumed_slots  = (sq_tail - sq_head + sq_depth) % sq_depth;
     available_slots = sq_depth - consumed_slots;
@@ -205,12 +205,12 @@ __device__ void QueuePair::bnxt_quiet() {
   active_lane_id    = get_active_lane_num(active_lane_mask);
 
   if (0 == active_lane_id) {
-    poll_cq_until(sq.depth);
+    bnxt_poll_cq_until(bnxt_sq.depth);
   }
 }
 
 __device__ void QueuePair::bnxt_quiet_single() {
-  poll_cq_until(sq.depth);
+  bnxt_poll_cq_until(bnxt_sq.depth);
 }
 
 __device__ void QueuePair::bnxt_write_rma_wqe(uintptr_t raddr, uintptr_t laddr, int32_t length, uint8_t opcode) {
@@ -228,11 +228,11 @@ __device__ void QueuePair::bnxt_write_rma_wqe(uintptr_t raddr, uintptr_t laddr, 
   inline_msg = length <= inline_threshold &&
                opcode == gda_op_rdma_write;
 
-  poll_cq_until(GDA_BNXT_WQE_SLOT_COUNT);
+  bnxt_poll_cq_until(GDA_BNXT_WQE_SLOT_COUNT);
 
-  hdr_ptr  = (struct bnxt_re_bsqe*) bnxt_re_get_hwqe(&sq, 0);
-  rdma_ptr = (struct bnxt_re_rdma*) bnxt_re_get_hwqe(&sq, 1);
-  sge_ptr  = (struct bnxt_re_sge*)  bnxt_re_get_hwqe(&sq, 2);
+  hdr_ptr  = (struct bnxt_re_bsqe*) bnxt_re_get_hwqe(&bnxt_sq, 0);
+  rdma_ptr = (struct bnxt_re_rdma*) bnxt_re_get_hwqe(&bnxt_sq, 1);
+  sge_ptr  = (struct bnxt_re_sge*)  bnxt_re_get_hwqe(&bnxt_sq, 2);
 
   /* Populate Header Segment */
   wqe_type  = BNXT_RE_HDR_WT_MASK & opcode;
@@ -272,10 +272,10 @@ __device__ void QueuePair::bnxt_write_rma_wqe(uintptr_t raddr, uintptr_t laddr, 
   }
 
   /* Populate MSN Table */
-  bnxt_re_fill_psns_for_msntbl(&sq, length);
+  bnxt_re_fill_psns_for_msntbl(&bnxt_sq, length);
 
   /* Update SQ Pointer */
-  bnxt_re_incr_tail(&sq, GDA_BNXT_WQE_SLOT_COUNT);
+  bnxt_re_incr_tail(&bnxt_sq, GDA_BNXT_WQE_SLOT_COUNT);
 }
 
 __device__ void QueuePair::bnxt_post_wqe_rma(int pe, int32_t length, uintptr_t laddr, uintptr_t raddr, uint8_t opcode) {
@@ -288,7 +288,7 @@ __device__ void QueuePair::bnxt_post_wqe_rma(int pe, int32_t length, uintptr_t l
   active_lane_id    = get_active_lane_num(active_lane_mask);
 
   if (0 == active_lane_id) {
-    aquire_lock(&sq.lock);
+    acquire_lock(&bnxt_sq.lock);
   }
 
   for (int i = 0; i < active_lane_count; i++) {
@@ -297,12 +297,12 @@ __device__ void QueuePair::bnxt_post_wqe_rma(int pe, int32_t length, uintptr_t l
       bnxt_write_rma_wqe(raddr, laddr, length, opcode);
 
       /* Ring Doorbell */
-      bnxt_ring_doorbell(sq.tail);
+      bnxt_ring_doorbell(bnxt_sq.tail);
     }
   }
 
   if (0 == active_lane_id) {
-    release_lock(&sq.lock);
+    release_lock(&bnxt_sq.lock);
   }
 }
 
@@ -310,16 +310,16 @@ __device__ void QueuePair::bnxt_post_wqe_rma_single(int32_t length, uintptr_t la
                                                     uintptr_t raddr, uint8_t opcode,
                                                     bool ring_db) {
 
-  aquire_lock(&sq.lock);
+  acquire_lock(&bnxt_sq.lock);
 
   /* Write WQE to SQ */
   bnxt_write_rma_wqe(raddr, laddr, length, opcode);
 
   if (ring_db) {
-    bnxt_ring_doorbell(sq.tail);
+    bnxt_ring_doorbell(bnxt_sq.tail);
   }
 
-  release_lock(&sq.lock);
+  release_lock(&bnxt_sq.lock);
 }
 
 __device__ uint32_t QueuePair::bnxt_write_amo_wqe(uintptr_t raddr, uint8_t opcode,
@@ -338,11 +338,11 @@ __device__ uint32_t QueuePair::bnxt_write_amo_wqe(uintptr_t raddr, uint8_t opcod
   uint32_t atomic_idx = 0;
   uint32_t length = sizeof(uint64_t);
 
-  poll_cq_until(GDA_BNXT_WQE_SLOT_COUNT);
+  bnxt_poll_cq_until(GDA_BNXT_WQE_SLOT_COUNT);
 
-  hdr_ptr = (struct bnxt_re_bsqe*)   bnxt_re_get_hwqe(&sq, 0);
-  amo_ptr = (struct bnxt_re_atomic*) bnxt_re_get_hwqe(&sq, 1);
-  sge_ptr = (struct bnxt_re_sge*)    bnxt_re_get_hwqe(&sq, 2);
+  hdr_ptr = (struct bnxt_re_bsqe*)   bnxt_re_get_hwqe(&bnxt_sq, 0);
+  amo_ptr = (struct bnxt_re_atomic*) bnxt_re_get_hwqe(&bnxt_sq, 1);
+  sge_ptr = (struct bnxt_re_sge*)    bnxt_re_get_hwqe(&bnxt_sq, 2);
 
   /* Populate Header Segment */
   wqe_size  = BNXT_RE_HDR_WS_MASK & GDA_BNXT_WQE_SLOT_COUNT;
@@ -377,10 +377,10 @@ __device__ uint32_t QueuePair::bnxt_write_amo_wqe(uintptr_t raddr, uint8_t opcod
   memcpy(sge_ptr, &sge, sizeof(struct bnxt_re_sge));
 
   /* Populate MSN Table */
-  bnxt_re_fill_psns_for_msntbl(&sq, length);
+  bnxt_re_fill_psns_for_msntbl(&bnxt_sq, length);
 
   /* Update SQ Pointer */
-  bnxt_re_incr_tail(&sq, GDA_BNXT_WQE_SLOT_COUNT);
+  bnxt_re_incr_tail(&bnxt_sq, GDA_BNXT_WQE_SLOT_COUNT);
 
   return atomic_idx;
 }
@@ -398,7 +398,7 @@ __device__ uint64_t QueuePair::bnxt_post_wqe_amo(uintptr_t raddr, uint8_t opcode
   active_lane_id    = get_active_lane_num(active_lane_mask);
 
   if (0 == active_lane_id) {
-    aquire_lock(&sq.lock);
+    acquire_lock(&bnxt_sq.lock);
   }
 
   for (int i = 0; i < active_lane_count; i++) {
@@ -406,12 +406,12 @@ __device__ uint64_t QueuePair::bnxt_post_wqe_amo(uintptr_t raddr, uint8_t opcode
       atomic_idx = bnxt_write_amo_wqe(raddr, opcode, atomic_data, atomic_cmp, fetching);
 
       /* Ring Doorbell */
-      bnxt_ring_doorbell(sq.tail);
+      bnxt_ring_doorbell(bnxt_sq.tail);
     }
   }
 
   if (0 == active_lane_id) {
-    release_lock(&sq.lock);
+    release_lock(&bnxt_sq.lock);
   }
 
   if (fetching) {
@@ -427,14 +427,14 @@ __device__ uint64_t QueuePair::bnxt_post_wqe_amo_single(uintptr_t raddr, uint8_t
                                                         bool fetching) {
   uint32_t atomic_idx = 0;
 
-  aquire_lock(&sq.lock);
+  acquire_lock(&bnxt_sq.lock);
 
   /* Write WQE to SQ */
   atomic_idx = bnxt_write_amo_wqe(raddr, opcode, atomic_data, atomic_cmp, fetching);
 
-  bnxt_ring_doorbell(sq.tail);
+  bnxt_ring_doorbell(bnxt_sq.tail);
 
-  release_lock(&sq.lock);
+  release_lock(&bnxt_sq.lock);
 
   if (fetching) {
     quiet();
