@@ -195,7 +195,7 @@ __device__ void IPCContext::internal_direct_allreduce(
                     nelems * sizeof(T), i);
 
       if (is_thread_zero_in_block()) {
-        fence(i);
+        fence();
         internal_putmem(&pSync[pe], &flag_val, sizeof(*pSync), i);
       }
     }
@@ -217,7 +217,6 @@ __device__ void IPCContext::internal_direct_allreduce(
       threadfence_system();
     }
   }
-
   __syncthreads();
 
   for (int i = wg_id; i < num_pes; i += wg_size) {
@@ -321,7 +320,7 @@ __device__ void IPCContext::internal_ring_allreduce(
                     chunk_size * sizeof(T), send_pe);
 
       if (is_thread_zero_in_block()) {
-        fence(send_pe);
+        fence();
         wait_val = seg + 100;
         internal_putmem(&pSync[iter], &wait_val, sizeof(*pSync), send_pe);
         wait_until(&pSync[iter], ROCSHMEM_CMP_EQ, wait_val);
@@ -339,19 +338,19 @@ __device__ void IPCContext::internal_ring_allreduce(
                     chunk_size * sizeof(T), send_pe);
 
       if (is_thread_zero_in_block()) {
-        fence(send_pe);
-        wait_val = seg + 100;
+        fence();
+        wait_val = seg + 10;
         internal_putmem(&pSync[iter], &wait_val, sizeof(*pSync), send_pe);
         wait_until(&pSync[iter], ROCSHMEM_CMP_EQ, wait_val);
       }
       __syncthreads();
     }
   }
-  __syncthreads();
 
   for (int i = wg_id; i < 2 * num_pes - 2; i += wg_size) {
     pSync[i] = ROCSHMEM_SYNC_VALUE;
   }
+  threadfence_system();
   __syncthreads();
 }
 
