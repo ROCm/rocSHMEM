@@ -373,7 +373,7 @@ TestAMO() {
   ExecTest  "amo_add"          2       32           128
 }
 
-TestSigOps() {
+TestSigOpsRO() {
   ##############################################################################
   #       | Name             | Ranks | Workgroups | Threads | Max Message Size #
   ##############################################################################
@@ -394,8 +394,12 @@ TestSigOps() {
   ExecTest  "wavesignalfetch"  2       1            32
   ExecTest  "wavesignalfetch"  2       1            64
 
-  ExecTest  "putmem_signal_on_stream" 2  1          1         1048576
   ExecTest  "signal_wait_until_on_stream" 2  1      1
+}
+
+TestSigOps() {
+  TestSigOpsRO
+  ExecTest  "putmem_signal_on_stream" 2  1          1         1048576
 }
 
 TestColl() {
@@ -709,7 +713,7 @@ case $TEST in
   *"all-ro")
     TestRMAPut
     TestAMORO
-    TestSigOps
+    TestSigOpsRO
     TestColl
     TestOther
     ;;
