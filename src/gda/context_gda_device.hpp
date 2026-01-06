@@ -63,7 +63,6 @@ class GDAContext : public Context {
   __device__ void quiet_wave();
 
   __device__ void pe_quiet(size_t pe);
-  __device__ void pe_quiet_single(size_t pe);
 
   __device__ void *shmem_ptr(const void *dest, int pe);
 

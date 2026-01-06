@@ -661,10 +661,10 @@ __device__ void GDAContext::alltoall_linear_thread_puts(rocshmem_team_t team, T 
   for (int j = tid; j < pe_size; j+= step_size) {
     int dest_pe = team_obj->get_pe_in_world(j);
     uint64_t base_heap_offset = base_heap[dest_pe] - base_heap[my_pe];
-    qps[dest_pe].put_nbi_single(reinterpret_cast<char*>(&dst[my_pe_in_team * nelems]) + base_heap_offset,
+    qps[dest_pe].put_nbi(reinterpret_cast<char*>(&dst[my_pe_in_team * nelems]) + base_heap_offset,
                                 &src[j * nelems], nelems * sizeof(T), false);
-    qps[dest_pe].atomic_nofetch_single(reinterpret_cast<char *>(&pSync[alltoall_pSync_offset + my_pe_in_team]) + base_heap_offset,
-                                       1);
+    qps[dest_pe].atomic_nofetch(reinterpret_cast<char *>(&pSync[alltoall_pSync_offset + my_pe_in_team]) + base_heap_offset,
+                                1, -1, -1);
   }
 
   // wait until everyone has obtained their designated data
@@ -674,7 +674,7 @@ __device__ void GDAContext::alltoall_linear_thread_puts(rocshmem_team_t team, T 
     volatile long *vol_ivars = &pSync[alltoall_pSync_offset + dest_pe];
     while (uncached_load(vol_ivars) != 1) { }
 
-    pe_quiet_single(dest_pe);
+    pe_quiet(dest_pe);
 
     pSync[alltoall_pSync_offset + dest_pe] = ROCSHMEM_SYNC_VALUE;
   }

@@ -118,6 +118,14 @@ QueuePair::~QueuePair() {
   allocator.deallocate((void*)fetching_atomic_freelist);
 }
 
+__device__ uint64_t QueuePair::get_same_qp_lane_mask() {
+  uint64_t active = get_active_lane_mask();
+  uintptr_t this_qp = reinterpret_cast<uintptr_t>(this);
+  // Bitmask of lanes in this warp whose value == this_qp
+  uint64_t same_qp_mask = __match_any_sync(active, this_qp);
+  return same_qp_mask;
+}
+
 /******************************************************************************
  ************************ PROVIDER-SPECIFIC HELPERS ***************************
  *****************************************************************************/
@@ -128,11 +136,22 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t laddr, u
     ionic_post_wqe_rma(pe, size, laddr, raddr, opcode, cy);
     return;
 #endif
-  default:
+#if defined(GDA_BNXT)
+  case GDAProvider::BNXT:
+    bnxt_post_wqe_rma(pe, size, laddr, raddr, opcode);
+    return;
+#endif
+#if defined(GDA_MLX5)
+  case GDAProvider::MLX5:
     post_wqe_rma_turn(pe, size, laddr, raddr, opcode, cy);
+    return
+#endif
+  default:
+    return;
   }
 }
 
+#if defined(GDA_MLX5)
 __device__ void QueuePair::post_wqe_rma_turn(int pe, int32_t size, uintptr_t laddr, uintptr_t raddr, uint8_t opcode, Collectivity cy) {
   if (cy == THREAD) {
     bool need_turn {true};
@@ -141,50 +160,18 @@ __device__ void QueuePair::post_wqe_rma_turn(int pe, int32_t size, uintptr_t lad
       uint8_t lane = __ffsll((unsigned long long)turns) - 1;
       int pe_turn = __shfl(pe, lane);
       if (pe_turn == pe) {
-        post_wqe_rma_mt(pe, size, laddr, raddr, opcode);
+        mlx5_post_wqe_rma(size, laddr, raddr, opcode);
         need_turn = false;
       }
       turns = __ballot(need_turn);
     }
   } else {
     if (is_thread_zero_in_wave()) {
-      post_wqe_rma_mt(pe, size, laddr, raddr, opcode);
+      mlx5_post_wqe_rma(size, laddr, raddr, opcode);
     }
   }
 }
-
-__device__ void QueuePair::post_wqe_rma_mt(int pe, int32_t size, uintptr_t laddr, uintptr_t raddr, uint8_t opcode) {
-  switch (gda_provider_) {
-#if defined(GDA_MLX5)
-  case GDAProvider::MLX5:
-    mlx5_post_wqe_rma(size, laddr, raddr, opcode);
-    return;
 #endif
-#if defined(GDA_BNXT)
-  case GDAProvider::BNXT:
-    bnxt_post_wqe_rma(pe, size, laddr, raddr, opcode);
-    return;
-#endif
-  default:
-    assert(false /* invalid nic provider */);
-  }
-}
-
-__device__ void QueuePair::post_wqe_rma_single(int32_t size, uintptr_t laddr, uintptr_t raddr, uint8_t opcode, bool ring_db) {
-  switch (gda_provider_) {
-#if defined(GDA_BNXT)
-  case GDAProvider::BNXT:
-    return bnxt_post_wqe_rma_single(size, laddr, raddr, opcode, ring_db);
-#endif
-#if defined(GDA_IONIC)
-  case GDAProvider::IONIC:
-    return ionic_post_wqe_rma(0 /*pe (unused)*/, size, laddr, raddr, opcode, Collectivity::THREAD);
-#endif
-  case GDAProvider::MLX5:
-  default:
-    assert(false /* invalid nic provider */);
-  }
-}
 
 __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t raddr, uint8_t opcode,
                                             int64_t atomic_data, int64_t atomic_cmp, bool fetching) {
@@ -207,25 +194,6 @@ __device__ uint64_t QueuePair::post_wqe_amo(int pe, int32_t size, uintptr_t radd
   }
 }
 
-__device__ uint64_t QueuePair::post_wqe_amo_single(uintptr_t raddr, uint8_t opcode,
-                                                   int64_t atomic_data, int64_t atomic_cmp,
-                                                   bool fetching) {
-  switch (gda_provider_) {
-#if defined(GDA_BNXT)
-  case GDAProvider::BNXT:
-    return bnxt_post_wqe_amo_single(raddr, opcode, atomic_data, atomic_cmp, fetching);
-#endif
-#if defined(GDA_IONIC)
-  case GDAProvider::IONIC:
-    return ionic_post_wqe_amo(0 /*pe (unused)*/, 8 /*size_bytes (only 8-byte atomics implemented)*/, raddr, opcode, atomic_data, atomic_cmp, fetching);
-#endif
-  case GDAProvider::MLX5:
-  default:
-    assert(false /* invalid nic provider */);
-    return 0;
-  }
-}
-
 __device__ void QueuePair::quiet(Collectivity cy) {
   switch (gda_provider_) {
 #if defined(GDA_MLX5)
@@ -237,9 +205,7 @@ __device__ void QueuePair::quiet(Collectivity cy) {
 #endif
 #if defined(GDA_BNXT)
   case GDAProvider::BNXT:
-    if (cy == THREAD || is_thread_zero_in_wave()) {
-      bnxt_quiet();
-    }
+    bnxt_quiet();
     return;
 #endif
 #if defined(GDA_IONIC)
@@ -247,24 +213,6 @@ __device__ void QueuePair::quiet(Collectivity cy) {
     ionic_quiet();
     return;
 #endif
-  default:
-    assert(false /* invalid nic provider */);
-  }
-}
-
-__device__ void QueuePair::quiet_single() {
-  switch (gda_provider_) {
-#if defined(GDA_BNXT)
-  case GDAProvider::BNXT:
-    bnxt_quiet_single();
-    return;
-#endif
-#if defined(GDA_IONIC)
-  case GDAProvider::IONIC:
-    ionic_quiet();
-    return;
-#endif
-  case GDAProvider::MLX5:
   default:
     assert(false /* invalid nic provider */);
   }
@@ -277,12 +225,6 @@ __device__ void QueuePair::put_nbi(void *dest, const void *source, size_t nelems
   uintptr_t src = reinterpret_cast<uintptr_t>(source);
   uintptr_t dst = reinterpret_cast<uintptr_t>(dest);
   post_wqe_rma(pe, nelems, src, dst, gda_op_rdma_write, cy);
-}
-
-__device__ void QueuePair::put_nbi_single(void *dest, const void *source, size_t nelems, bool ring_db) {
-  uintptr_t src = reinterpret_cast<uintptr_t>(source);
-  uintptr_t dst = reinterpret_cast<uintptr_t>(dest);
-  post_wqe_rma_single(nelems, src, dst, gda_op_rdma_write, ring_db);
 }
 
 __device__ void QueuePair::get_nbi(void *dest, const void *source, size_t nelems, int pe, Collectivity cy) {
@@ -309,11 +251,6 @@ __device__ int64_t QueuePair::atomic_fetch(void *dest, int64_t atomic_data, int6
 __device__ void QueuePair::atomic_nofetch(void *dest, int64_t atomic_data, int64_t atomic_cmp, int pe) {
   uintptr_t dst = reinterpret_cast<uintptr_t>(dest);
   post_wqe_amo(pe, sizeof(int64_t), dst, gda_op_atomic_fa, atomic_data, atomic_cmp, false);
-}
-
-__device__ void QueuePair::atomic_nofetch_single(void *dest, int64_t value) {
-  uintptr_t dst = reinterpret_cast<uintptr_t>(dest);
-  post_wqe_amo_single(dst, gda_op_atomic_fa, value, 0, false);
 }
 
 }  // namespace rocshmem
