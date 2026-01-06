@@ -182,7 +182,7 @@ __device__ void IPCContext::internal_direct_allreduce(
 
   int wg_id = get_flat_block_id();
   int wg_size = get_flat_block_size();
-  int64_t flag_val = 1;
+  long flag_val = 1;
 
   for (int i = wg_id; i < nelems; i += wg_size) {
     dst[i] = src[i];
@@ -196,7 +196,7 @@ __device__ void IPCContext::internal_direct_allreduce(
 
       if (is_thread_zero_in_block()) {
         fence();
-        internal_putmem(&pSync[pe], &flag_val, sizeof(*pSync), i);
+        internal_putmem_4B(&pSync[pe], flag_val, i);
       }
     }
   }
@@ -208,7 +208,7 @@ __device__ void IPCContext::internal_direct_allreduce(
     if (i != pe) {
       // Wait for leader thread to see that the buffer is ready.
       if (is_thread_zero_in_block()) {
-        wait_until(&pSync[i], ROCSHMEM_CMP_EQ, flag_val);
+        internal_wait_until(&pSync[i], flag_val);
       }
       __syncthreads();
 
@@ -322,8 +322,8 @@ __device__ void IPCContext::internal_ring_allreduce(
       if (is_thread_zero_in_block()) {
         fence();
         wait_val = seg + 100;
-        internal_putmem(&pSync[iter], &wait_val, sizeof(*pSync), send_pe);
-        wait_until(&pSync[iter], ROCSHMEM_CMP_EQ, wait_val);
+        internal_putmem_4B(&pSync[iter], wait_val, send_pe);
+        internal_wait_until(&pSync[iter], wait_val);
       }
       __syncthreads();
       ipc_compute_reduce<T, Op>(&pWrk[off_recv], &dst[off_seg + off_recv],
@@ -340,8 +340,8 @@ __device__ void IPCContext::internal_ring_allreduce(
       if (is_thread_zero_in_block()) {
         fence();
         wait_val = seg + 10;
-        internal_putmem(&pSync[iter], &wait_val, sizeof(*pSync), send_pe);
-        wait_until(&pSync[iter], ROCSHMEM_CMP_EQ, wait_val);
+        internal_putmem_4B(&pSync[iter], wait_val, send_pe);
+        internal_wait_until(&pSync[iter], wait_val);
       }
       __syncthreads();
     }
