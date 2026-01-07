@@ -171,14 +171,15 @@ __device__ void IPCContext::internal_putmem(void *dest, const void *source,
 __device__ void IPCContext::internal_putmem_4B(void *dest, const long value,
                                                int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dest) - wrk_sync_pool_bases_[my_pe];
-  detail::atomic::store<long, detail::atomic::memory_scope_system>(reinterpret_cast<long *>(wrk_sync_pool_bases_[pe] + L_offset),
+  detail::atomic::store<long, detail::atomic::memory_scope_system>(reinterpret_cast<long *>(reinterpret_cast<char *>(wrk_sync_pool_bases_[pe]) + L_offset),
                                                                    value, orders_);
 }
 
 __device__ void IPCContext::internal_wait_until (long *source, const long value) {
+  volatile long tval=-1;
   do {
-    detail::atomic::load<long, detail::atomic::memory_scope_system>(source, orders_);
-    if (*source == value) {
+    tval = detail::atomic::load<long, detail::atomic::memory_scope_system>(source, orders_);
+    if (tval == value) {
       break;
     }
   } while (true);

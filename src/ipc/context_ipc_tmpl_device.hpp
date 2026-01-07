@@ -188,6 +188,7 @@ __device__ void IPCContext::internal_direct_allreduce(
     dst[i] = src[i];
   }
   __syncthreads();
+  threadfence_system();
 
   for (int i = PE_start; i < finish; i += stride) {
     if (i != pe) {
