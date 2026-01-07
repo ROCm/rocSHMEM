@@ -365,9 +365,20 @@ class QueuePair {
   __device__ uint32_t commit_sq(uint64_t activemask, uint32_t my_sq_prod, uint32_t my_sq_pos, uint32_t num_wqes);
 
   /**
+   * @brief Helper method to poll the ccqe.
+   */
+  __device__ __attribute__((noinline)) void ionic_poll_wave_ccqe(uint64_t active_lane_mask);
+
+  /**
    * @brief Helper method to poll the next completion queue entry.
    */
   __device__ __attribute__((noinline)) void poll_wave_cqes(uint64_t active_lane_mask);
+
+  /**
+   * @brief Helper method to drain completion queue entries.
+   * @param cons wait for sq_msn to catch up to this position.
+   */
+  __device__ __attribute__((noinline)) void ionic_quiet_internal_ccqe(uint64_t active_lane_mask, uint32_t cons);
 
   /**
    * @brief Helper method to drain completion queue entries.

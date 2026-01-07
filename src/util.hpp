@@ -124,6 +124,11 @@ namespace rocshmem {
 #define STRINGIFY_NX(name) #name
 #define STRINGIFY(name) STRINGIFY_NX(name)
 
+#define DLSYM_OPT_HELPER(func_struct, prefix, handle, func_name)                            \
+do {                                                                                        \
+  *(void **) (&func_struct.func_name) = dlsym(handle, STRINGIFY(PPCAT(prefix, func_name))); \
+} while (0)
+
 #define DLSYM_HELPER(func_struct, prefix, handle, func_name)                                \
 do {                                                                                        \
   *(void **) (&func_struct.func_name) = dlsym(handle, STRINGIFY(PPCAT(prefix, func_name))); \

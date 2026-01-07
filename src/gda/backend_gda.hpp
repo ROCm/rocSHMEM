@@ -382,6 +382,7 @@ class GDABackend : public Backend {
    */
   void create_cqs(int ncqes);
   void bnxt_create_cqs(int ncqes);
+  void ionic_create_cqs(int ncqes);
 
   /**
    * @brief Create all QPs with a SQ of length sq_length
