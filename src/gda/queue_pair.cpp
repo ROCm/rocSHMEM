@@ -144,7 +144,7 @@ __device__ void QueuePair::post_wqe_rma(int pe, int32_t size, uintptr_t laddr, u
 #if defined(GDA_MLX5)
   case GDAProvider::MLX5:
     post_wqe_rma_turn(pe, size, laddr, raddr, opcode, cy);
-    return
+    return;
 #endif
   default:
     return;
