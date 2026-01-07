@@ -29,3 +29,9 @@ ENDIF()
 IF (BUILD_UNIT_TESTS)
     add_subdirectory(unit_tests)
 ENDIF()
+
+
+#rocm_install(TARGETS functional_driver.sh COMPONENT tests)
+#rocm_install(TARGETS rocshmem_functional_tests COMPONENT tests)
+
+
