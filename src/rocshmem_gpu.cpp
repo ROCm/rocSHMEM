@@ -546,8 +546,8 @@ __device__ void rocshmem_ctx_alltoall_wg(rocshmem_ctx_t ctx,
 template <typename T>
 __device__ void rocshmem_alltoall_wg(rocshmem_team_t team, T *dest,
                                      const T *source, int nelem) {
-  GPU_DPRINTF("Function: rocshmem_alltoall_wg (ctx=%zd, team=%zd, dest=%p, source=%p, nelem=%d\n",
-              ctx.ctx_opaque, team, dest, source, nelem);
+  GPU_DPRINTF("Function: rocshmem_alltoall_wg (team=%zd, dest=%p, source=%p, nelem=%d\n",
+              team, dest, source, nelem);
 
   get_internal_ctx(ROCSHMEM_CTX_DEFAULT)->alltoall<T>(team, dest, source, nelem);
 }
