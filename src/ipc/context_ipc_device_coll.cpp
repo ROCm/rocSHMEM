@@ -37,30 +37,21 @@ __device__ void IPCContext::internal_direct_barrier(int pe, int PE_start,
   if (pe == PE_start) {
     // Go through all PE offsets (except current offset = 0)
     // and wait until they all reach
-#if defined(__gfx90a__)
-    __threadfence_system();
-#endif /* __gfx90a__ */
     for (int i = 1; i < n_pes; i++) {
-      wait_until(&pSync[i], ROCSHMEM_CMP_EQ, flag_val);
+      internal_wait_until(&pSync[i], flag_val);
       pSync[i] = ROCSHMEM_SYNC_VALUE;
     }
     threadfence_system();
 
     // Announce to other PEs that all have reached
     for (int i = 1, j = PE_start + stride; i < n_pes; ++i, j += stride) {
-      internal_putmem(&pSync[0], &flag_val, sizeof(*pSync), j);
-#if defined(__gfx90a__)
-        __threadfence_system();
-#endif /* __gfx90a__ */
+      internal_putmem_4B(&pSync[0], flag_val, j);
     }
   } else {
     // Mark current PE offset as reached
     size_t pe_offset = (pe - PE_start) / stride;
-    internal_putmem(&pSync[pe_offset], &flag_val, sizeof(*pSync), PE_start);
-#if defined(__gfx90a__)
-    __threadfence_system();
-#endif /* __gfx90a__ */
-    wait_until(&pSync[0], ROCSHMEM_CMP_EQ, flag_val);
+    internal_putmem_4B(&pSync[pe_offset], flag_val, PE_start);
+    internal_wait_until(&pSync[0], flag_val);
     pSync[0] = ROCSHMEM_SYNC_VALUE;
     threadfence_system();
   }
@@ -71,16 +62,16 @@ __device__ void IPCContext::internal_atomic_barrier(int pe, int PE_start,
                                                     int64_t *pSync) {
   int64_t flag_val = 1;
   if (pe == PE_start) {
-    wait_until(&pSync[0], ROCSHMEM_CMP_EQ, (int64_t)(n_pes - 1));
+    internal_wait_until(&pSync[0], (int64_t)(n_pes - 1));
     pSync[0] = ROCSHMEM_SYNC_VALUE;
     threadfence_system();
 
     for (int i = 1, j = PE_start + stride; i < n_pes; ++i, j += stride) {
-      internal_putmem(&pSync[0], &flag_val, sizeof(*pSync), j);
+      internal_putmem_4B(&pSync[0], flag_val, j);
     }
   } else {
     amo_add<int64_t>(&pSync[0], flag_val, PE_start);
-    wait_until(&pSync[0], ROCSHMEM_CMP_EQ, flag_val);
+    internal_wait_until(&pSync[0], flag_val);
     pSync[0] = ROCSHMEM_SYNC_VALUE;
     threadfence_system();
   }
