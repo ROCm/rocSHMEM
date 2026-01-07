@@ -29,7 +29,7 @@ namespace rocshmem {
 
 void* GDABackend::mlx5_dv_dlopen() {
   void* dv_handle{nullptr};
-  dv_handle = dlopen("libmlx5.so", RTLD_NOW);
+  dv_handle = dlopen("libmlx5.so", RTLD_LAZY);
   if (!dv_handle) {
     DPRINTF("Could not open libmlx5.so. Returning\n");
   }

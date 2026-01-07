@@ -264,10 +264,10 @@ void GDABackend::bnxt_create_qps(int sq_length) {
 
 void* GDABackend::bnxt_dv_dlopen() {
   void* dv_handle{nullptr};
-  dv_handle = dlopen("libbnxt_re.so", RTLD_NOW);
+  dv_handle = dlopen("libbnxt_re.so", RTLD_LAZY);
   if (!dv_handle) {
     // Try hard-coded PATH
-    dv_handle = dlopen("/usr/local/lib/libbnxt_re.so", RTLD_NOW);
+    dv_handle = dlopen("/usr/local/lib/libbnxt_re.so", RTLD_LAZY);
     if (!dv_handle) {
       DPRINTF("Could not open libbnxt_re.so. Returning\n");
     }
