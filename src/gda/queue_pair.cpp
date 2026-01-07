@@ -176,7 +176,10 @@ __device__ void QueuePair::post_wqe_rma_single(int32_t size, uintptr_t laddr, ui
   case GDAProvider::BNXT:
     return bnxt_post_wqe_rma_single(size, laddr, raddr, opcode, ring_db);
 #endif
+#if defined(GDA_IONIC)
   case GDAProvider::IONIC:
+    return ionic_post_wqe_rma(0 /*pe (unused)*/, size, laddr, raddr, opcode, Collectivity::THREAD);
+#endif
   case GDAProvider::MLX5:
   default:
     assert(false /* invalid nic provider */);
@@ -212,8 +215,11 @@ __device__ uint64_t QueuePair::post_wqe_amo_single(uintptr_t raddr, uint8_t opco
   case GDAProvider::BNXT:
     return bnxt_post_wqe_amo_single(raddr, opcode, atomic_data, atomic_cmp, fetching);
 #endif
-  case GDAProvider::MLX5:
+#if defined(GDA_IONIC)
   case GDAProvider::IONIC:
+    return ionic_post_wqe_amo(0 /*pe (unused)*/, 8 /*size_bytes (only 8-byte atomics implemented)*/, raddr, opcode, atomic_data, atomic_cmp, fetching);
+#endif
+  case GDAProvider::MLX5:
   default:
     assert(false /* invalid nic provider */);
     return 0;
@@ -253,8 +259,12 @@ __device__ void QueuePair::quiet_single() {
     bnxt_quiet_single();
     return;
 #endif
-  case GDAProvider::MLX5:
+#if defined(GDA_IONIC)
   case GDAProvider::IONIC:
+    ionic_quiet();
+    return;
+#endif
+  case GDAProvider::MLX5:
   default:
     assert(false /* invalid nic provider */);
   }
