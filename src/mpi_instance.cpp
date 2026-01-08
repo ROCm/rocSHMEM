@@ -42,7 +42,7 @@ int MPIInstance::mpilib_dl_init() {
   if (mpilib_handle_ != nullptr)
       return ROCSHMEM_SUCCESS;
 
-  mpilib_handle_ = dlopen("libmpi.so", RTLD_NOW);
+  mpilib_handle_ = dlopen("libmpi.so", RTLD_LAZY);
   if (!mpilib_handle_) {
     printf("Could not open libmpi.so. Returning\n");
     return ROCSHMEM_ERROR;
