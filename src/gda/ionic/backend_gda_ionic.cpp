@@ -132,10 +132,10 @@ void GDABackend::ionic_setup_parent_domain(struct ibv_parent_domain_init_attr* p
 
 void* GDABackend::ionic_dv_dlopen() {
   void* dv_handle{nullptr};
-  dv_handle = dlopen("libionic.so", RTLD_NOW);
+  dv_handle = dlopen("libionic.so", RTLD_LAZY);
   if (!dv_handle) {
     // Try hard-coded PATH
-    dv_handle = dlopen("/usr/local/lib/libionic.so", RTLD_NOW);
+    dv_handle = dlopen("/usr/local/lib/libionic.so", RTLD_LAZY);
     if (!dv_handle) {
       DPRINTF("Could not open libionic.so. Returning\n");
     }
