@@ -125,6 +125,26 @@ execute asynchronously. The caller must synchronize the stream (e.g., using
 This function creates a separate context for each workgroup to avoid contention on the
 default context, allowing parallel execution across multiple streams.
 
+ROSHMEM_ALLTOALLV
+-----------------
+
+.. cpp:function:: __device__ void rocshmem_TYPENAME_alltoallv_wg(rocshmem_team_t team, TYPE *dest, const TYPE dest_nelems[], const TYPE dest_displs[], TYPE *source, const TYPE source_nelems[], const TYPE source_displs[]);
+
+  :param team:          The team participating in the collective.
+  :param dest:          Destination address. Must be an address on the symmetric heap.
+  :param dest_nelems:   Array containing number of elements to receive from each participating PE
+  :param dest_displs:   Array of offsets into dest buffer for each participating PE
+  :param source:        Source address. Must be an address on the symmetric heap.
+  :param source_nelems: Array containing number of elements to send from each participating PE
+  :param source_displs: Array of offsets into source buffer for each participating PE
+
+  :returns:      None.
+
+**Description:**
+PE i sends source_nelems[j] of data from source + source_displs[j] to PE j.
+At the same time, PE i receives dest_nelems[j] of data from PE j to be placed at dest + dest_displs[j].
+This function must be called as a work-group collective.
+
 ROCSHMEM_BROADCAST
 ------------------
 
