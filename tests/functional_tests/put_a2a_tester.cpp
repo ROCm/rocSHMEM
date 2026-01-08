@@ -40,7 +40,7 @@ __global__ void PutA2aTest(int loop, int skip, long long int *start_time,
   rocshmem_wg_ctx_create(ctx_type, &ctx);
 
   int num_pe {rocshmem_ctx_n_pes(ctx)};
-  int num_wg {get_flat_grid_size()};
+  int num_wg {get_grid_num_blocks()};
   int num_wl {get_flat_block_size()};
   int my_pe {rocshmem_ctx_my_pe(ctx)};
   int wg_id {get_flat_grid_id()};
@@ -78,7 +78,7 @@ __global__ void PutA2aTest(int loop, int skip, long long int *start_time,
 static __global__ void verify_results_kernel(int *dest, size_t buf_size,
                                              bool *verification_error) {
   int num_pe {rocshmem_n_pes()};
-  int num_wg {get_flat_grid_size()};
+  int num_wg {get_grid_num_blocks()};
   int num_wl {get_flat_block_size()};
   int my_pe {rocshmem_my_pe()};
   int wg_id {get_flat_grid_id()};
