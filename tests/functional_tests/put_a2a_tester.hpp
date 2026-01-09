@@ -22,24 +22,24 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef _PUT_A2A_TESTER_HPP_
-#define _PUT_A2A_TESTER_HPP_
+#ifndef _FLOOD_TESTER_HPP_
+#define _FLOOD_TESTER_HPP_
 
 #include "tester.hpp"
 
 /******************************************************************************
  * DEVICE TEST KERNEL
  *****************************************************************************/
-__global__ void PutA2aTest(int loop, int skip, long long int *start_time,
-                           long long int *end_time, uint64_t *r_buf);
+__global__ void FloodTest(int loop, int skip, long long int *start_time,
+                          long long int *end_time, uint64_t *r_buf);
 
 /******************************************************************************
  * HOST TESTER CLASS
  *****************************************************************************/
-class PutA2aTester : public Tester {
+class FloodTester : public Tester {
  public:
-  explicit PutA2aTester(TesterArguments args);
-  virtual ~PutA2aTester();
+  explicit FloodTester(TesterArguments args);
+  virtual ~FloodTester();
 
  protected:
   virtual void resetBuffers(size_t size) override;
