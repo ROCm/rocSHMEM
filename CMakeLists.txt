@@ -253,7 +253,7 @@ if (NOT BUILD_TESTS_ONLY)
 include(ROCMPackageConfigHelpers)
 include(ROCMClients)
 rocm_package_setup_component(clients)
-rocm_package_setup_client_component(tests PACKAGE_NAME alltests)
+rocm_package_setup_client_component(tests PACKAGE_NAME tests)
 
 
   rocm_create_package(
