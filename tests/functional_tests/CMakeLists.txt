@@ -95,7 +95,6 @@ target_compile_definitions(
 )
 
 configure_file(../../scripts/functional_tests/driver.sh rocshmem_functional_driver.sh COPYONLY)
-
 rocm_install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rocshmem_functional_driver.sh COMPONENT tests DESTINATION ${CMAKE_INSTALL_DATADIR}/rocshmem)
 rocm_install(TARGETS rocshmem_functional_tests COMPONENT tests)
 
