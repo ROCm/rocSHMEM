@@ -62,7 +62,7 @@
 #include "team_reduction_tester.hpp"
 #include "wavefront_primitives.hpp"
 #include "workgroup_primitives.hpp"
-#include "put_a2a_tester.hpp"
+#include "flood_tester.hpp"
 
 #include "backend_bc.hpp"
 extern Backend* backend;

@@ -22,7 +22,7 @@
  * IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "put_a2a_tester.hpp"
+#include "flood_tester.hpp"
 
 #include <rocshmem/rocshmem.hpp>
 
