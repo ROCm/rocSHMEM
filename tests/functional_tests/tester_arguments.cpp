@@ -150,7 +150,7 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
       min_msg_size = 1;
       max_msg_size = 1;
     case PutA2aTestType:
-      min_msg_size = max_msg_size = 4;
+      min_msg_size = max_msg_size = 8;
       break;
     default:
       break;

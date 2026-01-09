@@ -31,7 +31,7 @@
  * DEVICE TEST KERNEL
  *****************************************************************************/
 __global__ void PutA2aTest(int loop, int skip, long long int *start_time,
-                            long long int *end_time, int *r_buf);
+                           long long int *end_time, uint64_t *r_buf);
 
 /******************************************************************************
  * HOST TESTER CLASS
@@ -42,15 +42,15 @@ class PutA2aTester : public Tester {
   virtual ~PutA2aTester();
 
  protected:
-  virtual void resetBuffers(uint64_t size) override;
+  virtual void resetBuffers(size_t size) override;
 
   virtual void launchKernel(dim3 gridSize, dim3 blockSize, int loop,
-                            uint64_t size) override;
+                            size_t size) override;
 
-  virtual void verifyResults(uint64_t size) override;
+  virtual void verifyResults(size_t size) override;
 
-  int *r_buf;
-  int *s_buf;
+  uint64_t *r_buf;
+  uint64_t *s_buf;
 };
 
 #endif

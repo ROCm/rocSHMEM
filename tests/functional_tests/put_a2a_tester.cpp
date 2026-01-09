@@ -32,11 +32,10 @@ using namespace rocshmem;
  * DEVICE TEST KERNEL
  *****************************************************************************/
 __global__ void PutA2aTest(int loop, int skip, long long int *start_time,
-                           long long int *end_time, int *r_buf, int *s_buf,
+                           long long int *end_time, uint64_t *r_buf, uint64_t *s_buf,
                            ShmemContextType ctx_type) {
   __shared__ rocshmem_ctx_t ctx;
 
-  rocshmem_wg_init();
   rocshmem_wg_ctx_create(ctx_type, &ctx);
 
   int num_pe {rocshmem_ctx_n_pes(ctx)};
@@ -60,7 +59,7 @@ __global__ void PutA2aTest(int loop, int skip, long long int *start_time,
       // shuffle ordering so that threads in the wave put to a
       // different pe 'simultaneously'
       auto pe = (wl_id + j) % num_pe;
-      rocshmem_ctx_putmem(ctx, &r_buf[tgt_offset], &s_buf[wl_offset], sizeof(int), pe);
+      rocshmem_ctx_putmem(ctx, &r_buf[tgt_offset], &s_buf[wl_offset], sizeof(uint64_t), pe);
     }
     __syncthreads();
     if (is_thread_zero_in_wave()) {
@@ -72,10 +71,9 @@ __global__ void PutA2aTest(int loop, int skip, long long int *start_time,
     end_time[wg_id] = wall_clock64();
   }
   rocshmem_wg_ctx_destroy(&ctx);
-  rocshmem_wg_finalize();
 }
 
-static __global__ void verify_results_kernel(int *dest, size_t buf_size,
+static __global__ void verify_results_kernel(uint64_t *dest, size_t buf_size,
                                              bool *verification_error) {
   int num_pe {rocshmem_n_pes()};
   int num_wg {get_grid_num_blocks()};
@@ -90,9 +88,9 @@ static __global__ void verify_results_kernel(int *dest, size_t buf_size,
     auto tgt_offset {pe * num_wg * num_wl + wl_offset};
     //printf("%02d:%02d:%02d: num_pe=%d, num_wg=%d, num_wl=%d, wl_offset=%d, tgt_offset=%d (verif)\n", my_pe, wg_id, wl_id, num_pe, num_wg, num_wl, wl_offset, tgt_offset);
     auto value = dest[tgt_offset];
-    auto v_pe = (value & 0xff000000)>>24;
-    auto v_wg = (value & 0xff0000)>>16;
-    auto v_lane = value & 0xffff;
+    auto v_lane = value & 0x0fff;
+    auto v_wg = (value>>12) & 0xffff'ffff;
+    auto v_pe = (value>>44);
 
     if (v_lane != wl_id || v_wg != wg_id || v_pe != pe) {
       *verification_error = true;
@@ -106,12 +104,12 @@ static __global__ void verify_results_kernel(int *dest, size_t buf_size,
 PutA2aTester::PutA2aTester(TesterArguments args) : Tester(args) {
   int num_pes {rocshmem_n_pes()};
   int my_pe {rocshmem_my_pe()};
-  s_buf = (int *)rocshmem_malloc(sizeof(int) * args.num_wgs * args.wg_size);
-  printf("%02d:xx:xx: num_wgs=%d, wg_size=%d\n", my_pe, args.num_wgs, args.wg_size);
+  s_buf = (uint64_t*)rocshmem_malloc(sizeof(uint64_t) * args.num_wgs * args.wg_size);
+  //printf("%02d:xx:xx: num_wgs=%d, wg_size=%d\n", my_pe, args.num_wgs, args.wg_size);
   for(int wg = 0; wg < args.num_wgs; wg++) for(int lane = 0; lane < args.wg_size; lane++) {
-    s_buf[wg * args.wg_size + lane] = (my_pe<<24) + (wg<<16) + lane; // set value for verification
+    s_buf[wg * args.wg_size + lane] = (((uint64_t)my_pe)<<44) + (wg<<12) + lane; // set value for verification
   }
-  r_buf = (int *)rocshmem_malloc(sizeof(int) * args.num_wgs * args.wg_size * num_pes);
+  r_buf = (uint64_t*)rocshmem_malloc(sizeof(uint64_t) * args.num_wgs * args.wg_size * num_pes);
 }
 
 PutA2aTester::~PutA2aTester() {
@@ -119,13 +117,13 @@ PutA2aTester::~PutA2aTester() {
   rocshmem_free(r_buf);
 }
 
-void PutA2aTester::resetBuffers(uint64_t size) {
+void PutA2aTester::resetBuffers(size_t size) {
   int num_pes {rocshmem_n_pes()};
-  memset(r_buf, 0, sizeof(int) * args.num_wgs * args.wg_size * num_pes);
+  memset(r_buf, 0, sizeof(uint64_t) * args.num_wgs * args.wg_size * num_pes);
 }
 
 void PutA2aTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
-                                uint64_t size) {
+                                size_t size) {
   size_t shared_bytes = 0;
   int num_pes {rocshmem_n_pes()};
 
@@ -138,18 +136,18 @@ void PutA2aTester::launchKernel(dim3 gridSize, dim3 blockSize, int loop,
   num_timed_msgs = loop * gridSize.x * blockSize.x * num_pes;
 }
 
-void PutA2aTester::verifyResults(uint64_t size) {
+void PutA2aTester::verifyResults(size_t size) {
   int num_pes {rocshmem_n_pes()};
   int my_pe {rocshmem_my_pe()};
 
-  if (num_pes > 256 || args.num_wgs > 256 || args.wg_size > 64*1024) {
+  if (num_pes > 1<<20 || args.num_wgs > 1<<31 || args.wg_size > 1<<12) {
     // can't check
     return;
   }
-  assert(size == sizeof(int));
+  assert(size == sizeof(uint64_t));
 
   hipLaunchKernelGGL(verify_results_kernel, args.num_wgs, args.wg_size, 0, stream,
-                     r_buf, sizeof(int), verification_error);
+                     r_buf, sizeof(uint64_t), verification_error);
   CHECK_HIP(hipStreamSynchronize(stream));
 
   if (*verification_error) {
@@ -159,9 +157,9 @@ void PutA2aTester::verifyResults(uint64_t size) {
       auto wl_offset {wg * args.wg_size + lane};
       auto tgt_offset {pe * args.num_wgs * args.wg_size + wl_offset};
       auto value = r_buf[tgt_offset];
-      auto v_pe = (value & 0xff000000)>>24;
-      auto v_wg = (value & 0xff0000)>>16;
-      auto v_lane = value & 0xffff;
+      auto v_lane = value & 0x0fff;
+      auto v_wg = (value>>12) & 0xffff'ffff;
+      auto v_pe = (value>>44);
       if (v_lane != lane || v_wg != wg || v_pe != pe) {
         std::cerr << "Data validation error at idx " << tgt_offset << std::endl;
         std::cerr << " Got " << v_pe << ":" << v_wg << ":" << v_lane
