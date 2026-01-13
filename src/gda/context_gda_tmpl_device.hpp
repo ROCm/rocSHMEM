@@ -614,6 +614,36 @@ __device__ void GDAContext::alltoall(rocshmem_team_t team, T *dst,
 }
 
 template <typename T>
+__device__ void GDAContext::alltoallv(rocshmem_team_t team,
+                                      T *dest, const size_t dest_nelems[],
+                                      const size_t dest_displs[],
+                                      T *source, const size_t source_nelems[],
+                                      const size_t source_displs[]) {
+  GDATeam *team_obj = reinterpret_cast<GDATeam *>(team);
+
+  int pe_start = team_obj->tinfo_wrt_world->pe_start;
+  int pe_size = team_obj->num_pes;
+  int stride = team_obj->tinfo_wrt_world->stride;
+  long *pSync = team_obj->alltoall_pSync;
+  int my_pe_in_team = team_obj->my_pe;
+  T *pWrk = reinterpret_cast<T *>(team_obj->pWrk);
+  size_t pWrk_offset = sizeof(double) * ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE / sizeof(T);
+
+  for (int i = 0; i < pe_size; i++) {
+    int dest_pe = team_obj->get_pe_in_world(i);
+    T* src = source + source_displs[i];
+
+    if (source_nelems[i] == 0) {
+      continue;
+    }
+
+    put_wg(&pWrk[my_pe * pWrk_offset], src, source_nelems[i], dest_pe);
+  }
+
+  internal_sync_wg(my_pe, pe_start, stride, pe_size, pSync);
+}
+
+template <typename T>
 __device__ void GDAContext::alltoall_linear(rocshmem_team_t team, T *dst,
                                             const T *src, int nelems) {
   GDATeam *team_obj = reinterpret_cast<GDATeam *>(team);
