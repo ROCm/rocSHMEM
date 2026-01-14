@@ -149,6 +149,7 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
     case GTestType:
       min_msg_size = 1;
       max_msg_size = 1;
+      break;
     case FloodPutTestType:
     case FloodPutNBITestType:
     case FloodPTestType:
