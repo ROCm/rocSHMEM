@@ -88,9 +88,22 @@ __global__ void TeamAlltoallvTest(int loop, int skip,
 
   int wg_id = get_flat_grid_id();
 
-  wg_team_alltoallv<T1>(teams[wg_id],
-                        dest, dest_nelems, dest_displs,
-                        source, source_nelems, source_displs);
+  __syncthreads();
+
+  for (int i = 0; i < loop + skip; i++) {
+    if (i == skip && hipThreadIdx_x == 0) {
+      start_time[wg_id] = wall_clock64();
+    }
+    wg_team_alltoallv<T1>(teams[wg_id],
+                          dest, dest_nelems, dest_displs,
+                          source, source_nelems, source_displs);
+  }
+
+  __syncthreads();
+
+  if (hipThreadIdx_x == 0) {
+    end_time[wg_id] = wall_clock64();
+  }
 }
 
 /******************************************************************************
@@ -101,6 +114,11 @@ TeamAlltoallvTester<T1>::TeamAlltoallvTester(TesterArguments args)
     : Tester(args){
   my_pe = rocshmem_team_my_pe(ROCSHMEM_TEAM_WORLD);
   n_pes = rocshmem_team_n_pes(ROCSHMEM_TEAM_WORLD);
+
+  if (args.num_wgs > 1) {
+    printf("Alltoallv only supports a single workgroup.\n");
+    rocshmem_global_exit(1);
+  }
 
   // Number of elements per work group
   int num_elems_wg = (args.max_msg_size / sizeof(T1)) * n_pes;
@@ -172,7 +190,6 @@ template <typename T1>
 void TeamAlltoallvTester<T1>::launchKernel(dim3 gridSize, dim3 blockSize,
                                           int loop, size_t size) {
   size_t shared_bytes = 0;
-
   int num_elems = size / sizeof(T1);
 
   /* Calculate elements and displacements
