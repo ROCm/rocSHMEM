@@ -632,12 +632,28 @@ __device__ void GDAContext::alltoallv(rocshmem_team_t team,
   for (int i = 0; i < pe_size; i++) {
     int dest_pe = team_obj->get_pe_in_world(i);
     T* src = source + source_displs[i];
+    T* dst = &pWrk[dest_pe * pWrk_offset];
 
     if (source_nelems[i] == 0) {
       continue;
     }
 
-    put_wg(&pWrk[my_pe * pWrk_offset], src, source_nelems[i], dest_pe);
+    put_wg(dst, src, source_nelems[i], dest_pe);
+  }
+
+  internal_sync_wg(my_pe, pe_start, stride, pe_size, pSync);
+
+  for (int i = 0; i < pe_size; i++) {
+    int dest_pe = team_obj->get_pe_in_world(i);
+    T* dst = dest + dest_displs[i];
+    T* src = &pWrk[dest_pe * pWrk_offset];
+
+    if (source_nelems[i] == 0) {
+      continue;
+    }
+
+    uint64_t L_offset = reinterpret_cast<char *>(dst) - ipcImpl_.ipc_bases[ipcImpl_.shm_rank];
+    ipcImpl_.ipcCopy_wg(ipcImpl_.ipc_bases[my_pe] + L_offset, src, dest_nelems[i]);
   }
 
   internal_sync_wg(my_pe, pe_start, stride, pe_size, pSync);
