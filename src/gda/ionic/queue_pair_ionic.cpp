@@ -75,15 +75,15 @@ __device__ void QueuePair::ionic_poll_wave_ccqe(uint64_t activemask) {
 
   struct ionic_v1_cqe *cqe = &ionic_cq_buf[0];
   uint32_t qtf_be = *(volatile uint32_t *)(&cqe->qid_type_flags);
-  uint32_t msn = swap_endian_val<uint32_t>(cqe->send.msg_msn);
+  uint32_t msn = byteswap<uint32_t>(cqe->send.msg_msn);
 
-  if (!!(qtf_be & swap_endian_val<uint32_t>(IONIC_V1_CQE_ERROR))) {
+  if (!!(qtf_be & byteswap<uint32_t>(IONIC_V1_CQE_ERROR))) {
 #if defined(DEBUG)
-    uint32_t qtf = swap_endian_val<uint32_t>(qtf_be);
+    uint32_t qtf = byteswap<uint32_t>(qtf_be);
     uint32_t qid = qtf >> IONIC_V1_CQE_QID_SHIFT;
     uint32_t type = (qtf >> IONIC_V1_CQE_TYPE_SHIFT) & IONIC_V1_CQE_TYPE_MASK;
     uint32_t flag = qtf & 0xf;
-    uint32_t status = swap_endian_val<uint32_t>(cqe->status_length);
+    uint32_t status = byteswap<uint32_t>(cqe->status_length);
     uint64_t npg = cqe->send.npg_wqe_idx_timestamp & IONIC_V1_CQE_WQE_IDX_MASK;
 
     printf("QUIET ERROR (CCQE): %s qid %u type %u flag %#x status %u msn %u npg %lu\n",
@@ -169,9 +169,9 @@ __device__ void QueuePair::ionic_quiet_internal_ccqe(uint64_t activemask, uint32
   }
 
   volatile struct ionic_v1_cqe *cqe = &ionic_cq_buf[0];
-  uint32_t msn = swap_endian_val<uint32_t>(cqe->send.msg_msn);
+  uint32_t msn = byteswap<uint32_t>(cqe->send.msg_msn);
   while ((msn - cons) & 0x800000) {
-    msn = swap_endian_val<uint32_t>(cqe->send.msg_msn);
+    msn = byteswap<uint32_t>(cqe->send.msg_msn);
   }
 }
 
