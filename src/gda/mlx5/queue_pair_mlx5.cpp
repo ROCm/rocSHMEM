@@ -31,7 +31,7 @@
 namespace rocshmem {
 
 __device__ void QueuePair::mlx5_ring_doorbell(uint64_t db_val, uint64_t my_sq_counter) {
-  swap_endian_store(const_cast<uint32_t*>(dbrec), (uint32_t)my_sq_counter);
+  *dbrec = byteswap<uint32_t>(my_sq_counter);
   __atomic_signal_fence(__ATOMIC_SEQ_CST);
 
   __hip_atomic_store(db.ptr, db_val, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
@@ -98,8 +98,7 @@ __device__ void QueuePair::mlx5_quiet() {
         }
       }
 
-      uint16_t wqe_counter;
-      swap_endian_store(const_cast<uint16_t*>(&wqe_counter), reinterpret_cast<uint16_t>(be_wqe_counter));
+      uint16_t wqe_counter = byteswap<uint16_t>(be_wqe_counter);
       uint64_t wqe_id =  outstanding_wqes[wqe_counter];
       __hip_atomic_fetch_max(&wqe_broadcast[wavefront_id], wqe_id, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_WORKGROUP);
       uint8_t mlx5_invld_bits = MLX5_CQE_INVALID << 4 | owner_bit;
@@ -112,7 +111,7 @@ __device__ void QueuePair::mlx5_quiet() {
         completed = __hip_atomic_load(&quiet_completed, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_AGENT);
       } while (completed != wave_cq_consumer);
 
-      swap_endian_store(const_cast<uint32_t*>(cq_dbrec), (uint32_t)(wave_cq_consumer + quiet_amount));
+      *cq_dbrec = byteswap<uint32_t>(wave_cq_consumer + quiet_amount);
       __atomic_signal_fence(__ATOMIC_SEQ_CST);
 
       uint64_t sunk_wqe_id = wqe_broadcast[wavefront_id];

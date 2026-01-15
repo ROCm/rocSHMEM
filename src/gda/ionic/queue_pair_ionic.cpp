@@ -109,7 +109,7 @@ __device__ void QueuePair::poll_wave_cqes(uint64_t activemask) {
   struct ionic_v1_cqe *cqe = &ionic_cq_buf[my_cq_pos & cq_mask];
 
   /* Determine expected color based on cq wrap count */
-  uint32_t qtf_color_bit = swap_endian_val<uint32_t>(IONIC_V1_CQE_COLOR);
+  uint32_t qtf_color_bit = byteswap<uint32_t>(IONIC_V1_CQE_COLOR);
   uint32_t qtf_color_exp = qtf_color_bit;
   if (my_cq_pos & (cq_mask + 1)) {
     qtf_color_exp = 0;
@@ -121,16 +121,16 @@ __device__ void QueuePair::poll_wave_cqes(uint64_t activemask) {
     return;
   }
 
-  uint32_t msn = swap_endian_val<uint32_t>(cqe->send.msg_msn);
+  uint32_t msn = byteswap<uint32_t>(cqe->send.msg_msn);
 
   /* Report if the completion indicates an error. */
-  if (!!(qtf_be & swap_endian_val<uint32_t>(IONIC_V1_CQE_ERROR))) {
+  if (!!(qtf_be & byteswap<uint32_t>(IONIC_V1_CQE_ERROR))) {
 #if defined(DEBUG)
-    uint32_t qtf = swap_endian_val<uint32_t>(qtf_be);
+    uint32_t qtf = byteswap<uint32_t>(qtf_be);
     uint32_t qid = qtf >> IONIC_V1_CQE_QID_SHIFT;
     uint32_t type = (qtf >> IONIC_V1_CQE_TYPE_SHIFT) & IONIC_V1_CQE_TYPE_MASK;
     uint32_t flag = qtf & 0xf;
-    uint32_t status = swap_endian_val<uint32_t>(cqe->status_length);
+    uint32_t status = byteswap<uint32_t>(cqe->status_length);
     uint64_t npg = cqe->send.npg_wqe_idx_timestamp & IONIC_V1_CQE_WQE_IDX_MASK;
 
     printf("QUIET ERROR: %s qid %u type %u flag %#x status %u msn %u npg %lu\n",
@@ -249,11 +249,11 @@ __device__ void QueuePair::ionic_post_wqe_rma(int pe, int32_t size, uintptr_t la
   uint16_t wqe_flags = 0;
 
   if (!(my_sq_pos & (sq_mask + 1))) {
-    wqe_flags |= swap_endian_val<uint16_t>(IONIC_V1_FLAG_COLOR);
+    wqe_flags |= byteswap<uint16_t>(IONIC_V1_FLAG_COLOR);
   }
 
   if (is_last_active_lane(activemask)) {
-    wqe_flags |= swap_endian_val<uint16_t>(IONIC_V1_FLAG_SIG);
+    wqe_flags |= byteswap<uint16_t>(IONIC_V1_FLAG_SIG);
   }
 
   // TODO why is this needed?
@@ -264,16 +264,16 @@ __device__ void QueuePair::ionic_post_wqe_rma(int pe, int32_t size, uintptr_t la
   wqe->base.wqe_idx = my_sq_pos;
   wqe->base.op = opcode;
   wqe->base.num_sge_key = size ? 1 : 0;
-  wqe->base.imm_data_key = swap_endian_val<uint32_t>(0);
+  wqe->base.imm_data_key = byteswap<uint32_t>(0);
 
-  wqe->common.rdma.remote_va_high = swap_endian_val<uint32_t>(raddr >> 32);
-  wqe->common.rdma.remote_va_low = swap_endian_val<uint32_t>(raddr);
-  wqe->common.rdma.remote_rkey = swap_endian_val<uint32_t>(rkey);
-  wqe->common.length = swap_endian_val<uint32_t>(size);
+  wqe->common.rdma.remote_va_high = byteswap<uint32_t>(raddr >> 32);
+  wqe->common.rdma.remote_va_low = byteswap<uint32_t>(raddr);
+  wqe->common.rdma.remote_rkey = byteswap<uint32_t>(rkey);
+  wqe->common.length = byteswap<uint32_t>(size);
 
   if (size) {
     if (opcode == IONIC_V2_OP_RDMA_WRITE && size <= inline_threshold) {
-      wqe_flags |= swap_endian_val<uint16_t>(IONIC_V1_FLAG_INL);
+      wqe_flags |= byteswap<uint16_t>(IONIC_V1_FLAG_INL);
       wqe->base.num_sge_key = 0;
       if (!laddr) {
         // TODO why is this needed?
@@ -282,9 +282,9 @@ __device__ void QueuePair::ionic_post_wqe_rma(int pe, int32_t size, uintptr_t la
         memcpy(wqe->common.pld.data, reinterpret_cast<const void*>(laddr), size);
       }
     } else {
-      wqe->common.pld.sgl[0].va = swap_endian_val<uint64_t>(laddr);
-      wqe->common.pld.sgl[0].len = swap_endian_val<uint32_t>(size);
-      wqe->common.pld.sgl[0].lkey = swap_endian_val<uint32_t>(lkey);
+      wqe->common.pld.sgl[0].va = byteswap<uint64_t>(laddr);
+      wqe->common.pld.sgl[0].len = byteswap<uint32_t>(size);
+      wqe->common.pld.sgl[0].lkey = byteswap<uint32_t>(lkey);
     }
   }
 
@@ -319,32 +319,32 @@ __device__ uint64_t QueuePair::ionic_post_wqe_amo(int pe, int32_t size, uintptr_
   }
 
   if (!(my_sq_pos & (sq_mask + 1))) {
-    wqe_flags |= swap_endian_val<uint16_t>(IONIC_V1_FLAG_COLOR);
+    wqe_flags |= byteswap<uint16_t>(IONIC_V1_FLAG_COLOR);
   }
 
   if (is_last_active_lane(activemask)) {
-    wqe_flags |= swap_endian_val<uint16_t>(IONIC_V1_FLAG_SIG);
+    wqe_flags |= byteswap<uint16_t>(IONIC_V1_FLAG_SIG);
   }
 
   wqe->base.wqe_idx = my_sq_pos;
   wqe->base.op = opcode;
   wqe->base.num_sge_key = 1;
-  wqe->base.imm_data_key = swap_endian_val<uint32_t>(0);
+  wqe->base.imm_data_key = byteswap<uint32_t>(0);
 
-  wqe->atomic_v2.remote_va_high = swap_endian_val<uint32_t>(raddr >> 32);
-  wqe->atomic_v2.remote_va_low = swap_endian_val<uint32_t>(raddr);
-  wqe->atomic_v2.remote_rkey = swap_endian_val<uint32_t>(rkey);
-  wqe->atomic_v2.swap_add_high = swap_endian_val<uint32_t>(atomic_data >> 32);
-  wqe->atomic_v2.swap_add_low = swap_endian_val<uint32_t>(atomic_data);
-  wqe->atomic_v2.compare_high = swap_endian_val<uint32_t>(atomic_cmp >> 32);
-  wqe->atomic_v2.compare_low = swap_endian_val<uint32_t>(atomic_cmp);
+  wqe->atomic_v2.remote_va_high = byteswap<uint32_t>(raddr >> 32);
+  wqe->atomic_v2.remote_va_low = byteswap<uint32_t>(raddr);
+  wqe->atomic_v2.remote_rkey = byteswap<uint32_t>(rkey);
+  wqe->atomic_v2.swap_add_high = byteswap<uint32_t>(atomic_data >> 32);
+  wqe->atomic_v2.swap_add_low = byteswap<uint32_t>(atomic_data);
+  wqe->atomic_v2.compare_high = byteswap<uint32_t>(atomic_cmp >> 32);
+  wqe->atomic_v2.compare_low = byteswap<uint32_t>(atomic_cmp);
 
   if (fetching) {
-    wqe->atomic_v2.local_va = swap_endian_val<uint64_t>(reinterpret_cast<uint64_t>(wave_fetch_atomic + my_logical_lane_id));
-    wqe->atomic_v2.lkey = swap_endian_val<uint32_t>(fetching_atomic_lkey);
+    wqe->atomic_v2.local_va = byteswap<uint64_t>(reinterpret_cast<uint64_t>(wave_fetch_atomic + my_logical_lane_id));
+    wqe->atomic_v2.lkey = byteswap<uint32_t>(fetching_atomic_lkey);
   } else {
-    wqe->atomic_v2.local_va = swap_endian_val<uint64_t>(reinterpret_cast<uint64_t>(nonfetching_atomic));
-    wqe->atomic_v2.lkey = swap_endian_val<uint32_t>(nonfetching_atomic_lkey);
+    wqe->atomic_v2.local_va = byteswap<uint64_t>(reinterpret_cast<uint64_t>(nonfetching_atomic));
+    wqe->atomic_v2.lkey = byteswap<uint32_t>(nonfetching_atomic_lkey);
   }
 
   __hip_atomic_store(&wqe->base.flags, wqe_flags, __ATOMIC_RELEASE, __HIP_MEMORY_SCOPE_AGENT);
