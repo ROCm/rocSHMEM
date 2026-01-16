@@ -670,9 +670,19 @@ TestGDA() {
   ExecTest  "pingpong"         2       8            1
   ExecTest  "pingpong"         2       32           1
 
+  ExecTest  "flood_put"        2       64           1024
+  ExecTest  "flood_get"        2       64           1024
+
+  ExecTest  "flood_put"        8       64           1024
+  ExecTest  "flood_putnbi"     8       64           1024
+  ExecTest  "flood_p"          8       64           1024
+  ExecTest  "flood_get"        8       64           1024
+  ExecTest  "flood_getnbi"     8       64           1024
+#  ExecTest  "flood_g"          8       64           1024 # _g not implemented
+
   # This test requires more contexts than workgroups
   export ROCSHMEM_MAX_NUM_CONTEXTS=1024
-  ExecTest  "teamctxinfra"     2       1            1
+  ExecTest  "teamctxinfra"        2       1            1
   ExecTest  "teamctxsingleinfra"  2       1            1
   ExecTest  "teamctxblockinfra"   4       1            1
   ExecTest  "teamctxblockinfra"   5       1            1

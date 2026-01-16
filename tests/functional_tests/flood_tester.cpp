@@ -59,8 +59,6 @@ __global__ void FloodTest(int loop, int skip, long long int *start_time,
   auto tgt_offset {my_pe * num_wg * num_th + t_offset};
   auto dst_offset {0};
 
-  //printf("%02d:%02d:%02d: num_pe=%d, num_wg=%d, num_th=%d, t_offset=%d, tgt_offset=%d\n", my_pe, wg_id, t_id, num_pe, num_wg, num_th, t_offset, tgt_offset);
-
   for (int i = 0; i < loop + skip; i++) {
     if (i == skip) {
       // Capture the start time of each wavefront to identify the earliest one
@@ -135,7 +133,6 @@ static __global__ void verify_results_kernel(uint64_t *dest, size_t buf_size,
 
   for (int pe{0}; pe < num_pe; pe++) {
     auto dst_offset {pe * num_wg * num_th + t_offset};
-    //printf("%02d:%02d:%02d: num_pe=%d, num_wg=%d, num_th=%d, t_offset=%d, dst_offset=%d (verif)\n", my_pe, wg_id, t_id, num_pe, num_wg, num_th, t_offset, dst_offset);
     auto value = dest[dst_offset];
     auto v_th = value & 0x0fff;
     auto v_wg = (value>>12) & 0xffff'ffff;
@@ -154,7 +151,6 @@ FloodTester::FloodTester(TesterArguments args) : Tester(args) {
   int num_pes {rocshmem_n_pes()};
   int my_pe {rocshmem_my_pe()};
   s_buf = (uint64_t*)rocshmem_malloc(sizeof(uint64_t) * args.num_wgs * args.wg_size);
-  //printf("%02d:xx:xx: num_wgs=%d, wg_size=%d\n", my_pe, args.num_wgs, args.wg_size);
   for(int wg = 0; wg < args.num_wgs; wg++) for(int th = 0; th < args.wg_size; th++) {
     s_buf[wg * args.wg_size + th] = (((uint64_t)my_pe)<<44) + (wg<<12) + th; // set value for verification
   }
