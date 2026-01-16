@@ -120,6 +120,12 @@ enum TestType {
   PutmemOnStreamTestType = 80,
   PutmemSignalOnStreamTestType = 81,
   SignalWaitUntilOnStreamTestType = 82,
+  FloodPutTestType = 83,
+  FloodPutNBITestType = 84,
+  FloodPTestType = 85,
+  FloodGetTestType = 86,
+  FloodGetNBITestType = 87,
+  FloodGTestType = 88,
 };
 
 enum OpType { PutType = 0, GetType = 1 };

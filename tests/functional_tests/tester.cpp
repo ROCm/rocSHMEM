@@ -62,6 +62,7 @@
 #include "team_reduction_tester.hpp"
 #include "wavefront_primitives.hpp"
 #include "workgroup_primitives.hpp"
+#include "flood_tester.hpp"
 
 #include "backend_bc.hpp"
 extern Backend* backend;
@@ -530,6 +531,30 @@ std::vector<Tester*> Tester::create(TesterArguments args) {
       if (rank == 0) std::cout << "Wave Signal Fetch ###" << std::endl;
       testers.push_back(new SignalingOperationsTester(args));
       return testers;
+    case FloodPutTestType:
+      if (rank == 0) std::cout << "Flood Put (multidirectional) ###" << std::endl;
+      testers.push_back(new FloodTester(args));
+      return testers;
+    case FloodPutNBITestType:
+      if (rank == 0) std::cout << "Flood Non-Blocking Put (multidirectional) ###" << std::endl;
+      testers.push_back(new FloodTester(args));
+      return testers;
+    case FloodPTestType:
+      if (rank == 0) std::cout << "Flood P (multidirectional) ###" << std::endl;
+      testers.push_back(new FloodTester(args));
+      return testers;
+    case FloodGetTestType:
+      if (rank == 0) std::cout << "Flood Get (multidirectional) ###" << std::endl;
+      testers.push_back(new FloodTester(args));
+      return testers;
+    case FloodGetNBITestType:
+      if (rank == 0) std::cout << "Flood Non-Blocking Get (multidirectional) ###" << std::endl;
+      testers.push_back(new FloodTester(args));
+      return testers;
+    case FloodGTestType:
+      if (rank == 0) std::cout << "Flood G (multidirectional) ###" << std::endl;
+      testers.push_back(new FloodTester(args));
+      return testers;
     default:
       if (rank == 0) std::cout << "Empty Test ###" << std::endl;
       return testers;
@@ -644,6 +669,12 @@ bool Tester::peLaunchesKernel() {
     case PutmemOnStreamTestType:
     case PutmemSignalOnStreamTestType:
     case SignalWaitUntilOnStreamTestType:
+    case FloodPutTestType:
+    case FloodPutNBITestType:
+    case FloodPTestType:
+    case FloodGetTestType:
+    case FloodGetNBITestType:
+    case FloodGTestType:
       is_launcher = true;
       break;
     default:

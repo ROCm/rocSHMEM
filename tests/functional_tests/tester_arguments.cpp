@@ -149,6 +149,15 @@ TesterArguments::TesterArguments(int argc, char *argv[]) {
     case GTestType:
       min_msg_size = 1;
       max_msg_size = 1;
+      break;
+    case FloodPutTestType:
+    case FloodPutNBITestType:
+    case FloodPTestType:
+    case FloodGetTestType:
+    case FloodGetNBITestType:
+    case FloodGTestType:
+      min_msg_size = max_msg_size = 8;
+      break;
     default:
       break;
   }
@@ -209,6 +218,12 @@ void TesterArguments::get_arguments() {
     case PutmemOnStreamTestType:
     case PutmemSignalOnStreamTestType:
     case SignalWaitUntilOnStreamTestType:
+    case FloodPutTestType:
+    case FloodPutNBITestType:
+    case FloodPTestType:
+    case FloodGetTestType:
+    case FloodGetNBITestType:
+    case FloodGTestType:
       requires_two_pes = false;
       break;
     default:
