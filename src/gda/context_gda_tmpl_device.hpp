@@ -620,8 +620,11 @@ __device__ void GDAContext::alltoallv(rocshmem_team_t team,
                                       T *source, const size_t source_nelems[],
                                       const size_t source_displs[]) {
 
-  alltoall(team, dest, source, source_nelems[0]);
-  return;
+  if (gda_provider_ == GDAProvider::MLX5 ||
+      gda_provider_ == GDAProvider::IONIC) {
+    printf("rocshmem::gda:alltoallv not implemented\n");
+    abort();
+  }
 
   GDATeam *team_obj = reinterpret_cast<GDATeam *>(team);
 
@@ -630,37 +633,39 @@ __device__ void GDAContext::alltoallv(rocshmem_team_t team,
   int stride = team_obj->tinfo_wrt_world->stride;
   long *pSync = team_obj->alltoall_pSync;
   int my_pe_in_team = team_obj->my_pe;
-  T *pWrk = reinterpret_cast<T *>(team_obj->pWrk);
-  size_t pWrk_offset = sizeof(double) * ROCSHMEM_REDUCE_MIN_WRKDATA_SIZE / sizeof(T);
+  uint64_t alltoall_pSync_offset = (team_obj->alltoall_sequence_number % 2) * pe_size;
+  int nelems = source_nelems[0];
 
-  for (int i = 0; i < pe_size; i++) {
-    int dest_pe = team_obj->get_pe_in_world(i);
-    T* src = source + source_displs[i];
-    T* dst = &pWrk[dest_pe * pWrk_offset];
+  int tid = get_flat_block_id();
+  int step_size = min(get_flat_block_size(), WF_SIZE);
 
-    if (source_nelems[i] == 0) {
-      continue;
-    }
-
-    put_wg(dst, src, source_nelems[i], dest_pe);
+  // Have each PE put their designated data to the other PEs
+  for (int j = tid; j < pe_size; j+= step_size) {
+    int dest_pe = team_obj->get_pe_in_world(j);
+    uint64_t base_heap_offset = base_heap[dest_pe] - base_heap[my_pe];
+    qps[dest_pe].put_nbi_single(reinterpret_cast<char*>(&dest[my_pe_in_team * nelems]) + base_heap_offset,
+                                &source[j * nelems], nelems * sizeof(T), false);
+    qps[dest_pe].atomic_nofetch_single(reinterpret_cast<char *>(&pSync[alltoall_pSync_offset + my_pe_in_team]) + base_heap_offset,
+                                       1);
   }
 
-  internal_sync_wg(my_pe, pe_start, stride, pe_size, pSync);
+  // wait until everyone has obtained their designated data
+  for (int j = tid; j < pe_size; j+= step_size) {
+    int dest_pe = team_obj->get_pe_in_world(j);
 
-  for (int i = 0; i < pe_size; i++) {
-    int dest_pe = team_obj->get_pe_in_world(i);
-    T* dst = dest + dest_displs[i];
-    T* src = &pWrk[dest_pe * pWrk_offset];
+    volatile long *vol_ivars = &pSync[alltoall_pSync_offset + dest_pe];
+    while (uncached_load(vol_ivars) != 1) { }
 
-    if (dest_nelems[i] == 0) {
-      continue;
-    }
+    pe_quiet_single(dest_pe);
 
-    uint64_t L_offset = reinterpret_cast<char *>(dst) - ipcImpl_.ipc_bases[ipcImpl_.shm_rank];
-    ipcImpl_.ipcCopy_wg(ipcImpl_.ipc_bases[my_pe] + L_offset, src, dest_nelems[i]);
+    pSync[alltoall_pSync_offset + dest_pe] = ROCSHMEM_SYNC_VALUE;
   }
 
-  internal_sync_wg(my_pe, pe_start, stride, pe_size, pSync);
+  if (is_thread_zero_in_block()) {
+    team_obj->alltoall_sequence_number++;
+  }
+
+  __syncthreads();
 }
 
 template <typename T>
