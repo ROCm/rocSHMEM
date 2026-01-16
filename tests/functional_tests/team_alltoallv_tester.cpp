@@ -214,8 +214,8 @@ void TeamAlltoallvTester<T1>::launchKernel(dim3 gridSize, dim3 blockSize,
 
   hipLaunchKernelGGL(TeamAlltoallvTest<T1>, gridSize, blockSize, shared_bytes,
                      stream, loop, args.skip, start_time, end_time,
-                     source_buf, source_nelems, source_displs,
                      dest_buf, dest_nelems, dest_displs,
+                     source_buf, source_nelems, source_displs,
                      _shmem_context,
                      team_alltoallv_world_dup);
 

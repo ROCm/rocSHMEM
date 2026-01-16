@@ -125,10 +125,10 @@ execute asynchronously. The caller must synchronize the stream (e.g., using
 This function creates a separate context for each workgroup to avoid contention on the
 default context, allowing parallel execution across multiple streams.
 
-ROSHMEM_ALLTOALLV
+ROCSHMEM_ALLTOALLV
 -----------------
 
-.. cpp:function:: __device__ void rocshmem_TYPENAME_alltoallv_wg(rocshmem_team_t team, TYPE *dest, const TYPE dest_nelems[], const TYPE dest_displs[], TYPE *source, const TYPE source_nelems[], const TYPE source_displs[]);
+.. cpp:function:: __device__ void rocshmem_TYPENAME_alltoallv_wg(rocshmem_team_t team, TYPE *dest, const size_t dest_nelems[], const size_t dest_displs[], TYPE *source, const size_t source_nelems[], const size_t source_displs[]);
 
   :param team:          The team participating in the collective.
   :param dest:          Destination address. Must be an address on the symmetric heap.

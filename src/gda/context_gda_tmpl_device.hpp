@@ -648,7 +648,7 @@ __device__ void GDAContext::alltoallv(rocshmem_team_t team,
     T* dst = dest + dest_displs[i];
     T* src = &pWrk[dest_pe * pWrk_offset];
 
-    if (source_nelems[i] == 0) {
+    if (dest_nelems[i] == 0) {
       continue;
     }
 
