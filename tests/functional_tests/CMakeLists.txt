@@ -95,6 +95,10 @@ target_compile_definitions(
     $<$<TARGET_EXISTS:PMIx::pmix>:HAVE_PMIX=1>
 )
 
+configure_file(../../scripts/functional_tests/driver.sh rocshmem_functional_driver.sh COPYONLY)
+rocm_install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/rocshmem_functional_driver.sh COMPONENT tests DESTINATION ${CMAKE_INSTALL_DATADIR}/rocshmem)
+rocm_install(TARGETS rocshmem_functional_tests COMPONENT tests)
+
 target_link_libraries(
   ${PROJECT_NAME}
   PRIVATE
