@@ -164,13 +164,7 @@ __device__ void IPCContext::internal_putmem(void *dest, const void *source,
                                             size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dest) - wrk_sync_pool_bases_[my_pe];
   memcpy_lane(wrk_sync_pool_bases_[pe] + L_offset, const_cast<void *>(source), nelems);
-#if defined(__gfx90a__)
-  __threadfence_system();
-#elif defined (__gfx1201__) || defined (__gfx1100__)
-  fence(pe);
-#else
   ipcImpl_.ipcFence();
-#endif
 }
 
 __device__ void IPCContext::internal_getmem(void *dest, const void *source,
@@ -186,15 +180,7 @@ __device__ void IPCContext::internal_putmem_wg(void *dest, const void *source,
   uint64_t L_offset = reinterpret_cast<char *>(dest) - wrk_sync_pool_bases_[my_pe];
   memcpy_wg(wrk_sync_pool_bases_[pe] + L_offset, const_cast<void *>(source), nelems);
   __syncthreads();
-#if defined(__gfx90a__)
-  __threadfence_system();
-#elif defined (__gfx1201__) || defined (__gfx1100__)
-  if (is_thread_zero_in_block() ) {
-    fence(pe);
-  }
-#else
   ipcImpl_.ipcFence();
-#endif
 }
 
 __device__ void IPCContext::internal_getmem_wg(void *dest, const void *source,
@@ -210,15 +196,7 @@ __device__ void IPCContext::internal_putmem_wave(void *dest,
                         const void *source, size_t nelems, int pe) {
   uint64_t L_offset = reinterpret_cast<char *>(dest) - wrk_sync_pool_bases_[my_pe];
   memcpy_wave(wrk_sync_pool_bases_[pe] + L_offset, const_cast<void *>(source), nelems);
-#if defined(__gfx90a__)
-  __threadfence_system();
-#elif defined (__gfx1201__) || defined (__gfx1100__)
-  if (is_thread_zero_in_wave() ) {
-    fence(pe);
-  }
-#else
   ipcImpl_.ipcFence();
-#endif
 }
 
 __device__ void IPCContext::internal_getmem_wave(void *dest,

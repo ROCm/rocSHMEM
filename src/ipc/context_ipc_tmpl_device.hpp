@@ -174,7 +174,7 @@ __device__ void IPCContext::internal_direct_allreduce(
   int stride = team_obj->tinfo_wrt_world->stride;
   int PE_start = team_obj->tinfo_wrt_world->pe_start;
   int PE_size = team_obj->tinfo_wrt_world->size;
-  long *pSync = team_obj->barrier_pSync;
+  long *pSync = team_obj->reduce_pSync;
   T *pWrk = reinterpret_cast<T *>(team_obj->pWrk);
 
   int finish = PE_start + stride * PE_size;
@@ -195,7 +195,7 @@ __device__ void IPCContext::internal_direct_allreduce(
                     nelems * sizeof(T), i);
 
       if (is_thread_zero_in_block()) {
-        fence();
+        fence(i);
         internal_putmem(&pSync[pe], &flag_val, sizeof(*pSync), i);
       }
     }
@@ -222,7 +222,6 @@ __device__ void IPCContext::internal_direct_allreduce(
   for (int i = wg_id; i < num_pes; i += wg_size) {
     pSync[i] = ROCSHMEM_SYNC_VALUE;
   }
-  threadfence_system();
   __syncthreads();
 }
 
@@ -290,7 +289,7 @@ __device__ void IPCContext::internal_ring_allreduce(
   int stride = team_obj->tinfo_wrt_world->stride;
   int PE_start = team_obj->tinfo_wrt_world->pe_start;
   int PE_size = team_obj->tinfo_wrt_world->size;
-  long *pSync = team_obj->barrier_pSync;
+  long *pSync = team_obj->reduce_pSync;
   T *pWrk = reinterpret_cast<T *>(team_obj->pWrk);
   int my_pe_in_team = team_obj->my_pe;
 
@@ -320,8 +319,8 @@ __device__ void IPCContext::internal_ring_allreduce(
                     chunk_size * sizeof(T), send_pe);
 
       if (is_thread_zero_in_block()) {
-        fence();
         wait_val = seg + 100;
+        fence(send_pe);
         internal_putmem(&pSync[iter], &wait_val, sizeof(*pSync), send_pe);
         wait_until(&pSync[iter], ROCSHMEM_CMP_EQ, wait_val);
       }
@@ -338,8 +337,8 @@ __device__ void IPCContext::internal_ring_allreduce(
                     chunk_size * sizeof(T), send_pe);
 
       if (is_thread_zero_in_block()) {
-        fence();
         wait_val = seg + 10;
+        fence(send_pe);
         internal_putmem(&pSync[iter], &wait_val, sizeof(*pSync), send_pe);
         wait_until(&pSync[iter], ROCSHMEM_CMP_EQ, wait_val);
       }
@@ -350,7 +349,6 @@ __device__ void IPCContext::internal_ring_allreduce(
   for (int i = wg_id; i < 2 * num_pes - 2; i += wg_size) {
     pSync[i] = ROCSHMEM_SYNC_VALUE;
   }
-  threadfence_system();
   __syncthreads();
 }
 
@@ -409,6 +407,7 @@ __device__ int IPCContext::reduce(rocshmem_team_t team, T *dest,
       return ROCSHMEM_ERROR;
     }
   }
+  barrier_wg(team);
   return ROCSHMEM_SUCCESS;
 }
 
