@@ -86,15 +86,13 @@ __global__ void TeamAlltoallvTest(int loop, int skip,
                                   ShmemContextType ctx_type,
                                   rocshmem_team_t *teams) {
 
-  int wg_id = get_flat_grid_id();
-
   __syncthreads();
 
   for (int i = 0; i < loop + skip; i++) {
     if (i == skip && hipThreadIdx_x == 0) {
-      start_time[wg_id] = wall_clock64();
+      start_time[0] = wall_clock64();
     }
-    wg_team_alltoallv<T1>(teams[wg_id],
+    wg_team_alltoallv<T1>(teams[0],
                           dest, dest_nelems, dest_displs,
                           source, source_nelems, source_displs);
   }
@@ -102,7 +100,7 @@ __global__ void TeamAlltoallvTest(int loop, int skip,
   __syncthreads();
 
   if (hipThreadIdx_x == 0) {
-    end_time[wg_id] = wall_clock64();
+    end_time[0] = wall_clock64();
   }
 }
 
@@ -124,7 +122,7 @@ TeamAlltoallvTester<T1>::TeamAlltoallvTester(TesterArguments args)
   int num_elems_wg = (args.max_msg_size / sizeof(T1)) * n_pes;
 
   // Total number of elements in the GPU kernel
-  int total_elems = num_elems_wg * args.num_wgs;
+  int total_elems = num_elems_wg;
   int buff_size   = total_elems * sizeof(T1);
 
   source_buf = (T1 *)rocshmem_malloc(buff_size);
@@ -196,20 +194,27 @@ void TeamAlltoallvTester<T1>::launchKernel(dim3 gridSize, dim3 blockSize,
    * Note: copied from rccl-tests alltoallv
    */
 
-  size_t disp = 0;
-  size_t chunksize = num_elems * 2 / n_pes;
+//  size_t disp = 0;
+//  size_t chunksize = num_elems * 2 / n_pes;
+//
+//  for (int i = 0; i < n_pes; i++) {
+//    size_t scount = ((i + my_pe) % n_pes) * chunksize;
+//
+//    if ((i + my_pe) % n_pes == 0)
+//      scount += (num_elems * n_pes - chunksize * (n_pes - 1) * n_pes / 2);
+//
+//    source_nelems[i + my_pe * n_pes] = scount;
+//    dest_nelems[i + my_pe * n_pes]   = scount;
+//    source_displs[i + my_pe * n_pes] = disp;
+//    dest_displs[i + my_pe * n_pes]   = disp;
+//    disp += scount;
+//  }
 
   for (int i = 0; i < n_pes; i++) {
-    size_t scount = ((i + my_pe) % n_pes) * chunksize;
-
-    if ((i + my_pe) % n_pes == 0)
-      scount += (num_elems * n_pes - chunksize * (n_pes - 1) * n_pes / 2);
-
-    source_nelems[i + my_pe * n_pes] = scount;
-    dest_nelems[i + my_pe * n_pes]   = scount;
-    source_displs[i + my_pe * n_pes] = disp;
-    dest_displs[i + my_pe * n_pes]   = disp;
-    disp += scount;
+    source_nelems[i] = num_elems;
+    dest_nelems[i]   = num_elems;
+    source_displs[i] = i * size;
+    dest_displs[i]   = i * size;
   }
 
   hipLaunchKernelGGL(TeamAlltoallvTest<T1>, gridSize, blockSize, shared_bytes,
@@ -231,7 +236,51 @@ void TeamAlltoallvTester<T1>::postLaunchKernel() {
 }
 
 template <typename T1>
-void TeamAlltoallvTester<T1>::resetBuffers(size_t size) { }
+void TeamAlltoallvTester<T1>::resetBuffers(size_t size) {
+  int num_elems = size / sizeof(T1);
+  int buff_size = num_elems * sizeof(T1) * n_pes;
+  int idx = 0;
+
+  for(int pe = 0; pe < n_pes; pe++) {
+    for(int i = 0; i < num_elems; i++) {
+      idx = pe * num_elems + i;
+      if constexpr (std::is_same<T1, char>::value ||
+                    std::is_same<T1, signed char>::value ||
+                    std::is_same<T1, unsigned char>::value) {
+        source_buf[idx] = static_cast<T1>('a' + my_pe + pe);
+      }
+      else if constexpr (std::is_floating_point<T1>::value) {
+        source_buf[idx] = static_cast<T1>(3.14 + my_pe + pe);
+      }
+      else if constexpr (std::is_integral<T1>::value) {
+        source_buf[idx] = static_cast<T1>(my_pe + pe);
+      }
+    }
+  }
+
+
+  memset(dest_buf, -1, buff_size);
+}
 
 template <typename T1>
-void TeamAlltoallvTester<T1>::verifyResults(size_t size) { }
+void TeamAlltoallvTester<T1>::verifyResults(size_t size) {
+  int num_elems = size / sizeof(T1);
+  int src_idx = 0;
+  int dst_idx = 0;
+
+  for(int pe = 0; pe < n_pes; pe++) {
+    T1* dst = (T1*)((char*)dest_buf + dest_displs[pe]);
+
+    for(int i = 0; i < dest_nelems[pe]; i++) {
+      src_idx = (pe * num_elems) + i;
+      dst_idx = i;
+
+      if (dst[dst_idx] != source_buf[src_idx]) {
+        std::cerr << "Data validation error at idx " << dst_idx << std::endl;
+        std::cerr << "PE " << my_pe << " Got " << dst[dst_idx]
+        << ", Expected " << source_buf[src_idx] << std::endl;
+        exit(-1);
+      }
+    }
+  }
+}

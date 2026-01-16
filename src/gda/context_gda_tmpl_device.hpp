@@ -619,6 +619,10 @@ __device__ void GDAContext::alltoallv(rocshmem_team_t team,
                                       const size_t dest_displs[],
                                       T *source, const size_t source_nelems[],
                                       const size_t source_displs[]) {
+
+  alltoall(team, dest, source, source_nelems[0]);
+  return;
+
   GDATeam *team_obj = reinterpret_cast<GDATeam *>(team);
 
   int pe_start = team_obj->tinfo_wrt_world->pe_start;
