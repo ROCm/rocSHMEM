@@ -768,6 +768,16 @@ ValidateInput $#
 ValidateLogDir $LOG_DIR
 
 case $TEST in
+  *"heatmaprma")
+    TestHeatMapRMA
+    ;;
+  *"heatmapcoll")
+    TestHeatMapColl
+    ;;
+  *"heatmap")
+    TestHeatMapRMA
+    TestHeatMapColl
+    ;;
   *"gda")
     TestGDA
     ;;
@@ -805,16 +815,6 @@ case $TEST in
     ;;
   *"other")
     TestOther
-    ;;
-  *"heatmaprma")
-    TestHeatMapRMA
-    ;;
-  *"heatmapcoll")
-    TestHeatMapColl
-    ;;
-  *"heatmap")
-    TestHeatMapRMA
-    TestHeatMapColl
     ;;
   *)
     ##############################################################################
