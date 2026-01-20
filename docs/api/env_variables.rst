@@ -20,9 +20,9 @@ control the behavior of rocSHMEM.
       - **Value**
 
     * - | ``ROCSHMEM_HEAP_SIZE``
-        | Defines the size of the rocSHMEM symmetric heap in bytes per GPU.
+        | Defines the size of the rocSHMEM symmetric heap in bytes (per PE).
       - ``1073741824`` (1 GB)
-      - | Size in bytes per GPU.
+      - | Size in bytes (per PE).
         | Note: the heap is on GPU memory.
 
     * - | ``ROCSHMEM_MAX_NUM_CONTEXTS``
