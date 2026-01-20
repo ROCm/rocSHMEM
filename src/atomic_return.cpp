@@ -56,7 +56,7 @@ void allocate_atomic_region(atomic_ret_t** atomic_ret, int num_wg) {
   /*
    * Zero-initialize the entire atomic return region.
    */
-  memset(tmp_ret->atomic_base_ptr, 0, size_bytes);
+  CHECK_HIP(hipMemset(tmp_ret->atomic_base_ptr, 0, size_bytes));
 
   *atomic_ret = tmp_ret;
 }
