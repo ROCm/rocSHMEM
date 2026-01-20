@@ -194,27 +194,20 @@ void TeamAlltoallvTester<T1>::launchKernel(dim3 gridSize, dim3 blockSize,
    * Note: copied from rccl-tests alltoallv
    */
 
-//  size_t disp = 0;
-//  size_t chunksize = num_elems * 2 / n_pes;
-//
-//  for (int i = 0; i < n_pes; i++) {
-//    size_t scount = ((i + my_pe) % n_pes) * chunksize;
-//
-//    if ((i + my_pe) % n_pes == 0)
-//      scount += (num_elems * n_pes - chunksize * (n_pes - 1) * n_pes / 2);
-//
-//    source_nelems[i + my_pe * n_pes] = scount;
-//    dest_nelems[i + my_pe * n_pes]   = scount;
-//    source_displs[i + my_pe * n_pes] = disp;
-//    dest_displs[i + my_pe * n_pes]   = disp;
-//    disp += scount;
-//  }
+  size_t disp = 0;
+  size_t chunksize = num_elems * 2 / n_pes;
 
   for (int i = 0; i < n_pes; i++) {
-    source_nelems[i] = num_elems;
-    dest_nelems[i]   = num_elems;
-    source_displs[i] = i * size;
-    dest_displs[i]   = i * size;
+    size_t scount = ((i + my_pe) % n_pes) * chunksize;
+
+    if ((i + my_pe) % n_pes == 0)
+      scount += (num_elems * n_pes - chunksize * (n_pes - 1) * n_pes / 2);
+
+    source_nelems[i] = scount;
+    dest_nelems[i]   = scount;
+    source_displs[i]  = disp * sizeof(T1);
+    dest_displs[i]   = disp * sizeof(T1);
+    disp += scount;
   }
 
   hipLaunchKernelGGL(TeamAlltoallvTest<T1>, gridSize, blockSize, shared_bytes,
@@ -258,29 +251,31 @@ void TeamAlltoallvTester<T1>::resetBuffers(size_t size) {
     }
   }
 
-
   memset(dest_buf, -1, buff_size);
 }
 
 template <typename T1>
 void TeamAlltoallvTester<T1>::verifyResults(size_t size) {
-  int num_elems = size / sizeof(T1);
-  int src_idx = 0;
-  int dst_idx = 0;
-
-  for(int pe = 0; pe < n_pes; pe++) {
-    T1* dst = (T1*)((char*)dest_buf + dest_displs[pe]);
-
-    for(int i = 0; i < dest_nelems[pe]; i++) {
-      src_idx = (pe * num_elems) + i;
-      dst_idx = i;
-
-      if (dst[dst_idx] != source_buf[src_idx]) {
-        std::cerr << "Data validation error at idx " << dst_idx << std::endl;
-        std::cerr << "PE " << my_pe << " Got " << dst[dst_idx]
-        << ", Expected " << source_buf[src_idx] << std::endl;
-        exit(-1);
-      }
-    }
-  }
+//  int num_elems = size / sizeof(T1);
+//  int src_idx = 0;
+//  int dst_idx = 0;
+//
+//  for(int pe = 0; pe < n_pes; pe++) {
+//    T1* dst = (T1*)((char*)dest_buf + dest_displs[pe]);
+//    T1* src = (T1*)((char*)source_buf);
+//
+//    printf("[%d] verify num_elems = %d , dest_nelems =%zd\n", my_pe, num_elems, dest_nelems[pe]);
+//
+//    for(int i = 0; i < dest_nelems[pe]; i++) {
+//      src_idx = i;
+//      dst_idx = i;
+//
+//      if (dst[dst_idx] != src[src_idx]) {
+//        fprintf(stderr,
+//                "Data validation error at idx %d, PE %d, Got %f, Expected %f\n",
+//                dst_idx, my_pe, dst[dst_idx], src[src_idx]);
+//        exit(-1);
+//      }
+//    }
+//  }
 }

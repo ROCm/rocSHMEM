@@ -644,13 +644,15 @@ __device__ void GDAContext::alltoallv(rocshmem_team_t team,
   for (int j = tid; j < pe_size; j+= step_size) {
     int dest_pe = team_obj->get_pe_in_world(j);
     uint64_t base_heap_offset = base_heap[dest_pe] - base_heap[my_pe];
-
     size_t nelems = source_nelems[dest_pe] * sizeof(T);
-    T* src = (T*)((char*)source + source_displs[j]);
-    T* dst = (T*)((char*)&tmp_buf[my_pe * tmp_buf_off] + base_heap_offset);
     char* amo_dst = ((char*)&pSync[alltoall_pSync_offset + my_pe_in_team] + base_heap_offset);
 
-    qps[dest_pe].put_nbi_single(dst, src, nelems, false);
+    if (nelems != 0) {
+      T* src = (T*)((char*)source + source_displs[j]);
+      T* dst = (T*)((char*)&tmp_buf[my_pe * tmp_buf_off] + base_heap_offset);
+      qps[dest_pe].put_nbi_single(dst, src, nelems, false);
+    }
+
     qps[dest_pe].atomic_nofetch_single(amo_dst, 1);
   }
 
@@ -671,9 +673,12 @@ __device__ void GDAContext::alltoallv(rocshmem_team_t team,
 
   for (int j = 0; j < pe_size; j++) {
     size_t nelems = dest_nelems[j];
-    T* dst = (T*)((char*) dest + dest_displs[j]);
-    T* src = (T*)((char*) &tmp_buf[j * tmp_buf_off]);
-    memcpy_wg(dst, src, nelems * sizeof(T));
+
+    if (nelems != 0) {
+      T* dst = (T*)((char*) dest + dest_displs[j]);
+      T* src = (T*)((char*) &tmp_buf[j * tmp_buf_off]);
+      memcpy_wg(dst, src, nelems * sizeof(T));
+    }
   }
 
   if (is_thread_zero_in_block()) {
