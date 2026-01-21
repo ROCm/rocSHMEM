@@ -1,5 +1,8 @@
 # ROCm OpenSHMEM (rocSHMEM)
 
+> [!CAUTION]
+> The rocSHMEM repository is retired, please use the [ROCm/rocm-libraries](https://github.com/ROCm/rocm-libraries) repository
+
 The ROCm OpenSHMEM (rocSHMEM) runtime is part of an AMD and AMD Research
 initiative to provide GPU-centric networking through an OpenSHMEM-like interface.
 This intra-kernel networking library simplifies application
