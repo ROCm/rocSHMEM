@@ -1,5 +1,11 @@
 # Changelog for rocSHMEM
 
+## rocSHMEM 3.2.1 for ROCm 7.2.1
+### Resolved Issues
+* GDA Backed will disable itself when no GDA compatible NICs are available rather than crashing
+### Known issues
+* Only 64bit rocSHMEM atomic APIs are implemented for the GDA conduit
+
 ## rocSHMEM 3.2.0 for ROCm 7.2.0
 ### Added
 * Added the GDA conduit for AMD Pensando IONIC
