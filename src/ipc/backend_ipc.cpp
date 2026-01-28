@@ -72,7 +72,7 @@ IPCBackend::IPCBackend(MPI_Comm comm):  Backend(comm) {
    * Check if num_pes == ipcImpl.shm_size)
    * All the PEs must be with in a node for IPC conduit
    */
-  if(num_pes != ipcImpl.shm_size) {
+  if (num_pes != ipcImpl.shm_size) {
     fprintf(stderr, "rocSHMEM: IPC Backend selected but some PEs are non-local. This is not a supported configuration.\n"
                     "  The GDA and RO backends mix off-node -and- IPC on-node communication as needed.\n");
     exit(1);
