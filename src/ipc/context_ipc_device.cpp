@@ -178,6 +178,7 @@ __device__ void IPCContext::internal_putmem_wg(void *dest, const void *source,
   uint64_t L_offset = reinterpret_cast<char *>(dest) - wrk_sync_pool_bases_[my_pe];
   memcpy_wg(wrk_sync_pool_bases_[pe] + L_offset, const_cast<void *>(source), nelems);
   __syncthreads();
+  ipcImpl_.ipcFence();
 }
 
 __device__ void IPCContext::internal_getmem_wg(void *dest, const void *source,

@@ -60,6 +60,8 @@
 #include <random>
 #include <cassert>
 #include <unistd.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 namespace rocshmem {
 
@@ -115,6 +117,18 @@ static BackendType select_backend_type() {
   return BackendType::IPC_BACKEND;
 }
 #endif
+static void setFilesLimit() {
+  rlimit filesLimit;
+  if (getrlimit(RLIMIT_NOFILE, &filesLimit) != 0) {
+    DPRINTF("getrlimit failed\n");
+    return;
+  }
+  filesLimit.rlim_cur = filesLimit.rlim_max;
+  if (setrlimit(RLIMIT_NOFILE, &filesLimit) != 0) {
+    DPRINTF("setrlimit failed\n");
+    return;
+  }
+}
 
 [[maybe_unused]] __host__ void inline library_init(MPI_Comm comm) {
   assert(!backend);
@@ -126,6 +140,7 @@ static BackendType select_backend_type() {
     abort();
   }
 
+  setFilesLimit();
   rocm_init();
 
   int ret;
@@ -241,6 +256,7 @@ static BackendType select_backend_type() {
     abort();
   }
 
+  setFilesLimit();
   rocm_init();
 
 #if defined(USE_GDA) && defined(USE_RO) && defined(USE_IPC)
