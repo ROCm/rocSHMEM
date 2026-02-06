@@ -32,7 +32,8 @@ namespace rocshmem {
 __device__ Context::Context(Backend* handle)
     : num_pes(handle->getNumPEs()),
       my_pe(handle->getMyPE()),
-      btype(handle->type) {
+      btype(handle->type),
+      targeted_order(handle->targeted_order)	{
   /*
    * Device-side context constructor is a work-group collective, so make
    * sure all the members have their default values before returning.

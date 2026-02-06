@@ -100,6 +100,8 @@ QueuePair::QueuePair(struct ibv_pd* pd, int gda_provider) {
     assert(false /* invalid nic provider */);
   }
   gda_provider_ = gda_provider;
+
+  targeted_order = envvar::targeted_order;
 }
 
 QueuePair::~QueuePair() {

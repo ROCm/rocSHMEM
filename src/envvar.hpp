@@ -469,6 +469,7 @@ namespace envvar {
     extern const var<std::string> backend;
     extern const var<bool> disable_mixed_ipc;
     extern const var<bool> disable_ipc;
+    extern const var<bool> targeted_order;
 
     /**
      * @brief Maximum number of contexts for the application

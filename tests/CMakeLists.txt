@@ -29,3 +29,7 @@ ENDIF()
 IF (BUILD_UNIT_TESTS)
     add_subdirectory(unit_tests)
 ENDIF()
+
+IF (BUILD_RELAX_TESTS)
+    add_subdirectory(relax_tests)
+ENDIF()

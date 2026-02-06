@@ -530,6 +530,9 @@ class Context {
    * communication through shared memory.
    */
   IpcImpl ipcImpl_{};
+
+  // for shmem relaxed ordering
+  bool targeted_order=false;
 };
 
 }  // namespace rocshmem

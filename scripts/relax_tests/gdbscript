@@ -1,4 +1,3 @@
-#!/bin/bash
 ###############################################################################
 # Copyright (c) Advanced Micro Devices, Inc. All rights reserved.
 #
@@ -23,32 +22,19 @@
 # IN THE SOFTWARE.
 ###############################################################################
 
-set -e
+set pagination off
+set print frame-arguments all
+set logging file log.dat
+set logging on
 
-src_path=$(dirname "$(realpath $0)")/../../
+set $_exitcode = -1
+run
 
-cmake \
-    -DBUILD_CODE_COVERAGE=${CODE_COV:-OFF} \
-    -DCMAKE_BUILD_TYPE=${BUILD_TYPE:-Release} \
-    -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX:-~/rocshmem} \
-    -DCMAKE_VERBOSE_MAKEFILE=OFF \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-    -DBUILD_FUNCTIONAL_TESTS=ON \
-    -DBUILD_UNIT_TESTS=ON \
-    -DBUILD_RELAX_TESTS=ON \
-    -DBUILD_EXAMPLES=ON \
-    -DDEBUG=OFF \
-    -DPROFILE=OFF \
-    -DUSE_GDA=ON \
-    -DGDA_MLX5=ON \
-    -DGDA_BNXT=ON \
-    -DGDA_IONIC=ON \
-    -DUSE_RO=ON \
-    -DUSE_IPC=ON \
-    -DUSE_THREADS=OFF \
-    -DUSE_WF_COAL=OFF \
-    -DUSE_HDP_FLUSH=OFF \
-    -DUSE_HDP_FLUSH_HOST_SIDE=OFF \
-    $* $src_path
-cmake --build . --parallel 8
-cmake --install .
+if $_exitcode != -1
+    quit
+else
+    #backtrace
+    # backtrace for all threads
+    thread apply all bt full
+    quit
+end

@@ -38,6 +38,7 @@ __host__ IPCContext::IPCContext(Backend *b, unsigned int ctx_id)
   IPCBackend *backend{static_cast<IPCBackend *>(b)};
   ipcImpl_.ipc_bases = b->ipcImpl.ipc_bases;
   ipcImpl_.shm_size = b->ipcImpl.shm_size;
+  ipcImpl_.targeted_order = b->targeted_order;
 
   barrier_sync = backend->barrier_sync;
   fence_pool = backend->fence_pool;
@@ -83,13 +84,15 @@ __device__ void IPCContext::getmem_nbi(void *dest, const void *source,
 }
 
 __device__ void IPCContext::fence() {
-  for (int i{0}, j{tinfo->pe_start}; i < tinfo->size; i++, j += tinfo->stride) {
-    detail::atomic::store<int, detail::atomic::memory_scope_system>(&fence_pool[j], 1, orders_);
+  if (targeted_order) {
+    fence_targeted();
+  } else {
+    __builtin_amdgcn_fence(__ATOMIC_RELEASE, "");
   }
 }
 
 __device__ void IPCContext::fence(int pe) {
-  detail::atomic::store<int, detail::atomic::memory_scope_system>(&fence_pool[pe], 1, orders_);
+  fence();
 }
 
 __device__ void IPCContext::quiet() {
@@ -112,7 +115,11 @@ __device__ void IPCContext::putmem_wg(void *dest, const void *source,
                                      size_t nelems, int pe) {
   putmem_nbi_wg(dest, source, nelems, pe);
   __syncthreads();
-  ipcImpl_.ipcFence();
+  if (targeted_order) {
+    fence_targeted();
+  } else {
+    ipcImpl_.ipcFence();
+  }
 }
 
 __device__ void IPCContext::getmem_wg(void *dest, const void *source,

@@ -1,4 +1,3 @@
-#!/bin/bash
 ###############################################################################
 # Copyright (c) Advanced Micro Devices, Inc. All rights reserved.
 #
@@ -23,32 +22,13 @@
 # IN THE SOFTWARE.
 ###############################################################################
 
+# argument1 - operation to run
+# argument2 - loop count
+# e.g ./gdbrun 14 10 (launches pingpong for 10 times)
+
 set -e
-
-src_path=$(dirname "$(realpath $0)")/../../
-
-cmake \
-    -DBUILD_CODE_COVERAGE=${CODE_COV:-OFF} \
-    -DCMAKE_BUILD_TYPE=${BUILD_TYPE:-Release} \
-    -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX:-~/rocshmem} \
-    -DCMAKE_VERBOSE_MAKEFILE=OFF \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-    -DBUILD_FUNCTIONAL_TESTS=ON \
-    -DBUILD_UNIT_TESTS=ON \
-    -DBUILD_RELAX_TESTS=ON \
-    -DBUILD_EXAMPLES=ON \
-    -DDEBUG=OFF \
-    -DPROFILE=OFF \
-    -DUSE_GDA=ON \
-    -DGDA_MLX5=ON \
-    -DGDA_BNXT=ON \
-    -DGDA_IONIC=ON \
-    -DUSE_RO=ON \
-    -DUSE_IPC=ON \
-    -DUSE_THREADS=OFF \
-    -DUSE_WF_COAL=OFF \
-    -DUSE_HDP_FLUSH=OFF \
-    -DUSE_HDP_FLUSH_HOST_SIDE=OFF \
-    $* $src_path
-cmake --build . --parallel 8
-cmake --install .
+for i in {1..$2};
+do
+    mpirun -np 2 xterm -e gdb -x gdbscript --args build/rocshmem_functional_tests -t 1 -w 1 -s 32768 -a $1  -x 8
+    test $? -eq 0 || exit 1
+done

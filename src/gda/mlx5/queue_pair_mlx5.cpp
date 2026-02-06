@@ -80,9 +80,18 @@ __device__ void QueuePair::mlx5_ring_doorbell(uint16_t sq_wqebb_counter, const g
   gda_mlx5_bf_buffer* bf = mlx5_sq.bf_buffer();
 
   // store sq_wqebb_counter to doorbell record
-  __hip_atomic_store(mlx5_sq.dbrec, be_sq_wqebb_counter, __ATOMIC_RELEASE, __HIP_MEMORY_SCOPE_SYSTEM);
-  // ring doorbell by storing first 8B of WQE to the doorbell register
-  __hip_atomic_store(&bf->db_reg, db_val, __ATOMIC_RELEASE, __HIP_MEMORY_SCOPE_SYSTEM);
+  if (targeted_order) {
+    // use targeted fence instead of system-scope release if using
+    // relaxed ordering
+    fence_targeted();
+    __hip_atomic_store(mlx5_sq.dbrec, be_sq_wqebb_counter, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_SYSTEM);
+    // ring doorbell by storing first 8B of WQE to the doorbell register
+    __hip_atomic_store(&bf->db_reg, db_val, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_SYSTEM);
+  } else {
+    __hip_atomic_store(mlx5_sq.dbrec, be_sq_wqebb_counter, __ATOMIC_RELEASE, __HIP_MEMORY_SCOPE_SYSTEM);
+    // ring doorbell by storing first 8B of WQE to the doorbell register
+    __hip_atomic_store(&bf->db_reg, db_val, __ATOMIC_RELEASE, __HIP_MEMORY_SCOPE_SYSTEM);
+  }
 
 #if defined(DEBUG)
   printf("SQ: posted WQEs with dbrec(%p)=%x (%hu), dbreg(%p)=%lx (%x, %x)\n",

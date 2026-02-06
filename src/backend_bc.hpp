@@ -283,6 +283,9 @@ class Backend {
    */
   HIPAllocator *psync_allocator_{nullptr};
 
+  // for shmem relaxed ordering
+  bool targeted_order=false;
+
  protected:
   /**
    * @brief Required to support static inheritance for device calls.

@@ -53,6 +53,8 @@ class IpcOnImpl {
 
   int *pes_with_ipc_avail{nullptr};
 
+  bool targeted_order{false};
+
   __host__ void ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
                             MPI_Comm thread_comm);
 
@@ -113,7 +115,11 @@ class IpcOnImpl {
 
   template <typename T>
   __device__ void ipcAMOSet(T *val, T value) {
-    __hip_atomic_store(val, value, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+    if (targeted_order) {
+      __hip_atomic_store(val, value, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_SYSTEM);
+    } else {
+      __hip_atomic_store(val, value, __ATOMIC_SEQ_CST, __HIP_MEMORY_SCOPE_SYSTEM);
+    }
   }
 
   template <typename T>
@@ -172,6 +178,8 @@ class IpcOffImpl {
   char **ipc_bases{nullptr};
 
   int *pes_with_ipc_avail{nullptr};
+
+  bool targeted_order{false};
 
   __host__ void ipcHostInit(int my_pe, const HEAP_BASES_T &heap_bases,
                             MPI_Comm thread_comm) {}

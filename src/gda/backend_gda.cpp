@@ -1342,7 +1342,8 @@ void GDABackend::create_parent_domain() {
   pattr.free       = GDABackend::pd_release;
   pattr.pd_context = nullptr;
 
-  if (gda_provider == GDAProvider::IONIC) {
+  if (gda_provider == GDAProvider::IONIC
+      || gda_provider == GDAProvider::MLX5) {
     pattr.alloc      = GDABackend::pd_alloc_device_uncached;
   } else {
     pattr.alloc      = GDABackend::pd_alloc_host;

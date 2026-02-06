@@ -39,6 +39,8 @@
 
 #include <cassert>
 
+#include "envvar.hpp"
+
 namespace rocshmem {
 
 #define NET_CHECK(cmd)                                       \
@@ -56,6 +58,8 @@ Backend::Backend(MPI_Comm comm) : heap(comm, nullptr) {
    * Notify other threads that Backend has been initialized.
    */
   *done_init = 0;
+  targeted_order = envvar::targeted_order;
+  ipcImpl.targeted_order = targeted_order;
 }
 
 Backend::Backend(TcpBootstrap* bootstrap) : heap(MPI_COMM_NULL, bootstrap) {
@@ -69,6 +73,8 @@ Backend::Backend(TcpBootstrap* bootstrap) : heap(MPI_COMM_NULL, bootstrap) {
    * Notify other threads that Backend has been initialized.
    */
   *done_init = 0;
+  targeted_order = envvar::targeted_order;
+  ipcImpl.targeted_order = targeted_order;
 }
 
 void Backend::init(void) {

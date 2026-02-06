@@ -282,6 +282,14 @@ __device__ __forceinline__ void store_asm(uint8_t* val, uint8_t* dst,
   }
 }
 
+__device__ __forceinline__ void fence_targeted() {
+#if defined(__gfx90a__)
+  asm volatile(
+    "s_waitcnt vmcnt(0)"
+    );
+#endif
+}
+
 }  // namespace rocshmem
 
 #endif  // LIBRARY_SRC_ASSEMBLY_HPP_

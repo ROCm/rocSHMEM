@@ -31,7 +31,8 @@ namespace rocshmem {
 __host__ Context::Context(Backend* handle)
     : num_pes(handle->getNumPEs()),
       my_pe(handle->getMyPE()),
-      btype(handle->type) {
+      btype(handle->type),
+      targeted_order(handle->targeted_order)	{
 }
 
 __host__ Context::~Context() {

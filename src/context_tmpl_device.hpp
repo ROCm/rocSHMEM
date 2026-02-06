@@ -223,6 +223,9 @@ __device__ __forceinline__ void Context::wait_until(T *ivars, int cmp,
                                                     T val) {
   while (!test(ivars, cmp, val)) {
   }
+  if (!targeted_order) {
+    __threadfence_system();
+  }
 }
 
 __device__ __forceinline__ size_t status_entry(size_t nelems,

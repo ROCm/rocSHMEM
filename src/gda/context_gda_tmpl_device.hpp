@@ -50,6 +50,7 @@ __device__ void GDAContext::p(T *dest, T value, int pe) {
     ipcImpl_.ipcCopy(ipcImpl_.ipc_bases[local_pe] + L_offset, reinterpret_cast<void *>(&value), sizeof(T));
     return;
   }
+  printf("using GDA p()\n");
   putmem_nbi(dest, &value, sizeof(T), pe);
 }
 
@@ -110,7 +111,7 @@ __device__ void GDAContext::amo_add(void *dst, T value, int pe) {
 
 template <typename T>
 __device__ void GDAContext::amo_set(void *dst, T value, int pe) {
-  amo_swap(dst, value, pe);
+  putmem_nbi(dst, &value, sizeof(T), pe);
 }
 
 template <typename T>

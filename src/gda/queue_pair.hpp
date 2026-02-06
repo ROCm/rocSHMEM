@@ -335,6 +335,9 @@ class QueuePair {
   uint8_t gda_op_rdma_read;
   uint8_t gda_op_atomic_fa;
   uint8_t gda_op_atomic_cs;
+
+  // relaxed shmem ordering
+  bool targeted_order=false;
 };
 
 }  // namespace rocshmem
