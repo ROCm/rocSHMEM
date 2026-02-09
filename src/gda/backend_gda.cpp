@@ -547,9 +547,104 @@ GDAProvider GDABackend::requested_provider() {
   return GDAProvider::UNSET;
 }
 
-/* Currently we only check whether we can dlopen a Direct Verbs library.
- * We might need to extend this logic to check whether we have interfaces that
- * can use those DV libraries
+/* Check if a device's vendor ID matches the expected vendor for a given provider.
+ * Returns true if the device matches, false otherwise.
+ */
+bool GDABackend::device_matches_provider_vendor(GDAProvider provider,
+                                                 const struct ibv_device_attr &device_attr,
+                                                 const char *device_name) {
+  uint32_t expected_vendor_id = 0;
+  const char *vendor_name = nullptr;
+
+  switch (provider) {
+    case GDAProvider::BNXT:
+      expected_vendor_id = GDA_BNXT_VENDOR_ID;
+      vendor_name = "BNXT/Broadcom";
+      break;
+    case GDAProvider::IONIC:
+      expected_vendor_id = GDA_IONIC_VENDOR_ID;
+      vendor_name = "IONIC/Pensando";
+      break;
+    case GDAProvider::MLX5:
+      expected_vendor_id = GDA_MLX5_VENDOR_ID;
+      vendor_name = "MLX5/Mellanox";
+      break;
+    case GDAProvider::UNSET:
+      // UNSET accepts any vendor
+      return true;
+    default:
+      return true;
+  }
+
+  if (device_attr.vendor_id != expected_vendor_id) {
+    DPRINTF("Skipping device %s with vendor_id=0x%04x (not %s)\n",
+            device_name, device_attr.vendor_id, vendor_name);
+    return false;
+  }
+
+  return true;
+}
+
+/* Check whether there are active InfiniBand/RDMA interfaces available.
+ * Verifies the device vendor matches the requested provider to avoid selecting
+ * the wrong NIC when multiple vendors are present.
+ * Returns true if at least one active port is found on a matching device.
+ */
+bool GDABackend::has_active_ib_interface(GDAProvider provider) {
+  struct ibv_device **device_list = nullptr;
+  int num_devices = 0;
+  bool has_active = false;
+
+  device_list = ibv.get_device_list(&num_devices);
+  if (!device_list || num_devices == 0) {
+    DPRINTF("No RDMA NIC devices found\n");
+    return false;
+  }
+
+  for (int i = 0; i < num_devices && !has_active; i++) {
+    DPRINTF("ibv.open device[%d] of %d\n", i, num_devices);
+    struct ibv_context *context = ibv.open_device(device_list[i]);
+    if (!context) {
+      continue;
+    }
+
+    struct ibv_device_attr device_attr;
+    if (ibv.query_device(context, &device_attr) == 0) {
+      // Check if device vendor matches the provider
+      if (!device_matches_provider_vendor(provider, device_attr,
+                                          ibv.get_device_name(device_list[i]))) {
+        ibv.close_device(context);
+        continue;
+      }
+
+      for (int port = 1; port <= device_attr.phys_port_cnt; ++port) {
+        struct ibv_port_attr port_attr;
+        if (ibv.query_port(context, port, &port_attr) == 0) {
+          if (port_attr.state == IBV_PORT_ACTIVE) {
+            DPRINTF("Found active RDMA NIC port %d on device %s (vendor_id=0x%04x, state=%d, phys_state=%d)\n",
+                    port, ibv.get_device_name(device_list[i]),
+                    device_attr.vendor_id, port_attr.state, port_attr.phys_state);
+            has_active = true;
+            break;
+          }
+        }
+      }
+    }
+
+    ibv.close_device(context);
+  }
+
+  ibv.free_device_list(device_list);
+
+  if (!has_active) {
+    DPRINTF("No active InfiniBand ports found on any device\n");
+  }
+
+  return has_active;
+}
+
+/* Check whether we can dlopen a Direct Verbs library and verify that
+ * there are active InfiniBand/RDMA interfaces available to use.
  */
 int GDABackend::backend_can_run() {
   void *handle{nullptr};
@@ -560,8 +655,10 @@ int GDABackend::backend_can_run() {
   if (requested == GDAProvider::UNSET || requested == GDAProvider::BNXT) {
     handle = bnxt_dv_dlopen();
     if (handle) {
-      dlclose(handle);
-      return ROCSHMEM_SUCCESS;
+      auto ret = has_active_ib_interface(GDAProvider::BNXT);
+//      dlclose(handle); //TODO: unloading the lib crashes the next call to ibv_open_device
+      if (ret) return ROCSHMEM_SUCCESS;
+      DPRINTF("BNXT DV library found but no active InfiniBand interface available\n");
     }
   }
 #endif //defined(GDA_BNXT)
@@ -571,8 +668,10 @@ int GDABackend::backend_can_run() {
   if (requested == GDAProvider::UNSET || requested == GDAProvider::IONIC) {
     handle = ionic_dv_dlopen();
     if (handle) {
-      dlclose(handle);
-      return ROCSHMEM_SUCCESS;
+      auto ret = has_active_ib_interface(GDAProvider::IONIC);
+//      dlclose(handle); //TODO: unloading the lib crashes the next call to ibv_open_device
+      if (ret) return ROCSHMEM_SUCCESS;
+      DPRINTF("IONIC DV library found but no active InfiniBand interface available\n");
     }
   }
 #endif //defined(GDA_IONIC)
@@ -582,8 +681,10 @@ int GDABackend::backend_can_run() {
   if (requested == GDAProvider::UNSET || requested == GDAProvider::MLX5) {
     handle = mlx5_dv_dlopen();
     if (handle) {
-      dlclose(handle);
-      return ROCSHMEM_SUCCESS;
+      auto ret = has_active_ib_interface(GDAProvider::MLX5);
+//      dlclose(handle); //TODO: unloading the lib crashes the next call to ibv_open_device
+      if (ret) return ROCSHMEM_SUCCESS;
+      DPRINTF("MLX5 DV library found but no active InfiniBand interface available\n");
     }
   }
 #endif //defined(GDA_MLX5)
@@ -890,11 +991,10 @@ void GDABackend::validate_ib_device() {
   CHECK_ZERO(err, "ibv_query_device");
 
   if (gda_provider == GDAProvider::BNXT) {
-    const uint32_t bnxt_vendor_id =  0x14E4;
     const std::set<uint32_t> supported_bnxt_part_ids = { 0x1760 /* BCM57608 */};
     const char min_supported_bnxt_fw_ver[12] = "233.2.104.0";
 
-    if (bnxt_vendor_id != device_attr.vendor_id) {
+    if (device_attr.vendor_id != GDA_BNXT_VENDOR_ID) {
       printf("%s GDAProvider::BNXT requested but an invalid device is selected\n", debug_str.c_str());
       exit(1);
     }

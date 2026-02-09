@@ -1,5 +1,14 @@
 # Changelog for rocSHMEM
 
+## rocSHMEM 3.2.1 for ROCm 7.2.1
+### Added
+* Warn if large BAR is not available
+### Resolved Issues
+* GDA Backend will disable itself when no GDA compatible NICs are available rather than crashing
+* Fix memory coherency issues on gfx1201
+### Known issues
+* Only 64bit rocSHMEM atomic APIs are implemented for the GDA conduit
+
 ## rocSHMEM 3.2.0 for ROCm 7.2.0
 ### Added
 * Added the GDA conduit for AMD Pensando IONIC
