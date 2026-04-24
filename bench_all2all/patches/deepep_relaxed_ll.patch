@@ -1,0 +1,165 @@
+diff --git a/csrc/kernels/internode_ll.cu b/csrc/kernels/internode_ll.cu
+index 3f6adc2..bf34e75 100644
+--- a/csrc/kernels/internode_ll.cu
++++ b/csrc/kernels/internode_ll.cu
+@@ -311,15 +311,11 @@ dispatch(void* packed_recv_x,  void* packed_recv_x_scales,
+         }
+     }
+ 
+-#if defined(NIC_IO) || defined(NIC_THOR2)
+-     if constexpr (kMultinode){
+-         if (thread_id == 0 ){
+-#if defined(ROCM_DISABLE_CTX)
+-                    internode::shmem_fence();
+-#else
+-                    internode::shmem_ctx_quiet(ctx);
+-#endif
+-        }
++#ifdef USE_ROCM
++     // Fence ensures all prior puts are visible before sending counts
++     // Skip if this block never entered the token loop (no puts issued)
++     if (thread_id == 0 && sm_id < num_tokens) {
++         internode::shmem_fence();
+      }
+ #endif
+ 
+@@ -331,12 +327,24 @@ dispatch(void* packed_recv_x,  void* packed_recv_x_scales,
+         const auto dst_expert_local_idx = responsible_expert_idx % num_local_experts;
+         const auto num_tokens_sent = shared_num_tokens_sent_per_expert[responsible_expert_idx - sm_id * kNumWarpGroups];
+ 
+-        // Wait local sends issued and send expert counts
++        // Wait local sends issued and send expert counts (rocSHMEM wait_until)
++#ifdef USE_ROCM
++        if constexpr(kMultinode){
++            rocshmem::rocshmem_int_wait_until(
++                atomic_finish_counter_per_expert + responsible_expert_idx,
++                ROCSHMEM_CMP_EQ, FINISHED_SUM_TAG * 2);
++        }else{
++            rocshmem::rocshmem_int_wait_until(
++                atomic_finish_counter_per_expert + responsible_expert_idx,
++                ROCSHMEM_CMP_EQ, FINISHED_SUM_TAG);
++        }
++#else
+         if constexpr(kMultinode){
+             while (ld_acquire_global(atomic_finish_counter_per_expert + responsible_expert_idx) != FINISHED_SUM_TAG * 2);
+         }else{
+             while (ld_volatile_global(atomic_finish_counter_per_expert + responsible_expert_idx) != FINISHED_SUM_TAG);
+         }
++#endif
+         if (dst_rank != rank) {
+ #ifdef USE_ROCM
+            if constexpr (!kMultinode){
+@@ -355,16 +363,9 @@ dispatch(void* packed_recv_x,  void* packed_recv_x_scales,
+         } else {
+             st_na_release(reinterpret_cast<int64_t *>(rdma_recv_count + dst_expert_local_idx * num_ranks + rank), -num_tokens_sent - 1);
+         }
+-#if defined(NIC_IO) || defined(NIC_THOR2)
+-     if constexpr (kMultinode){
+-         if (thread_id == 0 ){
+-#if defined(ROCM_DISABLE_CTX)
+-                    internode::shmem_fence();
+-#else
+-                    internode::shmem_ctx_quiet(ctx);
+-#endif
+-        }
+-     }
++#ifdef USE_ROCM
++        // Fence ensures count send is visible before cleanup
++        if (dst_rank != rank) internode::shmem_fence();
+ #endif
+         // Clean workspace for next use
+         atomic_counter_per_expert[responsible_expert_idx] = 0;
+@@ -413,6 +414,15 @@ dispatch(void* packed_recv_x,  void* packed_recv_x_scales,
+         int num_recv_tokens, recv_token_begin_idx;
+         EP_STATIC_ASSERT(kNumWarpsPerGroup > 1, "Requires more than one warp per group");
+         if (sub_warp_id == 0 and lane_id == 0) {
++#ifdef USE_ROCM
++            // Use rocSHMEM wait_until to block until recv count becomes non-zero
++            rocshmem::rocshmem_long_wait_until(
++                rdma_recv_count + local_expert_idx * num_ranks + src_rank,
++                ROCSHMEM_CMP_NE, 0L);
++            // Read the value after wait completes
++            num_recv_tokens = ld_acquire_sys_global(
++                reinterpret_cast<int64_t*>(rdma_recv_count + local_expert_idx * num_ranks + src_rank));
++#else
+             auto start_time = clock64();
+             if constexpr (kMultinode){
+                 while ((num_recv_tokens = ld_acquire_sys_global(reinterpret_cast<int64_t*>(rdma_recv_count + local_expert_idx * num_ranks + src_rank))) == 0){
+@@ -427,6 +437,7 @@ dispatch(void* packed_recv_x,  void* packed_recv_x_scales,
+                     }
+                 }
+             }
++#endif
+             num_recv_tokens = -num_recv_tokens - 1;
+             recv_token_begin_idx = atomicAdd(packed_recv_count + local_expert_idx, num_recv_tokens);
+             shared_num_recv_tokens[warp_group_id] = num_recv_tokens;
+@@ -694,13 +705,10 @@ combine(void* combined_x,
+             }
+         }
+ 
+-        if constexpr (kMultinode){
+-            if (sub_warp_id == 0)
+-#if defined(ROCM_DISABLE_CTX)
+-                internode::shmem_fence();
+-#else
+-                internode::shmem_ctx_quiet(ctx);
+-#endif
++        // Fence ensures all prior puts are visible before sending finish flag
++        // Skip if no remote puts were issued (local expert or no tokens to send)
++        if (sub_warp_id == 0 && dst_rank != rank && num_tokens_to_send > 0) {
++            internode::shmem_fence();
+         }
+ 
+         // Put finishing flag
+@@ -711,11 +719,17 @@ combine(void* combined_x,
+         asm volatile("bar.sync %0, %1;" :: "r"(warp_group_id + 1), "r"(kNumWarpsPerGroup * 32));
+ #endif
+         if (sub_warp_id == 0 and lane_id == 0) {
++#ifdef USE_ROCM
++            // Use rocSHMEM wait_until for clean flag
++            rocshmem::rocshmem_int_wait_until(
++                atomic_clean_flag, ROCSHMEM_CMP_NE, 0);
++#else
+             if constexpr (kMultinode){
+                 while (ld_acquire_global(atomic_clean_flag) == 0);
+             }else{
+                 while (ld_volatile_global(atomic_clean_flag) == 0);
+             }
++#endif
+ 
+             if (dst_rank != rank) {
+ #ifdef USE_ROCM
+@@ -753,11 +767,18 @@ combine(void* combined_x,
+     if (responsible_expert_idx < num_experts) {
+         // EP_STATIC_ASSERT(kNumWarpsPerGroup > 1, "Invalid number of warps per group");
+         if (sub_warp_id == 0 and lane_id == 0){
++#ifdef USE_ROCM
++            // Use rocSHMEM wait_until for receive flag
++            rocshmem::rocshmem_long_wait_until(
++                rdma_recv_flag + responsible_expert_idx,
++                ROCSHMEM_CMP_NE, 0L);
++#else
+             if constexpr (kMultinode){
+                 while (ld_acquire_sys_global(reinterpret_cast<int64_t*>(rdma_recv_flag + responsible_expert_idx)) == 0);
+             }else{
+                 while (ld_volatile_global(reinterpret_cast<int64_t*>(rdma_recv_flag + responsible_expert_idx)) == 0);
+             }
++#endif
+         }
+     }
+     grid_barrier(global_atomic_counter, num_sms);
+diff --git a/csrc/kernels/shmem_wrapper.cuh b/csrc/kernels/shmem_wrapper.cuh
+index 3a6d653..c8c6d94 100644
+--- a/csrc/kernels/shmem_wrapper.cuh
++++ b/csrc/kernels/shmem_wrapper.cuh
+@@ -49,6 +49,10 @@ static inline const auto &shmem_finalize = rocshmem::rocshmem_finalize;
+ static inline const auto &shmem_team_destroy = rocshmem::rocshmem_team_destroy;
+ static inline const auto &shmem_int_put_nbi = rocshmem::rocshmem_int_put_nbi;
+ static inline const auto &shmem_fence = rocshmem::rocshmem_fence;
++static inline const auto &shmem_int_wait_until =
++    rocshmem::rocshmem_int_wait_until;
++static inline const auto &shmem_long_wait_until =
++    rocshmem::rocshmem_long_wait_until;
+ static inline const auto &shmemx_int_put_nbi_warp =
+     rocshmem::rocshmem_int_put_nbi_wave;
+ static inline const auto &shmemx_int8_put_nbi_warp =

@@ -1,0 +1,50 @@
+services:
+  rocm:
+    build:
+      context: ..
+      dockerfile: bench_all2all/Dockerfile
+      network: host
+    image: rocm-infiniband:latest
+    container_name: rocm-env
+    network_mode: host
+    devices:
+      # AMD GPU devices
+      - /dev/kfd
+      - /dev/dri
+      # InfiniBand devices
+      - /dev/infiniband
+    group_add:
+      - video
+      - render
+    ipc: host
+    shm_size: 64gb
+    cap_add:
+      - SYS_PTRACE
+      - IPC_LOCK
+      - SYS_NICE
+    security_opt:
+      - seccomp=unconfined
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      stack:
+        soft: 67108864
+        hard: 67108864
+    volumes:
+      - ./workspace:/workspace
+      - /etc/libibverbs.d:/etc/libibverbs.d:ro
+      - /sys/class/net:/sys/class/net:ro
+      - /sys/bus/pci:/sys/bus/pci:ro
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    environment:
+      - NCCL_DEBUG=INFO
+      - NCCL_IB_DISABLE=0
+      # - NCCL_NET_GDR_LEVEL=5
+      # - RCCL_NET_GDR_LEVEL=5
+      # - NCCL_IGNORE_CPU_AFFINITY=1
+      - NCCL_IB_HCA=mlx5_0,mlx5_1,mlx5_2,mlx5_3,mlx5_4,mlx5_5,mlx5_6,mlx5_7
+      - HSA_NO_SCRATCH_RECLAIM=1
+    command: /bin/bash
